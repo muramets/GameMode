@@ -73,13 +73,22 @@ const App = {
     }
   },
 
+  // Get skill level color class
+  getScoreClass(score) {
+    if (score < 2) return 'score-1';
+    if (score < 4) return 'score-2';
+    if (score < 6) return 'score-3';
+    if (score < 8) return 'score-4';
+    return 'score-5';
+  },
+  
   // Get skill level color
   getSkillColor(score) {
-    if (score < 2) return 'var(--level-1)';
-    if (score < 4) return 'var(--level-2)';
-    if (score < 6) return 'var(--level-3)';
-    if (score < 8) return 'var(--level-4)';
-    return 'var(--level-5)';
+    if (score < 2) return '#ca4754';
+    if (score < 4) return '#e6934a';
+    if (score < 6) return '#e2b714';
+    if (score < 8) return '#98c379';
+    return '#7fb3d3';
   },
 
   // Dashboard
@@ -90,6 +99,7 @@ const App = {
     
     statesGrid.innerHTML = states.map(state => {
       const score = Storage.calculateStateScore(state.id);
+      const scoreClass = this.getScoreClass(score);
       const color = this.getSkillColor(score);
       const percent = Math.min(100, (score / 10) * 100);
       
@@ -100,7 +110,7 @@ const App = {
             <span class="state-name">${state.name.split('.')[0]}</span>
           </div>
           <div class="state-hover">${state.hover}</div>
-          <div class="state-score" style="color: ${color}">${score.toFixed(2)}</div>
+          <div class="state-score ${scoreClass}">${score.toFixed(2)}</div>
           <div class="state-bar">
             <div class="state-bar-fill" style="width: ${percent}%; background-color: ${color}"></div>
           </div>
@@ -118,13 +128,13 @@ const App = {
     
     quickProtocols.innerHTML = protocols.map(protocol => {
       return `
-        <div class="quick-protocol" onclick="App.quickCheckin(${protocol.id})">
+        <button class="quick-protocol" onclick="App.quickCheckin(${protocol.id})">
           <span class="quick-protocol-icon">${protocol.icon}</span>
           <div class="quick-protocol-info">
-            <div class="quick-protocol-name">${protocol.name.split('.')[0]}</div>
-            <div class="quick-protocol-details">${protocol.action}${protocol.weight} • ${protocol.targets.length} skills</div>
+            <span class="quick-protocol-name">${protocol.name.split('.')[0]}</span>
+            <span class="quick-protocol-details">${protocol.action}${protocol.weight}</span>
           </div>
-        </div>
+        </button>
       `;
     }).join('');
   },
@@ -169,6 +179,7 @@ const App = {
     
     tableBody.innerHTML = skills.map(skill => {
       const current = Storage.calculateCurrentScore(skill.id);
+      const scoreClass = this.getScoreClass(current);
       const color = this.getSkillColor(current);
       const percent = Math.min(100, (current / 10) * 100);
       const lastUpdate = Storage.getSkillLastUpdate(skill.id);
@@ -181,12 +192,12 @@ const App = {
             <span>${skill.name}</span>
           </div>
           <div class="skill-score">${skill.initialScore.toFixed(2)}</div>
-          <div class="skill-score" style="color: ${color}">${current.toFixed(2)}</div>
+          <div class="skill-score ${scoreClass}">${current.toFixed(2)}</div>
           <div class="skill-progress">
             <div class="progress-bar">
               <div class="progress-fill" style="width: ${percent}%; background-color: ${color}"></div>
             </div>
-            <span class="text-dim">${percent.toFixed(0)}%</span>
+            <span style="color: var(--sub-color)">${percent.toFixed(0)}%</span>
           </div>
           <div class="skill-date">${dateStr}</div>
         </div>
