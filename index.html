@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RPG Therapy - Level Up Your Life</title>
+    <title>RPG Therapy</title>
     
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%23e2b714' d='M176 80c0-26.5-21.5-48-48-48S80 53.5 80 80v16c0 13.3-10.7 24-24 24S32 109.3 32 96V80C32 35.8 67.8 0 112 0S192 35.8 192 80v16c0 13.3-10.7 24-24 24s-24-10.7-24-24V80zM56 192H24c-13.3 0-24 10.7-24 24v24c0 110.5 89.5 200 200 200s200-89.5 200-200v-24c0-13.3-10.7-24-24-24H344c-13.3 0-24 10.7-24 24s10.7 24 24 24h8v24c0 83.9-68.1 152-152 152S48 347.9 48 264v-24h8c13.3 0 24-10.7 24-24s-10.7-24-24-24z'/%3E%3C/svg%3E">
@@ -11,64 +11,112 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Roboto Mono Font -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- CSS Files -->
-    <link rel="stylesheet" href="css/00_theme_monkeytype.css">
-    <link rel="stylesheet" href="css/01_font_roboto_mono.css">
-    <link rel="stylesheet" href="css/02_core_layout.css">
-    <link rel="stylesheet" href="css/03_typography.css">
-    <link rel="stylesheet" href="css/04_buttons.css">
-    <link rel="stylesheet" href="css/05_inputs.css">
-    <link rel="stylesheet" href="css/06_navigation.css">
-    <link rel="stylesheet" href="css/07_footer_styles.css">
-    <link rel="stylesheet" href="css/08_settings_page.css">
-    <link rel="stylesheet" href="css/rpg_therapy.css">
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div id="app-container">
-        <!-- Header -->
-        <header class="site-header">
-            <div class="header-content">
-                <div class="logo-container">
-                    <a href="#dashboard">
-                        <i class="fas fa-gamepad"></i>
-                        <span class="logo-text">RPG Therapy</span>
-                    </a>
-                </div>
-                
-                <!-- Navigation -->
-                <nav class="main-nav">
-                    <button class="text-button nav-item active" data-page="dashboard">
-                        <i class="fas fa-home"></i>
-                        <span>Dashboard</span>
-                    </button>
-                    <button class="text-button nav-item" data-page="protocols">
-                        <i class="fas fa-tasks"></i>
-                        <span>Protocols</span>
-                    </button>
-                    <button class="text-button nav-item" data-page="skills">
-                        <i class="fas fa-chart-line"></i>
-                        <span>Skills</span>
-                    </button>
-                    <button class="text-button nav-item" data-page="history">
-                        <i class="fas fa-history"></i>
-                        <span>History</span>
-                    </button>
-                    <button class="text-button nav-item" data-page="settings">
-                        <i class="fas fa-cog"></i>
-                        <span>Settings</span>
-                    </button>
-                </nav>
-            </div>
-        </header>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-brand">
+            <i class="fas fa-gamepad"></i>
+            <span class="nav-title">RPG Therapy</span>
+        </div>
+        
+        <div class="nav-menu">
+            <button class="nav-link active" data-page="dashboard">
+                <i class="fas fa-home"></i>
+                <span class="nav-text">Dashboard</span>
+            </button>
+            <button class="nav-link" data-page="protocols">
+                <i class="fas fa-list"></i>
+                <span class="nav-text">Protocols</span>
+            </button>
+            <button class="nav-link" data-page="skills">
+                <i class="fas fa-chart-line"></i>
+                <span class="nav-text">Skills</span>
+            </button>
+            <button class="nav-link" data-page="history">
+                <i class="fas fa-clock"></i>
+                <span class="nav-text">History</span>
+            </button>
+        </div>
+    </nav>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <div class="content-wrapper">
-                <!-- Dashboard Page -->
-                <div id="page-dashboard" class="page-content active">
-                    <div class="page
+    <!-- Main Container -->
+    <main class="container">
+        
+        <!-- Dashboard Page -->
+        <section id="dashboard" class="page active">
+            <h1 class="page-title">Character Stats</h1>
+            
+            <!-- States Grid -->
+            <div class="states-grid">
+                <!-- States will be generated by JS -->
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="section">
+                <h2 class="section-title">Quick Actions</h2>
+                <div class="quick-protocols">
+                    <!-- Quick protocol buttons will be generated by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Protocols Page -->
+        <section id="protocols" class="page">
+            <h1 class="page-title">Daily Protocols</h1>
+            
+            <div class="protocols-list">
+                <!-- Protocols will be generated by JS -->
+            </div>
+        </section>
+
+        <!-- Skills Page -->
+        <section id="skills" class="page">
+            <h1 class="page-title">Skill Progress</h1>
+            
+            <div class="skills-table">
+                <div class="table-header">
+                    <div class="cell">Skill</div>
+                    <div class="cell">Initial</div>
+                    <div class="cell">Current</div>
+                    <div class="cell">Progress</div>
+                    <div class="cell">Last Update</div>
+                </div>
+                <div class="table-body">
+                    <!-- Skills will be generated by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- History Page -->
+        <section id="history" class="page">
+            <h1 class="page-title">Check-in History</h1>
+            
+            <div class="history-controls">
+                <button class="btn btn-danger" id="clear-history">
+                    <i class="fas fa-trash"></i>
+                    Clear All History
+                </button>
+            </div>
+            
+            <div class="history-list">
+                <!-- History items will be generated by JS -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="js/data.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
