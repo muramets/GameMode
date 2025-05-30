@@ -2,10 +2,21 @@
 
 const App = {
   currentPage: 'dashboard',
+  protocolsPage: 1,
+  protocolsPerPage: 30,
+  filteredProtocols: [],
+  skillsPage: 1,
+  skillsPerPage: 30,
+  filteredSkills: [],
+  filteredHistory: [],
+  states: [],
 
   init() {
     // Initialize storage
     Storage.init();
+    
+    // Initialize data
+    this.states = Storage.getStatesInOrder();
     
     // Setup navigation
     this.setupNavigation();
@@ -13,14 +24,20 @@ const App = {
     // Setup event listeners
     this.setupEventListeners();
     
+    // Initialize modals
+    Modals.init();
+    
     // Render initial page
     this.renderPage('dashboard');
+    
+    // Setup navigation indicator
+    this.updateNavIndicator();
   },
 
   setupNavigation() {
-    const navLinks = document.querySelectorAll('.nav-link');
-    navLinks.forEach(link => {
-      link.addEventListener('click', (e) => {
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+      item.addEventListener('click', (e) => {
         const page = e.currentTarget.dataset.page;
         this.navigateTo(page);
       });
@@ -34,17 +51,158 @@ const App = {
       clearBtn.addEventListener('click', () => {
         if (confirm('Are you sure you want to clear all history? This cannot be undone.')) {
           Storage.clearAllCheckins();
+          this.filteredHistory = [];
+          
+          // Clear search input
+          const historySearchInput = document.getElementById('history-search');
+          if (historySearchInput) {
+            historySearchInput.value = '';
+          }
+          
           this.showToast('History cleared', 'success');
           this.renderPage('history');
         }
       });
     }
+
+    // Protocol search
+    const searchInput = document.getElementById('protocol-search');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        this.filterProtocols(e.target.value);
+      });
+    }
+
+    // Skill search
+    const skillSearchInput = document.getElementById('skill-search');
+    if (skillSearchInput) {
+      skillSearchInput.addEventListener('input', (e) => {
+        this.filterSkills(e.target.value);
+      });
+    }
+
+    // History search
+    const historySearchInput = document.getElementById('history-search');
+    if (historySearchInput) {
+      historySearchInput.addEventListener('input', (e) => {
+        this.filterHistory(e.target.value);
+      });
+    }
+
+    // Pagination buttons
+    const prevBtn = document.getElementById('prev-page');
+    const nextBtn = document.getElementById('next-page');
+    
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        if (this.protocolsPage > 1) {
+          this.protocolsPage--;
+          UI.renderProtocols();
+          this.updatePagination();
+        }
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        const totalPages = Math.ceil(this.filteredProtocols.length / this.protocolsPerPage);
+        if (this.protocolsPage < totalPages) {
+          this.protocolsPage++;
+          UI.renderProtocols();
+          this.updatePagination();
+        }
+      });
+    }
+
+    // Skills pagination buttons
+    const skillsPrevBtn = document.getElementById('skills-prev-page');
+    const skillsNextBtn = document.getElementById('skills-next-page');
+    
+    if (skillsPrevBtn) {
+      skillsPrevBtn.addEventListener('click', () => {
+        if (this.skillsPage > 1) {
+          this.skillsPage--;
+          UI.renderSkills();
+          this.updateSkillsPagination();
+        }
+      });
+    }
+
+    if (skillsNextBtn) {
+      skillsNextBtn.addEventListener('click', () => {
+        const totalPages = Math.ceil(this.filteredSkills.length / this.skillsPerPage);
+        if (this.skillsPage < totalPages) {
+          this.skillsPage++;
+          UI.renderSkills();
+          this.updateSkillsPagination();
+        }
+      });
+    }
+
+    // Setup tooltip positioning
+    this.setupTooltips();
+
+    // Settings dropdown
+    this.setupSettingsDropdown();
+  },
+
+  setupTooltips() {
+    let tooltipTimeout = null;
+    let currentTooltipElement = null;
+
+    // Clear any existing tooltip
+    const clearCurrentTooltip = () => {
+      if (tooltipTimeout) {
+        clearTimeout(tooltipTimeout);
+        tooltipTimeout = null;
+      }
+      if (currentTooltipElement) {
+        currentTooltipElement.classList.remove('show-tooltip');
+        currentTooltipElement = null;
+      }
+    };
+
+    // Add tooltip handlers to protocol and skill name cells
+    this.setupTooltipRowHandlers(clearCurrentTooltip, (element) => {
+      currentTooltipElement = element;
+      tooltipTimeout = setTimeout(() => {
+        if (currentTooltipElement === element) {
+          element.classList.add('show-tooltip');
+        }
+      }, 1000);
+    });
+  },
+
+  setupTooltipRowHandlers(clearTooltip, startTooltip) {
+    // Handle protocol name cells
+    document.querySelectorAll('.protocol-name-cell[data-hover]').forEach(cell => {
+      cell.addEventListener('mouseenter', () => {
+        clearTooltip();
+        startTooltip(cell);
+      });
+      
+      cell.addEventListener('mouseleave', () => {
+        clearTooltip();
+      });
+    });
+
+    // Handle skill name cells
+    document.querySelectorAll('.skill-name-cell[data-hover]').forEach(cell => {
+      cell.addEventListener('mouseenter', () => {
+        clearTooltip();
+        startTooltip(cell);
+      });
+      
+      cell.addEventListener('mouseleave', () => {
+        clearTooltip();
+      });
+    });
   },
 
   navigateTo(page) {
     // Update nav
-    document.querySelectorAll('.nav-link').forEach(link => {
-      link.classList.toggle('active', link.dataset.page === page);
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.classList.toggle('active', item.dataset.page === page);
     });
     
     // Update pages
@@ -54,194 +212,43 @@ const App = {
     
     this.currentPage = page;
     this.renderPage(page);
+    this.updateNavIndicator();
+  },
+
+  updateNavIndicator() {
+    const activeItem = document.querySelector('.nav-item.active');
+    const indicator = document.querySelector('.nav-indicator');
+    
+    if (activeItem && indicator) {
+      const rect = activeItem.getBoundingClientRect();
+      const containerRect = activeItem.parentElement.getBoundingClientRect();
+      
+      indicator.style.left = (rect.left - containerRect.left) + 'px';
+      indicator.style.width = rect.width + 'px';
+    }
   },
 
   renderPage(page) {
     switch(page) {
       case 'dashboard':
-        this.renderDashboard();
+        UI.renderDashboard();
         break;
       case 'protocols':
-        this.renderProtocols();
+        UI.renderProtocols();
+        this.setupTooltips();
         break;
       case 'skills':
-        this.renderSkills();
+        UI.renderSkills();
+        this.setupTooltips();
         break;
       case 'history':
-        this.renderHistory();
+        // Initialize filtered history if not already set
+        if (this.filteredHistory.length === 0) {
+          this.filteredHistory = Storage.getCheckins().reverse();
+        }
+        UI.renderHistory();
         break;
     }
-  },
-
-  // Get skill level color class
-  getScoreClass(score) {
-    if (score < 2) return 'score-1';
-    if (score < 4) return 'score-2';
-    if (score < 6) return 'score-3';
-    if (score < 8) return 'score-4';
-    return 'score-5';
-  },
-  
-  // Get skill level color
-  getSkillColor(score) {
-    if (score < 2) return '#ca4754';
-    if (score < 4) return '#e6934a';
-    if (score < 6) return '#e2b714';
-    if (score < 8) return '#98c379';
-    return '#7fb3d3';
-  },
-
-  // Dashboard
-  renderDashboard() {
-    // Render states
-    const statesGrid = document.querySelector('.states-grid');
-    const states = Storage.getStates();
-    
-    statesGrid.innerHTML = states.map(state => {
-      const score = Storage.calculateStateScore(state.id);
-      const scoreClass = this.getScoreClass(score);
-      const color = this.getSkillColor(score);
-      const percent = Math.min(100, (score / 10) * 100);
-      
-      return `
-        <div class="state-card">
-          <div class="state-header">
-            <span class="state-icon">${state.icon}</span>
-            <span class="state-name">${state.name.split('.')[0]}</span>
-          </div>
-          <div class="state-hover">${state.hover}</div>
-          <div class="state-score ${scoreClass}">${score.toFixed(2)}</div>
-          <div class="state-bar">
-            <div class="state-bar-fill" style="width: ${percent}%; background-color: ${color}"></div>
-          </div>
-          <div class="state-details">
-            <span>Skills: ${state.skillIds.length}</span>
-            <span>${percent.toFixed(0)}%</span>
-          </div>
-        </div>
-      `;
-    }).join('');
-    
-    // Render quick protocols (top 5 most used)
-    const quickProtocols = document.querySelector('.quick-protocols');
-    const protocols = Storage.getProtocols().slice(0, 5);
-    
-    quickProtocols.innerHTML = protocols.map(protocol => {
-      return `
-        <button class="quick-protocol" onclick="App.quickCheckin(${protocol.id})">
-          <span class="quick-protocol-icon">${protocol.icon}</span>
-          <div class="quick-protocol-info">
-            <span class="quick-protocol-name">${protocol.name.split('.')[0]}</span>
-            <span class="quick-protocol-details">${protocol.action}${protocol.weight}</span>
-          </div>
-        </button>
-      `;
-    }).join('');
-  },
-
-  // Protocols
-  renderProtocols() {
-    const protocolsList = document.querySelector('.protocols-list');
-    const protocols = Storage.getProtocols();
-    const skills = Storage.getSkills();
-    
-    protocolsList.innerHTML = protocols.map(protocol => {
-      const targetNames = protocol.targets.map(targetId => {
-        const skill = skills.find(s => s.id === targetId);
-        return skill ? `${skill.icon} ${skill.name.split('.')[0]}` : targetId;
-      });
-      
-      return `
-        <div class="protocol-item">
-          <span class="protocol-icon">${protocol.icon}</span>
-          <div class="protocol-info">
-            <div class="protocol-name">${protocol.name}</div>
-            ${protocol.hover ? `<div class="protocol-hover">${protocol.hover}</div>` : ''}
-            <div class="protocol-targets">
-              ${targetNames.map(name => `<span class="protocol-target">${name}</span>`).join('')}
-            </div>
-          </div>
-          <div class="protocol-action">
-            <button class="btn-checkin" onclick="App.checkin(${protocol.id})">
-              <i class="fas fa-check"></i>
-              Check In
-            </button>
-          </div>
-        </div>
-      `;
-    }).join('');
-  },
-
-  // Skills
-  renderSkills() {
-    const tableBody = document.querySelector('.skills-table .table-body');
-    const skills = Storage.getSkills();
-    
-    tableBody.innerHTML = skills.map(skill => {
-      const current = Storage.calculateCurrentScore(skill.id);
-      const scoreClass = this.getScoreClass(current);
-      const color = this.getSkillColor(current);
-      const percent = Math.min(100, (current / 10) * 100);
-      const lastUpdate = Storage.getSkillLastUpdate(skill.id);
-      const dateStr = lastUpdate ? new Date(lastUpdate).toLocaleDateString() : 'Never';
-      
-      return `
-        <div class="skill-row">
-          <div class="skill-name">
-            <span>${skill.icon}</span>
-            <span>${skill.name}</span>
-          </div>
-          <div class="skill-score">${skill.initialScore.toFixed(2)}</div>
-          <div class="skill-score ${scoreClass}">${current.toFixed(2)}</div>
-          <div class="skill-progress">
-            <div class="progress-bar">
-              <div class="progress-fill" style="width: ${percent}%; background-color: ${color}"></div>
-            </div>
-            <span style="color: var(--sub-color)">${percent.toFixed(0)}%</span>
-          </div>
-          <div class="skill-date">${dateStr}</div>
-        </div>
-      `;
-    }).join('');
-  },
-
-  // History
-  renderHistory() {
-    const historyList = document.querySelector('.history-list');
-    const checkins = Storage.getCheckins().reverse();
-    const skills = Storage.getSkills();
-    
-    if (checkins.length === 0) {
-      historyList.innerHTML = '<div class="text-dim" style="text-align: center; padding: 2rem;">No check-ins yet. Start with a protocol!</div>';
-      return;
-    }
-    
-    historyList.innerHTML = checkins.map(checkin => {
-      const date = new Date(checkin.timestamp);
-      const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-      
-      const changes = Object.entries(checkin.changes).map(([skillId, change]) => {
-        const skill = skills.find(s => s.id === skillId);
-        if (!skill) return '';
-        
-        const sign = change > 0 ? '+' : '';
-        const className = change > 0 ? 'change-positive' : 'change-negative';
-        return `<span class="${className}">${skill.icon} ${sign}${change.toFixed(2)}</span>`;
-      }).join('');
-      
-      return `
-        <div class="history-item">
-          <div class="history-info">
-            <div class="history-date">${dateStr}</div>
-            <div class="history-protocol">${checkin.protocolIcon} ${checkin.protocolName}</div>
-            <div class="history-changes">${changes}</div>
-          </div>
-          <button class="btn btn-danger" onclick="App.deleteCheckin(${checkin.id})">
-            <i class="fas fa-trash"></i>
-          </button>
-        </div>
-      `;
-    }).join('');
   },
 
   // Actions
@@ -250,6 +257,10 @@ const App = {
     if (checkin) {
       this.showToast('Check-in successful!', 'success');
       this.renderPage(this.currentPage);
+      // Update user stats if on dashboard
+      if (this.currentPage === 'dashboard') {
+        UI.updateUserStats();
+      }
     }
   },
 
@@ -259,9 +270,38 @@ const App = {
 
   deleteCheckin(checkinId) {
     if (confirm('Delete this check-in?')) {
+      const checkins = Storage.getCheckins();
+      const checkin = checkins.find(c => c.id === checkinId);
+      
       Storage.deleteCheckin(checkinId);
-      this.showToast('Check-in deleted', 'success');
-      this.renderHistory();
+      
+      // If it was a drag & drop operation, refresh the affected page
+      if (checkin && checkin.type === 'drag_drop') {
+        if (checkin.subType === 'protocol') {
+          this.filteredProtocols = Storage.getProtocolsInOrder();
+          if (this.currentPage === 'protocols') {
+            UI.renderProtocols();
+          }
+          this.showToast('Protocol order reverted', 'success');
+        } else if (checkin.subType === 'skill') {
+          this.filteredSkills = Storage.getSkillsInOrder();
+          if (this.currentPage === 'skills') {
+            UI.renderSkills();
+          }
+          this.showToast('Skill order reverted', 'success');
+        }
+      } else {
+        this.showToast('Check-in deleted', 'success');
+      }
+      
+      // Reset history filter to show all items
+      this.filteredHistory = [];
+      UI.renderHistory();
+      
+      // Update user stats if on dashboard
+      if (this.currentPage === 'dashboard') {
+        UI.updateUserStats();
+      }
     }
   },
 
@@ -277,9 +317,216 @@ const App = {
     container.appendChild(toast);
     
     setTimeout(() => {
-      toast.style.opacity = '0';
+      toast.classList.add('toast-fade-out');
       setTimeout(() => toast.remove(), 300);
     }, 3000);
+  },
+
+  filterProtocols(query) {
+    const allProtocols = Storage.getProtocolsInOrder();
+    const skills = Storage.getSkills();
+    
+    if (!query.trim()) {
+      this.filteredProtocols = allProtocols;
+    } else {
+      const searchTerm = query.toLowerCase();
+      this.filteredProtocols = allProtocols.filter(protocol => {
+        // Search in protocol name
+        if (protocol.name.toLowerCase().includes(searchTerm)) {
+          return true;
+        }
+        
+        // Search in target skills
+        const targetNames = protocol.targets.map(targetId => {
+          const skill = skills.find(s => s.id === targetId);
+          return skill ? skill.name.toLowerCase() : targetId;
+        });
+        
+        return targetNames.some(name => name.includes(searchTerm));
+      });
+    }
+    
+    // Reset to first page when filtering
+    this.protocolsPage = 1;
+    UI.renderProtocols();
+    this.setupTooltips();
+  },
+
+  updatePagination() {
+    const totalProtocols = this.filteredProtocols.length;
+    const totalPages = Math.ceil(totalProtocols / this.protocolsPerPage);
+    
+    const currentPageSpan = document.getElementById('current-page');
+    const totalPagesSpan = document.getElementById('total-pages');
+    const prevBtn = document.getElementById('prev-page');
+    const nextBtn = document.getElementById('next-page');
+    
+    if (currentPageSpan) currentPageSpan.textContent = this.protocolsPage;
+    if (totalPagesSpan) totalPagesSpan.textContent = totalPages;
+    
+    if (prevBtn) {
+      prevBtn.disabled = this.protocolsPage <= 1;
+    }
+    
+    if (nextBtn) {
+      nextBtn.disabled = this.protocolsPage >= totalPages;
+    }
+  },
+
+  updateSkillsPagination() {
+    const totalSkills = this.filteredSkills.length;
+    const totalPages = Math.ceil(totalSkills / this.skillsPerPage);
+    
+    const currentPageSpan = document.getElementById('skills-current-page');
+    const totalPagesSpan = document.getElementById('skills-total-pages');
+    const skillsPrevBtn = document.getElementById('skills-prev-page');
+    const skillsNextBtn = document.getElementById('skills-next-page');
+    
+    if (currentPageSpan) currentPageSpan.textContent = this.skillsPage;
+    if (totalPagesSpan) totalPagesSpan.textContent = totalPages;
+    
+    if (skillsPrevBtn) {
+      skillsPrevBtn.disabled = this.skillsPage <= 1;
+    }
+    
+    if (skillsNextBtn) {
+      skillsNextBtn.disabled = this.skillsPage >= totalPages;
+    }
+  },
+
+  filterSkills(query) {
+    const allSkills = Storage.getSkillsInOrder();
+    
+    if (!query.trim()) {
+      this.filteredSkills = allSkills;
+    } else {
+      const searchTerm = query.toLowerCase();
+      this.filteredSkills = allSkills.filter(skill => {
+        // Search in skill name
+        if (skill.name.toLowerCase().includes(searchTerm)) {
+          return true;
+        }
+        
+        // Search in skill description
+        const description = skill.hover ? skill.hover.toLowerCase() : '';
+        return description.includes(searchTerm);
+      });
+    }
+    
+    // Reset to first page when filtering
+    this.skillsPage = 1;
+    UI.renderSkills();
+    this.setupTooltips();
+  },
+
+  filterHistory(query) {
+    const allHistory = Storage.getCheckins().reverse();
+    const skills = Storage.getSkills();
+    
+    if (!query.trim()) {
+      this.filteredHistory = allHistory;
+    } else {
+      const searchTerm = query.toLowerCase();
+      this.filteredHistory = allHistory.filter(checkin => {
+        // Search in protocol name
+        if (checkin.protocolName && checkin.protocolName.toLowerCase().includes(searchTerm)) {
+          return true;
+        }
+        
+        // Search in item name (for drag & drop operations)
+        if (checkin.itemName && checkin.itemName.toLowerCase().includes(searchTerm)) {
+          return true;
+        }
+        
+        // Search in operation type
+        if (checkin.type === 'drag_drop') {
+          const actionText = checkin.subType === 'protocol' ? 'reordered protocol' : 'reordered skill';
+          if (actionText.includes(searchTerm)) {
+            return true;
+          }
+        }
+        
+        // Search in quick action operations
+        if (checkin.type === 'quick_action') {
+          const actionText = checkin.subType === 'added' ? 'added to quick actions' : 'removed from quick actions';
+          if (actionText.includes(searchTerm)) {
+            return true;
+          }
+        }
+        
+        // Search in affected skill names
+        if (checkin.changes) {
+          const affectedSkills = Object.keys(checkin.changes).map(skillId => {
+            const skill = skills.find(s => s.id == skillId);
+            return skill ? skill.name.toLowerCase() : '';
+          });
+          
+          if (affectedSkills.some(skillName => skillName.includes(searchTerm))) {
+            return true;
+          }
+        }
+        
+        return false;
+      });
+    }
+    
+    UI.renderHistory();
+  },
+
+  // Setup settings dropdown
+  setupSettingsDropdown() {
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsMenu = document.getElementById('settings-menu');
+    const migrateBtn = document.getElementById('migrate-ids-btn');
+    
+    if (settingsBtn && settingsMenu) {
+      // Toggle dropdown on button click
+      settingsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        settingsMenu.classList.toggle('active');
+      });
+      
+      // Close dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!settingsBtn.contains(e.target) && !settingsMenu.contains(e.target)) {
+          settingsMenu.classList.remove('active');
+        }
+      });
+      
+      // Migrate IDs button
+      if (migrateBtn) {
+        migrateBtn.addEventListener('click', () => {
+          settingsMenu.classList.remove('active');
+          this.migrateSkillIds();
+        });
+      }
+    }
+  },
+
+  // Migrate skill IDs to numeric format
+  migrateSkillIds() {
+    if (!confirm('This will migrate all skill IDs to numeric format (1, 2, 3...). This is irreversible. Continue?')) {
+      return;
+    }
+    
+    try {
+      const result = Storage.migrateSkillIds();
+      
+      // Clear filtered data to force refresh
+      this.filteredSkills = [];
+      this.filteredProtocols = [];
+      
+      // Refresh current page
+      this.renderPage(this.currentPage);
+      
+      // Show success message
+      this.showToast(`Successfully migrated ${result.skillsUpdated} skills, updated ${result.protocolsUpdated} protocols and ${result.checkinsUpdated} check-ins`, 'success');
+      
+      console.log('Migration result:', result);
+    } catch (error) {
+      console.error('Migration failed:', error);
+      this.showToast('Migration failed: ' + error.message, 'error');
+    }
   }
 };
 
@@ -287,3 +534,9 @@ const App = {
 document.addEventListener('DOMContentLoaded', () => {
   App.init();
 });
+// Handle window resize for nav indicator
+window.addEventListener('resize', () => {
+  App.updateNavIndicator();
+});
+
+
