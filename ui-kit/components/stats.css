@@ -1,0 +1,504 @@
+/* 🎨 GameMode UI Kit - Stats & Analytics Components
+ * Based on Monkeytype's user statistics design
+ * Features: Charts, calendars, tables, progress indicators
+ */
+
+/* === STATS CONTAINER === */
+.stats-container {
+  display: grid;
+  gap: 2rem;
+  padding: 2rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+/* === STATS CARD === */
+.stats-card {
+  background: var(--sub-alt-color);
+  border-radius: var(--roundness);
+  padding: 1.5rem;
+  border: 1px solid var(--sub-color);
+  transition: var(--transition-standard);
+}
+
+.stats-card:hover {
+  border-color: var(--main-color);
+  transform: translateY(-2px);
+}
+
+.stats-card .header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--sub-color);
+}
+
+.stats-card .title {
+  color: var(--text-color);
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.stats-card .subtitle {
+  color: var(--sub-color);
+  font-size: 0.875rem;
+  margin: 0.25rem 0 0 0;
+}
+
+.stats-card .icon {
+  color: var(--main-color);
+  font-size: 1.5rem;
+}
+
+/* === METRIC DISPLAY === */
+.metric {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--sub-color);
+}
+
+.metric:last-child {
+  border-bottom: none;
+}
+
+.metric .label {
+  color: var(--sub-color);
+  font-size: 0.875rem;
+}
+
+.metric .value {
+  color: var(--text-color);
+  font-weight: 600;
+  font-size: 1.125rem;
+  font-family: var(--font);
+}
+
+.metric .change {
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+}
+
+.metric .change.positive {
+  color: var(--main-color);
+}
+
+.metric .change.negative {
+  color: var(--error-color);
+}
+
+/* === PROGRESS INDICATORS === */
+.progress-bar {
+  width: 100%;
+  height: 0.5rem;
+  background: var(--sub-color);
+  border-radius: var(--roundness);
+  overflow: hidden;
+  margin: 0.5rem 0;
+}
+
+.progress-bar .fill {
+  height: 100%;
+  background: var(--main-color);
+  border-radius: var(--roundness);
+  transition: width 0.5s ease;
+}
+
+.progress-ring {
+  position: relative;
+  width: 4rem;
+  height: 4rem;
+}
+
+.progress-ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.progress-ring .bg {
+  fill: none;
+  stroke: var(--sub-color);
+  stroke-width: 3;
+}
+
+.progress-ring .fill {
+  fill: none;
+  stroke: var(--main-color);
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.5s ease;
+}
+
+.progress-ring .text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--text-color);
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+/* === CHART CONTAINERS === */
+.chart-container {
+  position: relative;
+  height: 300px;
+  margin: 1rem 0;
+}
+
+.chart-placeholder {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-color);
+  border-radius: var(--roundness);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--sub-color);
+  font-size: 0.875rem;
+  border: 2px dashed var(--sub-color);
+}
+
+/* WPM Chart specific */
+.wpm-chart {
+  background: linear-gradient(
+    45deg,
+    var(--bg-color) 0%,
+    var(--sub-alt-color) 100%
+  );
+}
+
+.wpm-line {
+  stroke: var(--main-color);
+  stroke-width: 2;
+  fill: none;
+}
+
+.wpm-area {
+  fill: var(--main-color);
+  opacity: 0.1;
+}
+
+.wpm-dots {
+  fill: var(--main-color);
+  r: 3;
+}
+
+/* === CALENDAR COMPONENT === */
+.calendar-container {
+  background: var(--sub-alt-color);
+  border-radius: var(--roundness);
+  padding: 1.5rem;
+  border: 1px solid var(--sub-color);
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.calendar-title {
+  color: var(--text-color);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.calendar-nav {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.calendar-nav button {
+  background: none;
+  border: none;
+  color: var(--sub-color);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--roundness);
+  transition: var(--transition-standard);
+}
+
+.calendar-nav button:hover {
+  color: var(--text-color);
+  background: var(--sub-color);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: var(--transition-standard);
+  position: relative;
+}
+
+.calendar-day.header {
+  color: var(--sub-color);
+  font-weight: 600;
+  cursor: default;
+}
+
+.calendar-day.empty {
+  color: var(--sub-color);
+  opacity: 0.3;
+}
+
+.calendar-day.today {
+  background: var(--main-color);
+  color: var(--bg-color);
+  font-weight: 600;
+}
+
+.calendar-day.has-activity {
+  background: var(--main-color);
+  color: var(--bg-color);
+  opacity: 0.7;
+}
+
+.calendar-day.high-activity {
+  opacity: 1;
+}
+
+.calendar-day:hover:not(.header):not(.empty) {
+  background: var(--text-color);
+  color: var(--bg-color);
+}
+
+/* Activity level indicators */
+.calendar-day::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  opacity: 0;
+}
+
+.calendar-day.activity-low::after {
+  background: var(--main-color);
+  opacity: 0.3;
+}
+
+.calendar-day.activity-medium::after {
+  background: var(--main-color);
+  opacity: 0.6;
+}
+
+.calendar-day.activity-high::after {
+  background: var(--main-color);
+  opacity: 1;
+}
+
+/* === LEADERBOARD TABLE === */
+.leaderboard {
+  background: var(--sub-alt-color);
+  border-radius: var(--roundness);
+  overflow: hidden;
+  border: 1px solid var(--sub-color);
+}
+
+.leaderboard-header {
+  background: var(--bg-color);
+  padding: 1rem;
+  border-bottom: 1px solid var(--sub-color);
+}
+
+.leaderboard-header h3 {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 1.125rem;
+}
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--sub-color);
+}
+
+.leaderboard-table th {
+  background: var(--bg-color);
+  color: var(--sub-color);
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.leaderboard-table tr:hover {
+  background: var(--bg-color);
+}
+
+.leaderboard-table .rank {
+  font-weight: 600;
+  color: var(--main-color);
+  width: 3rem;
+}
+
+.leaderboard-table .user {
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.leaderboard-table .score {
+  font-family: var(--font);
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.leaderboard-table .change {
+  font-size: 0.75rem;
+}
+
+.leaderboard-table .change.up {
+  color: var(--main-color);
+}
+
+.leaderboard-table .change.down {
+  color: var(--error-color);
+}
+
+/* Top 3 special styling */
+.leaderboard-table tr:nth-child(1) .rank {
+  color: #ffd700; /* Gold */
+}
+
+.leaderboard-table tr:nth-child(2) .rank {
+  color: #c0c0c0; /* Silver */
+}
+
+.leaderboard-table tr:nth-child(3) .rank {
+  color: #cd7f32; /* Bronze */
+}
+
+/* === ACTIVITY HEATMAP === */
+.activity-heatmap {
+  display: grid;
+  grid-template-columns: repeat(53, 1fr);
+  gap: 0.125rem;
+  margin: 1rem 0;
+}
+
+.activity-day {
+  aspect-ratio: 1;
+  background: var(--sub-color);
+  border-radius: 0.125rem;
+  opacity: 0.3;
+  transition: var(--transition-standard);
+}
+
+.activity-day:hover {
+  opacity: 1;
+  transform: scale(1.2);
+}
+
+.activity-day.level-1 {
+  background: var(--main-color);
+  opacity: 0.3;
+}
+
+.activity-day.level-2 {
+  background: var(--main-color);
+  opacity: 0.5;
+}
+
+.activity-day.level-3 {
+  background: var(--main-color);
+  opacity: 0.7;
+}
+
+.activity-day.level-4 {
+  background: var(--main-color);
+  opacity: 1;
+}
+
+/* === RESPONSIVE DESIGN === */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-container {
+    padding: 1rem;
+    gap: 1rem;
+  }
+  
+  .stats-card {
+    padding: 1rem;
+  }
+  
+  .chart-container {
+    height: 200px;
+  }
+  
+  .calendar-grid {
+    gap: 0.125rem;
+  }
+  
+  .calendar-day {
+    font-size: 0.75rem;
+  }
+  
+  .leaderboard-table th,
+  .leaderboard-table td {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .activity-heatmap {
+    grid-template-columns: repeat(26, 1fr);
+  }
+}
+
+/* === ANIMATIONS === */
+@keyframes statsPulse {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+
+.stats-loading {
+  animation: statsPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes chartGrow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+.chart-bar {
+  animation: chartGrow 0.5s ease-out;
+  transform-origin: bottom;
+} 

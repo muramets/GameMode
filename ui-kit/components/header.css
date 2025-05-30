@@ -1,0 +1,343 @@
+/* 🎨 GameMode UI Kit - Header & Navigation Components
+ * Based on Monkeytype's header and navigation system
+ * Features: Logo, nav menu, config buttons, user profile
+ */
+
+/* === HEADER CONTAINER === */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background: var(--sub-alt-color);
+  border-bottom: 1px solid var(--sub-color);
+  min-height: 4rem;
+  position: relative;
+  z-index: 100;
+}
+
+/* === LOGO SECTION === */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--main-color);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1.5rem;
+  transition: var(--transition-standard);
+}
+
+.logo:hover {
+  color: var(--text-color);
+}
+
+.logo .icon {
+  font-size: 2rem;
+}
+
+.logo .text {
+  font-family: var(--font);
+}
+
+/* Focus state */
+.header.focus .logo {
+  opacity: 0.3;
+  transition: opacity 0.3s;
+}
+
+/* === NAVIGATION MENU === */
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav .textButton,
+.nav button.text {
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--roundness);
+  transition: var(--transition-standard);
+}
+
+.nav .textButton:hover,
+.nav button.text:hover {
+  color: var(--text-color);
+  background: var(--sub-color);
+}
+
+.nav .textButton.active {
+  color: var(--main-color);
+  background: var(--sub-color);
+}
+
+/* === CONFIG SECTION === */
+.config {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.config .group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.config .group .label {
+  color: var(--sub-color);
+  font-size: 0.875rem;
+  margin-right: 0.5rem;
+}
+
+.config .buttons {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.config .buttons .textButton {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  border-radius: calc(var(--roundness) / 2);
+}
+
+/* === USER PROFILE SECTION === */
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: var(--main-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bg-color);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-standard);
+}
+
+.user-avatar:hover {
+  background: var(--text-color);
+}
+
+.user-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.user-stats .name {
+  color: var(--text-color);
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.user-stats .level {
+  color: var(--sub-color);
+  font-size: 0.75rem;
+}
+
+/* === MOBILE NAVIGATION === */
+.mobile-nav-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+.mobile-nav {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--sub-alt-color);
+  border-top: 1px solid var(--sub-color);
+  padding: 1rem;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mobile-nav.active {
+  display: flex;
+}
+
+/* === FOCUS MODE === */
+.header.focus {
+  opacity: 0.1;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.header.focus:hover {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* === COMMAND LINE INTEGRATION === */
+.commandline-trigger {
+  position: relative;
+}
+
+.commandline-hint {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--bg-color);
+  color: var(--text-color);
+  padding: 0.5rem;
+  border-radius: var(--roundness);
+  font-size: 0.75rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  margin-top: 0.5rem;
+  white-space: nowrap;
+}
+
+.commandline-trigger:hover .commandline-hint {
+  opacity: 1;
+}
+
+/* === RESPONSIVE DESIGN === */
+@media (max-width: 768px) {
+  .header {
+    padding: 1rem;
+  }
+  
+  .nav {
+    display: none;
+  }
+  
+  .mobile-nav-toggle {
+    display: block;
+  }
+  
+  .config {
+    gap: 1rem;
+  }
+  
+  .config .group {
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: flex-start;
+  }
+  
+  .config .group .label {
+    margin: 0;
+  }
+  
+  .user-profile {
+    gap: 0.5rem;
+  }
+  
+  .user-stats {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 0.75rem;
+  }
+  
+  .logo .text {
+    display: none;
+  }
+  
+  .config {
+    display: none;
+  }
+}
+
+/* === BREADCRUMBS === */
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  background: var(--bg-color);
+  border-bottom: 1px solid var(--sub-color);
+  font-size: 0.875rem;
+}
+
+.breadcrumbs a {
+  color: var(--sub-color);
+  text-decoration: none;
+  transition: var(--transition-standard);
+}
+
+.breadcrumbs a:hover {
+  color: var(--text-color);
+}
+
+.breadcrumbs .separator {
+  color: var(--sub-color);
+}
+
+.breadcrumbs .current {
+  color: var(--main-color);
+  font-weight: 500;
+}
+
+/* === NOTIFICATIONS BADGE === */
+.notification-badge {
+  position: relative;
+}
+
+.notification-badge::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background: var(--error-color);
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.notification-badge.has-notifications::after {
+  opacity: 1;
+}
+
+/* === THEME SWITCHER IN HEADER === */
+.theme-switcher-header {
+  position: relative;
+}
+
+.theme-preview {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}
+
+/* === HEADER ANIMATIONS === */
+@keyframes headerSlideIn {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.header.animate-in {
+  animation: headerSlideIn 0.3s ease-out;
+} 
