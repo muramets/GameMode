@@ -1,0 +1,261 @@
+/* 🎨 GameMode UI Kit - Font System
+ * Based on Monkeytype's comprehensive font library
+ * Source: https://github.com/monkeytypegame/monkeytype/blob/master/frontend/src/styles/fonts.scss
+ */
+
+@use "sass:map";
+
+$fonts: (
+  // === MONOSPACE FONTS (Primary for coding/typing) ===
+  "Roboto Mono": (
+    "src": "RobotoMono-Regular",
+    "weight": 400,
+    "category": "monospace",
+    "primary": true
+  ),
+  "Source Code Pro": (
+    "src": "SourceCodePro-Regular",
+    "category": "monospace"
+  ),
+  "JetBrains Mono": (
+    "src": "JetBrainsMono-Regular",
+    "category": "monospace"
+  ),
+  "Fira Code": (
+    "src": "FiraCode-Regular",
+    "category": "monospace"
+  ),
+  "IBM Plex Mono": (
+    "src": "IBMPlexMono-Regular",
+    "category": "monospace"
+  ),
+  "Cascadia Mono": (
+    "src": "CascadiaMono-Regular",
+    "category": "monospace"
+  ),
+  "Ubuntu Mono": (
+    "src": "UbuntuMono-Regular",
+    "category": "monospace"
+  ),
+  "Inconsolata": (
+    "src": "Inconsolata-Regular",
+    "category": "monospace"
+  ),
+  "Hack": (
+    "src": "Hack-Regular",
+    "category": "monospace"
+  ),
+  "Overpass Mono": (
+    "src": "OverpassMono-Regular",
+    "category": "monospace"
+  ),
+  "CommitMono": (
+    "src": "CommitMono-Regular",
+    "category": "monospace"
+  ),
+  "Mononoki": (
+    "src": "Mononoki-Regular",
+    "category": "monospace"
+  ),
+  "Geist Mono": (
+    "src": "GeistMono-Medium",
+    "category": "monospace"
+  ),
+  
+  // === SANS-SERIF FONTS (UI/Interface) ===
+  "Montserrat": (
+    "src": "Montserrat-Regular",
+    "category": "sans-serif"
+  ),
+  "Roboto": (
+    "src": "Roboto-Regular",
+    "category": "sans-serif"
+  ),
+  "Ubuntu": (
+    "src": "Ubuntu-Regular",
+    "category": "sans-serif"
+  ),
+  "Lato": (
+    "src": "Lato-Regular",
+    "category": "sans-serif"
+  ),
+  "Oxygen": (
+    "src": "Oxygen-Regular",
+    "category": "sans-serif"
+  ),
+  "IBM Plex Sans": (
+    "src": "IBMPlexSans-SemiBold",
+    "weight": 600,
+    "category": "sans-serif"
+  ),
+  "Lexend Deca": (
+    "src": "LexendDeca-Regular",
+    "category": "sans-serif"
+  ),
+  "Nunito": (
+    "src": "Nunito-Bold",
+    "weight": 700,
+    "category": "sans-serif"
+  ),
+  "Geist": (
+    "src": "Geist-Medium",
+    "category": "sans-serif"
+  ),
+  
+  // === DISPLAY/CREATIVE FONTS ===
+  "Comfortaa": (
+    "src": "Comfortaa-Regular",
+    "category": "display"
+  ),
+  "Coming Soon": (
+    "src": "ComingSoon-Regular",
+    "category": "display"
+  ),
+  "Itim": (
+    "src": "Itim-Regular",
+    "category": "display"
+  ),
+  "Lalezar": (
+    "src": "Lalezar-Regular",
+    "category": "display"
+  ),
+  "Parkinsans": (
+    "src": "Parkinsans-Regular",
+    "category": "display"
+  ),
+  
+  // === INTERNATIONAL FONTS ===
+  "Titillium Web": (
+    "src": "TitilliumWeb-Regular",
+    "category": "international"
+  ),
+  "Noto Naskh Arabic": (
+    "src": "NotoNaskhArabic-Regular",
+    "category": "international"
+  ),
+  "Vazirmatn": (
+    "src": "Vazirmatn-Regular",
+    "category": "international"
+  ),
+  "Boon": (
+    "src": "Boon-Regular",
+    "category": "international"
+  ),
+  "Kanit": (
+    "src": "Kanit-Regular",
+    "category": "international"
+  ),
+  "Sarabun": (
+    "src": "Sarabun-Bold",
+    "category": "international"
+  ),
+  
+  // === ACCESSIBILITY FONTS ===
+  "Atkinson Hyperlegible": (
+    "src": "AtkinsonHyperlegible-Regular",
+    "category": "accessibility"
+  ),
+  "Open Dyslexic": (
+    "src": "OpenDyslexic-Regular",
+    "category": "accessibility"
+  )
+);
+
+// Default font properties
+$font-defaults: (
+  "style": normal,
+  "weight": 400,
+  "display": block,
+  "format": "woff2",
+  "ext": "woff2",
+  "category": "monospace"
+);
+
+// Generate @font-face declarations
+@each $font, $settings in $fonts {
+  $config: map-merge($font-defaults, $settings);
+  $src: "/webfonts/" + map-get($config, "src") + "." + map-get($config, "ext");
+  $previewDir: "webfonts-preview";
+  
+  @if variable-exists(previewFontsPath) {
+    $previewDir: $previewFontsPath;
+  }
+
+  // Main font face
+  @font-face {
+    font-family: $font;
+    font-style: map-get($config, "style");
+    font-weight: map-get($config, "weight");
+    font-display: map-get($config, "display");
+    src: url($src) format(map-get($config, "format"));
+  }
+
+  // Preview font face
+  @font-face {
+    font-family: $font + " Preview";
+    font-style: map-get($config, "style");
+    font-weight: map-get($config, "weight");
+    font-display: map-get($config, "display");
+    src: url("/" + $previewDir + "/" + map-get($config, "src") + ".woff2")
+      format("woff2");
+  }
+}
+
+/* === FONT STACKS === */
+
+// Primary monospace stack (for typing/code)
+.font-mono {
+  font-family: "Roboto Mono", "JetBrains Mono", "Fira Code", "Source Code Pro", monospace;
+}
+
+// UI font stack
+.font-ui {
+  font-family: "Roboto", "Ubuntu", "Montserrat", system-ui, sans-serif;
+}
+
+// Display font stack
+.font-display {
+  font-family: "Comfortaa", "Lalezar", "Itim", cursive;
+}
+
+// International font stack with fallbacks
+.font-international {
+  font-family: "Vazirmatn", "Noto Naskh Arabic", "Kanit", "Sarabun", sans-serif;
+}
+
+// Accessibility-focused font stack
+.font-accessible {
+  font-family: "Atkinson Hyperlegible", "Open Dyslexic", sans-serif;
+}
+
+/* === FONT UTILITIES === */
+
+// Typography scale
+.text-xs { font-size: 0.75rem; }
+.text-sm { font-size: 0.875rem; }
+.text-base { font-size: 1rem; }
+.text-lg { font-size: 1.125rem; }
+.text-xl { font-size: 1.25rem; }
+.text-2xl { font-size: 1.5rem; }
+.text-3xl { font-size: 1.875rem; }
+.text-4xl { font-size: 2.25rem; }
+
+// Font weights
+.font-light { font-weight: 300; }
+.font-normal { font-weight: 400; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+
+// Letter spacing
+.tracking-tight { letter-spacing: -0.025em; }
+.tracking-normal { letter-spacing: 0; }
+.tracking-wide { letter-spacing: 0.025em; }
+.tracking-wider { letter-spacing: 0.05em; }
+
+// Line height
+.leading-none { line-height: 1; }
+.leading-tight { line-height: 1.25; }
+.leading-normal { line-height: 1.5; }
+.leading-relaxed { line-height: 1.625; }
+.leading-loose { line-height: 2; } 

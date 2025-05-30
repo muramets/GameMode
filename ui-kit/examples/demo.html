@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎨 GameMode UI Kit - Demo</title>
+    
+    <!-- Import UI Kit styles -->
+    <link rel="stylesheet" href="../themes/base.css">
+    <link rel="stylesheet" href="../components/buttons.css">
+    
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts - Roboto Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Demo specific styles */
+        .demo-section {
+            margin: 2rem 0;
+            padding: 2rem;
+            background: var(--sub-alt-color);
+            border-radius: var(--roundness);
+        }
+        
+        .demo-section h2 {
+            color: var(--main-color);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        
+        .demo-section h3 {
+            color: var(--text-color);
+            margin: 1.5rem 0 0.5rem 0;
+            font-size: 1.25rem;
+        }
+        
+        .demo-grid {
+            display: grid;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .demo-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+            margin: 0.5rem 0;
+        }
+        
+        .theme-switcher {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+        }
+        
+        .color-preview {
+            display: inline-block;
+            width: 2rem;
+            height: 2rem;
+            border-radius: var(--roundness);
+            margin-right: 0.5rem;
+            vertical-align: middle;
+            border: 2px solid var(--sub-color);
+        }
+        
+        .font-demo {
+            font-size: 1.5rem;
+            margin: 0.5rem 0;
+            padding: 1rem;
+            background: var(--bg-color);
+            border-radius: var(--roundness);
+        }
+        
+        code {
+            background: var(--bg-color);
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-family: var(--font);
+            color: var(--main-color);
+        }
+    </style>
+</head>
+<body>
+    <!-- Theme Switcher -->
+    <div class="theme-switcher">
+        <select id="themeSelector" class="button">
+            <option value="base">Base Theme</option>
+            <option value="terminal">Terminal</option>
+            <option value="aurora">Aurora</option>
+        </select>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app" class="content-grid">
+        <main>
+            <!-- Header -->
+            <header style="text-align: center; margin-bottom: 2rem;">
+                <h1 style="color: var(--main-color); font-size: 3rem; margin: 0;">
+                    🎨 GameMode UI Kit
+                </h1>
+                <p style="color: var(--sub-color); font-size: 1.25rem; margin: 0.5rem 0;">
+                    Inspired by Monkeytype's minimalistic design philosophy
+                </p>
+            </header>
+
+            <!-- Color System Demo -->
+            <section class="demo-section">
+                <h2>🎨 Color System</h2>
+                <div class="demo-grid">
+                    <div class="demo-row">
+                        <span class="color-preview" style="background: var(--bg-color);"></span>
+                        <code>--bg-color</code> - Основной фон
+                    </div>
+                    <div class="demo-row">
+                        <span class="color-preview" style="background: var(--main-color);"></span>
+                        <code>--main-color</code> - Акцентный цвет
+                    </div>
+                    <div class="demo-row">
+                        <span class="color-preview" style="background: var(--text-color);"></span>
+                        <code>--text-color</code> - Основной текст
+                    </div>
+                    <div class="demo-row">
+                        <span class="color-preview" style="background: var(--sub-color);"></span>
+                        <code>--sub-color</code> - Вторичный цвет
+                    </div>
+                    <div class="demo-row">
+                        <span class="color-preview" style="background: var(--error-color);"></span>
+                        <code>--error-color</code> - Цвет ошибок
+                    </div>
+                </div>
+            </section>
+
+            <!-- Typography Demo -->
+            <section class="demo-section">
+                <h2>🔤 Typography</h2>
+                <div class="font-demo">
+                    <div style="font-family: var(--font);">
+                        Roboto Mono: The quick brown fox jumps over the lazy dog 0123456789
+                    </div>
+                </div>
+                <p>Основной шрифт: <code>--font: "Roboto Mono", "Vazirmatn", monospace;</code></p>
+            </section>
+
+            <!-- Button Components Demo -->
+            <section class="demo-section">
+                <h2>🔘 Button Components</h2>
+                
+                <h3>Standard Buttons</h3>
+                <div class="demo-row">
+                    <button class="button">Default</button>
+                    <button class="button active">Active</button>
+                    <button class="button danger">Danger</button>
+                    <button class="button" disabled>Disabled</button>
+                </div>
+
+                <h3>Text Buttons</h3>
+                <div class="demo-row">
+                    <button class="textButton">Default</button>
+                    <button class="textButton active">Active</button>
+                    <button class="textButton danger">Danger</button>
+                </div>
+
+                <h3>Button Sizes</h3>
+                <div class="demo-row">
+                    <button class="button small">Small</button>
+                    <button class="button">Regular</button>
+                    <button class="button large">Large</button>
+                </div>
+
+                <h3>Button Variants</h3>
+                <div class="demo-row">
+                    <button class="button circle"><i class="fas fa-heart"></i></button>
+                    <button class="button icon-only"><i class="fas fa-star"></i></button>
+                    <button class="button"><i class="fas fa-download"></i> Download</button>
+                </div>
+
+                <h3>Button Groups</h3>
+                <div class="button-group">
+                    <button class="button">Left</button>
+                    <button class="button active">Center</button>
+                    <button class="button">Right</button>
+                </div>
+
+                <h3>Connected Button Group</h3>
+                <div class="button-group connected">
+                    <button class="button">First</button>
+                    <button class="button active">Second</button>
+                    <button class="button">Third</button>
+                </div>
+            </section>
+
+            <!-- Layout System Demo -->
+            <section class="demo-section">
+                <h2>🏗️ Layout System</h2>
+                <p>Эта страница использует <code>.content-grid</code> систему для responsive дизайна.</p>
+                <div style="background: var(--main-color); color: var(--bg-color); padding: 1rem; border-radius: var(--roundness); margin: 1rem 0;">
+                    <strong>Content Area</strong> - Основной контент ограничен максимальной шириной
+                </div>
+                <div class="breakout" style="background: var(--sub-color); color: var(--text-color); padding: 1rem; border-radius: var(--roundness); margin: 1rem 0;">
+                    <strong>Breakout Area</strong> - Расширенная область для акцентов
+                </div>
+            </section>
+
+            <!-- Utility Classes Demo -->
+            <section class="demo-section">
+                <h2>🛠️ Utility Classes</h2>
+                
+                <h3>Key Styling</h3>
+                <p>Нажмите <key>Ctrl</key> + <key>C</key> для копирования</p>
+                
+                <h3>Selection Text</h3>
+                <p>Выделите этот текст, чтобы увидеть стиль селекции с цветами темы</p>
+                
+                <h3>Links</h3>
+                <p><a href="#">Обычная ссылка</a> с hover эффектом</p>
+            </section>
+
+            <!-- Theme Examples -->
+            <section class="demo-section">
+                <h2>🎭 Available Themes</h2>
+                <div class="demo-row">
+                    <button class="textButton" onclick="setTheme('base')">Base Theme</button>
+                    <button class="textButton" onclick="setTheme('terminal')">Terminal</button>
+                    <button class="textButton" onclick="setTheme('aurora')">Aurora</button>
+                </div>
+                <p><em>Используйте переключатель в правом верхнем углу для смены темы</em></p>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Theme switching functionality
+        function setTheme(theme) {
+            // Remove existing theme stylesheets
+            const existingTheme = document.querySelector('link[data-theme]');
+            if (existingTheme) {
+                existingTheme.remove();
+            }
+            
+            // Add new theme stylesheet if not base
+            if (theme !== 'base') {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = `../themes/${theme}.css`;
+                link.setAttribute('data-theme', theme);
+                document.head.appendChild(link);
+            }
+            
+            // Update selector
+            document.getElementById('themeSelector').value = theme;
+            
+            // Add special classes for theme effects
+            document.body.className = '';
+            if (theme === 'terminal') {
+                document.body.classList.add('scanlines');
+            }
+            if (theme === 'aurora') {
+                // Aurora theme automatically applies animations via CSS
+            }
+        }
+        
+        // Theme selector change handler
+        document.getElementById('themeSelector').addEventListener('change', (e) => {
+            setTheme(e.target.value);
+        });
+        
+        // Initialize with base theme
+        setTheme('base');
+    </script>
+</body>
+</html> 
