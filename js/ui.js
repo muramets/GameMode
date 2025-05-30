@@ -19,6 +19,36 @@ const UI = {
     return '#7fb3d3';
   },
 
+  // Convert emoji to FontAwesome icon
+  emojiToFontAwesome(emoji) {
+    const emojiMap = {
+      '🧠': 'fas fa-brain',
+      '🪝': 'fas fa-record-vinyl',
+      '🔹': 'fas fa-dumbbell',
+      '🚀': 'fas fa-mug-hot',
+      '🎼': 'fas fa-scale-balanced',
+      '🌅': 'fas fa-hand-peace',
+      '🧍‍♂️': 'fas fa-cloud-arrow-up',
+      '🧘‍♂️': 'fas fa-certificate',
+      '🚶‍♂️': 'fas fa-person-walking',
+      '👟': 'fas fa-person-running',
+      '🧖‍♂️': 'fas fa-bath'
+    };
+    
+    return emojiMap[emoji] || emoji;
+  },
+
+  // Render icon properly - either as FontAwesome or emoji
+  renderIcon(emoji) {
+    const iconClass = this.emojiToFontAwesome(emoji);
+    // If it's a FontAwesome class, wrap in <i> tag
+    if (iconClass.startsWith('fas ')) {
+      return `<i class="${iconClass}"></i>`;
+    }
+    // Otherwise, return the emoji directly
+    return iconClass;
+  },
+
   // Dashboard
   renderDashboard() {
     // Update user stats
@@ -42,13 +72,17 @@ const UI = {
       return `
         <div class="state-card" data-state-id="${state.id}" draggable="true">
           <div class="state-header">
-            <span class="state-icon">${state.icon}</span>
-            <span class="state-name">${state.name.split('.')[0]}</span>
-            <button class="state-settings-btn" onclick="Modals.editState('${state.id}')" title="Edit state">
-              <i class="fas fa-cog"></i>
-            </button>
+            <span class="state-icon ${scoreClass}">${this.renderIcon(state.icon)}</span>
+            <span class="state-name ${scoreClass}">${state.name.split('.')[0]}</span>
+            <div class="state-info-container">
+              <div class="state-question-icon" data-tooltip="${state.hover.replace(/"/g, '&quot;')}" title="${state.hover}">
+                <i class="fas fa-question"></i>
+              </div>
+              <button class="state-settings-btn" onclick="Modals.editState('${state.id}')" title="Edit state">
+                <i class="fas fa-cog"></i>
+              </button>
+            </div>
           </div>
-          <div class="state-hover">${state.hover}</div>
           <div class="state-score ${scoreClass}">${score.toFixed(2)}</div>
           <div class="state-bar">
             <div class="state-bar-fill" style="width: ${percent}%; background-color: ${color}"></div>
@@ -67,6 +101,9 @@ const UI = {
     // Setup drag & drop after rendering
     DragDrop.setupStates();
     DragDrop.setupQuickActions();
+    
+    // Setup question icon hover functionality
+    this.setupStateQuestionIcons();
   },
 
   renderQuickProtocols() {
@@ -79,12 +116,14 @@ const UI = {
     }
     
     quickProtocols.innerHTML = protocols.map(protocol => {
+      const weightClass = protocol.action === '+' ? 'positive' : 'negative';
+      
       return `
         <div class="quick-protocol" data-protocol-id="${protocol.id}" onclick="App.quickCheckin(${protocol.id})" draggable="true">
-          <span class="quick-protocol-icon">${protocol.icon}</span>
+          <span class="quick-protocol-icon">${this.renderIcon(protocol.icon)}</span>
           <div class="quick-protocol-info">
             <span class="quick-protocol-name">${protocol.name.split('.')[0]}</span>
-            <span class="quick-protocol-details">${protocol.action}${protocol.weight}</span>
+            <span class="quick-protocol-details ${weightClass}">${protocol.action}${protocol.weight}</span>
           </div>
           <div class="quick-protocol-delete" onclick="event.stopPropagation(); Storage.removeFromQuickActions(${protocol.id}); UI.renderDashboard();" title="Remove from quick actions">
             <i class="fas fa-trash"></i>
@@ -126,7 +165,7 @@ const UI = {
         <div class="protocol-row" draggable="true" data-protocol-id="${protocol.id}">
           <div class="protocol-cell protocol-number">${globalIndex}</div>
           <div class="protocol-cell protocol-name-cell" ${protocol.hover ? `data-hover="${protocol.hover}"` : ''}>
-            <span class="protocol-icon">${protocol.icon}</span>
+            <span class="protocol-icon">${this.renderIcon(protocol.icon)}</span>
             <span class="protocol-name-full">
               <span class="protocol-name-main">${mainName}.</span>
               ${shortDesc ? `<span class="protocol-name-desc">${shortDesc}</span>` : ''}
@@ -183,7 +222,7 @@ const UI = {
           <div class="skill-cell skill-number">${globalIndex}</div>
           <div class="skill-cell skill-name-cell" data-hover="${skill.name}">
             <div class="skill-name-full">
-              <div class="skill-name-main">${skill.icon} ${mainName}</div>
+              <div class="skill-name-main">${this.renderIcon(skill.icon)} ${mainName}</div>
               ${shortDesc ? `<div class="skill-name-desc">${shortDesc}</div>` : ''}
             </div>
             <button class="skill-settings-btn" data-skill-id="${skill.id}" title="Settings" onclick="Modals.editSkill('${skill.id}')">
@@ -249,7 +288,7 @@ const UI = {
             <div class="history-cell history-type-cell">reorder</div>
             <div class="history-cell history-action-cell">
               <div class="history-action-full">
-                <div class="history-action-main">${checkin.itemIcon} ${checkin.itemName}</div>
+                <div class="history-action-main">${this.renderIcon(checkin.itemIcon)} ${checkin.itemName}</div>
                 <div class="history-action-desc">${actionDesc}</div>
               </div>
             </div>
@@ -278,7 +317,7 @@ const UI = {
             <div class="history-cell history-type-cell">quick action</div>
             <div class="history-cell history-action-cell">
               <div class="history-action-full">
-                <div class="history-action-main">${checkin.protocolIcon} ${checkin.protocolName}</div>
+                <div class="history-action-main">${this.renderIcon(checkin.protocolIcon)} ${checkin.protocolName}</div>
                 <div class="history-action-desc">${actionDesc}</div>
               </div>
             </div>
@@ -300,7 +339,7 @@ const UI = {
           
           const sign = change > 0 ? '+' : '';
           const className = change > 0 ? 'positive' : 'negative';
-          return `<span class="history-change-tag ${className}">${skill.icon} ${sign}${change.toFixed(2)}</span>`;
+          return `<span class="history-change-tag ${className}">${this.renderIcon(skill.icon)} ${sign}${change.toFixed(2)}</span>`;
         }).join('');
         
         return `
@@ -314,7 +353,7 @@ const UI = {
             <div class="history-cell history-type-cell">protocol</div>
             <div class="history-cell history-action-cell">
               <div class="history-action-full">
-                <div class="history-action-main">${checkin.protocolIcon} ${checkin.protocolName}</div>
+                <div class="history-action-main">${this.renderIcon(checkin.protocolIcon)} ${checkin.protocolName}</div>
                 <div class="history-action-desc">Check-in completed</div>
               </div>
             </div>
@@ -385,6 +424,7 @@ const UI = {
     // Update level progress bar with color
     const levelProgressFill = document.getElementById('level-progress-fill');
     const levelPercentage = document.getElementById('level-percentage');
+    const progressDigit = document.getElementById('progress-digit');
     if (levelProgressFill && levelPercentage) {
       const percent = Math.min(100, (averageStateScore / 10) * 100);
       const color = this.getSkillColor(averageStateScore);
@@ -392,6 +432,13 @@ const UI = {
       levelProgressFill.style.width = percent + '%';
       levelProgressFill.style.backgroundColor = color;
       levelPercentage.textContent = Math.round(percent) + '%';
+      
+      // Update progress digit (first digit of percentage)
+      if (progressDigit) {
+        const roundedPercent = Math.round(percent);
+        const firstDigit = roundedPercent.toString().charAt(0);
+        progressDigit.textContent = firstDigit;
+      }
     }
     
     // Update today's checkins
@@ -410,5 +457,27 @@ const UI = {
       const sign = monthTotalChange >= 0 ? '+' : '';
       checkinsMonthDetail.textContent = `(${sign}${monthTotalChange.toFixed(2)} net change)`;
     }
+  },
+
+  // Setup question icon hover functionality
+  setupStateQuestionIcons() {
+    const stateCards = document.querySelectorAll('.state-card');
+    
+    stateCards.forEach(card => {
+      const questionIcon = card.querySelector('.state-question-icon');
+      if (!questionIcon) return;
+      
+      card.addEventListener('mouseenter', () => {
+        questionIcon.classList.add('show-question-icon');
+      });
+      
+      card.addEventListener('mouseleave', () => {
+        questionIcon.classList.remove('show-question-icon');
+      });
+    });
+  },
+  
+  clearQuestionIconTimeouts() {
+    // No longer needed, but keeping for compatibility
   }
 };
