@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎨 GameMode UI Kit - Advanced Demo</title>
+    
+    <!-- Import UI Kit styles -->
+    <link rel="stylesheet" href="../themes/base.css">
+    <link rel="stylesheet" href="../components/buttons.css">
+    <link rel="stylesheet" href="../components/header.css">
+    <link rel="stylesheet" href="../components/stats.css">
+    
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts - Roboto Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js for demo charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        /* Demo specific styles */
+        .demo-section {
+            margin: 2rem 0;
+            padding: 2rem;
+            background: var(--sub-alt-color);
+            border-radius: var(--roundness);
+        }
+        
+        .demo-section h2 {
+            color: var(--main-color);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        
+        .demo-section h3 {
+            color: var(--text-color);
+            margin: 1.5rem 0 0.5rem 0;
+            font-size: 1.25rem;
+        }
+        
+        .demo-grid {
+            display: grid;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .demo-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+            margin: 0.5rem 0;
+        }
+        
+        .theme-switcher-demo {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+            background: var(--sub-alt-color);
+            padding: 1rem;
+            border-radius: var(--roundness);
+            border: 1px solid var(--sub-color);
+        }
+        
+        .theme-switcher-demo h4 {
+            margin: 0 0 0.5rem 0;
+            color: var(--text-color);
+            font-size: 0.875rem;
+        }
+        
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+        }
+        
+        /* Stats demo enhancements */
+        .stats-demo {
+            background: var(--bg-color);
+            padding: 2rem;
+            border-radius: var(--roundness);
+            margin: 2rem 0;
+        }
+        
+        /* Custom color picker demo */
+        .color-picker-demo {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .color-group {
+            background: var(--bg-color);
+            padding: 1rem;
+            border-radius: var(--roundness);
+            border: 1px solid var(--sub-color);
+        }
+        
+        .color-group label {
+            display: block;
+            color: var(--text-color);
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        .color-input-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .color-hex {
+            background: var(--sub-alt-color);
+            border: 1px solid var(--sub-color);
+            color: var(--text-color);
+            padding: 0.5rem;
+            border-radius: var(--roundness);
+            font-family: var(--font);
+            font-size: 0.875rem;
+            width: 100px;
+        }
+        
+        /* Focus mode demo */
+        .focus-demo-trigger {
+            position: relative;
+        }
+        
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            .theme-switcher-demo {
+                position: relative;
+                top: auto;
+                right: auto;
+                margin: 1rem 0;
+            }
+            
+            .color-picker-demo {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Monkeytype-style Header -->
+    <header class="header content-grid" id="mainHeader">
+        <div class="logo">
+            <span class="icon">🎮</span>
+            <span class="text">GameMode</span>
+        </div>
+        
+        <nav class="nav">
+            <button class="textButton active">Home</button>
+            <button class="textButton">About</button>
+            <button class="textButton">Account</button>
+            <button class="textButton">Settings</button>
+        </nav>
+        
+        <div class="config">
+            <div class="group">
+                <span class="label">Mode:</span>
+                <div class="buttons">
+                    <button class="textButton">Time</button>
+                    <button class="textButton active">Words</button>
+                    <button class="textButton">Quote</button>
+                </div>
+            </div>
+            <div class="group">
+                <span class="label">Length:</span>
+                <div class="buttons">
+                    <button class="textButton">10</button>
+                    <button class="textButton active">25</button>
+                    <button class="textButton">50</button>
+                    <button class="textButton">100</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="user-profile">
+            <div class="user-stats">
+                <div class="name">PlayerOne</div>
+                <div class="level">Level 42</div>
+            </div>
+            <div class="user-avatar">P1</div>
+        </div>
+        
+        <button class="mobile-nav-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <div class="mobile-nav">
+            <button class="textButton">Home</button>
+            <button class="textButton">About</button>
+            <button class="textButton">Account</button>
+            <button class="textButton">Settings</button>
+        </div>
+    </header>
+
+    <!-- Breadcrumbs -->
+    <nav class="breadcrumbs content-grid">
+        <a href="#">Home</a>
+        <span class="separator">/</span>
+        <a href="#">UI Kit</a>
+        <span class="separator">/</span>
+        <span class="current">Advanced Demo</span>
+    </nav>
+
+    <!-- Theme Switcher Panel -->
+    <div class="theme-switcher-demo">
+        <h4>🎭 Themes</h4>
+        <select id="themeSelector" class="button small">
+            <option value="base">Base</option>
+            <option value="terminal">Terminal</option>
+            <option value="aurora">Aurora</option>
+            <option value="custom">Custom</option>
+        </select>
+        
+        <div class="theme-grid">
+            <div class="custom-theme-preview theme-custom-mono" onclick="setCustomTheme('mono')" title="Monochrome"></div>
+            <div class="custom-theme-preview theme-custom-neon" onclick="setCustomTheme('neon')" title="Neon"></div>
+            <div class="custom-theme-preview theme-custom-sunset" onclick="setCustomTheme('sunset')" title="Sunset"></div>
+            <div class="custom-theme-preview theme-custom-ocean" onclick="setCustomTheme('ocean')" title="Ocean"></div>
+            <div class="custom-theme-preview theme-custom-forest" onclick="setCustomTheme('forest')" title="Forest"></div>
+            <div class="custom-theme-preview theme-custom-purple" onclick="setCustomTheme('purple')" title="Purple"></div>
+        </div>
+        
+        <div class="focus-demo-trigger">
+            <button class="textButton small" onclick="toggleFocusMode()">
+                <i class="fas fa-eye"></i> Focus
+            </button>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app" class="content-grid">
+        <main>
+            <!-- Header Demo -->
+            <section class="demo-section">
+                <h2>📱 Header & Navigation</h2>
+                <p>Полноценный header в стиле Monkeytype с логотипом, навигацией, настройками и профилем пользователя.</p>
+                
+                <h3>Features:</h3>
+                <ul style="color: var(--text-color); margin: 1rem 0;">
+                    <li>Responsive дизайн с мобильным меню</li>
+                    <li>Focus mode (попробуйте кнопку Focus)</li>
+                    <li>Config sections для настроек игры</li>
+                    <li>User profile с аватаром</li>
+                    <li>Breadcrumbs навигация</li>
+                </ul>
+            </section>
+
+            <!-- User Stats Demo -->
+            <section class="demo-section">
+                <h2>📊 User Statistics</h2>
+                
+                <div class="stats-demo">
+                    <div class="stats-grid">
+                        <!-- WPM Stats Card -->
+                        <div class="stats-card">
+                            <div class="header">
+                                <div>
+                                    <h3 class="title">Words Per Minute</h3>
+                                    <p class="subtitle">Average typing speed</p>
+                                </div>
+                                <i class="icon fas fa-tachometer-alt"></i>
+                            </div>
+                            <div class="metric">
+                                <span class="label">Current WPM</span>
+                                <span class="value">78 <span class="change positive">+5</span></span>
+                            </div>
+                            <div class="metric">
+                                <span class="label">Best WPM</span>
+                                <span class="value">95</span>
+                            </div>
+                            <div class="metric">
+                                <span class="label">Average WPM</span>
+                                <span class="value">72</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="fill" style="width: 78%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Accuracy Stats -->
+                        <div class="stats-card">
+                            <div class="header">
+                                <div>
+                                    <h3 class="title">Accuracy</h3>
+                                    <p class="subtitle">Typing precision</p>
+                                </div>
+                                <div class="progress-ring">
+                                    <svg>
+                                        <circle class="bg" cx="32" cy="32" r="28"></circle>
+                                        <circle class="fill" cx="32" cy="32" r="28" 
+                                                stroke-dasharray="176" stroke-dashoffset="35"></circle>
+                                    </svg>
+                                    <div class="text">94%</div>
+                                </div>
+                            </div>
+                            <div class="metric">
+                                <span class="label">Current Test</span>
+                                <span class="value">94.2%</span>
+                            </div>
+                            <div class="metric">
+                                <span class="label">Average</span>
+                                <span class="value">91.8%</span>
+                            </div>
+                        </div>
+
+                        <!-- Tests Completed -->
+                        <div class="stats-card">
+                            <div class="header">
+                                <div>
+                                    <h3 class="title">Tests Completed</h3>
+                                    <p class="subtitle">Total typing tests</p>
+                                </div>
+                                <i class="icon fas fa-chart-line"></i>
+                            </div>
+                            <div class="metric">
+                                <span class="label">This Week</span>
+                                <span class="value">23 <span class="change positive">+12</span></span>
+                            </div>
+                            <div class="metric">
+                                <span class="label">This Month</span>
+                                <span class="value">89</span>
+                            </div>
+                            <div class="metric">
+                                <span class="label">All Time</span>
+                                <span class="value">1,247</span>
+                            </div>
+                        </div>
+
+                        <!-- Chart -->
+                        <div class="stats-card" style="grid-column: span 2;">
+                            <div class="header">
+                                <div>
+                                    <h3 class="title">Performance Chart</h3>
+                                    <p class="subtitle">WPM over time</p>
+                                </div>
+                                <i class="icon fas fa-chart-area"></i>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="performanceChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Calendar Demo -->
+            <section class="demo-section">
+                <h2>📅 Activity Calendar</h2>
+                
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <h3 class="calendar-title">May 2025</h3>
+                        <div class="calendar-nav">
+                            <button><i class="fas fa-chevron-left"></i></button>
+                            <button><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="calendar-grid" id="calendarGrid">
+                        <!-- Generated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Activity Heatmap -->
+                <h3>📈 Activity Heatmap</h3>
+                <div class="activity-heatmap" id="activityHeatmap">
+                    <!-- Generated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- Leaderboard Demo -->
+            <section class="demo-section">
+                <h2>🏆 Leaderboard</h2>
+                
+                <div class="leaderboard">
+                    <div class="leaderboard-header">
+                        <h3>Top Players - All Time WPM</h3>
+                    </div>
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th class="rank">#</th>
+                                <th class="user">Player</th>
+                                <th class="score">WPM</th>
+                                <th class="score">Accuracy</th>
+                                <th class="change">Change</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="rank">1</td>
+                                <td class="user">SpeedTyper</td>
+                                <td class="score">156</td>
+                                <td class="score">98.2%</td>
+                                <td class="change up">↑ 2</td>
+                            </tr>
+                            <tr>
+                                <td class="rank">2</td>
+                                <td class="user">KeyboardMaster</td>
+                                <td class="score">148</td>
+                                <td class="score">97.8%</td>
+                                <td class="change">-</td>
+                            </tr>
+                            <tr>
+                                <td class="rank">3</td>
+                                <td class="user">TypingNinja</td>
+                                <td class="score">142</td>
+                                <td class="score">96.5%</td>
+                                <td class="change down">↓ 1</td>
+                            </tr>
+                            <tr>
+                                <td class="rank">4</td>
+                                <td class="user">FastFingers</td>
+                                <td class="score">138</td>
+                                <td class="score">95.9%</td>
+                                <td class="change up">↑ 3</td>
+                            </tr>
+                            <tr>
+                                <td class="rank">5</td>
+                                <td class="user">PlayerOne</td>
+                                <td class="score">95</td>
+                                <td class="score">94.2%</td>
+                                <td class="change up">↑ 1</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Custom Theme Demo -->
+            <section class="demo-section">
+                <h2>🎨 Custom Theme Creator</h2>
+                <p>Создайте свою собственную тему, настроив цвета:</p>
+                
+                <div class="color-picker-demo">
+                    <div class="color-group">
+                        <label>Background Color</label>
+                        <div class="color-input-group">
+                            <input type="color" class="custom-color-input" id="bgColor" value="#2d2d2d">
+                            <input type="text" class="color-hex" id="bgColorHex" value="#2d2d2d">
+                        </div>
+                    </div>
+                    
+                    <div class="color-group">
+                        <label>Main Color</label>
+                        <div class="color-input-group">
+                            <input type="color" class="custom-color-input" id="mainColor" value="#e2b714">
+                            <input type="text" class="color-hex" id="mainColorHex" value="#e2b714">
+                        </div>
+                    </div>
+                    
+                    <div class="color-group">
+                        <label>Text Color</label>
+                        <div class="color-input-group">
+                            <input type="color" class="custom-color-input" id="textColor" value="#d1d0c5">
+                            <input type="text" class="color-hex" id="textColorHex" value="#d1d0c5">
+                        </div>
+                    </div>
+                    
+                    <div class="color-group">
+                        <label>Sub Color</label>
+                        <div class="color-input-group">
+                            <input type="color" class="custom-color-input" id="subColor" value="#646669">
+                            <input type="text" class="color-hex" id="subColorHex" value="#646669">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="demo-row">
+                    <button class="button" onclick="applyCustomColors()">Apply Custom Theme</button>
+                    <button class="textButton" onclick="resetCustomColors()">Reset</button>
+                    <button class="textButton" onclick="randomizeColors()">Random Colors</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Theme switching functionality
+        function setTheme(theme) {
+            // Remove existing theme stylesheets
+            const existingTheme = document.querySelector('link[data-theme]');
+            if (existingTheme) {
+                existingTheme.remove();
+            }
+            
+            // Remove custom theme classes
+            document.body.className = document.body.className.replace(/theme-custom-\w+/g, '');
+            
+            // Add new theme stylesheet if not base
+            if (theme !== 'base') {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = `../themes/${theme}.css`;
+                link.setAttribute('data-theme', theme);
+                document.head.appendChild(link);
+            }
+            
+            // Update selector
+            document.getElementById('themeSelector').value = theme;
+            
+            // Add special classes for theme effects
+            if (theme === 'terminal') {
+                document.body.classList.add('scanlines');
+            }
+        }
+        
+        function setCustomTheme(variant) {
+            setTheme('custom');
+            document.body.className = document.body.className.replace(/theme-custom-\w+/g, '');
+            document.body.classList.add(`theme-custom-${variant}`);
+            
+            // Update all preview cards
+            document.querySelectorAll('.custom-theme-preview').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.querySelector(`.theme-custom-${variant}`).classList.add('active');
+        }
+        
+        // Focus mode
+        function toggleFocusMode() {
+            document.getElementById('mainHeader').classList.toggle('focus');
+        }
+        
+        // Mobile navigation
+        document.querySelector('.mobile-nav-toggle').addEventListener('click', () => {
+            document.querySelector('.mobile-nav').classList.toggle('active');
+        });
+        
+        // Theme selector change handler
+        document.getElementById('themeSelector').addEventListener('change', (e) => {
+            setTheme(e.target.value);
+        });
+        
+        // Generate calendar
+        function generateCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+            
+            // Add day headers
+            days.forEach(day => {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'calendar-day header';
+                dayEl.textContent = day;
+                grid.appendChild(dayEl);
+            });
+            
+            // Add empty days for month start
+            for (let i = 0; i < 6; i++) {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'calendar-day empty';
+                dayEl.textContent = 26 + i;
+                grid.appendChild(dayEl);
+            }
+            
+            // Add days of month
+            for (let day = 1; day <= 31; day++) {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'calendar-day';
+                dayEl.textContent = day;
+                
+                if (day === 30) {
+                    dayEl.classList.add('today');
+                } else if (Math.random() > 0.6) {
+                    const activity = Math.random();
+                    if (activity > 0.8) dayEl.classList.add('activity-high');
+                    else if (activity > 0.5) dayEl.classList.add('activity-medium');
+                    else dayEl.classList.add('activity-low');
+                }
+                
+                grid.appendChild(dayEl);
+            }
+        }
+        
+        // Generate activity heatmap
+        function generateHeatmap() {
+            const heatmap = document.getElementById('activityHeatmap');
+            
+            for (let i = 0; i < 371; i++) {
+                const day = document.createElement('div');
+                day.className = 'activity-day';
+                
+                const activity = Math.random();
+                if (activity > 0.8) day.classList.add('level-4');
+                else if (activity > 0.6) day.classList.add('level-3');
+                else if (activity > 0.4) day.classList.add('level-2');
+                else if (activity > 0.2) day.classList.add('level-1');
+                
+                heatmap.appendChild(day);
+            }
+        }
+        
+        // Performance Chart
+        function createChart() {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6'],
+                    datasets: [{
+                        label: 'WPM',
+                        data: [65, 68, 72, 75, 73, 78],
+                        borderColor: getComputedStyle(document.documentElement).getPropertyValue('--main-color'),
+                        backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--main-color') + '20',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--sub-color') + '50'
+                            },
+                            ticks: {
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--sub-color')
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--sub-color') + '50'
+                            },
+                            ticks: {
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--sub-color')
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Custom color functions
+        function applyCustomColors() {
+            const bgColor = document.getElementById('bgColor').value;
+            const mainColor = document.getElementById('mainColor').value;
+            const textColor = document.getElementById('textColor').value;
+            const subColor = document.getElementById('subColor').value;
+            
+            document.documentElement.style.setProperty('--custom-bg-color', bgColor);
+            document.documentElement.style.setProperty('--custom-main-color', mainColor);
+            document.documentElement.style.setProperty('--custom-text-color', textColor);
+            document.documentElement.style.setProperty('--custom-sub-color', subColor);
+            
+            setTheme('custom');
+        }
+        
+        function resetCustomColors() {
+            document.getElementById('bgColor').value = '#2d2d2d';
+            document.getElementById('mainColor').value = '#e2b714';
+            document.getElementById('textColor').value = '#d1d0c5';
+            document.getElementById('subColor').value = '#646669';
+            
+            updateHexInputs();
+            applyCustomColors();
+        }
+        
+        function randomizeColors() {
+            const colors = [
+                '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'),
+                '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'),
+                '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'),
+                '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')
+            ];
+            
+            document.getElementById('bgColor').value = colors[0];
+            document.getElementById('mainColor').value = colors[1];
+            document.getElementById('textColor').value = colors[2];
+            document.getElementById('subColor').value = colors[3];
+            
+            updateHexInputs();
+            applyCustomColors();
+        }
+        
+        function updateHexInputs() {
+            document.getElementById('bgColorHex').value = document.getElementById('bgColor').value;
+            document.getElementById('mainColorHex').value = document.getElementById('mainColor').value;
+            document.getElementById('textColorHex').value = document.getElementById('textColor').value;
+            document.getElementById('subColorHex').value = document.getElementById('subColor').value;
+        }
+        
+        // Color picker sync
+        ['bgColor', 'mainColor', 'textColor', 'subColor'].forEach(id => {
+            const colorInput = document.getElementById(id);
+            const hexInput = document.getElementById(id + 'Hex');
+            
+            colorInput.addEventListener('input', () => {
+                hexInput.value = colorInput.value;
+            });
+            
+            hexInput.addEventListener('input', () => {
+                if (/^#[0-9A-F]{6}$/i.test(hexInput.value)) {
+                    colorInput.value = hexInput.value;
+                }
+            });
+        });
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            setTheme('base');
+            generateCalendar();
+            generateHeatmap();
+            updateHexInputs();
+            
+            // Small delay for CSS variables to load
+            setTimeout(() => {
+                createChart();
+            }, 100);
+        });
+    </script>
+</body>
+</html> 

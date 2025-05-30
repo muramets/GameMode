@@ -1,0 +1,320 @@
+/* 🎨 GameMode UI Kit - Custom Theme
+ * Inspired by Monkeytype's custom theme functionality
+ * Allows for complete color customization via CSS variables
+ */
+
+:root {
+  /* === CUSTOM THEME BASE === */
+  /* These can be overridden by user preferences */
+  
+  --bg-color: var(--custom-bg-color, #2d2d2d);
+  --main-color: var(--custom-main-color, #e2b714);
+  --caret-color: var(--custom-caret-color, var(--main-color));
+  --sub-color: var(--custom-sub-color, #646669);
+  --sub-alt-color: var(--custom-sub-alt-color, #1e1e1e);
+  --text-color: var(--custom-text-color, #d1d0c5);
+  --error-color: var(--custom-error-color, #ca4754);
+  --error-extra-color: var(--custom-error-extra-color, #7e2a33);
+  --colorful-error-color: var(--custom-colorful-error-color, var(--error-color));
+  --colorful-error-extra-color: var(--custom-colorful-error-extra-color, var(--error-extra-color));
+}
+
+/* === CUSTOM THEME VARIABLES === */
+/* Users can override these variables to create their own themes */
+
+/* Example custom color schemes that can be activated */
+
+/* Monochrome Custom */
+.theme-custom-mono {
+  --custom-bg-color: #000000;
+  --custom-main-color: #ffffff;
+  --custom-caret-color: #ffffff;
+  --custom-sub-color: #555555;
+  --custom-sub-alt-color: #1a1a1a;
+  --custom-text-color: #ffffff;
+  --custom-error-color: #ff0000;
+  --custom-error-extra-color: #aa0000;
+}
+
+/* Neon Custom */
+.theme-custom-neon {
+  --custom-bg-color: #0a0a0a;
+  --custom-main-color: #00ff41;
+  --custom-caret-color: #00ff41;
+  --custom-sub-color: #1a4c2e;
+  --custom-sub-alt-color: #0f0f0f;
+  --custom-text-color: #00ff41;
+  --custom-error-color: #ff0080;
+  --custom-error-extra-color: #cc0066;
+}
+
+/* Sunset Custom */
+.theme-custom-sunset {
+  --custom-bg-color: #1a1625;
+  --custom-main-color: #ff6b35;
+  --custom-caret-color: #ff6b35;
+  --custom-sub-color: #4a4458;
+  --custom-sub-alt-color: #0f0e14;
+  --custom-text-color: #f7931e;
+  --custom-error-color: #e74c3c;
+  --custom-error-extra-color: #c0392b;
+}
+
+/* Ocean Custom */
+.theme-custom-ocean {
+  --custom-bg-color: #0c1821;
+  --custom-main-color: #1ba3d4;
+  --custom-caret-color: #1ba3d4;
+  --custom-sub-color: #2c4c5c;
+  --custom-sub-alt-color: #051014;
+  --custom-text-color: #81d4fa;
+  --custom-error-color: #e91e63;
+  --custom-error-extra-color: #ad1457;
+}
+
+/* Forest Custom */
+.theme-custom-forest {
+  --custom-bg-color: #1b2021;
+  --custom-main-color: #8bc34a;
+  --custom-caret-color: #8bc34a;
+  --custom-sub-color: #4a5c4f;
+  --custom-sub-alt-color: #0f1516;
+  --custom-text-color: #a5d6a7;
+  --custom-error-color: #ff5722;
+  --custom-error-extra-color: #d84315;
+}
+
+/* Purple Haze Custom */
+.theme-custom-purple {
+  --custom-bg-color: #1a0d26;
+  --custom-main-color: #9c27b0;
+  --custom-caret-color: #9c27b0;
+  --custom-sub-color: #4a2c5c;
+  --custom-sub-alt-color: #0f0515;
+  --custom-text-color: #ce93d8;
+  --custom-error-color: #f44336;
+  --custom-error-extra-color: #d32f2f;
+}
+
+/* === CUSTOM THEME ENHANCEMENTS === */
+
+/* Custom background patterns */
+.custom-pattern-dots {
+  background-image: radial-gradient(
+    circle at 25% 25%, 
+    var(--sub-color) 0.5px, 
+    transparent 0.5px
+  );
+  background-size: 20px 20px;
+}
+
+.custom-pattern-grid {
+  background-image: 
+    linear-gradient(var(--sub-color) 0.5px, transparent 0.5px),
+    linear-gradient(90deg, var(--sub-color) 0.5px, transparent 0.5px);
+  background-size: 20px 20px;
+  opacity: 0.3;
+}
+
+.custom-pattern-diagonal {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    var(--sub-color) 10px,
+    var(--sub-color) 10.5px
+  );
+  opacity: 0.1;
+}
+
+/* Custom glow effects */
+.custom-glow-text {
+  text-shadow: 0 0 10px var(--main-color);
+}
+
+.custom-glow-border {
+  box-shadow: 0 0 0 1px var(--main-color), 0 0 20px var(--main-color);
+}
+
+.custom-glow-subtle {
+  box-shadow: 0 0 0 1px var(--main-color);
+}
+
+/* Custom gradient backgrounds */
+.custom-gradient-vertical {
+  background: linear-gradient(
+    180deg,
+    var(--bg-color) 0%,
+    var(--sub-alt-color) 100%
+  );
+}
+
+.custom-gradient-radial {
+  background: radial-gradient(
+    circle at center,
+    var(--sub-alt-color) 0%,
+    var(--bg-color) 70%
+  );
+}
+
+.custom-gradient-diagonal {
+  background: linear-gradient(
+    135deg,
+    var(--bg-color) 0%,
+    var(--sub-alt-color) 100%
+  );
+}
+
+/* === CUSTOM ANIMATION EFFECTS === */
+
+/* Breathing effect */
+@keyframes customBreathe {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+.custom-breathe {
+  animation: customBreathe 3s ease-in-out infinite;
+}
+
+/* Pulse effect */
+@keyframes customPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.custom-pulse {
+  animation: customPulse 2s ease-in-out infinite;
+}
+
+/* Color shift effect */
+@keyframes customColorShift {
+  0% { filter: hue-rotate(0deg); }
+  50% { filter: hue-rotate(180deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+.custom-color-shift {
+  animation: customColorShift 10s linear infinite;
+}
+
+/* === CUSTOM THEME UTILITIES === */
+
+/* Color picker integration helpers */
+.custom-color-input {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: var(--roundness);
+  cursor: pointer;
+  outline: 2px solid var(--sub-color);
+  outline-offset: 2px;
+  transition: var(--transition-standard);
+}
+
+.custom-color-input:hover {
+  outline-color: var(--main-color);
+  transform: scale(1.1);
+}
+
+.custom-color-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+  border: none;
+  border-radius: var(--roundness);
+}
+
+.custom-color-input::-webkit-color-swatch {
+  border: none;
+  border-radius: var(--roundness);
+}
+
+.custom-color-input::-moz-color-swatch {
+  border: none;
+  border-radius: var(--roundness);
+}
+
+/* Theme preview cards */
+.custom-theme-preview {
+  display: inline-block;
+  width: 4rem;
+  height: 3rem;
+  border-radius: var(--roundness);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  border: 2px solid transparent;
+  transition: var(--transition-standard);
+}
+
+.custom-theme-preview:hover {
+  border-color: var(--main-color);
+  transform: scale(1.1);
+}
+
+.custom-theme-preview.active {
+  border-color: var(--main-color);
+  box-shadow: 0 0 0 0.2rem var(--main-color);
+}
+
+/* Color swatches in preview */
+.custom-theme-preview::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: var(--custom-bg-color, var(--bg-color));
+}
+
+.custom-theme-preview::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 50%;
+  height: 50%;
+  background: var(--custom-main-color, var(--main-color));
+}
+
+/* === ACCESSIBILITY ENHANCEMENTS === */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --custom-bg-color: #000000;
+    --custom-text-color: #ffffff;
+    --custom-main-color: #ffffff;
+    --custom-sub-color: #808080;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .custom-breathe,
+  .custom-pulse,
+  .custom-color-shift {
+    animation: none;
+  }
+}
+
+/* === CUSTOM THEME JAVASCRIPT INTEGRATION === */
+
+/* CSS classes for JavaScript theme switching */
+.theme-custom-user {
+  /* Applied when user sets custom colors via JavaScript */
+}
+
+/* CSS variables for dynamic theme updates */
+.theme-dynamic {
+  --bg-color: var(--dynamic-bg, var(--custom-bg-color));
+  --main-color: var(--dynamic-main, var(--custom-main-color));
+  --text-color: var(--dynamic-text, var(--custom-text-color));
+  --sub-color: var(--dynamic-sub, var(--custom-sub-color));
+  --sub-alt-color: var(--dynamic-sub-alt, var(--custom-sub-alt-color));
+  --error-color: var(--dynamic-error, var(--custom-error-color));
+} 
