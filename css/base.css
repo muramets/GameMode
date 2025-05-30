@@ -1,0 +1,80 @@
+/* ===== Base Styles - Variables and Reset ===== */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-color: #323437;
+  --main-color: #e2b714;
+  --caret-color: #e2b714;
+  --sub-color: #646669;
+  --sub-alt-color: #2c2e31;
+  --text-color: #d1d0c5;
+  --error-color: #ca4754;
+  --error-extra-color: #7e2a33;
+  --colorful-error-color: #ca4754;
+  --colorful-error-extra-color: #7e2a33;
+  
+  /* Additional colors */
+  --correct-color: #98c379;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-color);
+  font-family: 'Roboto Mono', monospace;
+  color: var(--text-color);
+  min-height: 100vh;
+}
+
+/* Score Colors */
+.score-critical {
+  color: var(--error-color);
+}
+
+.score-low {
+  color: #e67e22;
+}
+
+.score-medium {
+  color: #f1c40f;
+}
+
+.score-good {
+  color: var(--correct-color);
+}
+
+.score-excellent {
+  color: #2ecc71;
+}
+
+/* Focus States - Remove all outlines */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: none;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 0.5rem;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--sub-alt-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--sub-color);
+  border-radius: 0.25rem;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-color);
+} 

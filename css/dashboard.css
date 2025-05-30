@@ -1,0 +1,408 @@
+/* ===== Dashboard Components ===== */
+
+/* User Profile Block - Dashboard */
+.user-profile-block {
+  background-color: var(--sub-alt-color);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-avatar {
+  width: 60px;
+  height: 60px;
+  background-color: var(--bg-color);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--sub-color);
+  font-size: 1.5rem;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.username {
+  font-size: 1.25rem;
+  color: var(--text-color);
+  font-weight: 400;
+  margin: 0;
+}
+
+.user-level {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.level-label {
+  font-size: 0.75rem;
+  color: var(--sub-color);
+}
+
+.level-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.level-progress-bar {
+  flex: 1;
+  height: 6px;
+  background-color: var(--bg-color);
+  border-radius: 3px;
+  overflow: hidden;
+  min-width: 100px;
+}
+
+.level-progress-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+  border-radius: 3px;
+}
+
+.level-percentage {
+  color: var(--sub-color);
+  font-size: 0.7rem;
+  min-width: 35px;
+  text-align: right;
+}
+
+.current-level {
+  color: var(--main-color);
+  font-weight: 500;
+}
+
+.level-separator {
+  color: var(--sub-color);
+}
+
+.max-level {
+  color: var(--text-color);
+}
+
+.user-stats {
+  display: flex;
+  gap: 2rem;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--sub-color);
+  text-align: center;
+  padding: 0.25rem 0.5rem;
+  background-color: var(--bg-color);
+  border-radius: 0.25rem;
+  white-space: nowrap;
+}
+
+.stat-value {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.stat-number {
+  font-size: 1.5rem;
+  color: var(--main-color);
+  font-weight: 500;
+}
+
+.stat-detail {
+  font-size: 0.7rem;
+  color: var(--sub-color);
+  text-align: center;
+}
+
+/* Responsive design for user profile */
+@media (max-width: 768px) {
+  .user-profile-block {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.5rem;
+  }
+  
+  .user-info {
+    justify-content: center;
+  }
+  
+  .user-stats {
+    justify-content: center;
+    gap: 1.5rem;
+  }
+}
+
+/* States Grid - Dashboard */
+.states-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.state-card {
+  background-color: var(--sub-alt-color);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  transition: all 0.2s cubic-bezier(0.2, 0.0, 0.2, 1);
+  cursor: move;
+  position: relative;
+}
+
+.state-card:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.state-card.dragging {
+  opacity: 0.8;
+  transform: rotate(3deg) scale(1.02);
+  z-index: 1000;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  transition: none;
+}
+
+.state-card.drag-over {
+  transform: translateY(-4px) scale(1.03) rotate(-2deg);
+  border: 2px solid var(--main-color);
+  box-shadow: 0 0 0 4px rgba(226, 183, 20, 0.2);
+}
+
+.state-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  position: relative;
+  justify-content: space-between;
+}
+
+.state-icon {
+  font-size: 1.25rem;
+}
+
+.state-name {
+  font-size: 0.9rem;
+  color: var(--text-color);
+  flex: 1;
+}
+
+.state-settings-btn {
+  background: none;
+  border: none;
+  color: var(--sub-color);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0;
+  transition: all 0.125s;
+  opacity: 0;
+  transform: scale(0.9);
+  outline: none;
+  font-size: 0.9rem;
+}
+
+.state-card:hover .state-settings-btn {
+  opacity: 1;
+  transform: scale(1);
+  color: var(--sub-color);
+}
+
+.state-settings-btn:hover {
+  color: var(--main-color) !important;
+}
+
+.state-hover {
+  font-size: 0.75rem;
+  color: var(--sub-color);
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+.state-score {
+  font-size: 3rem;
+  font-weight: 400;
+  margin-bottom: 0.5rem;
+}
+
+.state-bar {
+  width: 100%;
+  height: 4px;
+  background-color: var(--sub-alt-color);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.state-bar-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.state-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--sub-color);
+}
+
+/* Score indicator colors */
+.score-1 { color: #ca4754; }
+.score-2 { color: #e6934a; }
+.score-3 { color: #e2b714; }
+.score-4 { color: #98c379; }
+.score-5 { color: #7fb3d3; }
+
+/* Quick Protocols */
+.quick-protocols {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  max-width: 1000px;
+}
+
+.quick-protocol {
+  background-color: var(--sub-alt-color);
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0.0, 0.2, 1);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: left;
+  outline: none;
+  min-height: 80px;
+  position: relative;
+  font-family: 'Roboto Mono', monospace;
+  flex: 0 0 calc(20% - 0.6rem); /* 5 elements per row with gaps */
+  box-sizing: border-box;
+}
+
+.quick-protocol:hover {
+  background-color: var(--sub-color);
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.quick-protocol.dragging {
+  opacity: 0.9;
+  transform: rotate(2deg) scale(1.03);
+  z-index: 1000;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+  transition: none;
+}
+
+.quick-protocol.drag-over {
+  transform: translateY(-2px) scale(1.04) rotate(-1.5deg);
+  border: 2px solid var(--main-color);
+  box-shadow: 0 0 0 3px rgba(226, 183, 20, 0.2);
+}
+
+.quick-protocol:focus {
+  outline: none;
+}
+
+.quick-protocol-delete {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--text-color);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: all 0.125s;
+  opacity: 0;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  outline: none;
+  user-select: none;
+}
+
+.quick-protocol-delete:hover {
+  color: var(--error-color) !important;
+}
+
+.quick-protocol-delete:focus {
+  outline: none;
+}
+
+.quick-protocol-icon {
+  font-size: 1.25rem;
+}
+
+.quick-protocol-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: flex-start;
+  flex: 1;
+}
+
+.quick-protocol-name {
+  color: var(--text-color);
+  font-size: 0.8rem;
+  line-height: 1.2;
+}
+
+.quick-protocol-details {
+  color: var(--sub-color);
+  font-size: 0.7rem;
+  transition: color 0.125s;
+}
+
+.quick-protocol:hover .quick-protocol-details {
+  color: var(--text-color);
+}
+
+.quick-protocol:hover .quick-protocol-delete {
+  opacity: 1;
+}
+
+/* Section Controls */
+.section-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1.5rem;
+}
+
+/* Mobile responsive for quick protocols */
+@media (max-width: 768px) {
+  .quick-protocols {
+    gap: 0.5rem;
+  }
+  
+  .quick-protocol {
+    flex: 0 0 calc(50% - 0.25rem); /* 2 elements per row on mobile */
+  }
+} 
