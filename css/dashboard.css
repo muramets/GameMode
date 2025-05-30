@@ -7,7 +7,7 @@
   padding: 1.5rem;
   margin-bottom: 2rem;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 2rem;
 }
@@ -19,8 +19,8 @@
 }
 
 .user-avatar {
-  width: 60px;
-  height: 60px;
+  width: 66px;
+  height: 66px;
   background-color: var(--bg-color);
   border-radius: 50%;
   display: flex;
@@ -37,10 +37,20 @@
 }
 
 .username {
-  font-size: 1.25rem;
+  font-size: 1.75rem;
   color: var(--text-color);
   font-weight: 400;
+  font-family: 'Roboto Mono', monospace;
   margin: 0;
+}
+
+.profile-separator {
+  width: 8px;
+  height: 60px;
+  background-color: var(--text-color);
+  border-radius: 6px;
+  opacity: 0.2;
+  margin-left: 1rem;
 }
 
 .user-level {
@@ -59,6 +69,14 @@
   align-items: center;
   gap: 0.25rem;
   font-size: 0.9rem;
+}
+
+.progress-digit {
+  font-size: 2rem;
+  color: var(--text-color);
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 500;
+  margin-right: 0.5rem;
 }
 
 .level-progress-bar {
@@ -99,6 +117,7 @@
 .user-stats {
   display: flex;
   gap: 2rem;
+  margin-top: 0.5rem;
 }
 
 .stat-item {
@@ -195,33 +214,165 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
   position: relative;
   justify-content: space-between;
 }
 
 .state-icon {
-  font-size: 1.25rem;
+  font-size: 1rem;
 }
 
 .state-name {
-  font-size: 0.9rem;
   color: var(--text-color);
   flex: 1;
+  font-size: 1.1rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  font-family: 'Roboto Mono', monospace;
+  margin: 0;
+  transition: all 0.2s ease;
+}
+
+.state-card:hover .state-name {
+  transform: translateX(2px);
+}
+
+.state-info-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.state-question-icon {
+  background: var(--sub-alt-color);
+  border: none;
+  color: var(--sub-color);
+  cursor: help;
+  padding: 0.25rem;
+  border-radius: 50%;
+  transition: all 0.25s cubic-bezier(0.4, 0.0, 0.2, 1);
+  opacity: 0;
+  transform: scale(0.8) translateY(3px);
+  outline: none;
+  font-size: 0.8rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  user-select: none;
+}
+
+.state-question-icon.show-question-icon {
+  opacity: 0.6;
+  transform: scale(1) translateY(0);
+}
+
+.state-question-icon:hover {
+  opacity: 1 !important;
+  color: var(--main-color);
+  transform: scale(1.05) translateY(0);
+}
+
+/* Tooltip for question icon */
+.state-question-icon::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  transform: translateY(-50%) translateX(-0.5rem);
+  background-color: #1e1e1e;
+  color: #ffffff;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  max-width: 400px;
+  width: max-content;
+  line-height: 1.4;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  transition-delay: 1s;
+  z-index: 2000;
+  pointer-events: none;
+  word-wrap: break-word;
+  hyphens: auto;
+  font-family: 'Roboto Mono', monospace;
+  white-space: pre-wrap;
+}
+
+.state-question-icon::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  transform: translateY(-50%) translateX(-0.125rem);
+  border: 6px solid transparent;
+  border-left-color: #1e1e1e;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  transition-delay: 1s;
+  z-index: 2001;
+  pointer-events: none;
+}
+
+.state-question-icon:hover::after,
+.state-question-icon:hover::before {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+  transition-delay: 0s;
+}
+
+/* Responsive tooltip positioning */
+@media (max-width: 768px) {
+  .state-question-icon::after {
+    right: auto;
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%) translateY(0.5rem);
+    max-width: 400px;
+  }
+  
+  .state-question-icon::before {
+    right: auto;
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%) translateY(0.125rem);
+    border: 6px solid transparent;
+    border-bottom-color: #1e1e1e;
+    border-left-color: transparent;
+  }
+  
+  .state-question-icon:hover::after,
+  .state-question-icon:hover::before {
+    transform: translateX(-50%) translateY(0);
+    transition-delay: 0s;
+  }
 }
 
 .state-settings-btn {
-  background: none;
+  background: var(--sub-alt-color);
   border: none;
   color: var(--sub-color);
   cursor: pointer;
   padding: 0.25rem;
-  border-radius: 0;
+  border-radius: 50%;
   transition: all 0.125s;
   opacity: 0;
   transform: scale(0.9);
   outline: none;
   font-size: 0.9rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .state-card:hover .state-settings-btn {
@@ -381,8 +532,24 @@
   transition: color 0.125s;
 }
 
+.quick-protocol-details.positive {
+  color: #98c379;
+}
+
+.quick-protocol-details.negative {
+  color: #ca4754;
+}
+
 .quick-protocol:hover .quick-protocol-details {
   color: var(--text-color);
+}
+
+.quick-protocol:hover .quick-protocol-details.positive {
+  color: #98c379;
+}
+
+.quick-protocol:hover .quick-protocol-details.negative {
+  color: #ca4754;
 }
 
 .quick-protocol:hover .quick-protocol-delete {
