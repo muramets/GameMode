@@ -1,0 +1,257 @@
+/* 🎨 GameMode UI Kit - Base Theme
+ * Inspired by Monkeytype's core styling system
+ * Source: https://github.com/monkeytypegame/monkeytype
+ */
+
+:root {
+  /* === CORE VARIABLES === */
+  --roundness: 0.5rem;
+  --font: "Roboto Mono", "Vazirmatn", monospace;
+  
+  /* === COLOR SCHEME (Default Dark Theme) === */
+  --bg-color: #1a1a1a;
+  --main-color: #00e980;
+  --caret-color: #00e980;
+  --sub-color: #4a4a4a;
+  --sub-alt-color: #0f0f0f;
+  --text-color: #ffffff;
+  --error-color: #ff4757;
+  --error-extra-color: #c0392b;
+  --colorful-error-color: #ff4757;
+  --colorful-error-extra-color: #c0392b;
+  
+  /* === LAYOUT SYSTEM === */
+  --padding-inline: 2rem;
+  --content-max-width: 1536px;
+  --breakout-size: calc(
+    (calc(var(--content-max-width) + 12rem) - var(--content-max-width)) / 2
+  );
+  
+  /* === CRT EFFECTS (for funbox themes) === */
+  --crt-bg-color-shine: color-mix(
+    in oklab,
+    var(--main-color) 5%,
+    var(--bg-color)
+  );
+  --crt-bg-color-stripe: color-mix(in oklab, black 50%, var(--bg-color));
+  --crt-sub-color-glow: color-mix(in srgb, var(--sub-color) 20%, transparent);
+  --crt-sub-alt-color-glow: color-mix(
+    in srgb,
+    var(--sub-alt-color) 20%,
+    transparent
+  );
+  --crt-text-color-glow: color-mix(in srgb, var(--text-color) 20%, transparent);
+  --crt-main-color-glow: color-mix(in srgb, var(--main-color) 20%, transparent);
+  --crt-error-color-glow: color-mix(
+    in srgb,
+    var(--error-color) 20%,
+    transparent
+  );
+  --crt-caret-color-glow: color-mix(
+    in srgb,
+    var(--caret-color) 20%,
+    transparent
+  );
+  
+  /* === COMPONENT VARIABLES === */
+  --balloon-font-size: 1rem;
+  --balloon-border-radius: calc(var(--roundness) / 2);
+  
+  /* === TRANSITIONS === */
+  --transition-standard: color 0.125s, opacity 0.125s, background 0.125s;
+  
+  scroll-behavior: smooth;
+  scroll-padding-top: 2rem;
+  font-weight: 400;
+}
+
+/* === GLOBAL STYLES === */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sub-color) transparent;
+  overflow-y: scroll;
+  scroll-behavior: smooth;
+  line-height: 1.25;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  font-family: var(--font);
+  color: var(--text-color);
+  overflow-x: hidden;
+  background: var(--bg-color);
+}
+
+/* === TEXT SELECTION === */
+::selection {
+  background-color: var(--main-color);
+  color: var(--sub-alt-color);
+}
+
+::placeholder {
+  color: var(--sub-color);
+  opacity: 1;
+}
+
+/* === CONTENT GRID SYSTEM === */
+.content-grid {
+  justify-content: center;
+  display: grid;
+  grid-template-columns:
+    [full-width-start]
+    var(--padding-inline)
+    [full-width-padding-start]
+    minmax(0, 1fr)
+    [breakout-start]
+    minmax(0, var(--breakout-size))
+    [content-start]
+    min(100% - (var(--padding-inline) * 2), var(--content-max-width))
+    [content-end]
+    minmax(0, var(--breakout-size))
+    [breakout-end]
+    minmax(0, 1fr)
+    [full-width-padding-end]
+    var(--padding-inline)
+    [full-width-end];
+}
+
+.content-grid > :not(.breakout, .full-width, .full-width-padding) {
+  grid-column: content;
+}
+
+.content-grid > .breakout {
+  grid-column: breakout;
+}
+
+.content-grid > .full-width {
+  grid-column: full-width;
+}
+
+.content-grid > .full-width-padding {
+  grid-column: full-width-padding;
+}
+
+/* === APP LAYOUT === */
+#app {
+  min-height: 100vh;
+  grid-template-rows: [top-start] auto [content-start] 1fr [content-end] auto [top-end];
+  overflow: hidden;
+  row-gap: 2rem;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+  width: 100%;
+}
+
+main {
+  display: grid;
+}
+
+/* === LINKS === */
+a {
+  display: inline-block;
+  color: var(--sub-color);
+  text-decoration: none;
+  transition: var(--transition-standard);
+}
+
+a:hover {
+  color: var(--text-color);
+}
+
+a:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 0.1rem var(--bg-color), 0 0 0 0.2rem var(--text-color);
+  border-radius: calc(var(--roundness) / 2);
+}
+
+/* === UTILITY CLASSES === */
+.hidden {
+  display: none !important;
+  pointer-events: none;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* === CUSTOM BACKGROUND === */
+.customBackground {
+  content: "";
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  background-position: center center;
+  background-repeat: no-repeat;
+  z-index: -999;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+}
+
+/* === LOADER === */
+#backgroundLoader {
+  height: 3px;
+  position: fixed;
+  width: 100%;
+  background: var(--main-color);
+  animation: loader 2s cubic-bezier(0.38, 0.16, 0.57, 0.82) infinite;
+  z-index: 9999;
+}
+
+@keyframes loader {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100vw);
+  }
+}
+
+/* === KEY STYLING === */
+key {
+  color: var(--bg-color);
+  background-color: var(--sub-color);
+  padding: 0.1rem 0.3rem;
+  margin: 0rem 0rem;
+  border-radius: 0.1rem;
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: normal;
+}
+
+/* === RESPONSIVE DESIGN === */
+@media (max-width: 768px) {
+  :root {
+    --padding-inline: 1rem;
+  }
+  
+  #app {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    row-gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --padding-inline: 0.5rem;
+    --roundness: 0.3rem;
+  }
+} 

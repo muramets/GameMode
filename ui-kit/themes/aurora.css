@@ -1,0 +1,102 @@
+/* 🎨 GameMode UI Kit - Aurora Theme
+ * Animated northern lights inspired theme
+ * Source: Monkeytype aurora.css
+ */
+
+:root {
+  --bg-color: #011926;
+  --main-color: #00e980;
+  --caret-color: #00e980;
+  --sub-color: #245c69;
+  --sub-alt-color: #000c13;
+  --text-color: #fff;
+  --error-color: #b94da1;
+  --error-extra-color: #9b3a76;
+  --colorful-error-color: #b94da1;
+  --colorful-error-extra-color: #9b3a76;
+}
+
+/* Aurora animations */
+@keyframes aurora {
+  0% {
+    color: #009fb4;
+  }
+  25% {
+    color: #00e975;
+  }
+  50% {
+    color: #00ffea;
+  }
+  75% {
+    color: #00e975;
+  }
+  100% {
+    color: #009fb4;
+  }
+}
+
+@keyframes aurora-bg {
+  0% {
+    background: #009fb4;
+  }
+  25% {
+    background: #00e975;
+  }
+  50% {
+    background: #00ffea;
+  }
+  75% {
+    background: #00e975;
+  }
+  100% {
+    background: #009fb4;
+  }
+}
+
+/* Apply aurora animations to various elements */
+.aurora-text {
+  animation: aurora 5s linear infinite;
+}
+
+.aurora-bg {
+  animation: aurora-bg 5s linear infinite;
+}
+
+/* Button animations */
+.button.active,
+.button:hover {
+  animation: aurora-bg 5s linear infinite;
+}
+
+/* Caret animation */
+#caret {
+  animation: aurora-bg 5s linear infinite;
+}
+
+/* Link hover effects */
+a:hover {
+  animation: aurora 5s linear infinite;
+}
+
+/* Special text effects */
+.typed.correct {
+  animation: aurora 5s linear infinite;
+}
+
+/* Background gradient for aurora atmosphere */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    ellipse at top,
+    rgba(0, 233, 117, 0.1) 0%,
+    rgba(0, 159, 180, 0.05) 50%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: -1;
+} 

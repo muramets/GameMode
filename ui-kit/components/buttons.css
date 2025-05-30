@@ -1,0 +1,272 @@
+/* 🎨 GameMode UI Kit - Button Components
+ * Based on Monkeytype's button system
+ * Source: https://github.com/monkeytypegame/monkeytype/blob/master/frontend/src/styles/buttons.scss
+ */
+
+/* === BASE BUTTON STYLES === */
+
+/* Remove default button styling */
+button,
+.button,
+input[type="button"],
+input[type="reset"],
+input[type="submit"] {
+  /* Reset defaults */
+  appearance: none;
+  border: none;
+  font-family: inherit;
+  font-size: 1em;
+  
+  /* Layout */
+  display: inline-flex;
+  gap: 0.5em;
+  align-items: baseline;
+  justify-content: center;
+  height: min-content;
+  padding: 0.5em;
+  
+  /* Styling */
+  text-align: center;
+  color: var(--text-color);
+  background: var(--sub-alt-color);
+  border-radius: var(--roundness);
+  line-height: 1.25;
+  
+  /* Interaction */
+  cursor: pointer;
+  user-select: none;
+  transition: var(--transition-standard);
+}
+
+/* === BUTTON STATES === */
+
+/* Hover state */
+button:hover,
+.button:hover {
+  color: var(--bg-color);
+  background: var(--text-color);
+  outline: none;
+}
+
+/* Active state */
+button:active,
+.button:active {
+  background: var(--sub-color);
+  color: var(--bg-color);
+}
+
+/* Focus state */
+button:focus-visible,
+.button:focus-visible {
+  box-shadow: 0 0 0 0.1rem var(--bg-color), 0 0 0 0.2rem var(--text-color);
+  outline: none;
+}
+
+/* === BUTTON VARIANTS === */
+
+/* Active/Selected button */
+.button.active {
+  background: var(--main-color);
+  color: var(--bg-color);
+}
+
+.button.active:hover {
+  background: var(--text-color);
+}
+
+.button.active:active {
+  background: var(--sub-color);
+  color: var(--bg-color);
+}
+
+/* Danger button */
+.button.danger {
+  background: var(--error-color);
+  color: var(--bg-color);
+}
+
+/* Disabled button */
+.button:disabled,
+.button.disabled {
+  opacity: 0.33;
+  pointer-events: none;
+}
+
+/* === TEXT BUTTONS === */
+
+.textButton,
+.button.text {
+  /* Reset background */
+  background: none;
+  color: var(--sub-color);
+  
+  /* Text button specific styling */
+  padding: 0.5em;
+  border-radius: var(--roundness);
+}
+
+/* Text button hover */
+.textButton:hover,
+.button.text:hover {
+  color: var(--text-color);
+  background: none;
+}
+
+/* Text button active */
+.textButton:active,
+.button.text:active {
+  color: var(--sub-color);
+  background: none;
+}
+
+/* Text button focus */
+.textButton:focus-visible,
+.button.text:focus-visible {
+  box-shadow: 0 0 0 0.1rem var(--text-color);
+  outline: none;
+}
+
+/* Active text button */
+.textButton.active,
+.button.text.active {
+  color: var(--main-color);
+  background: none;
+}
+
+.textButton.active:hover,
+.button.text.active:hover {
+  color: var(--text-color);
+  background: none;
+}
+
+/* Danger text button */
+.textButton.danger,
+.button.text.danger {
+  color: var(--error-color);
+  background: none;
+}
+
+/* === BUTTON MODIFIERS === */
+
+/* Full width button */
+.button.fullWidth {
+  width: 100%;
+}
+
+/* Circle button */
+.button.circle {
+  border-radius: 100%;
+  aspect-ratio: 1;
+  padding: 0.5em;
+}
+
+/* Small button */
+.button.small {
+  font-size: 0.875em;
+  padding: 0.375em 0.75em;
+}
+
+/* Large button */
+.button.large {
+  font-size: 1.125em;
+  padding: 0.75em 1.5em;
+}
+
+/* === ICON BUTTONS === */
+
+.button .fas,
+.button .far,
+.button .fab,
+.textButton .fas,
+.textButton .far,
+.textButton .fab {
+  line-height: 1.25;
+  pointer-events: none;
+}
+
+/* Icon-only button */
+.button.icon-only {
+  padding: 0.5em;
+  aspect-ratio: 1;
+}
+
+/* === BUTTON GROUPS === */
+
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.button-group .button {
+  flex: 1;
+  min-width: 0;
+}
+
+.button-group.vertical {
+  flex-direction: column;
+}
+
+.button-group.compact {
+  gap: 0.25rem;
+}
+
+/* Connected buttons */
+.button-group.connected {
+  gap: 0;
+}
+
+.button-group.connected .button {
+  border-radius: 0;
+}
+
+.button-group.connected .button:first-child {
+  border-radius: var(--roundness) 0 0 var(--roundness);
+}
+
+.button-group.connected .button:last-child {
+  border-radius: 0 var(--roundness) var(--roundness) 0;
+}
+
+.button-group.connected.vertical .button:first-child {
+  border-radius: var(--roundness) var(--roundness) 0 0;
+}
+
+.button-group.connected.vertical .button:last-child {
+  border-radius: 0 0 var(--roundness) var(--roundness);
+}
+
+/* === RESPONSIVE DESIGN === */
+
+@media (max-width: 768px) {
+  .button {
+    padding: 0.75em;
+    font-size: 1em;
+  }
+  
+  .button.small {
+    padding: 0.5em;
+    font-size: 0.875em;
+  }
+  
+  .button-group {
+    flex-direction: column;
+  }
+  
+  .button-group .button {
+    width: 100%;
+  }
+}
+
+/* === LINK BUTTONS === */
+
+a.button,
+a.textButton {
+  text-decoration: none;
+}
+
+a.textButton:focus-visible,
+a.text:focus-visible,
+a.button:focus-visible {
+  border-radius: var(--roundness);
+} 
