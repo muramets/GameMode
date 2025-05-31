@@ -645,7 +645,8 @@ const UI = {
     // Filter today's checkins
     const todayCheckins = checkins.filter(checkin => {
       const checkinDate = new Date(checkin.timestamp);
-      return checkinDate.toDateString() === todayStr && checkin.type === 'protocol';
+      const checkinDateStr = checkinDate.toDateString();
+      return checkinDateStr === todayStr && checkin.type === 'protocol';
     });
     
     // Filter this month's checkins
@@ -659,17 +660,28 @@ const UI = {
     // Calculate total score changes for today (real sum, not absolute)
     let todayTotalChange = 0;
     todayCheckins.forEach(checkin => {
-      Object.values(checkin.changes).forEach(change => {
-        todayTotalChange += change; // Real sum including negative values
-      });
+      // For XP calculation, use protocol weight directly, not sum of skill changes
+      const protocol = window.Storage.getProtocolById(checkin.protocolId);
+      if (protocol) {
+        // Determine action from the changes (+ if positive, - if negative)
+        const firstChange = Object.values(checkin.changes)[0];
+        const action = firstChange >= 0 ? '+' : '-';
+        const xpChange = action === '+' ? protocol.weight : -protocol.weight;
+        todayTotalChange += xpChange;
+      }
     });
-    
+
     // Calculate total score changes for this month
     let monthTotalChange = 0;
     monthCheckins.forEach(checkin => {
-      Object.values(checkin.changes).forEach(change => {
-        monthTotalChange += change;
-      });
+      const protocol = window.Storage.getProtocolById(checkin.protocolId);
+      if (protocol && checkin.changes && Object.keys(checkin.changes).length > 0) {
+        // Determine action from the changes (+ if positive, - if negative)
+        const firstChange = Object.values(checkin.changes)[0];
+        const action = firstChange >= 0 ? '+' : '-';
+        const xpChange = action === '+' ? protocol.weight : -protocol.weight;
+        monthTotalChange += xpChange;
+      }
     });
     
     // Calculate current level - priority: states average, then skills average
