@@ -93,6 +93,8 @@ const App = {
     historyFilters: {
         time: 'all',
         type: 'all', 
+        protocol: 'all',
+        state: 'all',
         effect: 'all',
         customDateFrom: '',
         customDateTo: ''
@@ -347,8 +349,8 @@ const App = {
     },
 
     // Actions
-    checkin(protocolId) {
-        const checkin = window.Storage.addCheckin(protocolId);
+    checkin(protocolId, action = '+') {
+        const checkin = window.Storage.addCheckin(protocolId, action);
         if (checkin) {
             this.showToast('Check-in successful!', 'success');
             
@@ -371,8 +373,8 @@ const App = {
         }
     },
 
-    quickCheckin(protocolId) {
-        this.checkin(protocolId);
+    quickCheckin(protocolId, action = '+') {
+        this.checkin(protocolId, action);
     },
 
     deleteCheckin(checkinId) {
@@ -530,10 +532,18 @@ const App = {
 
     // Setup history filters
     setupHistoryFilters() {
+        // Populate dynamic filter options
+        this.populateProtocolFilters();
+        this.populateStateFilters();
+        
         const filterCheckboxes = document.querySelectorAll('.filter-checkbox');
         const customDateRange = document.getElementById('filter-custom-date-range');
         const dateFromInput = document.getElementById('filter-date-from');
         const dateToInput = document.getElementById('filter-date-to');
+        const protocolSubmenu = document.getElementById('protocol-filter-submenu');
+        const stateSubmenu = document.getElementById('state-filter-submenu');
+        const protocolSpecificOption = document.getElementById('protocol-specific-option');
+        const stateSpecificOption = document.getElementById('state-specific-option');
         
         filterCheckboxes.forEach(checkbox => {
             checkbox.addEventListener('change', (e) => {
@@ -558,21 +568,89 @@ const App = {
                         if (filterType === 'time' && customDateRange) {
                             customDateRange.style.display = 'none';
                         }
+                        
+                        // Hide submenus for protocol/state filters and remove active class
+                        if (filterType === 'protocol' && protocolSubmenu && protocolSpecificOption) {
+                            protocolSubmenu.classList.remove('show');
+                            protocolSpecificOption.classList.remove('active');
+                            // Uncheck all submenu options
+                            protocolSubmenu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                        }
+                        if (filterType === 'state' && stateSubmenu && stateSpecificOption) {
+                            stateSubmenu.classList.remove('show');
+                            stateSpecificOption.classList.remove('active');
+                            // Uncheck all submenu options
+                            stateSubmenu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                        }
                     } else {
                         // Prevent unchecking "all" if it's the only one checked
                         e.target.checked = true;
                     }
-                } else {
-                    // If specific option is checked, uncheck "all" and all other options in the same group
+                } else if (filterValue === 'specific') {
+                    // Handle "specific protocol/state" checkboxes
                     if (e.target.checked) {
-                        const groupCheckboxes = document.querySelectorAll(`[data-filter="${filterType}"]`);
+                        // Uncheck "all"
+                        const allCheckbox = document.querySelector(`[data-filter="${filterType}"][data-value="all"]`);
+                        if (allCheckbox) {
+                            allCheckbox.checked = false;
+                        }
                         
-                        // Uncheck all other options in the same group
-                        groupCheckboxes.forEach(cb => {
-                            if (cb !== e.target) {
-                                cb.checked = false;
-                            }
-                        });
+                        // Show appropriate submenu and add active class
+                        if (filterType === 'protocol' && protocolSubmenu && protocolSpecificOption) {
+                            protocolSubmenu.classList.add('show');
+                            protocolSpecificOption.classList.add('active');
+                            // Don't auto-select anything - user will choose manually
+                        }
+                        if (filterType === 'state' && stateSubmenu && stateSpecificOption) {
+                            stateSubmenu.classList.add('show');
+                            stateSpecificOption.classList.add('active');
+                            // Don't auto-select anything - user will choose manually
+                        }
+                        
+                        // Don't set a specific filter value yet - wait for user to choose from submenu
+                        // Keep the filter as 'all' until user selects a specific option
+                        this.historyFilters[filterType] = 'all';
+                    } else {
+                        // If unchecking specific, hide submenu and check "all"
+                        const allCheckbox = document.querySelector(`[data-filter="${filterType}"][data-value="all"]`);
+                        if (allCheckbox) {
+                            allCheckbox.checked = true;
+                            this.historyFilters[filterType] = 'all';
+                        }
+                        
+                        // Hide submenu, remove active class and uncheck all options
+                        if (filterType === 'protocol' && protocolSubmenu && protocolSpecificOption) {
+                            protocolSubmenu.classList.remove('show');
+                            protocolSpecificOption.classList.remove('active');
+                            protocolSubmenu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                        }
+                        if (filterType === 'state' && stateSubmenu && stateSpecificOption) {
+                            stateSubmenu.classList.remove('show');
+                            stateSpecificOption.classList.remove('active');
+                            stateSubmenu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                        }
+                    }
+                } else {
+                    // Handle specific filter options within submenus or regular filters
+                    if (e.target.checked) {
+                        // For submenu options, uncheck other options in the same submenu
+                        const isInSubmenu = e.target.closest('.filter-submenu');
+                        if (isInSubmenu) {
+                            const submenuCheckboxes = isInSubmenu.querySelectorAll('input[type="checkbox"]');
+                            submenuCheckboxes.forEach(cb => {
+                                if (cb !== e.target) {
+                                    cb.checked = false;
+                                }
+                            });
+                        } else {
+                            // For regular filters, uncheck other options in the same group
+                            const groupCheckboxes = document.querySelectorAll(`[data-filter="${filterType}"]`);
+                            groupCheckboxes.forEach(cb => {
+                                if (cb !== e.target) {
+                                    cb.checked = false;
+                                }
+                            });
+                        }
                         
                         this.historyFilters[filterType] = filterValue;
                         console.log('✅ Filter set to:', filterType, '=', filterValue);
@@ -598,18 +676,45 @@ const App = {
                         }
                     } else {
                         // If unchecking and no other options are checked, check "all"
-                        const groupCheckboxes = document.querySelectorAll(`[data-filter="${filterType}"]`);
-                        const hasChecked = Array.from(groupCheckboxes).some(cb => cb.checked && cb.dataset.value !== 'all');
-                        
-                        if (!hasChecked) {
-                            const allCheckbox = document.querySelector(`[data-filter="${filterType}"][data-value="all"]`);
-                            if (allCheckbox) {
-                                allCheckbox.checked = true;
-                                this.historyFilters[filterType] = 'all';
-                                
-                                // Hide custom date range when reverting to all
-                                if (filterType === 'time' && customDateRange) {
-                                    customDateRange.style.display = 'none';
+                        const isInSubmenu = e.target.closest('.filter-submenu');
+                        if (isInSubmenu) {
+                            // For submenu items, if no submenu options are checked, go back to "all"
+                            const submenuCheckboxes = isInSubmenu.querySelectorAll('input[type="checkbox"]');
+                            const hasChecked = Array.from(submenuCheckboxes).some(cb => cb.checked);
+                            
+                            if (!hasChecked) {
+                                const allCheckbox = document.querySelector(`[data-filter="${filterType}"][data-value="all"]`);
+                                const specificCheckbox = document.querySelector(`[data-filter="${filterType}"][data-value="specific"]`);
+                                if (allCheckbox && specificCheckbox) {
+                                    allCheckbox.checked = true;
+                                    specificCheckbox.checked = false;
+                                    this.historyFilters[filterType] = 'all';
+                                    isInSubmenu.classList.remove('show');
+                                    
+                                    // Remove active class from parent option
+                                    if (filterType === 'protocol' && protocolSpecificOption) {
+                                        protocolSpecificOption.classList.remove('active');
+                                    }
+                                    if (filterType === 'state' && stateSpecificOption) {
+                                        stateSpecificOption.classList.remove('active');
+                                    }
+                                }
+                            }
+                        } else {
+                            // For regular filters
+                            const groupCheckboxes = document.querySelectorAll(`[data-filter="${filterType}"]`);
+                            const hasChecked = Array.from(groupCheckboxes).some(cb => cb.checked && cb.dataset.value !== 'all');
+                            
+                            if (!hasChecked) {
+                                const allCheckbox = document.querySelector(`[data-filter="${filterType}"][data-value="all"]`);
+                                if (allCheckbox) {
+                                    allCheckbox.checked = true;
+                                    this.historyFilters[filterType] = 'all';
+                                    
+                                    // Hide custom date range when reverting to all
+                                    if (filterType === 'time' && customDateRange) {
+                                        customDateRange.style.display = 'none';
+                                    }
                                 }
                             }
                         }
@@ -644,9 +749,11 @@ const App = {
         const filterIcon = document.getElementById('history-filters-icon');
         if (!filterIcon) return;
         
-        // Check only the main filter values (time, type, effect), ignore custom date fields
+        // Check only the main filter values (time, type, protocol, state, effect), ignore custom date fields
         const hasActiveFilters = this.historyFilters.time !== 'all' || 
                                  this.historyFilters.type !== 'all' || 
+                                 this.historyFilters.protocol !== 'all' ||
+                                 this.historyFilters.state !== 'all' ||
                                  this.historyFilters.effect !== 'all';
         
         if (hasActiveFilters) {
@@ -801,12 +908,116 @@ const App = {
                 }
             }
             
+            // Protocol filter
+            if (this.historyFilters.protocol !== 'all') {
+                if (checkin.type !== 'protocol') {
+                    return false; // Only protocol checkins have protocolId
+                }
+                
+                const protocolId = parseInt(this.historyFilters.protocol);
+                if (checkin.protocolId !== protocolId) {
+                    return false;
+                }
+            }
+            
+            // State filter - show checkins that affect skills used by this state
+            if (this.historyFilters.state !== 'all') {
+                if (checkin.type !== 'protocol' || !checkin.changes) {
+                    return false; // Only protocol checkins affect states
+                }
+                
+                // Get the selected state and its dependencies
+                const state = window.Storage.getStateById(this.historyFilters.state);
+                if (!state) {
+                    return false;
+                }
+                
+                // Get all skill IDs that affect this state (including from dependent states)
+                const affectedSkillIds = this.getStateAffectedSkills(state.id);
+                
+                // Check if this checkin affects any of the skills
+                const checkinSkillIds = Object.keys(checkin.changes).map(id => parseInt(id));
+                const hasIntersection = checkinSkillIds.some(skillId => affectedSkillIds.includes(skillId));
+                
+                if (!hasIntersection) {
+                    return false;
+                }
+            }
+            
             return true;
         });
         
         console.log('Filtered history items:', this.filteredHistory.length);
         
         UI.renderHistory();
+    },
+
+    // Get all skill IDs that affect a state (including from dependent states)
+    getStateAffectedSkills(stateId, visitedStates = new Set()) {
+        // Prevent infinite recursion with circular dependencies
+        if (visitedStates.has(stateId)) {
+            return [];
+        }
+        visitedStates.add(stateId);
+        
+        const state = window.Storage.getStateById(stateId);
+        if (!state) {
+            return [];
+        }
+        
+        let affectedSkills = [];
+        
+        // Add direct skill dependencies
+        if (state.skillIds && state.skillIds.length > 0) {
+            affectedSkills.push(...state.skillIds);
+        }
+        
+        // Add skills from dependent states (recursive)
+        if (state.stateIds && state.stateIds.length > 0) {
+            state.stateIds.forEach(dependentStateId => {
+                const dependentSkills = this.getStateAffectedSkills(dependentStateId, new Set(visitedStates));
+                affectedSkills.push(...dependentSkills);
+            });
+        }
+        
+        // Remove duplicates and return
+        return [...new Set(affectedSkills)];
+    },
+
+    // Populate dynamic filter options
+    populateProtocolFilters() {
+        const protocolContainer = document.getElementById('protocol-filter-options');
+        if (!protocolContainer) return;
+        
+        const protocols = window.Storage.getProtocols();
+        protocolContainer.innerHTML = protocols.map(protocol => {
+            const protocolName = protocol.name.split('. ')[0]; // Get main name part
+            return `
+                <label class="filter-option">
+                    <input type="checkbox" class="filter-checkbox" data-filter="protocol" data-value="${protocol.id}">
+                    <i class="fas fa-check filter-check-icon"></i>
+                    <span class="filter-label">${UI.renderIcon(protocol.icon)} ${protocolName}</span>
+                </label>
+            `;
+        }).join('');
+    },
+
+    // Populate dynamic state filters
+    populateStateFilters() {
+        const stateContainer = document.getElementById('state-filter-options');
+        if (!stateContainer) return;
+        
+        const states = window.Storage.getStates();
+        stateContainer.innerHTML = states.map(state => {
+            const stateName = state.name.split('. ')[0]; // Get main name part
+            return `
+                <label class="filter-option">
+                    <input type="checkbox" class="filter-checkbox" data-filter="state" data-value="${state.id}">
+                    <i class="fas fa-check filter-check-icon"></i>
+                    <span class="filter-label">${UI.renderIcon(state.icon)} ${stateName}</span>
+                </label>
+            `;
+        }).join('');
     }
 };
 
@@ -817,5 +1028,8 @@ window.App = App;
 window.addEventListener('resize', () => {
     if (window.App) {
         window.App.updateNavIndicator();
+    }
+    if (window.UI) {
+        window.UI.setupQuickProtocolTooltips();
     }
 });

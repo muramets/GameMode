@@ -135,9 +135,9 @@ const UI = {
               
               <div class="state-score" style="color: ${color};">
                 ${score.toFixed(2)}
+                ${changeIcon ? `<span class="state-change-arrow ${changeClass}">${changeIcon}</span>` : ''}
                 <div class="state-score-yesterday">
                   yesterday: ${yesterdayScore.toFixed(2)}
-                  ${changeIcon ? `<span class="state-change-arrow ${changeClass}">${changeIcon}</span>` : ''}
                 </div>
               </div>
               
