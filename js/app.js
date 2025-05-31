@@ -13,7 +13,9 @@ const App = {
   historyFilters: {
     time: 'all',
     type: 'all', 
-    effect: 'all'
+    effect: 'all',
+    customDateFrom: '',
+    customDateTo: ''
   },
 
   init() {
@@ -432,57 +434,8 @@ const App = {
   },
 
   filterHistory(query) {
-    const allHistory = Storage.getCheckins().reverse();
-    const skills = Storage.getSkills();
-    
-    if (!query.trim()) {
-      this.filteredHistory = allHistory;
-    } else {
-      const searchTerm = query.toLowerCase();
-      this.filteredHistory = allHistory.filter(checkin => {
-        // Search in protocol name
-        if (checkin.protocolName && checkin.protocolName.toLowerCase().includes(searchTerm)) {
-          return true;
-        }
-        
-        // Search in item name (for drag & drop operations)
-        if (checkin.itemName && checkin.itemName.toLowerCase().includes(searchTerm)) {
-          return true;
-        }
-        
-        // Search in operation type
-        if (checkin.type === 'drag_drop') {
-          const actionText = checkin.subType === 'protocol' ? 'reordered protocol' : 'reordered skill';
-          if (actionText.includes(searchTerm)) {
-            return true;
-          }
-        }
-        
-        // Search in quick action operations
-        if (checkin.type === 'quick_action') {
-          const actionText = checkin.subType === 'added' ? 'added to quick actions' : 'removed from quick actions';
-          if (actionText.includes(searchTerm)) {
-            return true;
-          }
-        }
-        
-        // Search in affected skill names
-        if (checkin.changes) {
-          const affectedSkills = Object.keys(checkin.changes).map(skillId => {
-            const skill = skills.find(s => s.id == skillId);
-            return skill ? skill.name.toLowerCase() : '';
-          });
-          
-          if (affectedSkills.some(skillName => skillName.includes(searchTerm))) {
-            return true;
-          }
-        }
-        
-        return false;
-      });
-    }
-    
-    UI.renderHistory();
+    // Just trigger the main filter function which handles both search and filters
+    this.applyHistoryFilters();
   },
 
   // Setup settings dropdown
@@ -544,6 +497,9 @@ const App = {
   // Setup history filters
   setupHistoryFilters() {
     const filterCheckboxes = document.querySelectorAll('.filter-checkbox');
+    const customDateRange = document.getElementById('filter-custom-date-range');
+    const dateFromInput = document.getElementById('filter-date-from');
+    const dateToInput = document.getElementById('filter-date-to');
     
     filterCheckboxes.forEach(checkbox => {
       checkbox.addEventListener('change', (e) => {
@@ -561,6 +517,11 @@ const App = {
               }
             });
             this.historyFilters[filterType] = 'all';
+            
+            // Hide custom date range if time filter is set to all
+            if (filterType === 'time' && customDateRange) {
+              customDateRange.style.display = 'none';
+            }
           } else {
             // Prevent unchecking "all" if it's the only one checked
             e.target.checked = true;
@@ -573,6 +534,26 @@ const App = {
               allCheckbox.checked = false;
             }
             this.historyFilters[filterType] = filterValue;
+            
+            // Show/hide custom date range for time filter
+            if (filterType === 'time' && customDateRange) {
+              if (filterValue === 'custom') {
+                customDateRange.style.display = 'block';
+                // Set default dates if empty
+                const today = new Date();
+                const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+                if (!dateFromInput.value) {
+                  dateFromInput.value = weekAgo.toISOString().split('T')[0];
+                  this.historyFilters.customDateFrom = dateFromInput.value;
+                }
+                if (!dateToInput.value) {
+                  dateToInput.value = today.toISOString().split('T')[0];
+                  this.historyFilters.customDateTo = dateToInput.value;
+                }
+              } else {
+                customDateRange.style.display = 'none';
+              }
+            }
           } else {
             // If unchecking and no other options are checked, check "all"
             const groupCheckboxes = document.querySelectorAll(`[data-filter="${filterType}"]`);
@@ -583,6 +564,11 @@ const App = {
               if (allCheckbox) {
                 allCheckbox.checked = true;
                 this.historyFilters[filterType] = 'all';
+                
+                // Hide custom date range when reverting to all
+                if (filterType === 'time' && customDateRange) {
+                  customDateRange.style.display = 'none';
+                }
               }
             }
           }
@@ -593,6 +579,21 @@ const App = {
       });
     });
     
+    // Handle custom date inputs
+    if (dateFromInput) {
+      dateFromInput.addEventListener('change', (e) => {
+        this.historyFilters.customDateFrom = e.target.value;
+        this.applyHistoryFilters();
+      });
+    }
+    
+    if (dateToInput) {
+      dateToInput.addEventListener('change', (e) => {
+        this.historyFilters.customDateTo = e.target.value;
+        this.applyHistoryFilters();
+      });
+    }
+    
     this.updateFilterIcon();
   },
 
@@ -601,7 +602,7 @@ const App = {
     const filterIcon = document.getElementById('history-filters-icon');
     if (!filterIcon) return;
     
-    const hasActiveFilters = Object.values(this.historyFilters).some(value => value !== 'all');
+    const hasActiveFilters = Object.values(this.historyFilters).some(value => value !== 'all' && value !== '');
     
     if (hasActiveFilters) {
       filterIcon.classList.add('active');
@@ -615,13 +616,59 @@ const App = {
     const searchInput = document.getElementById('history-search');
     const searchQuery = searchInput ? searchInput.value : '';
     
-    // Start with search-filtered results
-    this.filterHistory(searchQuery);
-    
-    // Apply additional filters
-    const allHistory = this.filteredHistory;
+    // Start with all history
+    const allHistory = Storage.getCheckins().reverse();
+    const skills = Storage.getSkills();
     
     this.filteredHistory = allHistory.filter(checkin => {
+      // Search filter
+      if (searchQuery.trim()) {
+        const searchTerm = searchQuery.toLowerCase();
+        let matchesSearch = false;
+        
+        // Search in protocol name
+        if (checkin.protocolName && checkin.protocolName.toLowerCase().includes(searchTerm)) {
+          matchesSearch = true;
+        }
+        
+        // Search in item name (for drag & drop operations)
+        if (checkin.itemName && checkin.itemName.toLowerCase().includes(searchTerm)) {
+          matchesSearch = true;
+        }
+        
+        // Search in operation type
+        if (checkin.type === 'drag_drop') {
+          const actionText = checkin.subType === 'protocol' ? 'reordered protocol' : 'reordered skill';
+          if (actionText.includes(searchTerm)) {
+            matchesSearch = true;
+          }
+        }
+        
+        // Search in quick action operations
+        if (checkin.type === 'quick_action') {
+          const actionText = checkin.subType === 'added' ? 'added to quick actions' : 'removed from quick actions';
+          if (actionText.includes(searchTerm)) {
+            matchesSearch = true;
+          }
+        }
+        
+        // Search in affected skill names
+        if (checkin.changes) {
+          const affectedSkills = Object.keys(checkin.changes).map(skillId => {
+            const skill = skills.find(s => s.id == skillId);
+            return skill ? skill.name.toLowerCase() : '';
+          });
+          
+          if (affectedSkills.some(skillName => skillName.includes(searchTerm))) {
+            matchesSearch = true;
+          }
+        }
+        
+        if (!matchesSearch) {
+          return false;
+        }
+      }
+      
       // Time filter
       if (this.historyFilters.time !== 'all') {
         const checkinDate = new Date(checkin.timestamp);
@@ -643,6 +690,20 @@ const App = {
             const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
             if (checkinDate < monthAgo) {
               return false;
+            }
+            break;
+          case 'custom':
+            if (this.historyFilters.customDateFrom && this.historyFilters.customDateTo) {
+              // Parse checkin timestamp and extract date string in YYYY-MM-DD format using UTC
+              const checkinDateTime = new Date(checkin.timestamp);
+              const checkinDateString = checkinDateTime.getUTCFullYear() + '-' + 
+                String(checkinDateTime.getUTCMonth() + 1).padStart(2, '0') + '-' + 
+                String(checkinDateTime.getUTCDate()).padStart(2, '0');
+              
+              // Compare date strings directly
+              if (checkinDateString < this.historyFilters.customDateFrom || checkinDateString > this.historyFilters.customDateTo) {
+                return false;
+              }
             }
             break;
         }
