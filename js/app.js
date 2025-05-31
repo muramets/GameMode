@@ -921,8 +921,8 @@ function initMainApp() {
                 
                 // State filter - show checkins that affect skills used by this state
                 if (this.historyFilters.state !== 'all') {
-                    if (checkin.type !== 'protocol' || !checkin.changes) {
-                        return false; // Only protocol checkins affect states
+                    if (checkin.type !== 'protocol' || !checkin.protocolId) {
+                        return false; // Only protocol checkins can be filtered by state
                     }
                     
                     // Get the selected state and its dependencies
@@ -932,13 +932,20 @@ function initMainApp() {
                     }
                     
                     // Get all skill IDs that affect this state (including from dependent states)
-                    const affectedSkillIds = this.getStateAffectedSkills(state.id);
+                    const stateSkillIds = this.getStateAffectedSkills(state.id);
                     
-                    // Check if this checkin affects any of the skills
-                    const checkinSkillIds = Object.keys(checkin.changes).map(id => parseInt(id));
-                    const hasIntersection = checkinSkillIds.some(skillId => affectedSkillIds.includes(skillId));
+                    // Get the protocol and its targets
+                    const protocol = window.Storage.getProtocolById(checkin.protocolId);
+                    if (!protocol || !protocol.targets) {
+                        return false;
+                    }
                     
-                    if (!hasIntersection) {
+                    // Check if this protocol targets any of the state's skill dependencies
+                    const protocolTargetsStateSkills = protocol.targets.some(targetId => 
+                        stateSkillIds.includes(parseInt(targetId))
+                    );
+                    
+                    if (!protocolTargetsStateSkills) {
                         return false;
                     }
                 }
@@ -986,9 +993,9 @@ function initMainApp() {
             
             let affectedSkills = [];
             
-            // Add direct skill dependencies
+            // Add direct skill dependencies (convert to numbers)
             if (state.skillIds && state.skillIds.length > 0) {
-                affectedSkills.push(...state.skillIds);
+                affectedSkills.push(...state.skillIds.map(id => parseInt(id)));
             }
             
             // Add skills from dependent states (recursive)
@@ -999,7 +1006,7 @@ function initMainApp() {
                 });
             }
             
-            // Remove duplicates and return
+            // Remove duplicates and return (all should be numbers now)
             return [...new Set(affectedSkills)];
         },
 
@@ -1187,6 +1194,44 @@ function initMainApp() {
             const protocol = window.Storage.getProtocolById(protocolId);
             if (protocol) {
                 this.showToast(`Showing history for ${protocol.name}`, 'info');
+            }
+        },
+        
+        // Navigate to history page and filter by specific state
+        viewStateHistory(stateId) {
+            // Reset all filters first
+            this.historyFilters = {
+                time: 'all',
+                type: 'all',
+                protocol: 'all',
+                state: stateId.toString(),
+                effect: 'all',
+                skill: 'all',
+                customDateFrom: '',
+                customDateTo: ''
+            };
+            
+            // Clear search input
+            const historySearchInput = document.getElementById('history-search');
+            if (historySearchInput) {
+                historySearchInput.value = '';
+            }
+            
+            // Navigate to history page
+            this.navigateTo('history');
+            
+            // Apply the state filter
+            this.applyHistoryFilters();
+            
+            // Update filter UI to show selected state
+            setTimeout(() => {
+                this.updateFilterUI();
+            }, 100);
+            
+            // Show a toast to inform user about the filter
+            const state = window.Storage.getStateById(stateId);
+            if (state) {
+                this.showToast(`Showing history for ${state.name}`, 'info');
             }
         }
     };

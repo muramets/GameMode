@@ -130,6 +130,9 @@ const UI = {
                   <button class="state-settings-btn" onclick="Modals.editState('${state.id}')" title="Edit state">
                     <i class="fas fa-cog"></i>
                   </button>
+                  <button class="state-history-btn" onclick="App.viewStateHistory('${state.id}')" title="View state history">
+                    <i class="fas fa-history"></i>
+                  </button>
                 </div>
               </div>
               

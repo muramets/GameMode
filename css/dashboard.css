@@ -296,6 +296,7 @@
   color: var(--main-color);
 }
 
+.state-history-btn,
 .state-settings-btn {
   background: none;
   border: none;
@@ -313,6 +314,7 @@
   justify-content: center;
 }
 
+.state-history-btn:hover,
 .state-settings-btn:hover {
   color: var(--main-color);
 }
