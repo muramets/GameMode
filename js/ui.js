@@ -371,6 +371,9 @@ const UI = {
             <button class="protocol-settings-btn" onclick="Modals.editProtocol(${protocol.id})" title="Edit protocol">
               <i class="fas fa-cog"></i>
             </button>
+            <button class="protocol-history-btn" onclick="App.viewProtocolHistory(${protocol.id})" title="View protocol history">
+              <i class="fas fa-history"></i>
+            </button>
           </div>
           <div class="protocol-cell protocol-targets-cell">${targetTags}</div>
           <div class="protocol-cell protocol-weight-cell">
@@ -478,6 +481,9 @@ const UI = {
             <button class="skill-settings-btn" onclick="Modals.editSkill(${skill.id})" title="Edit skill">
               <i class="fas fa-cog"></i>
             </button>
+            <button class="skill-history-btn" onclick="App.viewSkillHistory(${skill.id})" title="View skill history">
+              <i class="fas fa-history"></i>
+            </button>
           </div>
           <div class="skill-cell skill-initial-cell">${initial.toFixed(2)}</div>
           <div class="skill-cell skill-current-cell">
@@ -511,7 +517,8 @@ const UI = {
                                App.historyFilters.type !== 'all' || 
                                App.historyFilters.protocol !== 'all' ||
                                App.historyFilters.state !== 'all' ||
-                               App.historyFilters.effect !== 'all';
+                               App.historyFilters.effect !== 'all' ||
+                               App.historyFilters.skill !== 'all';
       
       const searchInput = document.getElementById('history-search');
       const hasSearchQuery = searchInput && searchInput.value.trim();
