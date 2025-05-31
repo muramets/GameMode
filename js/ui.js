@@ -66,7 +66,18 @@ const UI = {
           // Get number of dependencies (skills or states)
           const skillDeps = state.skillIds || [];
           const stateDeps = state.stateIds || [];
-          const dependencyCount = skillDeps.length + stateDeps.length;
+          
+          // Create dependency display text
+          let dependencyText = '';
+          if (skillDeps.length > 0 && stateDeps.length > 0) {
+            dependencyText = `Skills: ${skillDeps.length} States: ${stateDeps.length}`;
+          } else if (skillDeps.length > 0) {
+            dependencyText = `Skills: ${skillDeps.length}`;
+          } else if (stateDeps.length > 0) {
+            dependencyText = `States: ${stateDeps.length}`;
+          } else {
+            dependencyText = 'No dependencies';
+          }
           
           // Get legacy name and subtext for backward compatibility
           let displayName, displaySubtext = '';
@@ -113,7 +124,7 @@ const UI = {
               </div>
               
               <div class="state-details">
-                <span>Skills: ${dependencyCount}</span>
+                <span>${dependencyText}</span>
                 <span>${percentage}%</span>
               </div>
             </div>
