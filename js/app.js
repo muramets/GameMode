@@ -527,12 +527,17 @@ const App = {
             e.target.checked = true;
           }
         } else {
-          // If specific option is checked, uncheck "all"
+          // If specific option is checked, uncheck "all" and all other options in the same group
           if (e.target.checked) {
-            const allCheckbox = document.querySelector(`[data-filter="${filterType}"][data-value="all"]`);
-            if (allCheckbox) {
-              allCheckbox.checked = false;
-            }
+            const groupCheckboxes = document.querySelectorAll(`[data-filter="${filterType}"]`);
+            
+            // Uncheck all other options in the same group
+            groupCheckboxes.forEach(cb => {
+              if (cb !== e.target) {
+                cb.checked = false;
+              }
+            });
+            
             this.historyFilters[filterType] = filterValue;
             
             // Show/hide custom date range for time filter
@@ -602,7 +607,10 @@ const App = {
     const filterIcon = document.getElementById('history-filters-icon');
     if (!filterIcon) return;
     
-    const hasActiveFilters = Object.values(this.historyFilters).some(value => value !== 'all' && value !== '');
+    // Check only the main filter values (time, type, effect), ignore custom date fields
+    const hasActiveFilters = this.historyFilters.time !== 'all' || 
+                             this.historyFilters.type !== 'all' || 
+                             this.historyFilters.effect !== 'all';
     
     if (hasActiveFilters) {
       filterIcon.classList.add('active');
