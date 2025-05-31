@@ -247,11 +247,12 @@ const UI = {
 
   // History
   renderHistory() {
-    // Initialize filtered history if empty and no search is active
+    // Initialize filtered history if empty and no search is active AND no filters are active
     const historySearchInput = document.getElementById('history-search');
     const hasSearchQuery = historySearchInput && historySearchInput.value.trim() !== '';
+    const hasActiveFilters = Object.values(App.historyFilters).some(value => value !== 'all' && value !== '');
     
-    if (App.filteredHistory.length === 0 && !hasSearchQuery) {
+    if (App.filteredHistory.length === 0 && !hasSearchQuery && !hasActiveFilters) {
       App.filteredHistory = Storage.getCheckins().reverse();
     }
 
@@ -260,8 +261,8 @@ const UI = {
     const skills = Storage.getSkills();
     
     if (checkins.length === 0) {
-      const message = hasSearchQuery 
-        ? '<div class="text-dim" style="text-align: center; padding: 2rem; grid-column: 1 / -1;">No check-ins found matching your search.</div>'
+      const message = hasSearchQuery || hasActiveFilters 
+        ? '<div class="text-dim" style="text-align: center; padding: 2rem; grid-column: 1 / -1;">No check-ins found matching your search/filters.</div>'
         : '<div class="text-dim" style="text-align: center; padding: 2rem; grid-column: 1 / -1;">No check-ins yet. Start with a protocol!</div>';
       historyBody.innerHTML = message;
       return;
