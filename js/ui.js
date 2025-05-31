@@ -509,6 +509,8 @@ const UI = {
       // Check if filters are applied to show appropriate message
       const hasActiveFilters = App.historyFilters.time !== 'all' || 
                                App.historyFilters.type !== 'all' || 
+                               App.historyFilters.protocol !== 'all' ||
+                               App.historyFilters.state !== 'all' ||
                                App.historyFilters.effect !== 'all';
       
       const searchInput = document.getElementById('history-search');
@@ -671,14 +673,6 @@ const UI = {
       return checkinDateStr === todayStr && checkin.type === 'protocol';
     });
     
-    // Filter this month's checkins
-    const monthCheckins = checkins.filter(checkin => {
-      const checkinDate = new Date(checkin.timestamp);
-      return checkinDate.getMonth() === currentMonth && 
-             checkinDate.getFullYear() === currentYear && 
-             checkin.type === 'protocol';
-    });
-    
     // Calculate total score changes for today (real sum, not absolute)
     let todayTotalChange = 0;
     todayCheckins.forEach(checkin => {
@@ -690,19 +684,6 @@ const UI = {
         const action = firstChange >= 0 ? '+' : '-';
         const xpChange = action === '+' ? protocol.weight : -protocol.weight;
         todayTotalChange += xpChange;
-      }
-    });
-
-    // Calculate total score changes for this month
-    let monthTotalChange = 0;
-    monthCheckins.forEach(checkin => {
-      const protocol = window.Storage.getProtocolById(checkin.protocolId);
-      if (protocol && checkin.changes && Object.keys(checkin.changes).length > 0) {
-        // Determine action from the changes (+ if positive, - if negative)
-        const firstChange = Object.values(checkin.changes)[0];
-        const action = firstChange >= 0 ? '+' : '-';
-        const xpChange = action === '+' ? protocol.weight : -protocol.weight;
-        monthTotalChange += xpChange;
       }
     });
     
@@ -754,6 +735,27 @@ const UI = {
       const sign = todayTotalChange >= 0 ? '+' : '';
       checkinsTodayDetail.textContent = `(${sign}${todayTotalChange.toFixed(2)} xp)`;
     }
+    
+    // Filter this month's checkins
+    const monthCheckins = checkins.filter(checkin => {
+      const checkinDate = new Date(checkin.timestamp);
+      return checkinDate.getMonth() === currentMonth && 
+             checkinDate.getFullYear() === currentYear && 
+             checkin.type === 'protocol';
+    });
+    
+    // Calculate total score changes for this month
+    let monthTotalChange = 0;
+    monthCheckins.forEach(checkin => {
+      const protocol = window.Storage.getProtocolById(checkin.protocolId);
+      if (protocol && checkin.changes && Object.keys(checkin.changes).length > 0) {
+        // Determine action from the changes (+ if positive, - if negative)
+        const firstChange = Object.values(checkin.changes)[0];
+        const action = firstChange >= 0 ? '+' : '-';
+        const xpChange = action === '+' ? protocol.weight : -protocol.weight;
+        monthTotalChange += xpChange;
+      }
+    });
     
     // Update month's checkins
     const checkinsMonth = document.getElementById('checkins-month');
