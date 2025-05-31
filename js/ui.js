@@ -63,6 +63,24 @@ const UI = {
           const color = this.getSkillColor(score);
           const percentage = Math.round((score / 10) * 100);
           
+          // Calculate yesterday's score
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayScore = window.Storage.calculateStateScoreAtDate(state.id, yesterday);
+          
+          // Calculate change direction and class
+          const scoreDiff = score - yesterdayScore;
+          let changeClass = 'no-change';
+          let changeIcon = '';
+          
+          if (scoreDiff > 0.01) { // Threshold to avoid tiny changes
+            changeClass = 'increase';
+            changeIcon = '<i class="fas fa-arrow-up"></i>';
+          } else if (scoreDiff < -0.01) {
+            changeClass = 'decrease';
+            changeIcon = '<i class="fas fa-arrow-down"></i>';
+          }
+          
           // Get number of dependencies (skills or states)
           const skillDeps = state.skillIds || [];
           const stateDeps = state.stateIds || [];
@@ -117,6 +135,10 @@ const UI = {
               
               <div class="state-score" style="color: ${color};">
                 ${score.toFixed(2)}
+                <div class="state-score-yesterday">
+                  yesterday: ${yesterdayScore.toFixed(2)}
+                  ${changeIcon ? `<span class="state-change-arrow ${changeClass}">${changeIcon}</span>` : ''}
+                </div>
               </div>
               
               <div class="state-bar">

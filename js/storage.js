@@ -293,7 +293,7 @@ class Storage {
   }
 
   // Add checkin
-  addCheckin(protocolId) {
+  addCheckin(protocolId, action = '+') {
     const protocols = this.getProtocols();
     const protocol = protocols.find(p => p.id === protocolId);
     if (!protocol) return false;
@@ -310,7 +310,7 @@ class Storage {
 
     // Calculate skill changes only if protocol has targets
     if (protocol.targets && protocol.targets.length > 0) {
-      const changeValue = protocol.action === '+' ? protocol.weight : -protocol.weight;
+      const changeValue = action === '+' ? protocol.weight : -protocol.weight;
       
       protocol.targets.forEach(skillId => {
         checkin.changes[skillId] = changeValue;
@@ -331,7 +331,6 @@ class Storage {
     const protocol = this.getProtocolById(protocolId);
     if (!protocol) return false;
 
-    const changeValue = protocol.action === '+' ? protocol.weight : -protocol.weight;
     let hasChanges = false;
 
     checkins.forEach(checkin => {
@@ -346,13 +345,8 @@ class Storage {
           });
         }
 
-        // Add new target effects
-        if (newTargets && newTargets.length > 0) {
-          newTargets.forEach(skillId => {
-            checkin.changes[skillId] = changeValue;
-            hasChanges = true;
-          });
-        }
+        // For recalculation, we can't determine the original action, so we skip adding new effects
+        // New check-ins will use the current protocol settings
       }
     });
 
@@ -516,6 +510,67 @@ class Storage {
     if (state.stateIds && state.stateIds.length > 0) {
       state.stateIds.forEach(dependentStateId => {
         total += this.calculateStateScore(dependentStateId, new Set(visitedStates));
+        count++;
+      });
+    }
+
+    return count > 0 ? total / count : 0;
+  }
+
+  // Calculate skill score at specific date
+  calculateCurrentScoreAtDate(skillId, targetDate) {
+    const skill = this.getSkillById(skillId);
+    if (!skill) return 0;
+
+    const checkins = this.getCheckins();
+    let totalChange = 0;
+
+    // Get target date as string for comparison
+    const targetDateStr = new Date(targetDate).toDateString();
+
+    checkins.forEach((checkin, index) => {
+      if (checkin.changes && checkin.type === 'protocol') {
+        // Check if this checkin affects our skill and happened before/on target date
+        const checkinDate = new Date(checkin.timestamp);
+        const checkinDateStr = checkinDate.toDateString();
+        
+        if (checkinDateStr <= targetDateStr && checkin.changes[skillId] !== undefined) {
+          totalChange += checkin.changes[skillId];
+        }
+      }
+    });
+
+    return Math.max(0, skill.initialScore + totalChange);
+  }
+
+  // Calculate state score at specific date
+  calculateStateScoreAtDate(stateId, targetDate, visitedStates = new Set()) {
+    const states = this.getStates();
+    const state = states.find(s => s.id === stateId);
+    if (!state) return 0;
+
+    // Prevent circular dependencies
+    if (visitedStates.has(stateId)) {
+      console.warn(`Circular dependency detected for state: ${stateId}`);
+      return 0;
+    }
+    visitedStates.add(stateId);
+
+    let total = 0;
+    let count = 0;
+
+    // Calculate contribution from skills
+    if (state.skillIds && state.skillIds.length > 0) {
+      state.skillIds.forEach(skillId => {
+        total += this.calculateCurrentScoreAtDate(skillId, targetDate);
+        count++;
+      });
+    }
+
+    // Calculate contribution from other states
+    if (state.stateIds && state.stateIds.length > 0) {
+      state.stateIds.forEach(dependentStateId => {
+        total += this.calculateStateScoreAtDate(dependentStateId, targetDate, new Set(visitedStates));
         count++;
       });
     }
@@ -746,7 +801,6 @@ class Storage {
       name: protocolData.name + (protocolData.description ? '. ' + protocolData.description : ''),
       icon: protocolData.icon,
       hover: protocolData.hover || '',
-      action: protocolData.action,
       weight: protocolData.weight,
       targets: protocolData.targets || []
     };
@@ -783,21 +837,19 @@ class Storage {
       name: protocolData.name + (protocolData.description ? '. ' + protocolData.description : ''),
       icon: protocolData.icon,
       hover: protocolData.hover || '',
-      action: protocolData.action,
       weight: protocolData.weight,
       targets: newTargets
     };
     
     this.set(this.KEYS.PROTOCOLS, protocols);
     
-    // Check if targets changed or if action/weight changed and recalculate history if needed
+    // Check if targets changed or weight changed and recalculate history if needed
     const targetsChanged = !this.arraysEqual(oldTargets, newTargets);
-    const actionChanged = oldProtocol.action !== protocolData.action;
     const weightChanged = oldProtocol.weight !== protocolData.weight;
     
-    if (targetsChanged || actionChanged || weightChanged) {
-      // If action/weight changed, we need to recalculate using all targets (old and new)
-      if (actionChanged || weightChanged) {
+    if (targetsChanged || weightChanged) {
+      // If weight changed, we need to recalculate using all targets (old and new)
+      if (weightChanged) {
         // Get all unique targets from old and new
         const allTargets = [...new Set([...oldTargets, ...newTargets])];
         const wasRecalculated = this.recalculateProtocolHistory(protocolId, allTargets, newTargets);
@@ -1146,3 +1198,4 @@ class Storage {
 
 // Create global instance
 window.Storage = new Storage();
+
