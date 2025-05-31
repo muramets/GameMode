@@ -1295,25 +1295,35 @@ function initMainApp() {
             let isManuallyExpanded = false;
             let isProgramExpanded = false;
             
-            // Hover to expand
-            navSkillsGroup.addEventListener('mouseenter', () => {
+            // Hover на стрелку для expand
+            navExpandBtn.addEventListener('mouseenter', () => {
                 // Only expand on hover if not already expanded and not on history page
                 if (!isManuallyExpanded && !isProgramExpanded && this.currentPage !== 'history') {
                     clearTimeout(hoverTimeout);
                     navExpandBtn.classList.add('expanded');
                     navHistory.classList.add('expanded');
+                    navSkillsGroup.classList.add('hover-expanded');
                 }
             });
             
-            // Hover to collapse (with delay)
-            navSkillsGroup.addEventListener('mouseleave', () => {
+            // Hover to collapse при уходе со стрелки или с history кнопки (с задержкой)
+            const scheduleCollapse = () => {
                 // Don't collapse if we're on history page, or if manually/programmatically expanded
                 if (!isManuallyExpanded && !isProgramExpanded && this.currentPage !== 'history') {
                     hoverTimeout = setTimeout(() => {
                         navExpandBtn.classList.remove('expanded');
                         navHistory.classList.remove('expanded');
+                        navSkillsGroup.classList.remove('hover-expanded');
                     }, 150);
                 }
+            };
+            
+            navExpandBtn.addEventListener('mouseleave', scheduleCollapse);
+            navHistory.addEventListener('mouseleave', scheduleCollapse);
+            
+            // При входе на history кнопку - отменяем коллапс
+            navHistory.addEventListener('mouseenter', () => {
+                clearTimeout(hoverTimeout);
             });
             
             // Click arrow to toggle manual expansion
@@ -1329,6 +1339,7 @@ function initMainApp() {
                     navExpandBtn.classList.remove('expanded');
                     navHistory.classList.remove('expanded');
                     navSkillsGroup.classList.remove('expanded');
+                    navSkillsGroup.classList.remove('hover-expanded');
                 }
             });
             
@@ -1346,6 +1357,7 @@ function initMainApp() {
                         navHistory.classList.remove('program-expanded');
                         navHistory.classList.remove('expanded');
                         navSkillsGroup.classList.remove('expanded');
+                        navSkillsGroup.classList.remove('hover-expanded');
                     }
                 },
                 
@@ -1354,7 +1366,7 @@ function initMainApp() {
                     isProgramExpanded = false;
                     navExpandBtn.classList.remove('expanded');
                     navHistory.classList.remove('expanded', 'program-expanded');
-                    navSkillsGroup.classList.remove('expanded');
+                    navSkillsGroup.classList.remove('expanded', 'hover-expanded');
                 }
             };
         }
