@@ -57,18 +57,91 @@ class Auth {
                 this.logout();
             });
         }
+        
+        // Setup custom email validation
+        this.setupEmailValidation();
+    }
+    
+    setupEmailValidation() {
+        // Login email validation
+        const loginEmail = document.getElementById('loginEmail');
+        const loginEmailTooltip = document.getElementById('loginEmailTooltip');
+        
+        if (loginEmail && loginEmailTooltip) {
+            // Remove validation on input - only validate when user finishes
+            loginEmail.addEventListener('blur', () => {
+                this.validateEmail(loginEmail, loginEmailTooltip);
+            });
+            
+            loginEmail.addEventListener('focus', () => {
+                this.hideEmailTooltip(loginEmailTooltip);
+            });
+        }
+        
+        // Register email validation
+        const registerEmail = document.getElementById('registerEmail');
+        const registerEmailTooltip = document.getElementById('registerEmailTooltip');
+        
+        if (registerEmail && registerEmailTooltip) {
+            // Remove validation on input - only validate when user finishes
+            registerEmail.addEventListener('blur', () => {
+                this.validateEmail(registerEmail, registerEmailTooltip);
+            });
+            
+            registerEmail.addEventListener('focus', () => {
+                this.hideEmailTooltip(registerEmailTooltip);
+            });
+        }
+    }
+    
+    validateEmail(emailInput, tooltip) {
+        const email = emailInput.value.trim();
+        
+        // Check if email contains @ symbol
+        if (email && !email.includes('@')) {
+            this.showEmailTooltip(tooltip, `"${email}" is missing an '@'`);
+            return false;
+        } else {
+            this.hideEmailTooltip(tooltip);
+            return true;
+        }
+    }
+    
+    showEmailTooltip(tooltip, message) {
+        if (tooltip) {
+            // Update tooltip message if provided
+            if (message) {
+                const icon = tooltip.querySelector('.tooltip-icon');
+                const iconHTML = icon ? icon.outerHTML : '<i class="fas fa-exclamation-circle tooltip-icon"></i>';
+                tooltip.innerHTML = iconHTML + message;
+            }
+            
+            tooltip.classList.add('show');
+        }
+    }
+    
+    hideEmailTooltip(tooltip) {
+        if (tooltip) {
+            tooltip.classList.remove('show');
+        }
     }
     
     async handleLogin() {
         const email = document.getElementById('loginEmail').value;
         const password = document.getElementById('loginPassword').value;
         
+        // Validate email format before proceeding
+        const loginEmailTooltip = document.getElementById('loginEmailTooltip');
+        const loginEmail = document.getElementById('loginEmail');
+        if (!this.validateEmail(loginEmail, loginEmailTooltip)) {
+            return; // Stop if email is invalid
+        }
+        
         this.showLoading('signing in...');
         this.hideError();
         
         try {
             const userCredential = await window.firebaseAuth.signInWithEmailAndPassword(email, password);
-            console.log('✅ Login successful:', userCredential.user.email);
             
             this.hideLoading();
             // Auth state listener will handle the UI transition
@@ -84,6 +157,13 @@ class Auth {
         const name = document.getElementById('registerName').value;
         const email = document.getElementById('registerEmail').value;
         const password = document.getElementById('registerPassword').value;
+        
+        // Validate email format before proceeding
+        const registerEmailTooltip = document.getElementById('registerEmailTooltip');
+        const registerEmail = document.getElementById('registerEmail');
+        if (!this.validateEmail(registerEmail, registerEmailTooltip)) {
+            return; // Stop if email is invalid
+        }
         
         if (password.length < 6) {
             this.showError('Password must be at least 6 characters');
@@ -127,6 +207,7 @@ class Auth {
         document.getElementById('registerForm').classList.remove('hidden');
         this.hideError();
         this.clearForms();
+        this.hideAllEmailTooltips();
     }
     
     switchToLogin() {
@@ -134,6 +215,7 @@ class Auth {
         document.getElementById('loginForm').classList.remove('hidden');
         this.hideError();
         this.clearForms();
+        this.hideAllEmailTooltips();
     }
     
     clearForms() {
@@ -145,6 +227,14 @@ class Auth {
         document.getElementById('registerName').value = '';
         document.getElementById('registerEmail').value = '';
         document.getElementById('registerPassword').value = '';
+    }
+    
+    hideAllEmailTooltips() {
+        const loginEmailTooltip = document.getElementById('loginEmailTooltip');
+        const registerEmailTooltip = document.getElementById('registerEmailTooltip');
+        
+        this.hideEmailTooltip(loginEmailTooltip);
+        this.hideEmailTooltip(registerEmailTooltip);
     }
     
     showLoading(message) {
