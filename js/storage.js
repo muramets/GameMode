@@ -20,7 +20,7 @@ class Storage {
   
   // Set current user for data scoping
   setUser(user) {
-    const wasUserChange = this.currentUser && this.currentUser.uid !== user.uid;
+    const wasUserChange = this.currentUser && user && this.currentUser.uid !== user.uid;
     this.currentUser = user;
     this.lastSyncTime = null; // Reset sync time when user changes
     
