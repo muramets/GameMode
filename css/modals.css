@@ -258,12 +258,13 @@
   left: 0;
   right: 0;
   background-color: var(--sub-alt-color);
-  border-radius: 0 0 0.5rem 0.5rem;
-  max-height: 200px;
+  border-radius: var(--roundness);
+  max-height: 250px;
   overflow-y: auto;
-  z-index: 100;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 2000;
+  box-shadow: 0 0 0 0.5em var(--bg-color);
   display: none;
+  margin-top: 0.5em;
 }
 
 .skill-suggestions.active {
@@ -271,15 +272,16 @@
 }
 
 .skill-suggestion {
-  padding: 0.75rem;
+  padding: 0.6em 1em;
   cursor: pointer;
-  transition: background-color 0.125s;
-  color: var(--text-color);
-  font-size: 0.9rem;
+  transition: all 0.125s;
+  color: var(--sub-color);
+  font-size: 0.75rem;
+  font-family: 'Roboto Mono', monospace;
   border-bottom: 1px solid var(--bg-color);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.7em;
 }
 
 .skill-suggestion:last-child {
@@ -289,13 +291,18 @@
 .skill-suggestion:hover,
 .skill-suggestion.highlighted {
   background-color: var(--bg-color);
-  color: var(--main-color);
+  color: var(--text-color);
 }
 
-.skill-suggestion-id {
-  color: var(--sub-color);
-  font-size: 0.75rem;
-  font-family: 'Roboto Mono', monospace;
+.skill-suggestion-icon {
+  font-size: 0.9rem;
+  min-width: 1.2em;
+  text-align: center;
+}
+
+.skill-suggestion-name {
+  font-weight: 500;
+  margin-bottom: 0.1em;
 }
 
 .selected-skill {
