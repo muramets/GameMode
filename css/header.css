@@ -107,12 +107,12 @@
   outline: none;
 }
 
-/* Settings Dropdown */
-.settings-dropdown {
+/* Profile Dropdown */
+.profile-dropdown {
   position: relative;
 }
 
-.dropdown-menu {
+.profile-menu {
   position: absolute;
   top: 100%;
   right: 0;
@@ -129,13 +129,14 @@
   margin-top: 0.25rem;
 }
 
-.dropdown-menu.active {
+.profile-dropdown:hover .profile-menu,
+.profile-dropdown:focus-within .profile-menu {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
 }
 
-.dropdown-item {
+.profile-item {
   width: 100%;
   background: none;
   border: none;
@@ -152,20 +153,29 @@
   outline: none;
 }
 
-.dropdown-item:hover {
+.profile-item:hover {
   background-color: var(--bg-color);
   color: var(--main-color);
 }
 
-.dropdown-item:focus {
+.profile-item:focus {
   outline: none;
 }
 
-.dropdown-item i {
+.profile-item i {
   font-size: 0.75rem;
   color: var(--sub-color);
 }
 
-.dropdown-item:hover i {
+.profile-item:hover i {
   color: var(--main-color);
+}
+
+/* Logout button specific styles */
+#logout-btn:hover {
+  color: var(--error-color) !important;
+}
+
+#logout-btn:hover i {
+  color: var(--error-color) !important;
 } 

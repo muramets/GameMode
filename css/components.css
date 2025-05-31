@@ -188,4 +188,118 @@
   border-left: 6px solid transparent;
   border-right: 6px solid transparent;
   border-bottom: 6px solid var(--bg-color);
+}
+
+/* ===== Empty States ===== */
+.empty-state {
+  opacity: 0.7;
+  pointer-events: none;
+  user-select: none;
+}
+
+.empty-state .protocol-name,
+.empty-state .skill-name,
+.empty-state .state-name,
+.empty-state .quick-protocol-name,
+.empty-state .history-action-main {
+  color: var(--text-color) !important;
+  opacity: 0.6;
+}
+
+.empty-state .protocol-icon,
+.empty-state .skill-icon,
+.empty-state .quick-protocol-icon {
+  opacity: 0.4;
+}
+
+.empty-hint {
+  color: var(--sub-color);
+  font-size: 0.8rem;
+  font-style: normal;
+}
+
+.history-empty-text {
+  color: var(--sub-color);
+  font-size: 0.8rem;
+  font-style: normal;
+  font-weight: normal;
+}
+
+.state-empty-hint {
+  font-size: 0.7rem;
+  color: var(--sub-color);
+  font-style: italic;
+}
+
+.empty-state .quick-protocol-details {
+  color: var(--sub-color);
+  font-size: 0.7rem;
+}
+
+/* Specific empty state styling - use normal backgrounds */
+.empty-state.state-card {
+  background-color: var(--sub-alt-color);
+  max-width: 300px;
+  width: fit-content;
+  min-width: 280px;
+}
+
+/* Fix text alignment for empty state */
+.empty-state.state-card .state-header {
+  justify-content: flex-start;
+}
+
+.empty-state.state-card .state-info-container {
+  justify-content: flex-start;
+  gap: 0.5rem;
+}
+
+.empty-state.state-card .state-name {
+  text-align: left;
+  margin-left: 0.5rem;
+}
+
+.empty-state.state-card .state-score {
+  color: var(--sub-color);
+  font-size: 2.5rem;
+  font-weight: 400;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state.state-card .state-details span {
+  color: var(--sub-color);
+  font-size: 0.75rem;
+}
+
+.empty-state.state-card:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.empty-state.protocol-row,
+.empty-state.skill-row,
+.empty-state.history-row {
+  background: var(--sub-alt-color) !important;
+  border-bottom: none !important;
+  border-top: none !important;
+  min-height: 60px !important;
+  display: grid !important;
+  align-items: center !important;
+}
+
+.empty-state.quick-protocol {
+  background-color: var(--sub-alt-color);
+}
+
+.empty-state.quick-protocol:hover {
+  transform: none;
+  box-shadow: none;
+  background-color: var(--sub-alt-color);
+}
+
+.quick-protocol-subtitle {
+  font-size: 0.75rem;
+  color: var(--sub-color);
+  margin-top: 0.25rem;
+  text-align: center;
 } 

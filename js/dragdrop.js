@@ -51,20 +51,24 @@ const DragDrop = {
       fontFamily: computedStyles.fontFamily
     });
     
-    // Remove any hover effects or active states
+    // Remove any hover effects or active states and data attributes
     clone.classList.remove('dragging');
+    clone.removeAttribute('data-skill-id');
+    clone.removeAttribute('data-protocol-id');
+    clone.removeAttribute('data-state-id');
+    clone.removeAttribute('draggable');
     clone.querySelectorAll('*').forEach(el => {
       el.style.pointerEvents = 'none';
     });
     
     document.body.appendChild(clone);
     
-    // Clean up after a delay
+    // Clean up immediately after drag starts
     setTimeout(() => {
       if (clone.parentNode) {
         clone.parentNode.removeChild(clone);
       }
-    }, 1000);
+    }, 50);
     
     return clone;
   },
@@ -77,7 +81,13 @@ const DragDrop = {
    * @param {Function} reorderCallback - Function to call when reordering
    */
   setupDragHandlers(element, dataKey, containerSelector, reorderCallback) {
+    // Check if already setup to prevent duplicate listeners
+    if (element.dataset.dragSetup === 'true') {
+      return;
+    }
+    
     element.setAttribute('draggable', 'true');
+    element.dataset.dragSetup = 'true';
     
     element.addEventListener('dragstart', (e) => {
       element.classList.add('dragging');
@@ -127,7 +137,7 @@ const DragDrop = {
   setupProtocols() {
     const protocolRows = document.querySelectorAll('.protocol-row');
     
-    protocolRows.forEach(row => {
+    protocolRows.forEach((row) => {
       this.setupDragHandlers(
         row, 
         'protocolId', 
@@ -140,7 +150,7 @@ const DragDrop = {
   setupSkills() {
     const skillRows = document.querySelectorAll('.skill-row');
     
-    skillRows.forEach(row => {
+    skillRows.forEach((row) => {
       this.setupDragHandlers(
         row, 
         'skillId', 
@@ -153,7 +163,7 @@ const DragDrop = {
   setupStates() {
     const stateCards = document.querySelectorAll('.state-card');
     
-    stateCards.forEach(card => {
+    stateCards.forEach((card) => {
       this.setupDragHandlers(
         card, 
         'stateId', 
@@ -166,7 +176,7 @@ const DragDrop = {
   setupQuickActions() {
     const quickProtocols = document.querySelectorAll('.quick-protocol');
     
-    quickProtocols.forEach(protocol => {
+    quickProtocols.forEach((protocol) => {
       this.setupDragHandlers(
         protocol, 
         'protocolId', 
@@ -197,21 +207,23 @@ const DragDrop = {
       currentOrder.splice(draggedIndex, 1);
       currentOrder.splice(targetIndex, 0, draggedId);
       
-      // Get item info for logging
+      // Get item info for logging (use loose equality to handle type differences)
       const draggedItem = items.find(item => item.id == draggedId);
       
       // Save new order
       saveOrderFn(currentOrder);
       
       // Log the operation
-      Storage.addDragDropOperation(
-        itemType,
-        draggedId,
-        draggedItem.name.split('.')[0],
-        draggedItem.icon,
-        oldOrder,
-        currentOrder
-      );
+      if (draggedItem) {
+        window.Storage.addDragDropOperation(
+          itemType,
+          draggedId,
+          draggedItem.name.split('.')[0],
+          draggedItem.icon,
+          oldOrder,
+          currentOrder
+        );
+      }
       
       // Update display
       updateDisplayFn();
@@ -225,10 +237,11 @@ const DragDrop = {
       App.filteredProtocols,
       draggedId,
       targetId,
-      (order) => Storage.setProtocolOrder(order),
+      (order) => window.Storage.setProtocolOrder(order),
       () => {
-        App.filteredProtocols = Storage.getProtocolsInOrder();
+        App.filteredProtocols = window.Storage.getProtocolsInOrder();
         UI.renderProtocols();
+        DragDrop.setupProtocols();
         App.setupTooltips();
       },
       'protocol',
@@ -237,14 +250,19 @@ const DragDrop = {
   },
 
   reorderSkills(draggedId, targetId) {
+    // Convert to proper types for comparison
+    const draggedIdInt = parseInt(draggedId);
+    const targetIdInt = parseInt(targetId);
+    
     this.reorderItems(
       App.filteredSkills,
-      draggedId,
-      targetId,
-      (order) => Storage.setSkillOrder(order),
+      draggedIdInt,
+      targetIdInt,
+      (order) => window.Storage.setSkillOrder(order),
       () => {
-        App.filteredSkills = Storage.getSkillsInOrder();
+        App.filteredSkills = window.Storage.getSkillsInOrder();
         UI.renderSkills();
+        DragDrop.setupSkills();
         App.setupTooltips();
       },
       'skill',
@@ -253,14 +271,19 @@ const DragDrop = {
   },
 
   reorderStates(draggedId, targetId) {
+    // Get fresh states data
+    const states = window.Storage.getStatesInOrder();
+    
     this.reorderItems(
-      App.states,
+      states,
       draggedId,
       targetId,
-      (order) => Storage.setStateOrder(order),
+      (order) => window.Storage.setStateOrder(order),
       () => {
-        App.states = Storage.getStatesInOrder();
+        App.states = window.Storage.getStatesInOrder();
         UI.renderDashboard();
+        // Re-setup drag and drop after rendering
+        setTimeout(() => DragDrop.setupStates(), 0);
       },
       'state',
       'States order updated'
@@ -268,7 +291,7 @@ const DragDrop = {
   },
 
   reorderQuickActions(draggedId, targetId) {
-    const quickActions = Storage.getQuickActions();
+    const quickActions = window.Storage.getQuickActionsInOrder();
     const currentOrder = quickActions.map(q => q.id);
     const oldOrder = [...currentOrder];
     const draggedIndex = currentOrder.indexOf(draggedId);
@@ -280,24 +303,26 @@ const DragDrop = {
       currentOrder.splice(targetIndex, 0, draggedId);
       
       // Get protocol info for logging
-      const draggedProtocol = Storage.getProtocols().find(p => p.id === draggedId);
+      const draggedProtocol = window.Storage.getProtocols().find(p => p.id === draggedId);
       
       // Save new order
-      Storage.setQuickActionOrder(currentOrder);
+      window.Storage.setQuickActionOrder(currentOrder);
       
       // Log the operation
-      Storage.addDragDropOperation(
-        'quick_action',
-        draggedId,
-        draggedProtocol.name.split('.')[0],
-        draggedProtocol.icon,
-        oldOrder,
-        currentOrder
-      );
+      if (draggedProtocol) {
+        window.Storage.addDragDropOperation(
+          'quick_action',
+          draggedId,
+          draggedProtocol.name.split('.')[0],
+          draggedProtocol.icon,
+          oldOrder,
+          currentOrder
+        );
+      }
       
       // Re-render and re-setup
       UI.renderQuickProtocols();
-      this.setupQuickActions();
+      setTimeout(() => this.setupQuickActions(), 0);
       
       App.showToast('Quick Actions order updated', 'success');
     }
