@@ -10,6 +10,11 @@ const App = {
   filteredSkills: [],
   filteredHistory: [],
   states: [],
+  historyFilters: {
+    time: 'all',
+    type: 'all', 
+    effect: 'all'
+  },
 
   init() {
     // Initialize storage
@@ -88,6 +93,9 @@ const App = {
         this.filterHistory(e.target.value);
       });
     }
+
+    // History filters
+    this.setupHistoryFilters();
 
     // Pagination buttons
     const prevBtn = document.getElementById('prev-page');
@@ -247,6 +255,10 @@ const App = {
           this.filteredHistory = Storage.getCheckins().reverse();
         }
         UI.renderHistory();
+        // Setup filters after rendering
+        setTimeout(() => {
+          this.setupHistoryFilters();
+        }, 0);
         break;
     }
   },
@@ -527,6 +539,157 @@ const App = {
       console.error('Migration failed:', error);
       this.showToast('Migration failed: ' + error.message, 'error');
     }
+  },
+
+  // Setup history filters
+  setupHistoryFilters() {
+    const filterCheckboxes = document.querySelectorAll('.filter-checkbox');
+    
+    filterCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', (e) => {
+        const filterType = e.target.dataset.filter;
+        const filterValue = e.target.dataset.value;
+        
+        // Handle "all" checkboxes
+        if (filterValue === 'all') {
+          if (e.target.checked) {
+            // Uncheck other options in the same group
+            const groupCheckboxes = document.querySelectorAll(`[data-filter="${filterType}"]`);
+            groupCheckboxes.forEach(cb => {
+              if (cb !== e.target) {
+                cb.checked = false;
+              }
+            });
+            this.historyFilters[filterType] = 'all';
+          } else {
+            // Prevent unchecking "all" if it's the only one checked
+            e.target.checked = true;
+          }
+        } else {
+          // If specific option is checked, uncheck "all"
+          if (e.target.checked) {
+            const allCheckbox = document.querySelector(`[data-filter="${filterType}"][data-value="all"]`);
+            if (allCheckbox) {
+              allCheckbox.checked = false;
+            }
+            this.historyFilters[filterType] = filterValue;
+          } else {
+            // If unchecking and no other options are checked, check "all"
+            const groupCheckboxes = document.querySelectorAll(`[data-filter="${filterType}"]`);
+            const hasChecked = Array.from(groupCheckboxes).some(cb => cb.checked && cb.dataset.value !== 'all');
+            
+            if (!hasChecked) {
+              const allCheckbox = document.querySelector(`[data-filter="${filterType}"][data-value="all"]`);
+              if (allCheckbox) {
+                allCheckbox.checked = true;
+                this.historyFilters[filterType] = 'all';
+              }
+            }
+          }
+        }
+        
+        this.updateFilterIcon();
+        this.applyHistoryFilters();
+      });
+    });
+    
+    this.updateFilterIcon();
+  },
+
+  // Update filter icon active state
+  updateFilterIcon() {
+    const filterIcon = document.getElementById('history-filters-icon');
+    if (!filterIcon) return;
+    
+    const hasActiveFilters = Object.values(this.historyFilters).some(value => value !== 'all');
+    
+    if (hasActiveFilters) {
+      filterIcon.classList.add('active');
+    } else {
+      filterIcon.classList.remove('active');
+    }
+  },
+
+  // Apply history filters
+  applyHistoryFilters() {
+    const searchInput = document.getElementById('history-search');
+    const searchQuery = searchInput ? searchInput.value : '';
+    
+    // Start with search-filtered results
+    this.filterHistory(searchQuery);
+    
+    // Apply additional filters
+    const allHistory = this.filteredHistory;
+    
+    this.filteredHistory = allHistory.filter(checkin => {
+      // Time filter
+      if (this.historyFilters.time !== 'all') {
+        const checkinDate = new Date(checkin.timestamp);
+        const now = new Date();
+        
+        switch (this.historyFilters.time) {
+          case 'today':
+            if (checkinDate.toDateString() !== now.toDateString()) {
+              return false;
+            }
+            break;
+          case 'week':
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            if (checkinDate < weekAgo) {
+              return false;
+            }
+            break;
+          case 'month':
+            const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            if (checkinDate < monthAgo) {
+              return false;
+            }
+            break;
+        }
+      }
+      
+      // Type filter
+      if (this.historyFilters.type !== 'all') {
+        switch (this.historyFilters.type) {
+          case 'protocol':
+            if (checkin.type !== 'protocol') {
+              return false;
+            }
+            break;
+          case 'manual':
+            if (checkin.type === 'protocol') {
+              return false;
+            }
+            break;
+        }
+      }
+      
+      // Effect filter
+      if (this.historyFilters.effect !== 'all') {
+        if (!checkin.changes) return false;
+        
+        const changes = Object.values(checkin.changes);
+        const hasPositive = changes.some(change => change > 0);
+        const hasNegative = changes.some(change => change < 0);
+        
+        switch (this.historyFilters.effect) {
+          case 'positive':
+            if (!hasPositive) {
+              return false;
+            }
+            break;
+          case 'negative':
+            if (!hasNegative) {
+              return false;
+            }
+            break;
+        }
+      }
+      
+      return true;
+    });
+    
+    UI.renderHistory();
   }
 };
 
