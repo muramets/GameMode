@@ -732,6 +732,7 @@ const Modals = {
       
       const stateData = {
         name: formData.get('state-name'),
+        subtext: formData.get('state-subtext') || '',
         icon: formData.get('state-emoji'),
         hover: formData.get('state-hover'),
         skillIds: selectedSkills,
@@ -809,12 +810,23 @@ const Modals = {
     
     this.currentStateId = stateId;
     
-    // Parse name parts
-    const nameParts = state.name.split('. ');
-    const name = nameParts[0];
+    // Parse name and subtext
+    let name, subtext = '';
+    
+    // Check if state has separate subtext field (new format)
+    if (state.subtext !== undefined) {
+      name = state.name;
+      subtext = state.subtext;
+    } else {
+      // Legacy format: parse from name field
+      const nameParts = state.name.split('. ');
+      name = nameParts[0];
+      subtext = nameParts.length > 1 ? nameParts.slice(1).join('. ') : '';
+    }
     
     // Populate form
     document.getElementById('state-name').value = name;
+    document.getElementById('state-subtext').value = subtext;
     document.getElementById('state-emoji').value = state.icon;
     document.getElementById('state-hover').value = state.hover || '';
     
@@ -898,15 +910,24 @@ const Modals = {
     
     if (statesGrid) {
       statesGrid.innerHTML = states.map(state => {
-        const nameParts = state.name.split('. ');
-        const mainName = nameParts[0];
+        // Get display name for dependency list
+        let displayName;
+        
+        // Check if state has separate subtext field (new format)
+        if (state.subtext !== undefined) {
+          displayName = state.name;
+        } else {
+          // Legacy format: parse from name field
+          const nameParts = state.name.split('. ');
+          displayName = nameParts[0];
+        }
         
         return `
           <div class="dependency-item" data-type="state" data-id="${state.id}">
             <input type="checkbox" value="${state.id}" data-type="state" style="display: none;">
             <div class="dependency-item-info">
               <span class="dependency-item-icon">${state.icon}</span>
-              <div class="dependency-item-name">${mainName}</div>
+              <div class="dependency-item-name">${displayName}</div>
             </div>
           </div>
         `;

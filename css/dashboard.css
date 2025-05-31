@@ -230,6 +230,13 @@
   flex: 1;
 }
 
+.state-name-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  flex: 1;
+}
+
 .state-controls {
   display: flex;
   align-items: center;
@@ -255,6 +262,15 @@
   margin: 0;
   transition: all 0.2s ease;
   text-transform: capitalize;
+}
+
+.state-subtext {
+  font-size: 0.75rem;
+  color: var(--sub-color);
+  line-height: 1.1;
+  font-family: 'Roboto Mono', monospace;
+  margin: 0;
+  opacity: 0.8;
 }
 
 .state-question-icon {

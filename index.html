@@ -49,14 +49,18 @@
             <!-- Login Form -->
             <div id="loginForm" class="auth-form">
                 <h2>sign in</h2>
-                <form id="loginFormElement">
+                <form id="loginFormElement" novalidate>
                     <div class="auth-input-group">
                         <label for="loginEmail">email</label>
-                        <input type="email" id="loginEmail" placeholder="player@gamemode.dev" required>
+                        <input type="email" id="loginEmail" name="email" autocomplete="email" placeholder="player@gamemode.dev" required>
+                        <div class="email-validation-tooltip" id="loginEmailTooltip">
+                            <i class="fas fa-exclamation-circle tooltip-icon"></i>
+                            Please include an '@' in the email address
+                        </div>
                     </div>
                     <div class="auth-input-group">
                         <label for="loginPassword">password</label>
-                        <input type="password" id="loginPassword" placeholder="••••••••" required>
+                        <input type="password" id="loginPassword" name="current-password" autocomplete="current-password" placeholder="••••••••" required>
                     </div>
                     <button type="submit">enter game</button>
                 </form>
@@ -68,18 +72,22 @@
             <!-- Register Form -->
             <div id="registerForm" class="auth-form hidden">
                 <h2>create account</h2>
-                <form id="registerFormElement">
+                <form id="registerFormElement" novalidate>
                     <div class="auth-input-group">
                         <label for="registerName">player name</label>
-                        <input type="text" id="registerName" placeholder="your game alias" required>
+                        <input type="text" id="registerName" name="name" autocomplete="name" placeholder="your game alias" required>
                     </div>
                     <div class="auth-input-group">
                         <label for="registerEmail">email</label>
-                        <input type="email" id="registerEmail" placeholder="player@gamemode.dev" required>
+                        <input type="email" id="registerEmail" name="email" autocomplete="email" placeholder="player@gamemode.dev" required>
+                        <div class="email-validation-tooltip" id="registerEmailTooltip">
+                            <i class="fas fa-exclamation-circle tooltip-icon"></i>
+                            Please include an '@' in the email address
+                        </div>
                     </div>
                     <div class="auth-input-group">
                         <label for="registerPassword">password</label>
-                        <input type="password" id="registerPassword" placeholder="min 6 characters" required>
+                        <input type="password" id="registerPassword" name="new-password" autocomplete="new-password" placeholder="min 6 characters" required>
                     </div>
                     <button type="submit">start journey</button>
                 </form>
@@ -616,6 +624,12 @@
                         <div class="form-group">
                             <label for="state-name">State Name</label>
                             <input type="text" id="state-name" name="state-name" class="form-input" placeholder="e.g., Mental Clarity" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="state-subtext">Subtext (optional)</label>
+                            <input type="text" id="state-subtext" name="state-subtext" class="form-input" placeholder="e.g., Cognitive Resource">
+                            <p class="form-help-text">Short descriptive phrase that appears below the state name</p>
                         </div>
                         
                         <div class="form-group">
