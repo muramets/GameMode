@@ -355,9 +355,8 @@ const Modals = {
     });
     
     input.addEventListener('focus', () => {
-      if (input.value.trim()) {
-        this.handleSkillSearch(input.value, slotNumber);
-      }
+      // Show all available skills when focusing, or search results if there's input
+      this.handleSkillSearch(input.value, slotNumber);
     });
     
     input.addEventListener('blur', () => {
@@ -421,7 +420,7 @@ const Modals = {
       
       targetContent.innerHTML = `
         <div class="skill-search-wrapper">
-          <input type="text" id="${inputId}" placeholder="Search and select a skill..." class="form-input">
+          <input type="text" id="${inputId}" placeholder="Search and select a skill..." class="form-input" autocomplete="off">
           <div class="skill-suggestions" id="${suggestionsId}"></div>
         </div>
       `;
@@ -454,26 +453,28 @@ const Modals = {
     const suggestionsId = slotNumber === 1 ? 'skill-suggestions' : `skill-suggestions-${slotNumber}`;
     const suggestions = document.getElementById(suggestionsId);
     
-    if (!query.trim()) {
-      suggestions.style.display = 'none';
-      return;
-    }
-    
-    const searchTerm = query.toLowerCase();
     const allSkills = window.Storage.getSkills();
+    let filteredSkills;
     
-    const filteredSkills = allSkills.filter(skill => {
-      // Skip already selected skills
-      if (this.selectedTargets.some(target => target && target.id === skill.id)) {
-        return false;
-      }
-      
-      // Search in skill name and hover text
-      const name = skill.name.toLowerCase();
-      const hover = skill.hover ? skill.hover.toLowerCase() : '';
-      
-      return name.includes(searchTerm) || hover.includes(searchTerm);
-    }).slice(0, 5); // Show max 5 suggestions
+    // Filter out already selected skills first
+    const availableSkills = allSkills.filter(skill => {
+      return !this.selectedTargets.some(target => target && target.id === skill.id);
+    });
+    
+    if (!query.trim()) {
+      // Show all available skills when no search query
+      filteredSkills = availableSkills.slice(0, 8); // Show more skills when no filter
+    } else {
+      // Filter by search term
+      const searchTerm = query.toLowerCase();
+      filteredSkills = availableSkills.filter(skill => {
+        // Search in skill name and hover text
+        const name = skill.name.toLowerCase();
+        const hover = skill.hover ? skill.hover.toLowerCase() : '';
+        
+        return name.includes(searchTerm) || hover.includes(searchTerm);
+      }).slice(0, 5); // Show fewer when filtering
+    }
     
     if (filteredSkills.length > 0) {
       suggestions.style.display = 'block';
