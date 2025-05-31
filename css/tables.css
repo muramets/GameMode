@@ -723,6 +723,12 @@
   margin-bottom: 2rem;
 }
 
+.history-search-filters-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .change-positive {
   color: var(--correct-color);
 }
@@ -757,4 +763,142 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* History Filters Dropdown */
+.history-filters-container {
+  position: relative;
+  display: inline-block;
+}
+
+.history-filters-icon {
+  color: var(--sub-color);
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: all 0.125s;
+  font-size: 1rem;
+  border-radius: var(--roundness);
+}
+
+.history-filters-icon:hover {
+  color: var(--text-color);
+  background: var(--sub-alt-color);
+}
+
+.history-filters-icon.active {
+  color: var(--main-color);
+}
+
+.history-filters-icon.active:hover {
+  color: var(--main-color);
+  background: var(--sub-alt-color);
+}
+
+.history-filters-menu {
+  pointer-events: none;
+  z-index: 2000;
+  opacity: 0;
+  position: absolute;
+  top: 99%;
+  left: 0;
+  font-size: 0.75rem;
+  min-width: 200px;
+  width: max-content;
+  transition: opacity 0.125s;
+}
+
+.history-filters-menu .spacer {
+  width: 100%;
+  height: 0.5em;
+  background: transparent;
+}
+
+.history-filters-menu .items {
+  box-shadow: 0 0 0 0.5em var(--bg-color);
+  background: var(--sub-alt-color);
+  border-radius: var(--roundness);
+  padding: 0.5em 0;
+}
+
+.history-filters-container:hover .history-filters-menu,
+.history-filters-container:focus-within .history-filters-menu {
+  pointer-events: all;
+  opacity: 1;
+}
+
+/* Filter Group Headers */
+.history-filters-menu .filter-group-header {
+  display: flex;
+  align-items: center;
+  padding: 0.6em 1em;
+  color: var(--text-color);
+  font-weight: 500;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--bg-color);
+  margin-bottom: 0.25em;
+}
+
+.history-filters-menu .filter-group-header i {
+  font-size: 0.7rem;
+  margin-right: 0.5em;
+  color: var(--main-color);
+}
+
+/* Filter Separators */
+.history-filters-menu .filter-separator {
+  height: 1px;
+  background: var(--bg-color);
+  margin: 0.5em 0;
+}
+
+/* Filter Options */
+.history-filters-menu .filter-option {
+  display: flex;
+  align-items: center;
+  padding: 0.4em 1em;
+  cursor: pointer;
+  transition: all 0.125s;
+  color: var(--sub-color);
+  font-size: 0.75rem;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.history-filters-menu .filter-option:hover {
+  background: var(--bg-color);
+  color: var(--text-color);
+}
+
+.history-filters-menu .filter-option:hover .filter-check-icon {
+  color: var(--text-color);
+}
+
+/* Hidden Checkbox */
+.history-filters-menu .filter-checkbox {
+  display: none;
+}
+
+/* FontAwesome Check Icon */
+.history-filters-menu .filter-check-icon {
+  font-size: 0.75rem;
+  color: var(--sub-color);
+  margin-right: 0.7em;
+  transition: all 0.125s;
+  opacity: 0.3;
+}
+
+.history-filters-menu .filter-checkbox:checked + .filter-check-icon {
+  color: var(--main-color);
+  opacity: 1;
+}
+
+.history-filters-menu .filter-option:hover .filter-checkbox:checked + .filter-check-icon {
+  color: var(--main-color);
+}
+
+/* Filter Label */
+.history-filters-menu .filter-label {
+  flex: 1;
+  user-select: none;
 } 

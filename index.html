@@ -249,10 +249,96 @@
             
             <!-- Search and Controls -->
             <div class="history-controls">
-                <div class="search-container">
-                    <input type="text" id="history-search" placeholder="Search history..." class="search-input">
-                    <i class="fas fa-search search-icon"></i>
+                <div class="history-search-filters-group">
+                    <div class="search-container">
+                        <input type="text" id="history-search" placeholder="Search history..." class="search-input">
+                        <i class="fas fa-search search-icon"></i>
+                    </div>
+                    
+                    <!-- Filters Icon -->
+                    <div class="history-filters-container">
+                        <i class="fas fa-filter history-filters-icon" id="history-filters-icon" title="Filters"></i>
+                        <div class="history-filters-menu">
+                            <div class="spacer"></div>
+                            <div class="items">
+                                <!-- Time Period Filters -->
+                                <div class="filter-group-header">
+                                    <i class="fas fa-clock"></i>
+                                    <span>Time Period</span>
+                                </div>
+                                <label class="filter-option">
+                                    <input type="checkbox" class="filter-checkbox" data-filter="time" data-value="all" checked>
+                                    <i class="fas fa-check filter-check-icon"></i>
+                                    <span class="filter-label">All time</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" class="filter-checkbox" data-filter="time" data-value="today">
+                                    <i class="fas fa-check filter-check-icon"></i>
+                                    <span class="filter-label">Today</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" class="filter-checkbox" data-filter="time" data-value="week">
+                                    <i class="fas fa-check filter-check-icon"></i>
+                                    <span class="filter-label">This week</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" class="filter-checkbox" data-filter="time" data-value="month">
+                                    <i class="fas fa-check filter-check-icon"></i>
+                                    <span class="filter-label">This month</span>
+                                </label>
+                                
+                                <!-- Separator -->
+                                <div class="filter-separator"></div>
+                                
+                                <!-- Type Filters -->
+                                <div class="filter-group-header">
+                                    <i class="fas fa-list"></i>
+                                    <span>Type</span>
+                                </div>
+                                <label class="filter-option">
+                                    <input type="checkbox" class="filter-checkbox" data-filter="type" data-value="all" checked>
+                                    <i class="fas fa-check filter-check-icon"></i>
+                                    <span class="filter-label">All types</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" class="filter-checkbox" data-filter="type" data-value="protocol">
+                                    <i class="fas fa-check filter-check-icon"></i>
+                                    <span class="filter-label">Protocols</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" class="filter-checkbox" data-filter="type" data-value="manual">
+                                    <i class="fas fa-check filter-check-icon"></i>
+                                    <span class="filter-label">Manual</span>
+                                </label>
+                                
+                                <!-- Separator -->
+                                <div class="filter-separator"></div>
+                                
+                                <!-- Effect Filters -->
+                                <div class="filter-group-header">
+                                    <i class="fas fa-chart-line"></i>
+                                    <span>Effect</span>
+                                </div>
+                                <label class="filter-option">
+                                    <input type="checkbox" class="filter-checkbox" data-filter="effect" data-value="all" checked>
+                                    <i class="fas fa-check filter-check-icon"></i>
+                                    <span class="filter-label">All effects</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" class="filter-checkbox" data-filter="effect" data-value="positive">
+                                    <i class="fas fa-check filter-check-icon"></i>
+                                    <span class="filter-label">Positive</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" class="filter-checkbox" data-filter="effect" data-value="negative">
+                                    <i class="fas fa-check filter-check-icon"></i>
+                                    <span class="filter-label">Negative</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+                
                 <button class="btn btn-danger" id="clear-history">
                     <i class="fas fa-trash"></i>
                     Clear All History
