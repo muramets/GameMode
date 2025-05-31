@@ -386,17 +386,17 @@
   gap: 0.75rem;
   text-align: left;
   outline: none;
-  min-height: 80px;
+  width: calc(20% - 0.6rem);
+  height: 80px;
   position: relative;
   font-family: 'Roboto Mono', monospace;
-  flex: 0 0 calc(20% - 0.6rem); /* 5 elements per row with gaps */
+  flex-shrink: 0;
   box-sizing: border-box;
 }
 
 .quick-protocol:hover {
-  background-color: var(--sub-color);
-  transform: translateY(-1px) scale(1.02);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .quick-protocol.dragging {
@@ -423,7 +423,7 @@
   right: 0.5rem;
   background: none;
   border: none;
-  color: var(--text-color);
+  color: var(--sub-alt-color);
   cursor: pointer;
   padding: 0.25rem;
   border-radius: 0.25rem;
@@ -449,6 +449,7 @@
 
 .quick-protocol-icon {
   font-size: 1.25rem;
+  flex-shrink: 0;
 }
 
 .quick-protocol-info {
@@ -457,12 +458,19 @@
   gap: 0.25rem;
   align-items: flex-start;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .quick-protocol-name {
   color: var(--text-color);
   font-size: 0.8rem;
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  position: relative;
 }
 
 .quick-protocol-details {
@@ -477,6 +485,58 @@
 
 .quick-protocol-details.negative {
   color: #ca4754;
+}
+
+.quick-protocol-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: all 0.125s;
+}
+
+.quick-protocol:hover .quick-protocol-actions {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.quick-level-btn {
+  background: none;
+  border: none;
+  color: var(--sub-color);
+  cursor: pointer;
+  padding: 0.25rem 0.375rem;
+  border-radius: 3px;
+  transition: all 0.125s;
+  outline: none;
+  font-size: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.2rem;
+  min-width: 3rem;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.quick-level-btn.level-up:hover {
+  color: var(--correct-color);
+  background: none;
+}
+
+.quick-level-btn.level-down:hover {
+  color: var(--error-color);
+  background: none;
+}
+
+.quick-level-btn:focus {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.quick-level-btn .level-text {
+  font-size: 0.6rem;
+  font-weight: 500;
 }
 
 .quick-protocol:hover .quick-protocol-details {
@@ -509,7 +569,8 @@
   }
   
   .quick-protocol {
-    flex: 0 0 calc(50% - 0.25rem); /* 2 elements per row on mobile */
+    width: calc(50% - 0.25rem);
+    height: 80px;
   }
 }
 

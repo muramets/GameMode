@@ -182,15 +182,23 @@ const UI = {
     
     container.innerHTML = protocols.map(protocol => {
       const icon = this.renderIcon(protocol.icon);
-      const action = protocol.action === '+' ? 'Boost' : 'Reduce';
-      const weightClass = protocol.action === '+' ? 'positive' : 'negative';
       
       return `
-        <div class="quick-protocol" draggable="true" data-protocol-id="${protocol.id}" onclick="App.quickCheckin(${protocol.id})" title="${action} ${protocol.name}">
+        <div class="quick-protocol" draggable="true" data-protocol-id="${protocol.id}" title="${protocol.name}">
           <div class="quick-protocol-icon">${icon}</div>
           <div class="quick-protocol-info">
             <div class="quick-protocol-name">${protocol.name.split('. ')[0]}</div>
-            <div class="quick-protocol-details ${weightClass}">${protocol.action}${protocol.weight}</div>
+            <div class="quick-protocol-details">${protocol.weight}</div>
+          </div>
+          <div class="quick-protocol-actions">
+            <button class="quick-level-btn level-up" onclick="event.stopPropagation(); App.quickCheckin(${protocol.id}, '+')">
+              <i class="fas fa-arrow-up"></i>
+              <span class="level-text">up</span>
+            </button>
+            <button class="quick-level-btn level-down" onclick="event.stopPropagation(); App.quickCheckin(${protocol.id}, '-')">
+              <i class="fas fa-arrow-down"></i>
+              <span class="level-text">down</span>
+            </button>
           </div>
           <div class="quick-protocol-delete" onclick="event.stopPropagation(); window.Storage.removeFromQuickActions(${protocol.id}); UI.renderDashboard();" title="Remove from quick actions">
             <i class="fas fa-times"></i>
@@ -200,7 +208,41 @@ const UI = {
     }).join('');
     
     // Setup drag and drop for quick actions
-    setTimeout(() => DragDrop.setupQuickActions(), 0);
+    setTimeout(() => {
+      DragDrop.setupQuickActions();
+      this.setupQuickProtocolTooltips();
+    }, 0);
+  },
+
+  // Setup tooltips for quick protocol names that are truncated
+  setupQuickProtocolTooltips() {
+    const quickProtocolNames = document.querySelectorAll('.quick-protocol-name');
+    
+    quickProtocolNames.forEach((nameElement, index) => {
+      const text = nameElement.textContent.trim();
+      const scrollWidth = nameElement.scrollWidth;
+      const clientWidth = nameElement.clientWidth;
+      const isOverflowing = scrollWidth > clientWidth;
+      
+      // Check if text is truncated (scrollWidth > clientWidth means text is overflowing)
+      if (isOverflowing) {
+        // Remove any existing listeners to prevent duplicates
+        nameElement.removeEventListener('mouseenter', nameElement._boundShowTooltip);
+        nameElement.removeEventListener('mouseleave', nameElement._boundHideTooltip);
+        
+        // Bind the functions to maintain proper context
+        nameElement._boundShowTooltip = (e) => this.showTooltip(e, text);
+        nameElement._boundHideTooltip = () => this.hideTooltip();
+        
+        // Add new event listeners
+        nameElement.addEventListener('mouseenter', nameElement._boundShowTooltip);
+        nameElement.addEventListener('mouseleave', nameElement._boundHideTooltip);
+      } else {
+        // Remove tooltip listeners if text fits
+        nameElement.removeEventListener('mouseenter', nameElement._boundShowTooltip);
+        nameElement.removeEventListener('mouseleave', nameElement._boundHideTooltip);
+      }
+    });
   },
 
   // Protocols
@@ -281,8 +323,6 @@ const UI = {
     container.innerHTML = pageProtocols.map((protocol, index) => {
       const globalIndex = startIndex + index + 1;
       const icon = this.renderIcon(protocol.icon);
-      const action = protocol.action === '+' ? '+' : '-';
-      const actionClass = protocol.action === '+' ? 'positive' : 'negative';
       
       // Get target skill names
       const targetNames = protocol.targets.map(targetId => {
@@ -312,13 +352,19 @@ const UI = {
           </div>
           <div class="protocol-cell protocol-targets-cell">${targetTags}</div>
           <div class="protocol-cell protocol-weight-cell">
-            <span class="protocol-weight ${actionClass}">${action}${protocol.weight}</span>
+            <span class="protocol-weight">${protocol.weight}</span>
           </div>
           <div class="protocol-cell protocol-actions-cell">
-            <button class="protocol-checkin-btn ${actionClass}" onclick="App.checkin(${protocol.id})" title="Check in">
-              <i class="fas fa-check"></i>
-              <span class="protocol-checkin-text">check-in</span>
-            </button>
+            <div class="protocol-action-buttons">
+              <button class="protocol-level-btn level-up" onclick="App.checkin(${protocol.id}, '+')">
+                <i class="fas fa-arrow-up"></i>
+                <span class="level-text">level up</span>
+              </button>
+              <button class="protocol-level-btn level-down" onclick="App.checkin(${protocol.id}, '-')">
+                <i class="fas fa-arrow-down"></i>
+                <span class="level-text">level down</span>
+              </button>
+            </div>
           </div>
         </div>
       `;
