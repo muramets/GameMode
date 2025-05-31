@@ -146,14 +146,19 @@
                     <i class="fas fa-list"></i>
                     <span>protocols</span>
                 </button>
-                <button class="nav-item" data-page="skills">
-                    <i class="fas fa-chart-line"></i>
-                    <span>skills</span>
-                </button>
-                <button class="nav-item" data-page="history">
-                    <i class="fas fa-clock"></i>
-                    <span>history</span>
-                </button>
+                <div class="nav-skills-group">
+                    <button class="nav-item" data-page="skills">
+                        <i class="fas fa-chart-line"></i>
+                        <span>skills</span>
+                    </button>
+                    <button class="nav-expand-arrow" id="nav-expand-btn" title="Show history">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button class="nav-item nav-item-expandable" data-page="history" id="nav-history">
+                        <i class="fas fa-clock"></i>
+                        <span>history</span>
+                    </button>
+                </div>
             </div>
         </nav>
 

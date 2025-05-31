@@ -116,6 +116,9 @@ function initMainApp() {
                     this.navigateTo(page);
                 });
             });
+            
+            // Setup expandable navigation
+            this.setupExpandableNavigation();
         },
 
         setupEventListeners() {
@@ -289,6 +292,28 @@ function initMainApp() {
                 p.classList.toggle('active', p.id === page);
             });
             
+            // Handle history button expansion
+            if (page === 'history' && this.navExpansion) {
+                // Check if history button is already in program-expanded state
+                const navHistory = document.getElementById('nav-history');
+                const isProgramExpanded = navHistory && navHistory.classList.contains('program-expanded');
+                
+                if (!isProgramExpanded) {
+                    // Only expand if not already in program state
+                    const navExpandBtn = document.getElementById('nav-expand-btn');
+                    const navSkillsGroup = document.querySelector('.nav-skills-group');
+                    
+                    if (navHistory && navExpandBtn && navSkillsGroup) {
+                        navExpandBtn.classList.add('expanded');
+                        navHistory.classList.add('expanded');
+                        navSkillsGroup.classList.add('expanded');
+                    }
+                }
+            } else if (page !== 'history' && this.navExpansion) {
+                // Reset navigation expansion if not navigating to history
+                this.navExpansion.reset();
+            }
+            
             this.currentPage = page;
             this.renderPage(page);
             this.updateNavIndicator();
@@ -327,11 +352,14 @@ function initMainApp() {
                     if (this.filteredHistory.length === 0) {
                         this.filteredHistory = window.Storage.getCheckins().reverse();
                     }
+                    
                     UI.renderHistory();
+                    
                     // Setup filters after rendering
                     setTimeout(() => {
                         this.setupHistoryFilters();
                     }, 0);
+                    
                     break;
             }
         },
@@ -750,7 +778,9 @@ function initMainApp() {
         // Update filter icon active state
         updateFilterIcon() {
             const filterIcon = document.getElementById('history-filters-icon');
-            if (!filterIcon) return;
+            if (!filterIcon) {
+                return;
+            }
             
             // Check only the main filter values (time, type, protocol, state, effect), ignore custom date fields
             const hasActiveFilters = this.historyFilters.time !== 'all' ||
@@ -1144,12 +1174,18 @@ function initMainApp() {
             // Navigate to history page
             this.navigateTo('history');
             
+            // Expand navigation to show history button with special styling
+            if (this.navExpansion) {
+                this.navExpansion.setProgram(true);
+            }
+            
             // Apply the skill filter
             this.applyHistoryFilters();
             
             // Update filter UI to show selected skill
             setTimeout(() => {
                 this.updateFilterUI();
+                this.updateFilterIcon();
             }, 100);
             
             // Show a toast to inform user about the filter
@@ -1182,12 +1218,18 @@ function initMainApp() {
             // Navigate to history page
             this.navigateTo('history');
             
+            // Expand navigation to show history button with special styling
+            if (this.navExpansion) {
+                this.navExpansion.setProgram(true);
+            }
+            
             // Apply the protocol filter
             this.applyHistoryFilters();
             
             // Update filter UI to show selected protocol
             setTimeout(() => {
                 this.updateFilterUI();
+                this.updateFilterIcon();
             }, 100);
             
             // Show a toast to inform user about the filter
@@ -1220,12 +1262,18 @@ function initMainApp() {
             // Navigate to history page
             this.navigateTo('history');
             
+            // Expand navigation to show history button with special styling
+            if (this.navExpansion) {
+                this.navExpansion.setProgram(true);
+            }
+            
             // Apply the state filter
             this.applyHistoryFilters();
             
             // Update filter UI to show selected state
             setTimeout(() => {
                 this.updateFilterUI();
+                this.updateFilterIcon(); // Ensure filter icon shows as active
             }, 100);
             
             // Show a toast to inform user about the filter
@@ -1233,6 +1281,82 @@ function initMainApp() {
             if (state) {
                 this.showToast(`Showing history for ${state.name}`, 'info');
             }
+        },
+
+        // Setup expandable navigation
+        setupExpandableNavigation() {
+            const navSkillsGroup = document.querySelector('.nav-skills-group');
+            const navExpandBtn = document.getElementById('nav-expand-btn');
+            const navHistory = document.getElementById('nav-history');
+            
+            if (!navSkillsGroup || !navExpandBtn || !navHistory) return;
+            
+            let hoverTimeout;
+            let isManuallyExpanded = false;
+            let isProgramExpanded = false;
+            
+            // Hover to expand
+            navSkillsGroup.addEventListener('mouseenter', () => {
+                // Only expand on hover if not already expanded and not on history page
+                if (!isManuallyExpanded && !isProgramExpanded && this.currentPage !== 'history') {
+                    clearTimeout(hoverTimeout);
+                    navExpandBtn.classList.add('expanded');
+                    navHistory.classList.add('expanded');
+                }
+            });
+            
+            // Hover to collapse (with delay)
+            navSkillsGroup.addEventListener('mouseleave', () => {
+                // Don't collapse if we're on history page, or if manually/programmatically expanded
+                if (!isManuallyExpanded && !isProgramExpanded && this.currentPage !== 'history') {
+                    hoverTimeout = setTimeout(() => {
+                        navExpandBtn.classList.remove('expanded');
+                        navHistory.classList.remove('expanded');
+                    }, 150);
+                }
+            });
+            
+            // Click arrow to toggle manual expansion
+            navExpandBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                isManuallyExpanded = !isManuallyExpanded;
+                
+                if (isManuallyExpanded) {
+                    navExpandBtn.classList.add('expanded');
+                    navHistory.classList.add('expanded');
+                    navSkillsGroup.classList.add('expanded');
+                } else {
+                    navExpandBtn.classList.remove('expanded');
+                    navHistory.classList.remove('expanded');
+                    navSkillsGroup.classList.remove('expanded');
+                }
+            });
+            
+            // Store reference for programmatic expansion
+            this.navExpansion = {
+                setProgram: (expanded) => {
+                    isProgramExpanded = expanded;
+                    if (expanded) {
+                        navExpandBtn.classList.add('expanded');
+                        navHistory.classList.add('program-expanded');
+                        navHistory.classList.remove('expanded');
+                        navSkillsGroup.classList.add('expanded');
+                    } else {
+                        navExpandBtn.classList.remove('expanded');
+                        navHistory.classList.remove('program-expanded');
+                        navHistory.classList.remove('expanded');
+                        navSkillsGroup.classList.remove('expanded');
+                    }
+                },
+                
+                reset: () => {
+                    isManuallyExpanded = false;
+                    isProgramExpanded = false;
+                    navExpandBtn.classList.remove('expanded');
+                    navHistory.classList.remove('expanded', 'program-expanded');
+                    navSkillsGroup.classList.remove('expanded');
+                }
+            };
         }
     };
 

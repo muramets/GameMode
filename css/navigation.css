@@ -18,6 +18,8 @@
   background-color: var(--sub-alt-color);
   border-radius: 0.5rem;
   padding: 0.25rem;
+  /* Fixed width to prevent layout shifts */
+  min-width: fit-content;
 }
 
 .nav-item {
@@ -152,4 +154,150 @@
     background: linear-gradient(to top, rgba(255, 255, 255, 0.02), transparent);
     margin: 0.25rem -0.75rem -0.25rem -0.75rem;
     z-index: 1;
+}
+
+/* Expandable Navigation Styles */
+.nav-skills-group {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  position: relative;
+  border-radius: 0.25rem;
+  /* Remove overflow hidden to allow history button to expand */
+  overflow: visible;
+}
+
+.nav-expand-arrow {
+  background: none;
+  border: none;
+  color: var(--sub-color);
+  padding: 0.5rem 0.25rem;
+  cursor: pointer;
+  transition: color 0.25s ease, opacity 0.25s ease, transform 0.25s ease;
+  font-size: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+  opacity: 0.6;
+  transform: scale(0.9);
+  position: relative;
+  z-index: 2;
+}
+
+.nav-expand-arrow:hover {
+  color: var(--text-color);
+  opacity: 1;
+  transform: scale(1);
+}
+
+.nav-expand-arrow.expanded {
+  color: var(--main-color);
+  opacity: 1;
+  transform: scale(1);
+}
+
+.nav-item-expandable {
+  /* Position absolutely to prevent layout shifts */
+  position: absolute;
+  top: 0;
+  left: 100%;
+  height: 100%;
+  width: 0;
+  padding: 0.5rem 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateX(-10px);
+  white-space: nowrap;
+  border-radius: 0.25rem;
+  margin-left: 0;
+  /* Remove custom background - inherit from nav-container */
+  background-color: transparent;
+  z-index: 1;
+  /* Remove border to match other nav items */
+  border: none;
+}
+
+/* Base transition only for collapsing (when NOT expanded) */
+.nav-item-expandable:not(.expanded):not(.program-expanded) {
+  transition: 
+    width 0.3s cubic-bezier(0.4, 0.0, 0.2, 1),
+    padding 0.3s cubic-bezier(0.4, 0.0, 0.2, 1),
+    transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1),
+    opacity 0.15s ease; /* Fast collapse */
+}
+
+.nav-item-expandable.expanded,
+.nav-item-expandable.program-expanded {
+  /* Expanded states with their own transitions */
+  width: auto;
+  min-width: 80px;
+  padding: 0.5rem 0.75rem;
+  opacity: 1;
+  transform: translateX(0);
+  transition: 
+    width 0.3s cubic-bezier(0.4, 0.0, 0.2, 1),
+    padding 0.3s cubic-bezier(0.4, 0.0, 0.2, 1),
+    transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1),
+    opacity 0.2s ease 0.1s; /* Delayed appearance */
+}
+
+.nav-item-expandable.program-expanded {
+  /* Additional styling for program state */
+  color: var(--main-color);
+  background-color: rgba(226, 183, 20, 0.1);
+  border-radius: 0.25rem;
+}
+
+/* Active state for history button */
+.nav-item-expandable.active {
+  color: var(--main-color);
+}
+
+.nav-item-expandable.active.program-expanded {
+  /* When both active and program-expanded, keep the program styling */
+  color: var(--main-color);
+  background-color: rgba(226, 183, 20, 0.1);
+  border-radius: 0.25rem;
+}
+
+.nav-skills-group:hover .nav-expand-arrow {
+  opacity: 0.8;
+  transform: scale(1);
+}
+
+.nav-skills-group:hover .nav-item-expandable:not(.expanded):not(.program-expanded) {
+  width: auto;
+  min-width: 80px;
+  padding: 0.5rem 0.75rem;
+  opacity: 1;
+  transform: translateX(0);
+  /* Override transition for hover state to include delay */
+  transition: 
+    width 0.3s cubic-bezier(0.4, 0.0, 0.2, 1),
+    padding 0.3s cubic-bezier(0.4, 0.0, 0.2, 1),
+    transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1),
+    opacity 0.2s ease 0.1s;
+}
+
+/* Create seamless background extension effect */
+.nav-skills-group::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 100%;
+  height: 100%;
+  width: 0;
+  background-color: var(--sub-alt-color);
+  border-radius: 0 0.25rem 0.25rem 0;
+  /* Faster background animation to appear before text, slower to disappear after text */
+  transition: width 0.35s cubic-bezier(0.4, 0.0, 0.2, 1) 0.05s;
+  z-index: 0;
+}
+
+.nav-skills-group:hover::after,
+.nav-skills-group.expanded::after {
+  width: 90px; /* Slightly wider than min-width to ensure coverage */
+  /* No delay when expanding */
+  transition: width 0.25s cubic-bezier(0.4, 0.0, 0.2, 1);
 } 
