@@ -280,7 +280,6 @@ const Modals = {
         description: formData.get('protocol-description'),
         icon: formData.get('protocol-emoji'),
         hover: formData.get('protocol-hover'),
-        action: formData.get('protocol-action'),
         weight: parseFloat(formData.get('protocol-weight')),
         targets: this.selectedTargets.filter(target => target !== null).map(target => target.id)
       };
@@ -595,7 +594,6 @@ const Modals = {
     document.getElementById('protocol-description').value = description;
     document.getElementById('protocol-emoji').value = protocol.icon;
     document.getElementById('protocol-hover').value = protocol.hover || '';
-    document.getElementById('protocol-action').value = protocol.action;
     document.getElementById('protocol-weight').value = protocol.weight;
     
     // Update modal for edit mode
@@ -1144,8 +1142,6 @@ const Modals = {
       const mainName = nameParts[0];
       const shortDesc = nameParts.slice(1).join('. ');
       
-      const weightClass = protocol.action === '+' ? 'positive' : 'negative';
-      
       return `
         <div class="quick-action-protocol-row" data-protocol-id="${protocol.id}">
           <div class="quick-action-protocol-number">${index + 1}</div>
@@ -1159,7 +1155,7 @@ const Modals = {
           <div class="quick-action-targets">
             ${targetNames.map(name => `<span class="quick-action-target-tag">${name}</span>`).join('')}
           </div>
-          <div class="quick-action-protocol-weight ${weightClass}">${protocol.action}${protocol.weight}</div>
+          <div class="quick-action-protocol-weight">${protocol.weight}</div>
         </div>
       `;
     }).join('');

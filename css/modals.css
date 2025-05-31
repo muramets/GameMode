@@ -632,34 +632,11 @@
   color: var(--text-color);
 }
 
-.quick-action-protocol-action {
-  color: var(--sub-color);
-  font-family: 'Roboto Mono', monospace;
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.quick-action-protocol-action.quick-action-protocol-action-positive {
-  color: var(--correct-color);
-}
-
-.quick-action-protocol-action.quick-action-protocol-action-negative {
-  color: var(--error-color);
-}
-
 .quick-action-protocol-weight {
   color: var(--sub-color);
   font-family: 'Roboto Mono', monospace;
   font-size: 0.85rem;
   font-weight: 500;
-}
-
-.quick-action-protocol-weight.positive {
-  color: var(--correct-color);
-}
-
-.quick-action-protocol-weight.negative {
-  color: var(--error-color);
 }
 
 /* Quick Action Modal Styles */
