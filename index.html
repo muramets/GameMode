@@ -19,6 +19,7 @@
     
     <!-- CSS Components -->
     <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/auth.css">
     <link rel="stylesheet" href="css/header.css">
     <link rel="stylesheet" href="css/navigation.css">
     <link rel="stylesheet" href="css/layout.css">
@@ -30,625 +31,715 @@
     <link rel="stylesheet" href="css/responsive.css">
 </head>
 <body>
-    <!-- Navigation Header -->
-    <header class="header">
-        <!-- Logo -->
-        <div id="logo" class="logo">
-            <div class="icon">
-                <i class="fas fa-gamepad"></i>
-            </div>
-            <h1 class="text">
-                <div class="top">RPG therapy</div>
-                gamemode
-            </h1>
-        </div>
-        
-        <!-- User Actions -->
-        <div class="user-actions">
-            <div class="settings-dropdown">
-                <button class="user-btn" id="settings-btn" title="Settings">
-                    <i class="fas fa-cog"></i>
-                </button>
-                <div class="dropdown-menu" id="settings-menu">
-                    <button class="dropdown-item" id="migrate-ids-btn">
-                        <i class="fas fa-database"></i>
-                        Migrate Skill IDs
-                    </button>
+    <!-- Auth Container -->
+    <div id="authContainer" style="display: block;">
+        <div class="auth-content">
+            <div class="auth-logo">
+                <div id="auth-logo" class="logo">
+                    <div class="icon">
+                        <i class="fas fa-gamepad"></i>
+                    </div>
+                    <h1 class="text">
+                        <div class="top">level up your life</div>
+                        gamemode
+                    </h1>
                 </div>
             </div>
-            <button class="user-btn" title="Profile">
-                <i class="fas fa-user"></i>
-            </button>
-        </div>
-    </header>
-
-    <!-- Navigation Menu -->
-    <nav class="nav">
-        <div class="nav-container">
-            <button class="nav-item active" data-page="dashboard">
-                <i class="fas fa-home"></i>
-                <span>dashboard</span>
-            </button>
-            <button class="nav-item" data-page="protocols">
-                <i class="fas fa-list"></i>
-                <span>protocols</span>
-            </button>
-            <button class="nav-item" data-page="skills">
-                <i class="fas fa-chart-line"></i>
-                <span>skills</span>
-            </button>
-            <button class="nav-item" data-page="history">
-                <i class="fas fa-clock"></i>
-                <span>history</span>
-            </button>
-        </div>
-    </nav>
-
-    <!-- Main Container -->
-    <main class="container">
-        
-        <!-- Dashboard Page -->
-        <section id="dashboard" class="page active">
-            <!-- User Profile Block -->
-            <div class="user-profile-block">
-                <div class="user-info">
-                    <div class="user-avatar">
-                        <i class="fas fa-user"></i>
+            
+            <!-- Login Form -->
+            <div id="loginForm" class="auth-form">
+                <h2>sign in</h2>
+                <form id="loginFormElement">
+                    <div class="auth-input-group">
+                        <label for="loginEmail">email</label>
+                        <input type="email" id="loginEmail" placeholder="player@gamemode.dev" required>
                     </div>
-                    <div class="user-details">
-                        <h2 class="username">muramets OS</h2>
-                        <div class="user-level">
-                            <span class="level-label">purpose progress</span>
-                            <div class="level-progress">
-                                <span class="progress-digit" id="progress-digit">0</span>
-                                <div class="level-progress-bar">
-                                    <div class="level-progress-fill" id="level-progress-fill"></div>
+                    <div class="auth-input-group">
+                        <label for="loginPassword">password</label>
+                        <input type="password" id="loginPassword" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit">enter game</button>
+                </form>
+                <div class="auth-switch">
+                    <p>new player? <a href="#" id="showRegister">create account</a></p>
+                </div>
+            </div>
+            
+            <!-- Register Form -->
+            <div id="registerForm" class="auth-form hidden">
+                <h2>create account</h2>
+                <form id="registerFormElement">
+                    <div class="auth-input-group">
+                        <label for="registerName">player name</label>
+                        <input type="text" id="registerName" placeholder="your game alias" required>
+                    </div>
+                    <div class="auth-input-group">
+                        <label for="registerEmail">email</label>
+                        <input type="email" id="registerEmail" placeholder="player@gamemode.dev" required>
+                    </div>
+                    <div class="auth-input-group">
+                        <label for="registerPassword">password</label>
+                        <input type="password" id="registerPassword" placeholder="min 6 characters" required>
+                    </div>
+                    <button type="submit">start journey</button>
+                </form>
+                <div class="auth-switch">
+                    <p>already have account? <a href="#" id="showLogin">sign in</a></p>
+                </div>
+            </div>
+            
+            <div id="authError" class="auth-error hidden"></div>
+            <div id="authLoading" class="auth-loading hidden">initializing...</div>
+        </div>
+    </div>
+
+    <!-- App Container -->
+    <div id="appContainer" style="display: none;">
+        <!-- Navigation Header -->
+        <header class="header">
+            <!-- Logo -->
+            <div id="logo" class="logo">
+                <div class="icon">
+                    <i class="fas fa-gamepad"></i>
+                </div>
+                <h1 class="text">
+                    <div class="top">RPG therapy</div>
+                    gamemode
+                </h1>
+            </div>
+            
+            <!-- User Actions -->
+            <div class="user-actions">
+                <div class="profile-dropdown">
+                    <button class="user-btn" id="profile-btn" title="Profile">
+                        <i class="fas fa-user"></i>
+                    </button>
+                    <div class="profile-menu">
+                        <div class="spacer"></div>
+                        <div class="items">
+                            <button class="profile-item" id="logout-btn">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span class="profile-label">Logout</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Menu -->
+        <nav class="nav">
+            <div class="nav-container">
+                <button class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-home"></i>
+                    <span>dashboard</span>
+                </button>
+                <button class="nav-item" data-page="protocols">
+                    <i class="fas fa-list"></i>
+                    <span>protocols</span>
+                </button>
+                <button class="nav-item" data-page="skills">
+                    <i class="fas fa-chart-line"></i>
+                    <span>skills</span>
+                </button>
+                <button class="nav-item" data-page="history">
+                    <i class="fas fa-clock"></i>
+                    <span>history</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Container -->
+        <main class="container">
+            
+            <!-- Dashboard Page -->
+            <section id="dashboard" class="page active">
+                <!-- User Profile Block -->
+                <div class="user-profile-block">
+                    <div class="user-info">
+                        <div class="user-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="user-details">
+                            <h2 class="username" id="username">loading player...</h2>
+                            <div class="user-level">
+                                <span class="level-label">current level</span>
+                                <div class="level-progress">
+                                    <span class="progress-digit" id="progress-digit">0</span>
+                                    <div class="level-progress-bar">
+                                        <div class="level-progress-fill" id="level-progress-fill"></div>
+                                    </div>
+                                    <span class="level-percentage" id="level-percentage">0%</span>
                                 </div>
-                                <span class="level-percentage" id="level-percentage">0%</span>
+                            </div>
+                        </div>
+                        <div class="profile-separator"></div>
+                    </div>
+                    
+                    <div class="user-stats">
+                        <div class="stat-item">
+                            <div class="stat-label">check-ins today</div>
+                            <div class="stat-value">
+                                <span class="stat-number" id="checkins-today">0</span>
+                                <span class="stat-detail" id="checkins-today-detail">(total score boost)</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">check-ins this month</div>
+                            <div class="stat-value">
+                                <span class="stat-number" id="checkins-month">0</span>
+                                <span class="stat-detail" id="checkins-month-detail">(net score change)</span>
                             </div>
                         </div>
                     </div>
-                    <div class="profile-separator"></div>
                 </div>
                 
-                <div class="user-stats">
-                    <div class="stat-item">
-                        <div class="stat-label">check-ins today</div>
-                        <div class="stat-value">
-                            <span class="stat-number" id="checkins-today">0</span>
-                            <span class="stat-detail" id="checkins-today-detail">(total score boost)</span>
-                        </div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">check-ins this month</div>
-                        <div class="stat-value">
-                            <span class="stat-number" id="checkins-month">0</span>
-                            <span class="stat-detail" id="checkins-month-detail">(net score change)</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="page-title-container">
-                <h1 class="page-title">Character Stats</h1>
-                <button class="add-icon-btn" onclick="Modals.openStateModal()" title="Add new state">
-                    <i class="fas fa-plus"></i>
-                </button>
-            </div>
-            
-            <!-- States Grid -->
-            <div class="states-grid">
-                <!-- States will be generated by JS -->
-            </div>
-            
-            <!-- Quick Actions -->
-            <div class="section">
                 <div class="page-title-container">
-                    <h2 class="section-title">Quick Actions</h2>
-                    <button class="add-icon-btn" onclick="Modals.openQuickActionModal()" title="Add protocol to quick actions">
+                    <h1 class="page-title">Character Stats</h1>
+                    <button class="add-icon-btn" onclick="Modals.openStateModal()" title="Add new state">
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
-                <div class="quick-protocols">
-                    <!-- Quick protocol buttons will be generated by JS -->
-                </div>
-            </div>
-        </section>
-
-        <!-- Protocols Page -->
-        <section id="protocols" class="page">
-            <h1 class="page-title">Daily Protocols</h1>
-            
-            <!-- Search and Controls -->
-            <div class="protocols-controls">
-                <div class="search-container">
-                    <input type="text" id="protocol-search" placeholder="Search protocols..." class="search-input">
-                    <i class="fas fa-search search-icon"></i>
-                </div>
-                <button class="btn btn-primary" id="add-protocol-btn">
-                    <i class="fas fa-plus"></i>
-                    add protocol
-                </button>
-            </div>
-            
-            <!-- Protocols Table -->
-            <div class="protocols-table">
-                <div class="protocols-header">
-                    <div class="protocol-cell">#</div>
-                    <div class="protocol-cell">protocol</div>
-                    <div class="protocol-cell">targets</div>
-                    <div class="protocol-cell">weight</div>
-                    <div class="protocol-cell">actions</div>
-                </div>
-                <div class="protocols-body">
-                    <!-- Protocols will be generated by JS -->
-                </div>
-            </div>
-            
-            <!-- Pagination -->
-            <div class="pagination">
-                <button class="pagination-btn" id="prev-page" disabled>
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-                <span class="pagination-info">
-                    <span id="current-page">1</span> / <span id="total-pages">1</span>
-                </span>
-                <button class="pagination-btn" id="next-page">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-            </div>
-        </section>
-
-        <!-- Skills Page -->
-        <section id="skills" class="page">
-            <h1 class="page-title">Skill Progress</h1>
-            
-            <!-- Search and Controls -->
-            <div class="skills-controls">
-                <div class="search-container">
-                    <input type="text" id="skill-search" placeholder="Search skills..." class="search-input">
-                    <i class="fas fa-search search-icon"></i>
-                </div>
-                <button class="btn btn-primary" id="add-skill-btn">
-                    <i class="fas fa-plus"></i>
-                    add skill
-                </button>
-            </div>
-            
-            <!-- Skills Table -->
-            <div class="skills-table">
-                <div class="skills-header">
-                    <div class="skill-cell">#</div>
-                    <div class="skill-cell">name</div>
-                    <div class="skill-cell">initial</div>
-                    <div class="skill-cell">current</div>
-                    <div class="skill-cell">progress</div>
-                </div>
-                <div class="skills-body">
-                    <!-- Skills will be generated by JS -->
-                </div>
-            </div>
-            
-            <!-- Pagination -->
-            <div class="pagination">
-                <button class="pagination-btn" id="skills-prev-page" disabled>
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-                <span class="pagination-info">
-                    <span id="skills-current-page">1</span> / <span id="skills-total-pages">1</span>
-                </span>
-                <button class="pagination-btn" id="skills-next-page">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-            </div>
-        </section>
-
-        <!-- History Page -->
-        <section id="history" class="page">
-            <h1 class="page-title">Check-in History</h1>
-            
-            <!-- Search and Controls -->
-            <div class="history-controls">
-                <div class="history-search-filters-group">
-                    <div class="search-container">
-                        <input type="text" id="history-search" placeholder="Search history..." class="search-input">
-                        <i class="fas fa-search search-icon"></i>
-                    </div>
-                    
-                    <!-- Filters Icon -->
-                    <div class="history-filters-container">
-                        <i class="fas fa-filter history-filters-icon" id="history-filters-icon" title="Filters"></i>
-                        <div class="history-filters-menu">
-                            <div class="spacer"></div>
-                            <div class="items">
-                                <!-- Time Period Filters -->
-                                <div class="filter-group-header">
-                                    <i class="fas fa-clock"></i>
-                                    <span>Time Period</span>
-                                </div>
-                                <label class="filter-option">
-                                    <input type="checkbox" class="filter-checkbox" data-filter="time" data-value="all" checked>
-                                    <i class="fas fa-check filter-check-icon"></i>
-                                    <span class="filter-label">All time</span>
-                                </label>
-                                <label class="filter-option">
-                                    <input type="checkbox" class="filter-checkbox" data-filter="time" data-value="today">
-                                    <i class="fas fa-check filter-check-icon"></i>
-                                    <span class="filter-label">Today</span>
-                                </label>
-                                <label class="filter-option">
-                                    <input type="checkbox" class="filter-checkbox" data-filter="time" data-value="week">
-                                    <i class="fas fa-check filter-check-icon"></i>
-                                    <span class="filter-label">This week</span>
-                                </label>
-                                <label class="filter-option">
-                                    <input type="checkbox" class="filter-checkbox" data-filter="time" data-value="month">
-                                    <i class="fas fa-check filter-check-icon"></i>
-                                    <span class="filter-label">This month</span>
-                                </label>
-                                <label class="filter-option">
-                                    <input type="checkbox" class="filter-checkbox" data-filter="time" data-value="custom">
-                                    <i class="fas fa-check filter-check-icon"></i>
-                                    <span class="filter-label">Custom</span>
-                                </label>
-                                
-                                <!-- Custom Date Range -->
-                                <div class="filter-custom-date-range" id="filter-custom-date-range" style="display: none;">
-                                    <div class="custom-date-inputs">
-                                        <div class="date-input-group">
-                                            <label class="date-label">From:</label>
-                                            <input type="date" id="filter-date-from" class="custom-date-input">
-                                        </div>
-                                        <div class="date-input-group">
-                                            <label class="date-label">To:</label>
-                                            <input type="date" id="filter-date-to" class="custom-date-input">
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Separator -->
-                                <div class="filter-separator"></div>
-                                
-                                <!-- Type Filters -->
-                                <div class="filter-group-header">
-                                    <i class="fas fa-list"></i>
-                                    <span>Type</span>
-                                </div>
-                                <label class="filter-option">
-                                    <input type="checkbox" class="filter-checkbox" data-filter="type" data-value="all" checked>
-                                    <i class="fas fa-check filter-check-icon"></i>
-                                    <span class="filter-label">All types</span>
-                                </label>
-                                <label class="filter-option">
-                                    <input type="checkbox" class="filter-checkbox" data-filter="type" data-value="protocol">
-                                    <i class="fas fa-check filter-check-icon"></i>
-                                    <span class="filter-label">Protocols</span>
-                                </label>
-                                <label class="filter-option">
-                                    <input type="checkbox" class="filter-checkbox" data-filter="type" data-value="manual">
-                                    <i class="fas fa-check filter-check-icon"></i>
-                                    <span class="filter-label">Manual</span>
-                                </label>
-                                
-                                <!-- Separator -->
-                                <div class="filter-separator"></div>
-                                
-                                <!-- Effect Filters -->
-                                <div class="filter-group-header">
-                                    <i class="fas fa-chart-line"></i>
-                                    <span>Effect</span>
-                                </div>
-                                <label class="filter-option">
-                                    <input type="checkbox" class="filter-checkbox" data-filter="effect" data-value="all" checked>
-                                    <i class="fas fa-check filter-check-icon"></i>
-                                    <span class="filter-label">All effects</span>
-                                </label>
-                                <label class="filter-option">
-                                    <input type="checkbox" class="filter-checkbox" data-filter="effect" data-value="positive">
-                                    <i class="fas fa-check filter-check-icon"></i>
-                                    <span class="filter-label">Positive</span>
-                                </label>
-                                <label class="filter-option">
-                                    <input type="checkbox" class="filter-checkbox" data-filter="effect" data-value="negative">
-                                    <i class="fas fa-check filter-check-icon"></i>
-                                    <span class="filter-label">Negative</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
+                
+                <!-- States Grid -->
+                <div class="states-grid">
+                    <!-- States will be generated by JS -->
                 </div>
                 
-                <button class="btn btn-danger" id="clear-history">
-                    <i class="fas fa-trash"></i>
-                    Clear All History
-                </button>
-            </div>
-            
-            <div class="history-table">
-                <div class="history-header">
-                    <div class="history-cell">date</div>
-                    <div class="history-cell">type</div>
-                    <div class="history-cell">action</div>
-                    <div class="history-cell">changes</div>
-                    <div class="history-cell">actions</div>
+                <!-- Quick Actions -->
+                <div class="section">
+                    <div class="page-title-container">
+                        <h2 class="section-title">Quick Actions</h2>
+                        <button class="add-icon-btn" onclick="Modals.openQuickActionModal()" title="Add protocol to quick actions">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <div class="quick-protocols">
+                        <!-- Quick protocol buttons will be generated by JS -->
+                    </div>
                 </div>
-                <div class="history-body">
-                    <!-- History items will be generated by JS -->
-                </div>
-            </div>
-        </section>
+            </section>
 
-    </main>
-
-    <!-- Add Skill Modal -->
-    <div id="add-skill-modal" class="modal">
-        <div class="modal-overlay"></div>
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="skill-modal-title">Add New Skill</h2>
-                <button class="modal-close" id="close-skill-modal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="add-skill-form">
-                    <input type="hidden" id="skill-edit-id" value="">
-                    
-                    <div class="form-group">
-                        <label for="skill-name">Skill Name</label>
-                        <input type="text" id="skill-name" name="skill-name" class="form-input" placeholder="e.g., Social Confidence" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="skill-description">Description (Optional)</label>
-                        <input type="text" id="skill-description" name="skill-description" class="form-input" placeholder="e.g., Ability to engage in conversations">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="skill-emoji">Emoji</label>
-                        <input type="text" id="skill-emoji" name="skill-emoji" class="form-input" placeholder="e.g., 🗣️" maxlength="2" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="skill-hover">Hover Text</label>
-                        <textarea id="skill-hover" name="skill-hover" class="form-textarea" placeholder="Detailed description shown on hover..." rows="3"></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="skill-initial-score">Initial Score</label>
-                        <input type="number" id="skill-initial-score" name="skill-initial-score" class="form-input" min="0" max="10" step="0.1" value="1.0" required>
-                    </div>
-                    
-                    <div class="modal-actions">
-                        <button type="button" class="btn btn-danger" id="delete-skill-btn" style="display: none;">
-                            <i class="fas fa-trash"></i>
-                            Delete
-                        </button>
-                        <div class="modal-actions-right">
-                            <button type="button" class="btn btn-secondary" id="cancel-skill-btn">Cancel</button>
-                            <button type="submit" class="btn btn-primary" id="submit-skill-btn">Add Skill</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Add Protocol Modal -->
-    <div id="add-protocol-modal" class="modal">
-        <div class="modal-overlay"></div>
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="protocol-modal-title">Add New Protocol</h2>
-                <button class="modal-close" id="close-protocol-modal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="add-protocol-form">
-                    <input type="hidden" id="protocol-edit-id" value="">
-                    
-                    <div class="form-group">
-                        <label for="protocol-name">Protocol Name</label>
-                        <input type="text" id="protocol-name" name="protocol-name" class="form-input" placeholder="e.g., Morning Routine" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="protocol-emoji">Emoji</label>
-                        <input type="text" id="protocol-emoji" name="protocol-emoji" class="form-input" placeholder="e.g., 🌅" maxlength="2" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="protocol-hover">Description (Optional)</label>
-                        <textarea id="protocol-hover" name="protocol-hover" class="form-textarea" placeholder="Detailed description shown on hover..." rows="3"></textarea>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="protocol-action">Action</label>
-                            <select id="protocol-action" name="protocol-action" class="form-input" required>
-                                <option value="+">+ (Increase skills)</option>
-                                <option value="-">- (Decrease skills)</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="protocol-weight">Weight</label>
-                            <input type="number" id="protocol-weight" name="protocol-weight" class="form-input" min="0" max="1" step="0.01" value="0.05" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Target Skills (up to 3)</label>
-                        <div class="targets-container">
-                            <div class="target-slot" id="target-slot-1">
-                                <div class="target-label">Target 1:</div>
-                                <div class="target-content">
-                                    <div class="skill-search-wrapper">
-                                        <input type="text" id="skill-search-input" placeholder="Search and select a skill..." class="form-input">
-                                        <div class="skill-suggestions" id="skill-suggestions"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="target-slot" id="target-slot-2" style="display: none;">
-                                <div class="target-label">Target 2:</div>
-                                <div class="target-content">
-                                    <div class="skill-search-wrapper">
-                                        <input type="text" id="skill-search-input-2" placeholder="Search and select a skill..." class="form-input">
-                                        <div class="skill-suggestions" id="skill-suggestions-2"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="target-slot" id="target-slot-3" style="display: none;">
-                                <div class="target-label">Target 3:</div>
-                                <div class="target-content">
-                                    <div class="skill-search-wrapper">
-                                        <input type="text" id="skill-search-input-3" placeholder="Search and select a skill..." class="form-input">
-                                        <div class="skill-suggestions" id="skill-suggestions-3"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="modal-actions">
-                        <button type="button" class="btn btn-danger" id="delete-protocol-btn" style="display: none;">
-                            <i class="fas fa-trash"></i>
-                            Delete
-                        </button>
-                        <div class="modal-actions-right">
-                            <button type="button" class="btn btn-secondary" id="cancel-protocol-btn">Cancel</button>
-                            <button type="submit" class="btn btn-primary" id="submit-protocol-btn">Add Protocol</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Add/Edit State Modal -->
-    <div id="add-state-modal" class="modal">
-        <div class="modal-overlay"></div>
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="state-modal-title">Add New State</h2>
-                <button class="modal-close" id="close-state-modal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="add-state-form">
-                    <input type="hidden" id="state-edit-id" value="">
-                    
-                    <div class="form-group">
-                        <label for="state-name">State Name</label>
-                        <input type="text" id="state-name" name="state-name" class="form-input" placeholder="e.g., Mental Clarity" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="state-emoji">Emoji</label>
-                        <input type="text" id="state-emoji" name="state-emoji" class="form-input" placeholder="e.g., 🧠" maxlength="2" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="state-hover">Description</label>
-                        <textarea id="state-hover" name="state-hover" class="form-textarea" placeholder="Detailed description of this state..." rows="3" required></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Dependencies</label>
-                        <div class="dependencies-tabs">
-                            <button type="button" class="tab-btn active" id="skills-tab">Skills</button>
-                            <button type="button" class="tab-btn" id="states-tab">States</button>
-                        </div>
-                        
-                        <div class="dependencies-content">
-                            <!-- Skills Dependencies -->
-                            <div class="dependency-panel active" id="skills-panel">
-                                <p class="dependency-description">Select skills that contribute to this state (average will be calculated):</p>
-                                <div class="dependency-grid" id="skills-dependency-grid">
-                                    <!-- Skills checkboxes will be generated by JS -->
-                                </div>
-                            </div>
-                            
-                            <!-- States Dependencies -->
-                            <div class="dependency-panel" id="states-panel">
-                                <p class="dependency-description">Select other states that contribute to this state:</p>
-                                <div class="dependency-grid" id="states-dependency-grid">
-                                    <!-- States checkboxes will be generated by JS -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="modal-actions">
-                        <button type="button" class="btn btn-danger" id="delete-state-btn" style="display: none;">
-                            <i class="fas fa-trash"></i>
-                            Delete
-                        </button>
-                        <div class="modal-actions-right">
-                            <button type="button" class="btn btn-secondary" id="cancel-state-btn">Cancel</button>
-                            <button type="submit" class="btn btn-primary" id="submit-state-btn">Add State</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Action Selection Modal -->
-    <div id="quick-action-modal" class="modal">
-        <div class="modal-overlay"></div>
-        <div class="modal-content" style="max-width: 800px;">
-            <div class="modal-header">
-                <h2>add protocol to quick actions</h2>
-                <button class="modal-close" id="close-quick-action-modal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <!-- Search Controls -->
-                <div class="quick-action-search-controls">
+            <!-- Protocols Page -->
+            <section id="protocols" class="page">
+                <h1 class="page-title">Daily Protocols</h1>
+                
+                <!-- Search and Controls -->
+                <div class="protocols-controls">
                     <div class="search-container">
-                        <input type="text" id="quick-action-search" placeholder="Search protocols..." class="search-input">
+                        <input type="text" id="protocol-search" placeholder="Search protocols..." class="search-input">
                         <i class="fas fa-search search-icon"></i>
                     </div>
+                    <button class="btn btn-primary" id="add-protocol-btn">
+                        <i class="fas fa-plus"></i>
+                        add protocol
+                    </button>
                 </div>
                 
                 <!-- Protocols Table -->
-                <div class="quick-action-protocols-table">
+                <div class="protocols-table">
                     <div class="protocols-header">
                         <div class="protocol-cell">#</div>
-                        <div class="protocol-cell">Protocol</div>
-                        <div class="protocol-cell">Targets</div>
-                        <div class="protocol-cell">Weight</div>
+                        <div class="protocol-cell">protocol</div>
+                        <div class="protocol-cell">targets</div>
+                        <div class="protocol-cell">weight</div>
+                        <div class="protocol-cell">actions</div>
                     </div>
-                    <div class="protocols-body" id="quick-action-protocols-body">
-                        <!-- Available protocols will be generated by JS -->
+                    <div class="protocols-body">
+                        <!-- Protocols will be generated by JS -->
                     </div>
                 </div>
                 
-                <!-- Empty State -->
-                <div id="quick-action-empty-state" style="text-align: center; padding: 3rem; color: var(--sub-color); display: none;">
-                    <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
-                    <div style="font-size: 1.1rem; margin-bottom: 0.5rem;">No protocols found</div>
-                    <div style="font-size: 0.9rem;">Try adjusting your search or all protocols may already be in Quick Actions.</div>
+                <!-- Pagination -->
+                <div class="pagination">
+                    <button class="pagination-btn" id="prev-page" disabled>
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span class="pagination-info">
+                        <span id="current-page">1</span> / <span id="total-pages">1</span>
+                    </span>
+                    <button class="pagination-btn" id="next-page">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Skills Page -->
+            <section id="skills" class="page">
+                <h1 class="page-title">Skill Progress</h1>
+                
+                <!-- Search and Controls -->
+                <div class="skills-controls">
+                    <div class="search-container">
+                        <input type="text" id="skill-search" placeholder="Search skills..." class="search-input">
+                        <i class="fas fa-search search-icon"></i>
+                    </div>
+                    <button class="btn btn-primary" id="add-skill-btn">
+                        <i class="fas fa-plus"></i>
+                        add skill
+                    </button>
+                </div>
+                
+                <!-- Skills Table -->
+                <div class="skills-table">
+                    <div class="skills-header">
+                        <div class="skill-cell">#</div>
+                        <div class="skill-cell">name</div>
+                        <div class="skill-cell">initial</div>
+                        <div class="skill-cell">current</div>
+                        <div class="skill-cell">progress</div>
+                    </div>
+                    <div class="skills-body">
+                        <!-- Skills will be generated by JS -->
+                    </div>
+                </div>
+                
+                <!-- Pagination -->
+                <div class="pagination">
+                    <button class="pagination-btn" id="skills-prev-page" disabled>
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span class="pagination-info">
+                        <span id="skills-current-page">1</span> / <span id="skills-total-pages">1</span>
+                    </span>
+                    <button class="pagination-btn" id="skills-next-page">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- History Page -->
+            <section id="history" class="page">
+                <h1 class="page-title">Check-in History</h1>
+                
+                <!-- Search and Controls -->
+                <div class="history-controls">
+                    <div class="history-search-filters-group">
+                        <div class="search-container">
+                            <input type="text" id="history-search" placeholder="Search history..." class="search-input">
+                            <i class="fas fa-search search-icon"></i>
+                        </div>
+                        
+                        <!-- Filters Icon -->
+                        <div class="history-filters-container">
+                            <i class="fas fa-filter history-filters-icon" id="history-filters-icon" title="Filters"></i>
+                            <div class="history-filters-menu">
+                                <div class="spacer"></div>
+                                <div class="items">
+                                    <!-- Time Period Filters -->
+                                    <div class="filter-group-header">
+                                        <i class="fas fa-clock"></i>
+                                        <span>Time Period</span>
+                                    </div>
+                                    <label class="filter-option">
+                                        <input type="checkbox" class="filter-checkbox" data-filter="time" data-value="all" checked>
+                                        <i class="fas fa-check filter-check-icon"></i>
+                                        <span class="filter-label">All time</span>
+                                    </label>
+                                    <label class="filter-option">
+                                        <input type="checkbox" class="filter-checkbox" data-filter="time" data-value="today">
+                                        <i class="fas fa-check filter-check-icon"></i>
+                                        <span class="filter-label">Today</span>
+                                    </label>
+                                    <label class="filter-option">
+                                        <input type="checkbox" class="filter-checkbox" data-filter="time" data-value="week">
+                                        <i class="fas fa-check filter-check-icon"></i>
+                                        <span class="filter-label">This week</span>
+                                    </label>
+                                    <label class="filter-option">
+                                        <input type="checkbox" class="filter-checkbox" data-filter="time" data-value="month">
+                                        <i class="fas fa-check filter-check-icon"></i>
+                                        <span class="filter-label">This month</span>
+                                    </label>
+                                    <label class="filter-option">
+                                        <input type="checkbox" class="filter-checkbox" data-filter="time" data-value="custom">
+                                        <i class="fas fa-check filter-check-icon"></i>
+                                        <span class="filter-label">Custom</span>
+                                    </label>
+                                    
+                                    <!-- Custom Date Range -->
+                                    <div class="filter-custom-date-range" id="filter-custom-date-range" style="display: none;">
+                                        <div class="custom-date-inputs">
+                                            <div class="date-input-group">
+                                                <label class="date-label">From:</label>
+                                                <input type="date" id="filter-date-from" class="custom-date-input">
+                                            </div>
+                                            <div class="date-input-group">
+                                                <label class="date-label">To:</label>
+                                                <input type="date" id="filter-date-to" class="custom-date-input">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Separator -->
+                                    <div class="filter-separator"></div>
+                                    
+                                    <!-- Type Filters -->
+                                    <div class="filter-group-header">
+                                        <i class="fas fa-list"></i>
+                                        <span>Type</span>
+                                    </div>
+                                    <label class="filter-option">
+                                        <input type="checkbox" class="filter-checkbox" data-filter="type" data-value="all" checked>
+                                        <i class="fas fa-check filter-check-icon"></i>
+                                        <span class="filter-label">All types</span>
+                                    </label>
+                                    <label class="filter-option">
+                                        <input type="checkbox" class="filter-checkbox" data-filter="type" data-value="protocol">
+                                        <i class="fas fa-check filter-check-icon"></i>
+                                        <span class="filter-label">Protocols</span>
+                                    </label>
+                                    <label class="filter-option">
+                                        <input type="checkbox" class="filter-checkbox" data-filter="type" data-value="manual">
+                                        <i class="fas fa-check filter-check-icon"></i>
+                                        <span class="filter-label">Manual</span>
+                                    </label>
+                                    
+                                    <!-- Separator -->
+                                    <div class="filter-separator"></div>
+                                    
+                                    <!-- Effect Filters -->
+                                    <div class="filter-group-header">
+                                        <i class="fas fa-chart-line"></i>
+                                        <span>Effect</span>
+                                    </div>
+                                    <label class="filter-option">
+                                        <input type="checkbox" class="filter-checkbox" data-filter="effect" data-value="all" checked>
+                                        <i class="fas fa-check filter-check-icon"></i>
+                                        <span class="filter-label">All effects</span>
+                                    </label>
+                                    <label class="filter-option">
+                                        <input type="checkbox" class="filter-checkbox" data-filter="effect" data-value="positive">
+                                        <i class="fas fa-check filter-check-icon"></i>
+                                        <span class="filter-label">Positive</span>
+                                    </label>
+                                    <label class="filter-option">
+                                        <input type="checkbox" class="filter-checkbox" data-filter="effect" data-value="negative">
+                                        <i class="fas fa-check filter-check-icon"></i>
+                                        <span class="filter-label">Negative</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-danger" id="clear-history">
+                        <i class="fas fa-trash"></i>
+                        Clear All History
+                    </button>
+                </div>
+                
+                <div class="history-table">
+                    <div class="history-header">
+                        <div class="history-cell">date</div>
+                        <div class="history-cell">type</div>
+                        <div class="history-cell">action</div>
+                        <div class="history-cell">changes</div>
+                        <div class="history-cell">actions</div>
+                    </div>
+                    <div class="history-body">
+                        <!-- History items will be generated by JS -->
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Add Skill Modal -->
+        <div id="add-skill-modal" class="modal">
+            <div class="modal-overlay"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="skill-modal-title">Add New Skill</h2>
+                    <button class="modal-close" id="close-skill-modal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-skill-form">
+                        <input type="hidden" id="skill-edit-id" value="">
+                        
+                        <div class="form-group">
+                            <label for="skill-name">Skill Name</label>
+                            <input type="text" id="skill-name" name="skill-name" class="form-input" placeholder="e.g., Social Confidence" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="skill-description">Description (Optional)</label>
+                            <input type="text" id="skill-description" name="skill-description" class="form-input" placeholder="e.g., Ability to engage in conversations">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="skill-emoji">Emoji</label>
+                            <input type="text" id="skill-emoji" name="skill-emoji" class="form-input" placeholder="e.g., 🗣️" maxlength="2" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="skill-hover">Hover Text</label>
+                            <textarea id="skill-hover" name="skill-hover" class="form-textarea" placeholder="Detailed description shown on hover..." rows="3"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="skill-initial-score">Initial Score</label>
+                            <input type="number" id="skill-initial-score" name="skill-initial-score" class="form-input" min="0" max="10" step="0.1" value="1.0" required>
+                        </div>
+                        
+                        <div class="modal-actions">
+                            <button type="button" class="btn btn-danger" id="delete-skill-btn" style="display: none;">
+                                <i class="fas fa-trash"></i>
+                                Delete
+                            </button>
+                            <div class="modal-actions-right">
+                                <button type="button" class="btn btn-secondary" id="cancel-skill-btn">Cancel</button>
+                                <button type="submit" class="btn btn-primary" id="submit-skill-btn">Add Skill</button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
+
+        <!-- Add Protocol Modal -->
+        <div id="add-protocol-modal" class="modal">
+            <div class="modal-overlay"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="protocol-modal-title">Add New Protocol</h2>
+                    <button class="modal-close" id="close-protocol-modal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-protocol-form">
+                        <input type="hidden" id="protocol-edit-id" value="">
+                        
+                        <div class="form-group">
+                            <label for="protocol-name">Protocol Name</label>
+                            <input type="text" id="protocol-name" name="protocol-name" class="form-input" placeholder="e.g., Morning Routine" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="protocol-description">Description (Optional)</label>
+                            <input type="text" id="protocol-description" name="protocol-description" class="form-input" placeholder="e.g., Start the day with intention">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="protocol-emoji">Emoji</label>
+                            <input type="text" id="protocol-emoji" name="protocol-emoji" class="form-input" placeholder="e.g., 🌅" maxlength="2" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="protocol-hover">Description (Optional)</label>
+                            <textarea id="protocol-hover" name="protocol-hover" class="form-textarea" placeholder="Detailed description shown on hover..." rows="3"></textarea>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="protocol-action">Action</label>
+                                <select id="protocol-action" name="protocol-action" class="form-input" required>
+                                    <option value="+">+ (Increase skills)</option>
+                                    <option value="-">- (Decrease skills)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="protocol-weight">Weight</label>
+                                <input type="number" id="protocol-weight" name="protocol-weight" class="form-input" min="0" max="1" step="0.01" value="0.05" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Target Skills (up to 3)</label>
+                            <p class="form-help-text">Optional: Select skills that this protocol will affect. You can add targets later and all past check-ins will be recalculated automatically.</p>
+                            <div class="targets-container">
+                                <div class="target-slot" id="target-slot-1">
+                                    <div class="target-label">Target 1:</div>
+                                    <div class="target-content">
+                                        <div class="skill-search-wrapper">
+                                            <input type="text" id="skill-search-input" placeholder="Search and select a skill..." class="form-input">
+                                            <div class="skill-suggestions" id="skill-suggestions"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="target-slot" id="target-slot-2" style="display: none;">
+                                    <div class="target-label">Target 2:</div>
+                                    <div class="target-content">
+                                        <div class="skill-search-wrapper">
+                                            <input type="text" id="skill-search-input-2" placeholder="Search and select a skill..." class="form-input">
+                                            <div class="skill-suggestions" id="skill-suggestions-2"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="target-slot" id="target-slot-3" style="display: none;">
+                                    <div class="target-label">Target 3:</div>
+                                    <div class="target-content">
+                                        <div class="skill-search-wrapper">
+                                            <input type="text" id="skill-search-input-3" placeholder="Search and select a skill..." class="form-input">
+                                            <div class="skill-suggestions" id="skill-suggestions-3"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="modal-actions">
+                            <button type="button" class="btn btn-danger" id="delete-protocol-btn" style="display: none;">
+                                <i class="fas fa-trash"></i>
+                                Delete
+                            </button>
+                            <div class="modal-actions-right">
+                                <button type="button" class="btn btn-secondary" id="cancel-protocol-btn">Cancel</button>
+                                <button type="submit" class="btn btn-primary" id="submit-protocol-btn">Add Protocol</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add/Edit State Modal -->
+        <div id="add-state-modal" class="modal">
+            <div class="modal-overlay"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="state-modal-title">Add New State</h2>
+                    <button class="modal-close" id="close-state-modal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-state-form">
+                        <input type="hidden" id="state-edit-id" value="">
+                        
+                        <div class="form-group">
+                            <label for="state-name">State Name</label>
+                            <input type="text" id="state-name" name="state-name" class="form-input" placeholder="e.g., Mental Clarity" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="state-emoji">Emoji</label>
+                            <input type="text" id="state-emoji" name="state-emoji" class="form-input" placeholder="e.g., 🧠" maxlength="2" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="state-hover">Description</label>
+                            <textarea id="state-hover" name="state-hover" class="form-textarea" placeholder="Detailed description of this state..." rows="3" required></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Dependencies</label>
+                            <div class="dependencies-tabs">
+                                <button type="button" class="tab-btn active" id="skills-tab">Skills</button>
+                                <button type="button" class="tab-btn" id="states-tab">States</button>
+                            </div>
+                            
+                            <div class="dependencies-content">
+                                <!-- Skills Dependencies -->
+                                <div class="dependency-panel active" id="skills-panel">
+                                    <p class="dependency-description">Select skills that contribute to this state (average will be calculated):</p>
+                                    <div class="dependency-grid" id="skills-dependency-grid">
+                                        <!-- Skills checkboxes will be generated by JS -->
+                                    </div>
+                                </div>
+                                
+                                <!-- States Dependencies -->
+                                <div class="dependency-panel" id="states-panel">
+                                    <p class="dependency-description">Select other states that contribute to this state:</p>
+                                    <div class="dependency-grid" id="states-dependency-grid">
+                                        <!-- States checkboxes will be generated by JS -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="modal-actions">
+                            <button type="button" class="btn btn-danger" id="delete-state-btn" style="display: none;">
+                                <i class="fas fa-trash"></i>
+                                Delete
+                            </button>
+                            <div class="modal-actions-right">
+                                <button type="button" class="btn btn-secondary" id="cancel-state-btn">Cancel</button>
+                                <button type="submit" class="btn btn-primary" id="submit-state-btn">Add State</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Action Selection Modal -->
+        <div id="quick-action-modal" class="modal">
+            <div class="modal-overlay"></div>
+            <div class="modal-content" style="max-width: 800px;">
+                <div class="modal-header">
+                    <h2>add protocol to quick actions</h2>
+                    <button class="modal-close" id="close-quick-action-modal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Search Controls -->
+                    <div class="quick-action-search-controls">
+                        <div class="search-container">
+                            <input type="text" id="quick-action-search" placeholder="Search protocols..." class="search-input">
+                            <i class="fas fa-search search-icon"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Protocols Table -->
+                    <div class="quick-action-protocols-table">
+                        <div class="protocols-header">
+                            <div class="protocol-cell">#</div>
+                            <div class="protocol-cell">Protocol</div>
+                            <div class="protocol-cell">Targets</div>
+                            <div class="protocol-cell">Weight</div>
+                        </div>
+                        <div class="protocols-body" id="quick-action-protocols-body">
+                            <!-- Available protocols will be generated by JS -->
+                        </div>
+                    </div>
+                    
+                    <!-- Empty State -->
+                    <div id="quick-action-empty-state" style="text-align: center; padding: 2rem 1rem; color: var(--sub-color); display: none;">
+                        <!-- Content will be dynamically updated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toast-container"></div>
+
+        <!-- Firebase SDK -->
+        <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+        <script>
+            // Initialize Firebase after config is loaded
+            setTimeout(() => {
+                if (window.firebaseConfig) {
+                    const app = firebase.initializeApp(window.firebaseConfig);
+                    const auth = firebase.auth();
+                    
+                    // Make globally available
+                    window.firebaseApp = app;
+                    window.firebaseAuth = auth;
+                    
+                    console.log('🔥 Firebase initialized');
+                }
+            }, 100);
+        </script>
+
+        <!-- Scripts -->
+        <script src="js/data.js"></script>
+        <script src="js/firebase-config.js"></script>
+        <script src="js/auth.js"></script>
+        <script src="js/storage.js"></script>
+        <script src="js/ui.js"></script>
+        <script src="js/dragdrop.js"></script>
+        <script src="js/modals.js"></script>
+        <script src="js/app.js"></script>
     </div>
-
-    <!-- Toast Notifications -->
-    <div id="toast-container"></div>
-
-    <!-- Scripts -->
-    <script src="js/data.js"></script>
-    <script src="js/storage.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/dragdrop.js"></script>
-    <script src="js/modals.js"></script>
-    <script src="js/app.js"></script>
 </body>
 </html>

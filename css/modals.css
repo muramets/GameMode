@@ -121,6 +121,13 @@
   margin-bottom: 0.5rem;
 }
 
+.form-help-text {
+  color: var(--sub-color);
+  font-size: 0.8rem;
+  margin: 0.25rem 0 0.75rem 0;
+  line-height: 1.4;
+}
+
 .form-input,
 .form-textarea {
   width: 100%;
@@ -144,6 +151,45 @@
 .form-input::placeholder,
 .form-textarea::placeholder {
   color: var(--sub-color);
+}
+
+/* Autofill styles to maintain design */
+.form-input:-webkit-autofill,
+.form-input:-webkit-autofill:hover,
+.form-input:-webkit-autofill:focus,
+.form-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px var(--bg-color) inset !important;
+  -webkit-text-fill-color: var(--text-color) !important;
+  background-color: var(--bg-color) !important;
+  border: 1px solid var(--sub-color) !important;
+  border-radius: 0.5rem !important;
+  font-family: 'Roboto Mono', monospace !important;
+  font-size: 0.9rem !important;
+  transition: border-color 0.125s !important;
+}
+
+.form-input:-webkit-autofill:focus {
+  border-color: var(--main-color) !important;
+  -webkit-box-shadow: 0 0 0 30px var(--bg-color) inset !important;
+}
+
+.form-textarea:-webkit-autofill,
+.form-textarea:-webkit-autofill:hover,
+.form-textarea:-webkit-autofill:focus,
+.form-textarea:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px var(--bg-color) inset !important;
+  -webkit-text-fill-color: var(--text-color) !important;
+  background-color: var(--bg-color) !important;
+  border: 1px solid var(--sub-color) !important;
+  border-radius: 0.5rem !important;
+  font-family: 'Roboto Mono', monospace !important;
+  font-size: 0.9rem !important;
+  transition: border-color 0.125s !important;
+}
+
+.form-textarea:-webkit-autofill:focus {
+  border-color: var(--main-color) !important;
+  -webkit-box-shadow: 0 0 0 30px var(--bg-color) inset !important;
 }
 
 .form-textarea {

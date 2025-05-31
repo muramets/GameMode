@@ -1,19 +1,48 @@
 // ===== storage.js - Local Storage Management =====
 
-const Storage = {
+class Storage {
+  constructor() {
+    this.isOnline = navigator.onLine;
+    this.pendingSync = new Set();
+    this.lastSyncTime = null;
+    this.currentUser = null;
+    
+    // Listen for online/offline status
+    window.addEventListener('online', () => {
+      this.isOnline = true;
+      this.syncPendingChanges();
+    });
+    
+    window.addEventListener('offline', () => {
+      this.isOnline = false;
+    });
+  }
+  
+  // Set current user for data scoping
+  setUser(user) {
+    this.currentUser = user;
+    this.lastSyncTime = null; // Reset sync time when user changes
+  }
+  
+  // Get user-specific key
+  getUserKey(key) {
+    if (!this.currentUser) return key;
+    return `${this.currentUser.uid}_${key}`;
+  }
+
   // Keys
-  KEYS: {
-    PROTOCOLS: 'rpg_therapy_protocols',
-    SKILLS: 'rpg_therapy_skills',
-    STATES: 'rpg_therapy_states',
-    CHECKINS: 'rpg_therapy_checkins',
-    SETTINGS: 'rpg_therapy_settings',
-    PROTOCOL_ORDER: 'rpg_therapy_protocol_order',
-    SKILL_ORDER: 'rpg_therapy_skill_order',
-    QUICK_ACTIONS: 'rpg_therapy_quick_actions',
-    STATE_ORDER: 'rpg_therapy_state_order',
-    QUICK_ACTION_ORDER: 'rpg_therapy_quick_action_order'
-  },
+  KEYS = {
+    PROTOCOLS: 'protocols',
+    SKILLS: 'skills',
+    STATES: 'states',
+    HISTORY: 'history',
+    QUICK_ACTIONS: 'quickActions',
+    QUICK_ACTION_ORDER: 'quickActionOrder',
+    PROTOCOL_ORDER: 'protocolOrder',
+    SKILL_ORDER: 'skillOrder',
+    STATE_ORDER: 'stateOrder',
+    SKILL_MIGRATION: 'skillMigration'
+  };
 
   // Initialize app data
   init() {
@@ -30,8 +59,8 @@ const Storage = {
       this.set(this.KEYS.STATES, INITIAL_DATA.states);
     }
     
-    if (!this.get(this.KEYS.CHECKINS)) {
-      this.set(this.KEYS.CHECKINS, []);
+    if (!this.get(this.KEYS.HISTORY)) {
+      this.set(this.KEYS.HISTORY, []);
     }
     
     if (!this.get(this.KEYS.QUICK_ACTIONS)) {
@@ -41,58 +70,93 @@ const Storage = {
         // Use first 5 available protocol IDs as defaults
         const defaultQuickActions = existingProtocols.slice(0, 5).map(p => p.id);
         this.set(this.KEYS.QUICK_ACTIONS, defaultQuickActions);
+        this.set(this.KEYS.QUICK_ACTION_ORDER, defaultQuickActions);
       } else {
         this.set(this.KEYS.QUICK_ACTIONS, [1, 2, 7, 8, 10]);
+        this.set(this.KEYS.QUICK_ACTION_ORDER, [1, 2, 7, 8, 10]);
       }
     }
     
-    if (!this.get(this.KEYS.SETTINGS)) {
-      this.set(this.KEYS.SETTINGS, {
-        initialized: new Date().toISOString(),
-        version: '1.0'
-      });
+    // Initialize quick action order if missing
+    if (!this.get(this.KEYS.QUICK_ACTION_ORDER)) {
+      const quickActions = this.get(this.KEYS.QUICK_ACTIONS) || [];
+      this.set(this.KEYS.QUICK_ACTION_ORDER, quickActions);
     }
-  },
+    
+    // Initialize other order keys if missing
+    if (!this.get(this.KEYS.PROTOCOL_ORDER)) {
+      this.set(this.KEYS.PROTOCOL_ORDER, []);
+    }
+    
+    if (!this.get(this.KEYS.SKILL_ORDER)) {
+      this.set(this.KEYS.SKILL_ORDER, []);
+    }
+    
+    if (!this.get(this.KEYS.STATE_ORDER)) {
+      this.set(this.KEYS.STATE_ORDER, []);
+    }
+    
+    if (!this.get(this.KEYS.SKILL_MIGRATION)) {
+      this.set(this.KEYS.SKILL_MIGRATION, false);
+    }
+  }
 
   // Get data from localStorage
   get(key) {
     try {
-      const data = localStorage.getItem(key);
+      const data = localStorage.getItem(this.getUserKey(key));
       return data ? JSON.parse(data) : null;
     } catch (e) {
       console.error('Error reading from localStorage:', e);
       return null;
     }
-  },
+  }
 
   // Set data to localStorage
   set(key, value) {
     try {
-      localStorage.setItem(key, JSON.stringify(value));
+      localStorage.setItem(this.getUserKey(key), JSON.stringify(value));
       return true;
     } catch (e) {
       console.error('Error writing to localStorage:', e);
       return false;
     }
-  },
+  }
 
   // Get all protocols
   getProtocols() {
-    return this.get(this.KEYS.PROTOCOLS) || [];
-  },
+    try {
+      const protocols = this.get(this.KEYS.PROTOCOLS);
+      return Array.isArray(protocols) ? protocols : [];
+    } catch (error) {
+      console.warn('Error getting protocols:', error);
+      return [];
+    }
+  }
 
   // Get all skills
   getSkills() {
-    return this.get(this.KEYS.SKILLS) || [];
-  },
+    try {
+      const skills = this.get(this.KEYS.SKILLS);
+      return Array.isArray(skills) ? skills : [];
+    } catch (error) {
+      console.warn('Error getting skills:', error);
+      return [];
+    }
+  }
 
   // Get skill by ID
   getSkillById(id) {
-    const skills = this.getSkills();
-    // Find skill by exact ID match, considering both string and number IDs
-    const skill = skills.find(s => s.id === id || s.id == id);
-    return skill;
-  },
+    try {
+      const skills = this.getSkills();
+      // Find skill by exact ID match, considering both string and number IDs
+      const skill = skills.find(s => s.id === id || s.id == id);
+      return skill;
+    } catch (error) {
+      console.warn('Error getting skill by ID:', error);
+      return null;
+    }
+  }
 
   // Update skill
   updateSkill(id, updates) {
@@ -104,17 +168,29 @@ const Storage = {
       return true;
     }
     return false;
-  },
+  }
 
   // Get all states
   getStates() {
-    return this.get(this.KEYS.STATES) || [];
-  },
+    try {
+      const states = this.get(this.KEYS.STATES);
+      return Array.isArray(states) ? states : [];
+    } catch (error) {
+      console.warn('Error getting states:', error);
+      return [];
+    }
+  }
 
   // Get all checkins
   getCheckins() {
-    return this.get(this.KEYS.CHECKINS) || [];
-  },
+    try {
+      const checkins = this.get(this.KEYS.HISTORY);
+      return Array.isArray(checkins) ? checkins : [];
+    } catch (error) {
+      console.warn('Error getting checkins:', error);
+      return [];
+    }
+  }
 
   // Add checkin
   addCheckin(protocolId) {
@@ -132,20 +208,60 @@ const Storage = {
       changes: {}
     };
 
-    // Calculate skill changes
-    const changeValue = protocol.action === '+' ? protocol.weight : -protocol.weight;
-    
-    protocol.targets.forEach(skillId => {
-      checkin.changes[skillId] = changeValue;
-    });
+    // Calculate skill changes only if protocol has targets
+    if (protocol.targets && protocol.targets.length > 0) {
+      const changeValue = protocol.action === '+' ? protocol.weight : -protocol.weight;
+      
+      protocol.targets.forEach(skillId => {
+        checkin.changes[skillId] = changeValue;
+      });
+    }
 
     // Save checkin
     const checkins = this.getCheckins();
     checkins.push(checkin);
-    this.set(this.KEYS.CHECKINS, checkins);
+    this.set(this.KEYS.HISTORY, checkins);
 
     return checkin;
-  },
+  }
+
+  // Recalculate protocol history when targets change
+  recalculateProtocolHistory(protocolId, oldTargets, newTargets) {
+    const checkins = this.getCheckins();
+    const protocol = this.getProtocolById(protocolId);
+    if (!protocol) return false;
+
+    const changeValue = protocol.action === '+' ? protocol.weight : -protocol.weight;
+    let hasChanges = false;
+
+    checkins.forEach(checkin => {
+      if (checkin.type === 'protocol' && checkin.protocolId === protocolId) {
+        // Remove old target effects
+        if (oldTargets && oldTargets.length > 0) {
+          oldTargets.forEach(skillId => {
+            if (checkin.changes[skillId] !== undefined) {
+              delete checkin.changes[skillId];
+              hasChanges = true;
+            }
+          });
+        }
+
+        // Add new target effects
+        if (newTargets && newTargets.length > 0) {
+          newTargets.forEach(skillId => {
+            checkin.changes[skillId] = changeValue;
+            hasChanges = true;
+          });
+        }
+      }
+    });
+
+    if (hasChanges) {
+      this.set(this.KEYS.HISTORY, checkins);
+    }
+
+    return hasChanges;
+  }
 
   // Add drag & drop operation to history
   addDragDropOperation(type, itemId, itemName, itemIcon, oldOrder, newOrder) {
@@ -169,10 +285,10 @@ const Storage = {
 
     const checkins = this.getCheckins();
     checkins.push(operation);
-    this.set(this.KEYS.CHECKINS, checkins);
+    this.set(this.KEYS.HISTORY, checkins);
 
     return operation;
-  },
+  }
 
   // Delete checkin
   deleteCheckin(checkinId) {
@@ -242,15 +358,15 @@ const Storage = {
     }
     
     const filtered = checkins.filter(c => c.id !== checkinId);
-    this.set(this.KEYS.CHECKINS, filtered);
+    this.set(this.KEYS.HISTORY, filtered);
     return true;
-  },
+  }
 
   // Clear all checkins
   clearAllCheckins() {
-    this.set(this.KEYS.CHECKINS, []);
+    this.set(this.KEYS.HISTORY, []);
     return true;
-  },
+  }
 
   // Calculate current skill score
   calculateCurrentScore(skillId) {
@@ -270,7 +386,7 @@ const Storage = {
     });
 
     return Math.max(0, skill.initialScore + totalChange);
-  },
+  }
 
   // Calculate state score
   calculateStateScore(stateId, visitedStates = new Set()) {
@@ -305,13 +421,13 @@ const Storage = {
     }
 
     return count > 0 ? total / count : 0;
-  },
+  }
 
   // Get skill history
   getSkillHistory(skillId) {
     const checkins = this.getCheckins();
     return checkins.filter(c => c.changes[skillId] !== undefined);
-  },
+  }
 
   // Get last update date for skill
   getSkillLastUpdate(skillId) {
@@ -319,7 +435,7 @@ const Storage = {
     if (history.length === 0) return null;
     
     return history[history.length - 1].timestamp;
-  },
+  }
 
   // Export data
   exportData() {
@@ -333,7 +449,7 @@ const Storage = {
       settings: this.get(this.KEYS.SETTINGS)
     };
     return data;
-  },
+  }
 
   // Import data
   importData(data) {
@@ -345,7 +461,7 @@ const Storage = {
       this.set(this.KEYS.PROTOCOLS, data.protocols || []);
       this.set(this.KEYS.SKILLS, data.skills || []);
       this.set(this.KEYS.STATES, data.states || []);
-      this.set(this.KEYS.CHECKINS, data.checkins || []);
+      this.set(this.KEYS.HISTORY, data.checkins || []);
       this.set(this.KEYS.SETTINGS, data.settings || {});
       
       return true;
@@ -353,25 +469,25 @@ const Storage = {
       console.error('Import failed:', e);
       return false;
     }
-  },
+  }
 
   // Reset to initial data
   reset() {
     Object.values(this.KEYS).forEach(key => {
-      localStorage.removeItem(key);
+      localStorage.removeItem(this.getUserKey(key));
     });
     this.init();
     return true;
-  },
+  }
 
   // Protocol Order Management
   getProtocolOrder() {
     return this.get(this.KEYS.PROTOCOL_ORDER) || [];
-  },
+  }
 
   setProtocolOrder(order) {
     return this.set(this.KEYS.PROTOCOL_ORDER, order);
-  },
+  }
 
   getProtocolsInOrder() {
     const protocols = this.getProtocols();
@@ -404,16 +520,16 @@ const Storage = {
     });
     
     return ordered;
-  },
+  }
 
   // Skill Order Management
   getSkillOrder() {
     return this.get(this.KEYS.SKILL_ORDER) || [];
-  },
+  }
 
   setSkillOrder(order) {
     return this.set(this.KEYS.SKILL_ORDER, order);
-  },
+  }
 
   getSkillsInOrder() {
     const skills = this.getSkills();
@@ -445,7 +561,7 @@ const Storage = {
     });
     
     return ordered;
-  },
+  }
 
   // Add new skill
   addSkill(skillData) {
@@ -470,7 +586,7 @@ const Storage = {
     this.set(this.KEYS.SKILLS, skills);
     
     return newSkill;
-  },
+  }
 
   // Update skill completely
   updateSkillFull(skillId, skillData) {
@@ -490,7 +606,7 @@ const Storage = {
     
     this.set(this.KEYS.SKILLS, skills);
     return skills[index];
-  },
+  }
 
   // Delete skill
   deleteSkill(skillId) {
@@ -513,155 +629,7 @@ const Storage = {
     // This preserves historical data integrity
     
     return true;
-  },
-
-  // Migrate all skill IDs to numeric format
-  migrateSkillIds() {
-    const skills = this.getSkills();
-    const protocols = this.getProtocols();
-    const states = this.getStates();
-    const checkins = this.getCheckins();
-    const skillOrder = this.getSkillOrder();
-    
-    // Check if skills are already numeric but states are still string
-    const skillsAreNumeric = skills.every(s => typeof s.id === 'number');
-    const statesHaveStringIds = states.some(s => s.skillIds.some(id => typeof id === 'string'));
-    
-    if (skillsAreNumeric && statesHaveStringIds) {
-      return this.fixStateSkillIds();
-    }
-    
-    // Create mapping from old IDs to new IDs
-    const idMapping = {};
-    const newSkills = skills.map((skill, index) => {
-      const newId = index + 1;
-      idMapping[skill.id] = newId;
-      
-      return {
-        ...skill,
-        id: newId
-      };
-    });
-    
-    // Update protocols targets
-    const newProtocols = protocols.map(protocol => ({
-      ...protocol,
-      targets: protocol.targets.map(targetId => idMapping[targetId] || targetId)
-    }));
-    
-    // Update states skillIds
-    const newStates = states.map(state => ({
-      ...state,
-      skillIds: state.skillIds.map(skillId => idMapping[skillId] || skillId)
-    }));
-    
-    // Update checkins
-    const newCheckins = checkins.map(checkin => {
-      if (checkin.changes && checkin.type === 'protocol') {
-        const newChanges = {};
-        Object.entries(checkin.changes).forEach(([skillId, value]) => {
-          const newSkillId = idMapping[skillId] || skillId;
-          newChanges[newSkillId] = value;
-        });
-        
-        return {
-          ...checkin,
-          changes: newChanges
-        };
-      }
-      return checkin;
-    });
-    
-    // Update skill order
-    const newSkillOrder = skillOrder.map(id => idMapping[id] || id);
-    
-    // Save all updated data
-    this.set(this.KEYS.SKILLS, newSkills);
-    this.set(this.KEYS.PROTOCOLS, newProtocols);
-    this.set(this.KEYS.STATES, newStates);
-    this.set(this.KEYS.CHECKINS, newCheckins);
-    this.setSkillOrder(newSkillOrder);
-    
-    return {
-      skillsUpdated: newSkills.length,
-      protocolsUpdated: newProtocols.length,
-      statesUpdated: newStates.length,
-      checkinsUpdated: newCheckins.filter(c => c.type === 'protocol').length,
-      idMapping: idMapping
-    };
-  },
-
-  // Fix state skill IDs when skills are numeric but states have string IDs
-  fixStateSkillIds() {
-    const states = this.getStates();
-    const protocols = this.getProtocols();
-    const checkins = this.getCheckins();
-    
-    // Create mapping from original data
-    const stringToNumberMapping = {
-      "focus": 1,
-      "energy": 2, 
-      "engagement": 3,
-      "body_sync": 4,
-      "business_insight": 5,
-      "execution_speed": 6,
-      "relationship": 7,
-      "family": 8,
-      "community": 9
-    };
-    
-    // Fix states
-    const fixedStates = states.map(state => ({
-      ...state,
-      skillIds: state.skillIds.map(skillId => 
-        typeof skillId === 'string' && stringToNumberMapping[skillId] 
-          ? stringToNumberMapping[skillId] 
-          : skillId
-      )
-    }));
-    
-    // Fix protocols
-    const fixedProtocols = protocols.map(protocol => ({
-      ...protocol,
-      targets: protocol.targets.map(targetId => 
-        typeof targetId === 'string' && stringToNumberMapping[targetId] 
-          ? stringToNumberMapping[targetId] 
-          : targetId
-      )
-    }));
-    
-    // Fix checkins
-    const fixedCheckins = checkins.map(checkin => {
-      if (checkin.changes && checkin.type === 'protocol') {
-        const fixedChanges = {};
-        Object.entries(checkin.changes).forEach(([skillId, value]) => {
-          const newSkillId = typeof skillId === 'string' && stringToNumberMapping[skillId] 
-            ? stringToNumberMapping[skillId] 
-            : skillId;
-          fixedChanges[newSkillId] = value;
-        });
-        
-        return {
-          ...checkin,
-          changes: fixedChanges
-        };
-      }
-      return checkin;
-    });
-    
-    // Save fixed data
-    this.set(this.KEYS.STATES, fixedStates);
-    this.set(this.KEYS.PROTOCOLS, fixedProtocols);
-    this.set(this.KEYS.CHECKINS, fixedCheckins);
-    
-    return {
-      skillsUpdated: 0,
-      protocolsUpdated: fixedProtocols.length,
-      statesUpdated: fixedStates.length,
-      checkinsUpdated: fixedCheckins.filter(c => c.type === 'protocol').length,
-      idMapping: stringToNumberMapping
-    };
-  },
+  }
 
   // Protocol CRUD operations
   
@@ -675,7 +643,7 @@ const Storage = {
     // Create protocol object
     const newProtocol = {
       id: newId,
-      name: protocolData.name,
+      name: protocolData.name + (protocolData.description ? '. ' + protocolData.description : ''),
       icon: protocolData.icon,
       hover: protocolData.hover || '',
       action: protocolData.action,
@@ -688,14 +656,14 @@ const Storage = {
     this.set(this.KEYS.PROTOCOLS, protocols);
     
     return newProtocol;
-  },
+  }
 
   // Get protocol by ID
   getProtocolById(id) {
     const protocols = this.getProtocols();
     const protocol = protocols.find(p => p.id === id || p.id == id);
     return protocol;
-  },
+  }
 
   // Update protocol completely
   updateProtocolFull(protocolId, protocolData) {
@@ -704,20 +672,55 @@ const Storage = {
     
     if (index === -1) return false;
     
+    // Store old values for comparison
+    const oldProtocol = protocols[index];
+    const oldTargets = oldProtocol.targets || [];
+    const newTargets = protocolData.targets || [];
+    
     // Update protocol object
     protocols[index] = {
       id: protocolId,
-      name: protocolData.name,
+      name: protocolData.name + (protocolData.description ? '. ' + protocolData.description : ''),
       icon: protocolData.icon,
       hover: protocolData.hover || '',
       action: protocolData.action,
       weight: protocolData.weight,
-      targets: protocolData.targets || []
+      targets: newTargets
     };
     
     this.set(this.KEYS.PROTOCOLS, protocols);
+    
+    // Check if targets changed or if action/weight changed and recalculate history if needed
+    const targetsChanged = !this.arraysEqual(oldTargets, newTargets);
+    const actionChanged = oldProtocol.action !== protocolData.action;
+    const weightChanged = oldProtocol.weight !== protocolData.weight;
+    
+    if (targetsChanged || actionChanged || weightChanged) {
+      // If action/weight changed, we need to recalculate using all targets (old and new)
+      if (actionChanged || weightChanged) {
+        // Get all unique targets from old and new
+        const allTargets = [...new Set([...oldTargets, ...newTargets])];
+        const wasRecalculated = this.recalculateProtocolHistory(protocolId, allTargets, newTargets);
+        if (wasRecalculated && window.App) {
+          window.App.showToast('Protocol history recalculated retroactively', 'info');
+        }
+      } else {
+        // Only targets changed
+        const wasRecalculated = this.recalculateProtocolHistory(protocolId, oldTargets, newTargets);
+        if (wasRecalculated && window.App) {
+          window.App.showToast('Protocol history recalculated retroactively', 'info');
+        }
+      }
+    }
+    
     return protocols[index];
-  },
+  }
+
+  // Helper function to compare arrays
+  arraysEqual(arr1, arr2) {
+    if (arr1.length !== arr2.length) return false;
+    return arr1.every((val, index) => val === arr2[index]);
+  }
 
   // Delete protocol
   deleteProtocol(protocolId) {
@@ -744,10 +747,10 @@ const Storage = {
       }
       return true;
     });
-    this.set(this.KEYS.CHECKINS, filteredCheckins);
+    this.set(this.KEYS.HISTORY, filteredCheckins);
     
     return true;
-  },
+  }
 
   // States Management
   addState(stateData) {
@@ -769,7 +772,7 @@ const Storage = {
     states.push(newState);
     this.set(this.KEYS.STATES, states);
     return newState;
-  },
+  }
 
   updateState(stateId, stateData) {
     const states = this.getStates();
@@ -788,7 +791,7 @@ const Storage = {
     
     this.set(this.KEYS.STATES, states);
     return states[index];
-  },
+  }
 
   deleteState(stateId) {
     const states = this.getStates();
@@ -803,12 +806,12 @@ const Storage = {
     
     this.set(this.KEYS.STATES, filtered);
     return true;
-  },
+  }
 
   getStateById(stateId) {
     const states = this.getStates();
     return states.find(s => s.id === stateId);
-  },
+  }
 
   // Quick Actions Management
   getQuickActions() {
@@ -819,7 +822,7 @@ const Storage = {
     return quickActionIds.map(id => {
       return protocols.find(p => p.id === id);
     }).filter(Boolean);
-  },
+  }
 
   addToQuickActions(protocolId) {
     const quickActions = this.get(this.KEYS.QUICK_ACTIONS) || [];
@@ -853,11 +856,11 @@ const Storage = {
         protocolIcon: protocol.icon
       };
       checkins.push(checkin);
-      this.set(this.KEYS.CHECKINS, checkins);
+      this.set(this.KEYS.HISTORY, checkins);
     }
     
     return true;
-  },
+  }
 
   removeFromQuickActions(protocolId) {
     const quickActions = this.get(this.KEYS.QUICK_ACTIONS) || [];
@@ -889,30 +892,30 @@ const Storage = {
         protocolIcon: protocol.icon
       };
       checkins.push(checkin);
-      this.set(this.KEYS.CHECKINS, checkins);
+      this.set(this.KEYS.HISTORY, checkins);
     }
     
     return true;
-  },
+  }
 
   isInQuickActions(protocolId) {
     const quickActions = this.get(this.KEYS.QUICK_ACTIONS) || [];
     return quickActions.includes(protocolId);
-  },
+  }
 
   setQuickActions(protocolIds) {
     this.set(this.KEYS.QUICK_ACTIONS, protocolIds);
     return true;
-  },
+  }
 
   // States Order Management
   getStateOrder() {
     return this.get(this.KEYS.STATE_ORDER) || [];
-  },
+  }
 
   setStateOrder(stateOrder) {
     this.set(this.KEYS.STATE_ORDER, stateOrder);
-  },
+  }
 
   getStatesInOrder() {
     const states = this.getStates();
@@ -936,18 +939,18 @@ const Storage = {
     const remainingStates = states.filter(s => !statesInOrder.has(s.id));
     
     return [...orderedStates, ...remainingStates];
-  },
+  }
 
   // Quick Actions Order Management
   getQuickActionOrder() {
     return this.get(this.KEYS.QUICK_ACTION_ORDER) || [];
-  },
+  }
 
   setQuickActionOrder(quickActionOrder) {
     this.set(this.KEYS.QUICK_ACTION_ORDER, quickActionOrder);
     // Also update the main quick actions array to match the order
     this.set(this.KEYS.QUICK_ACTIONS, quickActionOrder);
-  },
+  }
 
   getQuickActionsInOrder() {
     const quickActionIds = this.get(this.KEYS.QUICK_ACTIONS) || [];
@@ -962,4 +965,63 @@ const Storage = {
       return protocols.find(p => p.id === id);
     }).filter(Boolean);
   }
-};
+
+  // Sync with Firebase backend
+  async syncWithBackend() {
+    if (!this.isOnline || !this.currentUser) return;
+    
+    try {
+      const userData = {
+        protocols: this.get(this.KEYS.PROTOCOLS),
+        skills: this.get(this.KEYS.SKILLS),
+        states: this.get(this.KEYS.STATES),
+        history: this.get(this.KEYS.HISTORY),
+        quickActions: this.get(this.KEYS.QUICK_ACTIONS)
+      };
+      
+      const response = await fetch(`${BACKEND_URL}/api/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await this.currentUser.getIdToken()}`
+        },
+        body: JSON.stringify(userData)
+      });
+      
+      if (response.ok) {
+        const serverData = await response.json();
+        this.lastSyncTime = new Date().toISOString();
+        
+        // Update local data with server data if newer
+        if (serverData.data) {
+          Object.keys(serverData.data).forEach(key => {
+            if (serverData.data[key]) {
+              this.set(this.KEYS[key.toUpperCase()], serverData.data[key]);
+            }
+          });
+        }
+        
+        console.log('✅ Data synced successfully');
+      }
+    } catch (error) {
+      console.error('Sync failed:', error);
+      this.markForSync();
+    }
+  }
+
+  // Mark data for sync when online
+  markForSync() {
+    this.pendingSync.add(Date.now());
+  }
+
+  // Sync pending changes when coming online
+  async syncPendingChanges() {
+    if (this.pendingSync.size > 0) {
+      await this.syncWithBackend();
+      this.pendingSync.clear();
+    }
+  }
+}
+
+// Create global instance
+window.Storage = new Storage();

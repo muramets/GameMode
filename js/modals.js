@@ -87,14 +87,15 @@ const Modals = {
       
       if (this.currentSkillId) {
         // Edit mode
-        const updatedSkill = Storage.updateSkillFull(this.currentSkillId, skillData);
+        const updatedSkill = window.Storage.updateSkillFull(this.currentSkillId, skillData);
         if (updatedSkill) {
           App.showToast('Skill updated successfully!', 'success');
           
           // Update filtered skills
-          App.filteredSkills = Storage.getSkillsInOrder();
+          App.filteredSkills = window.Storage.getSkillsInOrder();
           if (App.currentPage === 'skills') {
             UI.renderSkills();
+            DragDrop.setupSkills();
             App.setupTooltips();
           }
           
@@ -104,14 +105,15 @@ const Modals = {
         }
       } else {
         // Add mode
-        const newSkill = Storage.addSkill(skillData);
+        const newSkill = window.Storage.addSkill(skillData);
         if (newSkill) {
           App.showToast('Skill added successfully!', 'success');
           
           // Update filtered skills
-          App.filteredSkills = Storage.getSkillsInOrder();
+          App.filteredSkills = window.Storage.getSkillsInOrder();
           if (App.currentPage === 'skills') {
             UI.renderSkills();
+            DragDrop.setupSkills();
             App.setupTooltips();
           }
           
@@ -151,7 +153,7 @@ const Modals = {
     // Convert string ID to number if needed for comparison
     const searchId = typeof skillId === 'string' ? parseInt(skillId) || skillId : skillId;
     
-    const skill = Storage.getSkillById(searchId);
+    const skill = window.Storage.getSkillById(searchId);
     if (!skill) {
       App.showToast('Skill not found', 'error');
       return;
@@ -187,7 +189,7 @@ const Modals = {
       return;
     }
     
-    const success = Storage.deleteSkill(skillId);
+    const success = window.Storage.deleteSkill(skillId);
     if (success) {
       App.showToast('Skill deleted successfully', 'success');
       
@@ -199,7 +201,7 @@ const Modals = {
       }
       
       // Update filtered skills
-      App.filteredSkills = Storage.getSkillsInOrder();
+      App.filteredSkills = window.Storage.getSkillsInOrder();
       if (App.currentPage === 'skills') {
         UI.renderSkills();
         App.setupTooltips();
@@ -275,6 +277,7 @@ const Modals = {
       const formData = new FormData(form);
       const protocolData = {
         name: formData.get('protocol-name'),
+        description: formData.get('protocol-description'),
         icon: formData.get('protocol-emoji'),
         hover: formData.get('protocol-hover'),
         action: formData.get('protocol-action'),
@@ -288,21 +291,17 @@ const Modals = {
         return;
       }
       
-      if (protocolData.targets.length === 0) {
-        App.showToast('Please select at least one target skill', 'error');
-        return;
-      }
-      
       if (this.currentProtocolId) {
         // Edit mode
-        const updatedProtocol = Storage.updateProtocolFull(this.currentProtocolId, protocolData);
+        const updatedProtocol = window.Storage.updateProtocolFull(this.currentProtocolId, protocolData);
         if (updatedProtocol) {
           App.showToast('Protocol updated successfully!', 'success');
           
           // Update filtered protocols
-          App.filteredProtocols = Storage.getProtocolsInOrder();
+          App.filteredProtocols = window.Storage.getProtocolsInOrder();
           if (App.currentPage === 'protocols') {
             UI.renderProtocols();
+            DragDrop.setupProtocols();
             App.setupTooltips();
           }
           
@@ -312,14 +311,15 @@ const Modals = {
         }
       } else {
         // Add mode
-        const newProtocol = Storage.addProtocol(protocolData);
+        const newProtocol = window.Storage.addProtocol(protocolData);
         if (newProtocol) {
           App.showToast('Protocol added successfully!', 'success');
           
           // Update filtered protocols
-          App.filteredProtocols = Storage.getProtocolsInOrder();
+          App.filteredProtocols = window.Storage.getProtocolsInOrder();
           if (App.currentPage === 'protocols') {
             UI.renderProtocols();
+            DragDrop.setupProtocols();
             App.setupTooltips();
           }
           
@@ -460,7 +460,7 @@ const Modals = {
     }
     
     const searchTerm = query.toLowerCase();
-    const allSkills = Storage.getSkills();
+    const allSkills = window.Storage.getSkills();
     
     const filteredSkills = allSkills.filter(skill => {
       // Skip already selected skills
@@ -513,7 +513,7 @@ const Modals = {
 
   selectTarget(skillId, slotNumber) {
     // Ensure skillId is the right type for comparison
-    const skill = Storage.getSkillById(skillId);
+    const skill = window.Storage.getSkillById(skillId);
     if (!skill) {
       console.error('Skill not found:', skillId);
       return;
@@ -576,7 +576,7 @@ const Modals = {
     // Convert string ID to number if needed for comparison
     const searchId = typeof protocolId === 'string' ? parseInt(protocolId) || protocolId : protocolId;
     
-    const protocol = Storage.getProtocolById(searchId);
+    const protocol = window.Storage.getProtocolById(searchId);
     if (!protocol) {
       App.showToast('Protocol not found', 'error');
       return;
@@ -584,8 +584,14 @@ const Modals = {
     
     this.currentProtocolId = searchId;
     
+    // Parse name and description
+    const nameParts = protocol.name.split('. ');
+    const name = nameParts[0];
+    const description = nameParts.slice(1).join('. ');
+    
     // Populate form
-    document.getElementById('protocol-name').value = protocol.name;
+    document.getElementById('protocol-name').value = name;
+    document.getElementById('protocol-description').value = description;
     document.getElementById('protocol-emoji').value = protocol.icon;
     document.getElementById('protocol-hover').value = protocol.hover || '';
     document.getElementById('protocol-action').value = protocol.action;
@@ -604,7 +610,7 @@ const Modals = {
     
     // THEN load selected skills into targets (after the modal is open and resetTargets() is called)
     this.selectedTargets = [null, null, null];
-    const allSkills = Storage.getSkills();
+    const allSkills = window.Storage.getSkills();
     protocol.targets.forEach((targetId, index) => {
       if (index < 3) {
         const skill = allSkills.find(s => s.id === targetId);
@@ -623,7 +629,7 @@ const Modals = {
       return;
     }
     
-    const success = Storage.deleteProtocol(protocolId);
+    const success = window.Storage.deleteProtocol(protocolId);
     if (success) {
       App.showToast('Protocol deleted successfully', 'success');
       
@@ -635,9 +641,10 @@ const Modals = {
       }
       
       // Update filtered protocols
-      App.filteredProtocols = Storage.getProtocolsInOrder();
+      App.filteredProtocols = window.Storage.getProtocolsInOrder();
       if (App.currentPage === 'protocols') {
         UI.renderProtocols();
+        DragDrop.setupProtocols();
         App.setupTooltips();
       }
     } else {
@@ -744,7 +751,7 @@ const Modals = {
       
       if (this.currentStateId) {
         // Edit mode
-        const updatedState = Storage.updateState(this.currentStateId, stateData);
+        const updatedState = window.Storage.updateState(this.currentStateId, stateData);
         if (updatedState) {
           App.showToast('State updated successfully!', 'success');
           this.refreshStatesView();
@@ -754,7 +761,7 @@ const Modals = {
         }
       } else {
         // Add mode
-        const newState = Storage.addState(stateData);
+        const newState = window.Storage.addState(stateData);
         if (newState) {
           App.showToast('State added successfully!', 'success');
           this.refreshStatesView();
@@ -794,7 +801,7 @@ const Modals = {
   },
 
   editState(stateId) {
-    const state = Storage.getStateById(stateId);
+    const state = window.Storage.getStateById(stateId);
     if (!state) {
       App.showToast('State not found', 'error');
       return;
@@ -832,7 +839,7 @@ const Modals = {
       return;
     }
     
-    const success = Storage.deleteState(stateId);
+    const success = window.Storage.deleteState(stateId);
     if (success) {
       App.showToast('State deleted successfully', 'success');
       
@@ -850,9 +857,16 @@ const Modals = {
   },
 
   populateStateDependencies() {
+    // Check if Storage is available and methods exist
+    if (!window.Storage || typeof window.Storage.getSkills !== 'function') {
+      console.warn('Storage not available yet, retrying...');
+      setTimeout(() => this.populateStateDependencies(), 100);
+      return;
+    }
+
     // Populate skills grid
     const skillsGrid = document.getElementById('skills-dependency-grid');
-    const skills = Storage.getSkills();
+    const skills = window.Storage.getSkills();
     
     if (skillsGrid) {
       skillsGrid.innerHTML = skills.map(skill => {
@@ -880,7 +894,7 @@ const Modals = {
     
     // Populate states grid (excluding current state if editing)
     const statesGrid = document.getElementById('states-dependency-grid');
-    const states = Storage.getStates().filter(s => s.id !== this.currentStateId);
+    const states = window.Storage.getStates().filter(s => s.id !== this.currentStateId);
     
     if (statesGrid) {
       statesGrid.innerHTML = states.map(state => {
@@ -1033,14 +1047,17 @@ const Modals = {
     
     if (!container) return;
     
-    const protocols = Storage.getProtocols();
-    const currentQuickActions = Storage.getQuickActions();
-    const skills = Storage.getSkills();
+    const protocols = window.Storage.getProtocols();
+    const currentQuickActions = window.Storage.getQuickActions();
+    const skills = window.Storage.getSkills();
     
     // Filter available protocols (not already in quick actions)
     let availableProtocols = protocols.filter(protocol => 
       !currentQuickActions.some(qa => qa.id === protocol.id)
     );
+    
+    // Keep track of available protocols before search for better empty state detection
+    const availableProtocolsBeforeSearch = [...availableProtocols];
     
     // Apply search filter
     if (searchTerm) {
@@ -1054,6 +1071,39 @@ const Modals = {
     if (availableProtocols.length === 0) {
       table.style.display = 'none';
       emptyState.style.display = 'block';
+      
+      // Determine the reason for empty state
+      let emptyTitle, emptyDescription, emptyIcon;
+      
+      if (protocols.length === 0) {
+        // No protocols exist at all
+        emptyIcon = 'fas fa-bullseye';
+        emptyTitle = 'No protocols created yet';
+        emptyDescription = 'Create your first protocol on the Protocols page to add it to Quick Actions.';
+      } else if (availableProtocolsBeforeSearch.length === 0) {
+        // All protocols are already in quick actions
+        emptyIcon = 'fas fa-check-circle';
+        emptyTitle = 'All protocols already added';
+        emptyDescription = '';
+      } else if (searchTerm && availableProtocolsBeforeSearch.length > 0) {
+        // Search returned no results but there were protocols available
+        emptyIcon = 'fas fa-search';
+        emptyTitle = 'No protocols found';
+        emptyDescription = 'Try adjusting your search query or check if the protocol is already in Quick Actions.';
+      } else {
+        // Fallback case
+        emptyIcon = 'fas fa-question-circle';
+        emptyTitle = 'No available protocols';
+        emptyDescription = 'All available protocols may already be in Quick Actions.';
+      }
+      
+      // Update empty state with appropriate message
+      emptyState.innerHTML = `
+        <i class="${emptyIcon}" style="font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.4; color: var(--sub-color);"></i>
+        <div style="font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--text-color);">${emptyTitle}</div>
+        <div style="font-size: 0.9rem; color: var(--sub-color); max-width: 400px; margin: 0 auto; line-height: 1.4;">${emptyDescription}</div>
+      `;
+      
       return;
     }
     
@@ -1102,13 +1152,13 @@ const Modals = {
   },
 
   addToQuickActions(protocolId) {
-    const protocol = Storage.getProtocolById(protocolId);
+    const protocol = window.Storage.getProtocolById(protocolId);
     if (!protocol) {
       App.showToast('Protocol not found', 'error');
       return;
     }
     
-    const success = Storage.addToQuickActions(protocolId);
+    const success = window.Storage.addToQuickActions(protocolId);
     if (success) {
       App.showToast(`"${protocol.name}" added to Quick Actions!`, 'success');
       
