@@ -286,6 +286,25 @@
                                     <i class="fas fa-check filter-check-icon"></i>
                                     <span class="filter-label">This month</span>
                                 </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" class="filter-checkbox" data-filter="time" data-value="custom">
+                                    <i class="fas fa-check filter-check-icon"></i>
+                                    <span class="filter-label">Custom</span>
+                                </label>
+                                
+                                <!-- Custom Date Range -->
+                                <div class="filter-custom-date-range" id="filter-custom-date-range" style="display: none;">
+                                    <div class="custom-date-inputs">
+                                        <div class="date-input-group">
+                                            <label class="date-label">From:</label>
+                                            <input type="date" id="filter-date-from" class="custom-date-input">
+                                        </div>
+                                        <div class="date-input-group">
+                                            <label class="date-label">To:</label>
+                                            <input type="date" id="filter-date-to" class="custom-date-input">
+                                        </div>
+                                    </div>
+                                </div>
                                 
                                 <!-- Separator -->
                                 <div class="filter-separator"></div>
