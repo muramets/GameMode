@@ -901,4 +901,64 @@
 .history-filters-menu .filter-label {
   flex: 1;
   user-select: none;
+}
+
+/* Custom Date Range */
+.history-filters-menu .filter-custom-date-range {
+  padding: 0.5em 1em;
+  border-top: 1px solid var(--bg-color);
+  margin-top: 0.25em;
+}
+
+.history-filters-menu .custom-date-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+.history-filters-menu .date-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.history-filters-menu .date-label {
+  font-size: 0.7rem;
+  color: var(--sub-color);
+  min-width: 2.5em;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.history-filters-menu .custom-date-input {
+  outline: none;
+  border: none;
+  border-radius: var(--roundness);
+  background: var(--bg-color);
+  color: var(--text-color);
+  padding: 0.3em 0.5em;
+  font-size: 0.7rem;
+  font-family: 'Roboto Mono', monospace;
+  caret-color: var(--main-color);
+  line-height: 1.25em;
+  flex: 1;
+  transition: all 0.125s;
+}
+
+.history-filters-menu .custom-date-input:focus-visible {
+  box-shadow: 0 0 0 0.1rem var(--bg-color), 0 0 0 0.2rem var(--text-color);
+}
+
+.history-filters-menu .custom-date-input:hover {
+  background: var(--sub-alt-color);
+}
+
+/* Dark mode date picker indicator */
+.history-filters-menu .custom-date-input::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+.history-filters-menu .custom-date-input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 } 
