@@ -20,8 +20,103 @@ class Storage {
   
   // Set current user for data scoping
   setUser(user) {
+    const wasUserChange = this.currentUser && this.currentUser.uid !== user.uid;
     this.currentUser = user;
     this.lastSyncTime = null; // Reset sync time when user changes
+    
+    // Check for legacy data on first user set or user change
+    if (wasUserChange || !this.hasBeenInitialized()) {
+      this.checkAndMigrateLegacyData();
+    }
+  }
+  
+  // Check if user has been initialized (has any data)
+  hasBeenInitialized() {
+    return this.get(this.KEYS.PROTOCOLS) !== null || 
+           this.get(this.KEYS.SKILLS) !== null || 
+           this.get(this.KEYS.STATES) !== null;
+  }
+  
+  // Check for legacy data and migrate if needed (one-time operation per user)
+  checkAndMigrateLegacyData() {
+    if (!this.currentUser) return;
+    
+    // Check if this user has a legacy migration marker
+    const legacyMigrationKey = `legacy_migrated_${this.currentUser.uid}`;
+    const hasBeenMigrated = localStorage.getItem(legacyMigrationKey);
+    
+    if (hasBeenMigrated) return; // Already migrated
+    
+    // Check for legacy data (data without user prefix)
+    const allLegacyKeys = [
+      this.KEYS.PROTOCOLS, this.KEYS.SKILLS, this.KEYS.STATES, this.KEYS.HISTORY,
+      this.KEYS.QUICK_ACTIONS, this.KEYS.QUICK_ACTION_ORDER, 
+      this.KEYS.PROTOCOL_ORDER, this.KEYS.SKILL_ORDER, this.KEYS.STATE_ORDER,
+      this.KEYS.SKILL_MIGRATION
+    ];
+    let foundLegacyData = false;
+    
+    allLegacyKeys.forEach(key => {
+      const legacyData = localStorage.getItem(key); // without user prefix
+      const currentData = this.get(key); // with user prefix
+      
+      // Check if we should migrate
+      let shouldMigrate = false;
+      
+      if (legacyData && !currentData) {
+        shouldMigrate = true;
+      } else if (legacyData && currentData) {
+        // Check if current data is just default/empty
+        try {
+          const parsedLegacy = JSON.parse(legacyData);
+          const parsedCurrent = currentData;
+          
+          if (Array.isArray(parsedLegacy) && Array.isArray(parsedCurrent)) {
+            // For main data arrays, check if current is empty or matches INITIAL_DATA
+            if (parsedCurrent.length === 0 && parsedLegacy.length > 0) {
+              shouldMigrate = true;
+            } else if (key === this.KEYS.PROTOCOLS && this.isDefaultProtocols(parsedCurrent) && parsedLegacy.length > 0) {
+              shouldMigrate = true;
+            } else if (key === this.KEYS.SKILLS && this.isDefaultSkills(parsedCurrent) && parsedLegacy.length > 0) {
+              shouldMigrate = true;
+            } else if (key === this.KEYS.STATES && this.isDefaultStates(parsedCurrent) && parsedLegacy.length > 0) {
+              shouldMigrate = true;
+            }
+          }
+        } catch (e) {
+          console.warn(`Error comparing data for ${key}:`, e);
+        }
+      }
+      
+      if (shouldMigrate) {
+        try {
+          const parsedData = JSON.parse(legacyData);
+          
+          // For arrays, check if they have content
+          if (Array.isArray(parsedData)) {
+            if (parsedData.length > 0) {
+              console.log(`Migrating legacy ${key} data for user ${this.currentUser.uid}`);
+              this.set(key, parsedData);
+              foundLegacyData = true;
+            }
+          } else if (parsedData !== null && parsedData !== undefined) {
+            // For non-arrays (booleans, etc.)
+            console.log(`Migrating legacy ${key} data for user ${this.currentUser.uid}`);
+            this.set(key, parsedData);
+            foundLegacyData = true;
+          }
+        } catch (e) {
+          console.warn(`Failed to migrate legacy ${key}:`, e);
+        }
+      }
+    });
+    
+    // Mark as migrated to prevent future attempts
+    localStorage.setItem(legacyMigrationKey, 'true');
+    
+    if (foundLegacyData) {
+      console.log(`Legacy data migration completed for user ${this.currentUser.uid}`);
+    }
   }
   
   // Get user-specific key
@@ -46,6 +141,11 @@ class Storage {
 
   // Initialize app data
   init() {
+    // First check if we have any legacy data to migrate
+    if (this.currentUser) {
+      this.checkAndMigrateLegacyData();
+    }
+    
     // Initialize each key separately if it doesn't exist
     if (!this.get(this.KEYS.PROTOCOLS)) {
       this.set(this.KEYS.PROTOCOLS, INITIAL_DATA.protocols);
@@ -763,6 +863,7 @@ class Storage {
     const newState = {
       id: newId,
       name: stateData.name,
+      subtext: stateData.subtext || '',
       icon: stateData.icon,
       hover: stateData.hover,
       skillIds: stateData.skillIds || [],
@@ -783,6 +884,7 @@ class Storage {
     states[index] = {
       ...states[index],
       name: stateData.name,
+      subtext: stateData.subtext || '',
       icon: stateData.icon,
       hover: stateData.hover,
       skillIds: stateData.skillIds || [],
@@ -1020,6 +1122,25 @@ class Storage {
       await this.syncWithBackend();
       this.pendingSync.clear();
     }
+  }
+
+  // Helper methods to check if data is default
+  isDefaultProtocols(protocols) {
+    if (!Array.isArray(protocols)) return false;
+    return protocols.length === INITIAL_DATA.protocols.length && 
+           protocols.every((p, i) => p.id === INITIAL_DATA.protocols[i].id);
+  }
+
+  isDefaultSkills(skills) {
+    if (!Array.isArray(skills)) return false;
+    return skills.length === INITIAL_DATA.skills.length && 
+           skills.every((s, i) => s.id === INITIAL_DATA.skills[i].id);
+  }
+
+  isDefaultStates(states) {
+    if (!Array.isArray(states)) return false;
+    return states.length === INITIAL_DATA.states.length && 
+           states.every((s, i) => s.id === INITIAL_DATA.states[i].id);
   }
 }
 

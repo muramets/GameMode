@@ -68,6 +68,20 @@ const UI = {
           const stateDeps = state.stateIds || [];
           const dependencyCount = skillDeps.length + stateDeps.length;
           
+          // Get legacy name and subtext for backward compatibility
+          let displayName, displaySubtext = '';
+          
+          // Check if state has separate subtext field (new format)
+          if (state.subtext !== undefined) {
+            displayName = state.name;
+            displaySubtext = state.subtext;
+          } else {
+            // Legacy format: parse from name field
+            const nameParts = state.name.split('. ');
+            displayName = nameParts[0];
+            displaySubtext = nameParts.length > 1 ? nameParts.slice(1).join('. ') : '';
+          }
+          
           return `
             <div class="state-card ${scoreClass}" draggable="true" data-state-id="${state.id}">
               <div class="state-header">
@@ -75,7 +89,10 @@ const UI = {
                   <div class="state-icon" style="color: ${color};">
                     ${this.renderIcon(state.icon)}
                   </div>
-                  <div class="state-name" style="color: ${color};">${state.name}</div>
+                  <div class="state-name-container">
+                    <div class="state-name" style="color: ${color};">${displayName}</div>
+                    ${displaySubtext ? `<div class="state-subtext">${displaySubtext}</div>` : ''}
+                  </div>
                 </div>
                 <div class="state-controls">
                   <button class="state-question-icon" data-tooltip="${state.hover}" title="Info">
