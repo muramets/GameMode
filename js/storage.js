@@ -1084,61 +1084,50 @@ class Storage {
         quickActionOrder: this.get(this.KEYS.QUICK_ACTION_ORDER)
       };
       
-      // Save current user data to server
-      await window.apiClient.saveUserData(userData);
-      this.lastSyncTime = new Date().toISOString();
+      // Remove null values
+      Object.keys(userData).forEach(key => {
+        if (userData[key] === null) {
+          userData[key] = [];
+        }
+      });
       
-      console.log('✅ Data synced successfully to server');
+      await window.apiClient.saveUserData(userData);
+      this.lastSyncTime = Date.now();
+      console.log('✅ Data synced with backend');
     } catch (error) {
-      console.error('Sync failed:', error);
-      this.markForSync();
+      console.error('❌ Backend sync failed:', error);
+      // Don't throw - allow local storage to continue working
     }
   }
 
-  // Load data from server
+  // Load data from Firebase backend
   async loadFromBackend() {
-    if (!this.isOnline || !this.currentUser) return;
+    if (!this.isOnline || !this.currentUser) return false;
     
     try {
-      const serverData = await window.apiClient.getUserData();
+      const response = await window.apiClient.getUserData();
       
-      if (serverData && Object.keys(serverData).length > 0) {
-        // Update local data with server data
-        if (serverData.protocols) {
-          this.set(this.KEYS.PROTOCOLS, serverData.protocols);
-        }
-        if (serverData.skills) {
-          this.set(this.KEYS.SKILLS, serverData.skills);
-        }
-        if (serverData.states) {
-          this.set(this.KEYS.STATES, serverData.states);
-        }
-        if (serverData.history) {
-          this.set(this.KEYS.HISTORY, serverData.history);
-        }
-        if (serverData.quickActions) {
-          this.set(this.KEYS.QUICK_ACTIONS, serverData.quickActions);
-        }
-        if (serverData.protocolOrder) {
-          this.set(this.KEYS.PROTOCOL_ORDER, serverData.protocolOrder);
-        }
-        if (serverData.skillOrder) {
-          this.set(this.KEYS.SKILL_ORDER, serverData.skillOrder);
-        }
-        if (serverData.stateOrder) {
-          this.set(this.KEYS.STATE_ORDER, serverData.stateOrder);
-        }
-        if (serverData.quickActionOrder) {
-          this.set(this.KEYS.QUICK_ACTION_ORDER, serverData.quickActionOrder);
-        }
+      if (response.success && response.data) {
+        // Merge server data with local data
+        const serverData = response.data;
         
-        console.log('✅ Data loaded successfully from server');
+        // Set all data from server
+        Object.keys(serverData).forEach(key => {
+          const storageKey = this.getStorageKeyByDataKey(key);
+          if (storageKey && serverData[key]) {
+            this.set(storageKey, serverData[key]);
+          }
+        });
+        
+        console.log('✅ Data loaded from backend');
         return true;
       }
+      
+      return false;
     } catch (error) {
       console.error('Load from backend failed:', error);
+      return false;
     }
-    return false;
   }
 
   // Mark data for sync when online
@@ -1208,6 +1197,22 @@ class Storage {
     
     this.clearUserData();
     this.init(); // Re-initialize as new user
+  }
+
+  // Helper method to map data keys to storage keys
+  getStorageKeyByDataKey(dataKey) {
+    const mapping = {
+      'protocols': this.KEYS.PROTOCOLS,
+      'skills': this.KEYS.SKILLS,
+      'states': this.KEYS.STATES,
+      'history': this.KEYS.HISTORY,
+      'quickActions': this.KEYS.QUICK_ACTIONS,
+      'protocolOrder': this.KEYS.PROTOCOL_ORDER,
+      'skillOrder': this.KEYS.SKILL_ORDER,
+      'stateOrder': this.KEYS.STATE_ORDER,
+      'quickActionOrder': this.KEYS.QUICK_ACTION_ORDER
+    };
+    return mapping[dataKey] || null;
   }
 }
 

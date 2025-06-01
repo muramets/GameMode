@@ -4,21 +4,7 @@ logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-firebase-debug.log*
-firebase-debug.*.log*
-
-# Firebase cache
-.firebase/
-
-# Firebase config
-
-# Uncomment this if you'd like others to create their own Firebase project.
-# For a team working on the same Firebase project(s), it is recommended to leave
-# it commented so all members can deploy to the same project(s) in .firebaserc.
-# .firebaserc
-
-# Firebase service account credentials (contains private keys)
-firebase-service-account.json
+lerna-debug.log*
 
 # Runtime data
 pids
@@ -31,24 +17,23 @@ lib-cov
 
 # Coverage directory used by tools like istanbul
 coverage
+*.lcov
 
 # nyc test coverage
 .nyc_output
 
-# Grunt intermediate storage (http://gruntjs.com/creating-plugins#storing-task-files)
-.grunt
-
-# Bower dependency directory (https://bower.io/)
-bower_components
-
 # node-waf configuration
 .lock-wscript
 
-# Compiled binary addons (http://nodejs.org/api/addons.html)
+# Compiled binary addons (https://nodejs.org/api/addons.html)
 build/Release
 
 # Dependency directories
 node_modules/
+jspm_packages/
+
+# TypeScript cache
+*.tsbuildinfo
 
 # Optional npm cache directory
 .npm
@@ -67,9 +52,47 @@ node_modules/
 
 # dotenv environment variables file
 .env
+.env.test
+.env.local
+.env.production
 
-# dataconnect generated files
-.dataconnect
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# Temporary folders
+tmp/
+temp/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Firebase
+firebase-debug.log
+.firebase/
+
+# Secret files
+*.key
+*.pem
+service-account-*.json
 
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
