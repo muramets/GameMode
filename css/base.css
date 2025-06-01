@@ -20,6 +20,15 @@
   
   /* Additional colors */
   --correct-color: #98c379;
+  
+  /* Onboarding and UI colors */
+  --accent-color: #2e7df7;
+  --accent-hover: #1d4ed8;
+  --success-color: #22c55e;
+  --border-color: #444448;
+  --input-bg: #2c2e31;
+  --hover-color: #3c3e41;
+  --card-bg: #2a2c2f;
 }
 
 body {

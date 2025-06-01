@@ -1,210 +1,601 @@
 /* ===== Modals and Forms ===== */
 
-/* Modal */
+/* Hide all modals by default */
 .modal {
   display: none;
+}
+
+/* Show modals when they have the show class */
+.modal.show {
+  display: flex;
+}
+
+/* Modal Wrapper - Monkeytype Style with Dark Overlay */
+.modal-wrapper {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0;
+  background: rgba(0, 0, 0, 0.75);
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1000;
+  display: grid;
+  justify-content: center;
+  justify-items: center;
+  align-items: center;
+  padding: 2rem;
+  border: none;
+  grid-template-columns: 100%;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.modal-wrapper:focus-visible {
+  outline: none;
+}
+
+.modal-wrapper.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-wrapper .modal {
+  background: var(--bg-color);
+  border-radius: 12px;
+  padding: 2rem;
+  display: grid;
+  gap: 1.5rem;
+  width: 100%;
+  max-height: 90vh;
+  max-width: 500px;
+  color: var(--text-color);
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  transform: scale(0.9);
+  transition: transform 0.15s ease;
+}
+
+.modal-wrapper.show .modal {
+  transform: scale(1);
+}
+
+/* Smoother initial animation for onboarding */
+.onboarding-wrapper {
+  background: transparent;
+  z-index: 2000;
+  transition: all 0.4s ease;
+}
+
+.onboarding-wrapper::before {
+  content: '';
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  width: 120%;
+  height: 120%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: -1;
+}
+
+.onboarding-wrapper.show {
+  opacity: 1;
+  visibility: visible;
+  animation: onboarding-fade-in 0.6s ease-out;
+}
+
+@keyframes onboarding-fade-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.onboarding-wrapper .modal {
+  max-width: 600px;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  padding: 2rem;
+  background: var(--bg-color);
+  border-radius: 12px;
+}
+
+.onboarding-intro {
+  max-width: none;
+  padding: 0;
+  background: transparent;
+}
+
+.onboarding-intro .emoji {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.onboarding-intro h1 {
+  font-size: 2rem;
+  color: var(--text-color);
+  margin-bottom: 1.5rem;
+  font-weight: 700;
+}
+
+.onboarding-intro p {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: var(--sub-color);
+  margin-bottom: 2rem;
+  font-style: normal;
+}
+
+/* Step Modal */
+.onboarding-step .step-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.onboarding-step .step-emoji {
+  font-size: 2rem;
+}
+
+.onboarding-step .step-title {
+  font-size: 1.5rem;
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.onboarding-step .step-description {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: var(--sub-color);
+  margin-bottom: 2rem;
+  font-style: italic;
+}
+
+/* Progress Indicator */
+.onboarding-progress {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.progress-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--sub-alt-color);
+  transition: background 0.3s ease;
+}
+
+.progress-dot.active {
+  background: var(--accent-color);
+}
+
+.progress-dot.completed {
+  background: var(--success-color);
+}
+
+/* Spotlight Effect */
+.spotlight-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: transparent;
+  z-index: 2000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  visibility: hidden;
+}
+
+.spotlight-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.spotlight-hole {
+  position: absolute;
+  background: transparent;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  animation: pulse-glow 2s infinite;
+  z-index: 2050;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6), 0 0 20px var(--accent-color);
+  }
+  50% {
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6), 0 0 30px var(--accent-color), 0 0 40px var(--accent-color);
+  }
+}
+
+/* Onboarding Tooltip */
+.onboarding-tooltip {
+  position: fixed;
+  background: var(--bg-color);
+  border: none;
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-width: 350px;
+  z-index: 2100;
+  pointer-events: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transform: scale(0.9);
+  transition: all 0.3s ease;
+  visibility: hidden;
+  animation: tooltip-glow 2s infinite;
+}
+
+@keyframes tooltip-glow {
+  0%, 100% {
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 20px var(--accent-color);
+    border-color: var(--accent-color);
+  }
+  50% {
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 30px var(--accent-color), 0 0 40px var(--accent-color);
+    border-color: var(--accent-color);
+  }
+}
+
+.onboarding-tooltip.show {
+  opacity: 1;
+  transform: scale(1);
+  visibility: visible;
+}
+
+.onboarding-tooltip .tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.onboarding-tooltip .tooltip-emoji {
+  font-size: 1.5rem;
+}
+
+.onboarding-tooltip .tooltip-title {
+  font-size: 1.25rem;
+  color: var(--text-color);
+  font-weight: 600;
+  margin: 0;
+}
+
+.onboarding-tooltip .tooltip-text {
+  color: var(--sub-color);
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.onboarding-tooltip .tooltip-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.onboarding-tooltip .tooltip-progress {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.onboarding-tooltip .progress-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sub-alt-color);
+  transition: background 0.3s ease;
+}
+
+.onboarding-tooltip .progress-dot.active {
+  background: var(--accent-color);
+}
+
+.onboarding-tooltip .progress-dot.completed {
+  background: var(--success-color);
+}
+
+.onboarding-tooltip .tooltip-buttons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.onboarding-tooltip .btn-sm {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.onboarding-tooltip .btn-secondary {
+  background: var(--sub-alt-color);
+  color: var(--sub-color);
+}
+
+.onboarding-tooltip .btn-secondary:hover {
+  background: var(--hover-color);
+  color: var(--text-color);
+}
+
+.onboarding-tooltip .btn-primary {
+  background: var(--accent-color);
+  color: white;
+}
+
+.onboarding-tooltip .btn-primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+/* Navigation Buttons */
+.onboarding-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.onboarding-nav .btn-secondary {
+  background: var(--sub-alt-color);
+  color: var(--sub-color);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+}
+
+.onboarding-nav .btn-secondary:hover {
+  background: var(--hover-color);
+  color: var(--text-color);
+}
+
+.onboarding-nav .btn-primary {
+  background: var(--accent-color);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.onboarding-nav .btn-primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+/* Legacy modal styles for existing modals */
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 1000;
-  animation: modalFadeIn 0.2s ease-out;
-}
-
-.modal.active {
+  background-color: rgba(0, 0, 0, 0.75);
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.15s ease;
 }
 
-.modal-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(5px);
+.modal-overlay.show {
+  opacity: 1;
+  visibility: visible;
 }
 
 .modal-content {
-  background-color: var(--bg-color);
-  border-radius: 1rem;
+  background: var(--bg-color);
+  padding: 2rem;
+  border-radius: 12px;
   width: 90%;
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
-  z-index: 1001;
-  animation: modalSlideIn 0.3s ease-out;
+  box-shadow: 0 0 0 2px var(--accent-color), 0 20px 60px rgba(0, 0, 0, 0.3);
+  transform: scale(0.9);
+  transition: transform 0.15s ease;
+}
+
+.modal-overlay.show .modal-content {
+  transform: scale(1);
 }
 
 .modal-header {
-  padding: 1.5rem 1.5rem 1rem;
-  border-bottom: 1px solid var(--sub-color);
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--border-color);
 }
 
-.modal-header h2 {
+.modal-title {
   color: var(--text-color);
-  font-size: 1.25rem;
-  font-weight: 500;
+  font-size: 1.5rem;
+  font-weight: 600;
   margin: 0;
 }
 
 .modal-close {
   background: none;
   border: none;
+  font-size: 1.5rem;
   color: var(--sub-color);
-  font-size: 1.2rem;
   cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 0.5rem;
-  transition: all 0.125s;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
 }
 
 .modal-close:hover {
-  background-color: var(--sub-color);
   color: var(--text-color);
+  background: var(--hover-color);
 }
 
 .modal-body {
-  padding: 1.5rem;
+  color: var(--text-color);
+  line-height: 1.6;
 }
 
-.modal-actions {
+.modal-footer {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 2px solid var(--border-color);
   display: flex;
-  gap: 1rem;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 1.5rem;
-}
-
-.modal-actions-right {
-  display: flex;
+  justify-content: flex-end;
   gap: 1rem;
 }
 
-@keyframes modalFadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes modalSlideIn {
-  from {
-    transform: translateY(-50px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-/* Forms */
+/* Form specific styles */
 .form-group {
   margin-bottom: 1.5rem;
 }
 
 .form-group label {
   display: block;
-  color: var(--text-color);
-  font-size: 0.9rem;
-  font-weight: 500;
   margin-bottom: 0.5rem;
+  color: var(--text-color);
+  font-weight: 500;
 }
 
-.form-help-text {
-  color: var(--sub-color);
-  font-size: 0.8rem;
-  margin: 0.25rem 0 0.75rem 0;
-  line-height: 1.4;
-}
-
-.form-input,
-.form-textarea {
+.form-group input,
+.form-group textarea,
+.form-group select {
   width: 100%;
   padding: 0.75rem;
-  background-color: var(--bg-color);
-  border: 1px solid var(--sub-color);
-  border-radius: 0.5rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--input-bg);
   color: var(--text-color);
-  font-family: 'Roboto Mono', monospace;
-  font-size: 0.9rem;
-  transition: border-color 0.125s;
-  box-sizing: border-box;
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
 }
 
-.form-input:focus,
-.form-textarea:focus {
-  border-color: var(--main-color);
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
   outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(46, 125, 247, 0.1);
 }
 
-.form-input::placeholder,
-.form-textarea::placeholder {
+.form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-error {
+  color: var(--error-color);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+/* Button styles in modals */
+.modal .btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modal .btn-primary {
+  background: var(--accent-color);
+  color: white;
+}
+
+.modal .btn-primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.modal .btn-secondary {
+  background: var(--sub-alt-color);
   color: var(--sub-color);
 }
 
-/* Autofill styles to maintain design */
-.form-input:-webkit-autofill,
-.form-input:-webkit-autofill:hover,
-.form-input:-webkit-autofill:focus,
-.form-input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 30px var(--bg-color) inset !important;
-  -webkit-text-fill-color: var(--text-color) !important;
-  background-color: var(--bg-color) !important;
-  border: 1px solid var(--sub-color) !important;
-  border-radius: 0.5rem !important;
-  font-family: 'Roboto Mono', monospace !important;
-  font-size: 0.9rem !important;
-  transition: border-color 0.125s !important;
+.modal .btn-secondary:hover {
+  background: var(--hover-color);
+  color: var(--text-color);
 }
 
-.form-input:-webkit-autofill:focus {
-  border-color: var(--main-color) !important;
-  -webkit-box-shadow: 0 0 0 30px var(--bg-color) inset !important;
+.modal .btn-danger {
+  background: var(--error-color);
+  color: white;
 }
 
-.form-textarea:-webkit-autofill,
-.form-textarea:-webkit-autofill:hover,
-.form-textarea:-webkit-autofill:focus,
-.form-textarea:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 30px var(--bg-color) inset !important;
-  -webkit-text-fill-color: var(--text-color) !important;
-  background-color: var(--bg-color) !important;
-  border: 1px solid var(--sub-color) !important;
-  border-radius: 0.5rem !important;
-  font-family: 'Roboto Mono', monospace !important;
-  font-size: 0.9rem !important;
-  transition: border-color 0.125s !important;
+.modal .btn-danger:hover {
+  background: #dc2626;
 }
 
-.form-textarea:-webkit-autofill:focus {
-  border-color: var(--main-color) !important;
-  -webkit-box-shadow: 0 0 0 30px var(--bg-color) inset !important;
-}
-
-.form-textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-/* Form row for inline fields */
-.form-row {
-  display: flex;
-  gap: 1rem;
-}
-
-.form-row .form-group {
-  flex: 1;
+/* Responsive */
+@media (max-width: 768px) {
+  .modal-wrapper {
+    padding: 1rem;
+  }
+  
+  .modal-wrapper .modal {
+    padding: 1.5rem;
+    max-width: 100%;
+  }
+  
+  .onboarding-intro {
+    padding: 2rem 1.5rem;
+  }
+  
+  .onboarding-intro h1 {
+    font-size: 1.75rem;
+  }
+  
+  .onboarding-intro p {
+    font-size: 1.1rem;
+  }
+  
+  .onboarding-nav {
+    flex-direction: column;
+  }
+  
+  .onboarding-nav .btn-secondary,
+  .onboarding-nav .btn-primary {
+    width: 100%;
+    padding: 1rem;
+  }
 }
 
 /* Skill selector for protocols */
@@ -725,4 +1116,18 @@
 .selected-skill-badge .remove-btn:hover {
   opacity: 1;
   background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Onboarding intro modal animation */
+.onboarding-wrapper.show .modal {
+  animation: intro-glow 2s infinite;
+}
+
+@keyframes intro-glow {
+  0%, 100% {
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 20px var(--accent-color);
+  }
+  50% {
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 30px var(--accent-color), 0 0 40px var(--accent-color);
+  }
 } 

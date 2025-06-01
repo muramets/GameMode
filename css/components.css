@@ -231,12 +231,23 @@
   font-style: italic;
 }
 
-.empty-state .quick-protocol-details {
-  color: var(--sub-color);
-  font-size: 0.7rem;
+.empty-state.quick-protocol {
+  background-color: var(--sub-alt-color);
 }
 
-/* Specific empty state styling - use normal backgrounds */
+.empty-state.quick-protocol:hover {
+  transform: none;
+  box-shadow: none;
+  background-color: var(--sub-alt-color);
+}
+
+.quick-protocol-subtitle {
+  font-size: 0.75rem;
+  color: var(--sub-color);
+  margin-top: 0.25rem;
+  text-align: center;
+}
+
 .empty-state.state-card {
   background-color: var(--sub-alt-color);
   max-width: 300px;
@@ -285,21 +296,4 @@
   min-height: 60px !important;
   display: grid !important;
   align-items: center !important;
-}
-
-.empty-state.quick-protocol {
-  background-color: var(--sub-alt-color);
-}
-
-.empty-state.quick-protocol:hover {
-  transform: none;
-  box-shadow: none;
-  background-color: var(--sub-alt-color);
-}
-
-.quick-protocol-subtitle {
-  font-size: 0.75rem;
-  color: var(--sub-color);
-  margin-top: 0.25rem;
-  text-align: center;
 } 
