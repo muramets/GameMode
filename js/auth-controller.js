@@ -72,15 +72,26 @@ class AuthController {
   
   async loadUserData() {
     try {
-      const userData = await window.apiClient.getUserData();
+      // Check if this is the original user who should have cloud data
+      const isOriginalUser = this.currentUser && 
+                             this.currentUser.email === 'dev.muramets@gmail.com';
       
-      // Синхронизируем данные с локальным storage
-      if (userData && Object.keys(userData).length > 0) {
-        if (window.Storage) {
-          Storage.syncFromServer(userData);
+      if (isOriginalUser) {
+        // Only for original user - try to load from cloud
+        const userData = await window.apiClient.getUserData();
+        
+        // Синхронизируем данные с локальным storage
+        if (userData && Object.keys(userData).length > 0) {
+          if (window.Storage) {
+            Storage.syncFromServer(userData);
+          }
+        } else {
+          // Если на сервере нет данных, загружаем локальные
+          await this.uploadLocalData();
         }
       } else {
-        // Если на сервере нет данных, загружаем локальные
+        // For all other users - don't load from cloud, just upload if needed
+        console.log('New user detected - using empty state');
         await this.uploadLocalData();
       }
     } catch (error) {

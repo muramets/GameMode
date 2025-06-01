@@ -152,20 +152,40 @@ class Storage {
     }
     
     // Check if this is the original user who should have default data
-    const shouldLoadDefaultData = this.currentUser && 
-                                  this.currentUser.email === 'dev.muramets@gmail.com';
+    const isOriginalUser = this.currentUser && 
+                           this.currentUser.email === 'dev.muramets@gmail.com';
     
     // Initialize each key separately if it doesn't exist
     if (!this.get(this.KEYS.PROTOCOLS)) {
-      this.set(this.KEYS.PROTOCOLS, shouldLoadDefaultData ? INITIAL_DATA.protocols : []);
+      // For original user: load INITIAL_DATA only if no existing data
+      // For other users: always empty array
+      this.set(this.KEYS.PROTOCOLS, isOriginalUser ? INITIAL_DATA.protocols : []);
+    } else if (isOriginalUser) {
+      // For original user: check if existing data is just empty or default
+      const existingProtocols = this.get(this.KEYS.PROTOCOLS);
+      if (Array.isArray(existingProtocols) && existingProtocols.length === 0) {
+        // User has empty data, can safely load defaults
+        this.set(this.KEYS.PROTOCOLS, INITIAL_DATA.protocols);
+      }
+      // If user has custom data (length > 0), keep it as is
     }
     
     if (!this.get(this.KEYS.SKILLS)) {
-      this.set(this.KEYS.SKILLS, shouldLoadDefaultData ? INITIAL_DATA.skills : []);
+      this.set(this.KEYS.SKILLS, isOriginalUser ? INITIAL_DATA.skills : []);
+    } else if (isOriginalUser) {
+      const existingSkills = this.get(this.KEYS.SKILLS);
+      if (Array.isArray(existingSkills) && existingSkills.length === 0) {
+        this.set(this.KEYS.SKILLS, INITIAL_DATA.skills);
+      }
     }
     
     if (!this.get(this.KEYS.STATES)) {
-      this.set(this.KEYS.STATES, shouldLoadDefaultData ? INITIAL_DATA.states : []);
+      this.set(this.KEYS.STATES, isOriginalUser ? INITIAL_DATA.states : []);
+    } else if (isOriginalUser) {
+      const existingStates = this.get(this.KEYS.STATES);
+      if (Array.isArray(existingStates) && existingStates.length === 0) {
+        this.set(this.KEYS.STATES, INITIAL_DATA.states);
+      }
     }
     
     if (!this.get(this.KEYS.HISTORY)) {
@@ -1156,11 +1176,20 @@ class Storage {
         const serverData = await response.json();
         this.lastSyncTime = new Date().toISOString();
         
-        // Update local data with server data if newer
-        if (serverData.data) {
+        // Check if this is the original user who should have cloud data
+        const isOriginalUser = this.currentUser && 
+                               this.currentUser.email === 'dev.muramets@gmail.com';
+        
+        // Update local data with server data ONLY for original user AND only if local data is empty
+        if (serverData.data && isOriginalUser) {
           Object.keys(serverData.data).forEach(key => {
             if (serverData.data[key]) {
-              this.set(this.KEYS[key.toUpperCase()], serverData.data[key]);
+              const currentData = this.get(this.KEYS[key.toUpperCase()]);
+              // Only load server data if local is empty or null
+              if (!currentData || (Array.isArray(currentData) && currentData.length === 0)) {
+                this.set(this.KEYS[key.toUpperCase()], serverData.data[key]);
+              }
+              // If user has custom data (length > 0), preserve it
             }
           });
         }
