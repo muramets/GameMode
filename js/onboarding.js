@@ -373,20 +373,36 @@ class Onboarding {
         // Clean up existing tracker first
         this.cleanupSpotlightTracking();
         
-        // Smooth throttling with requestAnimationFrame for better sync
+        // Detect mobile device
+        const isMobile = window.innerWidth <= 768;
+        
+        // Different throttling strategies for mobile vs desktop
         let isThrottled = false;
+        
         this.spotlightTracker = () => {
             if (!isThrottled) {
                 isThrottled = true;
-                // Use requestAnimationFrame for smooth 60fps updates
-                requestAnimationFrame(() => {
-                    this.updateSpotlightPosition();
-                    this.updateTooltipPosition();
-                    // Add slight delay to reduce frequency
+                
+                if (isMobile) {
+                    // Mobile: Use longer delay with smoother movement
+                    // Reduce update frequency but increase CSS transition duration
                     setTimeout(() => {
-                        isThrottled = false;
-                    }, 16); // ~60fps with slight throttling
-                });
+                        this.updateSpotlightPosition();
+                        this.updateTooltipPosition();
+                        setTimeout(() => {
+                            isThrottled = false;
+                        }, 50); // ~20fps for mobile - more stable, less jerky
+                    }, 25); // Small initial delay for better batching
+                } else {
+                    // Desktop: Use requestAnimationFrame for smooth 60fps
+                    requestAnimationFrame(() => {
+                        this.updateSpotlightPosition();
+                        this.updateTooltipPosition();
+                        setTimeout(() => {
+                            isThrottled = false;
+                        }, 16); // ~60fps for desktop
+                    });
+                }
             }
         };
         
@@ -430,6 +446,17 @@ class Onboarding {
             
             this.spotlightTracker = null;
             this.trackedElements = null;
+        }
+        
+        // Clean up mobile timeouts
+        if (this.repositionTimeout) {
+            clearTimeout(this.repositionTimeout);
+            this.repositionTimeout = null;
+        }
+        
+        if (this.mobileUpdateTimeout) {
+            clearTimeout(this.mobileUpdateTimeout);
+            this.mobileUpdateTimeout = null;
         }
     }
 
@@ -534,11 +561,19 @@ class Onboarding {
         if (!isVisible) {
             if (isMobile) {
                 // On mobile, when target is off-screen, position tooltip at safe location but still visible
+                // Use smoother transition for this fallback position
                 const tooltipWidth = Math.min(300, window.innerWidth - 40);
-                this.tooltip.style.top = '20px';
-                this.tooltip.style.left = `${(window.innerWidth - tooltipWidth) / 2}px`;
-                this.tooltip.style.transform = 'none';
-                this.tooltip.style.maxWidth = `${tooltipWidth}px`;
+                
+                // Add a small delay before repositioning for stability
+                if (!this.repositionTimeout) {
+                    this.repositionTimeout = setTimeout(() => {
+                        this.tooltip.style.top = '20px';
+                        this.tooltip.style.left = `${(window.innerWidth - tooltipWidth) / 2}px`;
+                        this.tooltip.style.transform = 'none';
+                        this.tooltip.style.maxWidth = `${tooltipWidth}px`;
+                        this.repositionTimeout = null;
+                    }, 100); // Small delay to prevent rapid repositioning
+                }
             } else {
                 // Desktop fallback
                 this.tooltip.style.top = '20px';
@@ -546,8 +581,25 @@ class Onboarding {
                 this.tooltip.style.transform = 'translateX(-50%)';
             }
         } else {
+            // Clear any pending repositioning timeout
+            if (this.repositionTimeout) {
+                clearTimeout(this.repositionTimeout);
+                this.repositionTimeout = null;
+            }
+            
             // Reposition tooltip relative to updated target position when target is visible
-            this.positionTooltip(target);
+            if (isMobile) {
+                // On mobile, add slight delay for more stable repositioning
+                if (!this.mobileUpdateTimeout) {
+                    this.mobileUpdateTimeout = setTimeout(() => {
+                        this.positionTooltip(target);
+                        this.mobileUpdateTimeout = null;
+                    }, 50); // Small delay for mobile stability
+                }
+            } else {
+                // Desktop: immediate update
+                this.positionTooltip(target);
+            }
         }
     }
 
@@ -620,47 +672,76 @@ class Onboarding {
         const rect = target.getBoundingClientRect();
         
         if (isMobile) {
-            // Mobile positioning logic with smart placement
+            // Mobile positioning logic with smart placement and better stability
             const tooltipWidth = Math.min(300, window.innerWidth - 40);
-            const tooltipHeight = 220; // Estimated height for mobile
-            const spacing = 20;
+            const tooltipHeight = 250; // More accurate height for mobile
+            const spacing = 25; // Increased spacing for better visual separation
             
             let top, left;
+            let preferredPosition = null;
+            
+            // Store current position to avoid unnecessary movements
+            const currentTop = parseInt(this.tooltip.style.top) || 0;
+            const currentLeft = parseInt(this.tooltip.style.left) || 0;
             
             // Try to position below target first (most common case)
             if (rect.bottom + spacing + tooltipHeight < window.innerHeight - 20) {
                 left = Math.max(spacing, Math.min(window.innerWidth - tooltipWidth - spacing, rect.left + (rect.width - tooltipWidth) / 2));
                 top = rect.bottom + spacing;
+                preferredPosition = 'below';
             }
             // Try to position above target
             else if (rect.top - spacing - tooltipHeight > 20) {
                 left = Math.max(spacing, Math.min(window.innerWidth - tooltipWidth - spacing, rect.left + (rect.width - tooltipWidth) / 2));
                 top = rect.top - spacing - tooltipHeight;
+                preferredPosition = 'above';
             }
-            // Try to position to the right (if wide enough)
-            else if (rect.right + spacing + tooltipWidth < window.innerWidth && rect.height > tooltipHeight * 0.6) {
+            // Try to position to the right (if wide enough and target is tall enough)
+            else if (rect.right + spacing + tooltipWidth < window.innerWidth && rect.height > tooltipHeight * 0.5) {
                 left = rect.right + spacing;
                 top = Math.max(spacing, Math.min(window.innerHeight - tooltipHeight - spacing, rect.top + (rect.height - tooltipHeight) / 2));
+                preferredPosition = 'right';
             }
-            // Try to position to the left (if wide enough)
-            else if (rect.left - spacing - tooltipWidth > 0 && rect.height > tooltipHeight * 0.6) {
+            // Try to position to the left (if wide enough and target is tall enough)
+            else if (rect.left - spacing - tooltipWidth > 0 && rect.height > tooltipHeight * 0.5) {
                 left = rect.left - spacing - tooltipWidth;
                 top = Math.max(spacing, Math.min(window.innerHeight - tooltipHeight - spacing, rect.top + (rect.height - tooltipHeight) / 2));
+                preferredPosition = 'left';
             }
-            // Fallback: position at bottom of screen with some margin from target
+            // Fallback: position at optimal location with priority on visibility
             else {
-                left = Math.max(spacing, Math.min(window.innerWidth - tooltipWidth - spacing, rect.left + (rect.width - tooltipWidth) / 2));
-                top = Math.min(window.innerHeight - tooltipHeight - spacing, Math.max(rect.bottom + spacing, window.innerHeight - tooltipHeight - 60));
+                // Try to keep tooltip in viewport with best possible position
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const spaceAbove = rect.top;
+                
+                if (spaceBelow > spaceAbove && spaceBelow > 120) {
+                    // Position below if there's reasonable space
+                    left = Math.max(spacing, Math.min(window.innerWidth - tooltipWidth - spacing, rect.left + (rect.width - tooltipWidth) / 2));
+                    top = Math.min(window.innerHeight - tooltipHeight - spacing, rect.bottom + spacing);
+                    preferredPosition = 'below-constrained';
+                } else {
+                    // Position above or at top
+                    left = Math.max(spacing, Math.min(window.innerWidth - tooltipWidth - spacing, rect.left + (rect.width - tooltipWidth) / 2));
+                    top = Math.max(spacing, Math.min(rect.top - spacing - tooltipHeight, window.innerHeight - tooltipHeight - spacing));
+                    preferredPosition = 'above-constrained';
+                }
             }
             
-            // Ensure tooltip stays within viewport bounds
+            // Final bounds checking with more conservative margins
             top = Math.max(spacing, Math.min(window.innerHeight - tooltipHeight - spacing, top));
             left = Math.max(spacing, Math.min(window.innerWidth - tooltipWidth - spacing, left));
             
-            this.tooltip.style.top = `${top}px`;
-            this.tooltip.style.left = `${left}px`;
-            this.tooltip.style.transform = 'none';
-            this.tooltip.style.maxWidth = `${tooltipWidth}px`;
+            // Only update position if there's significant change (reduces jitter)
+            const positionChange = Math.abs(top - currentTop) + Math.abs(left - currentLeft);
+            if (positionChange > 10 || !this.tooltip.style.top) {
+                this.tooltip.style.top = `${top}px`;
+                this.tooltip.style.left = `${left}px`;
+                this.tooltip.style.transform = 'none';
+                this.tooltip.style.maxWidth = `${tooltipWidth}px`;
+                
+                // Store position preference for stability
+                this.tooltip.dataset.position = preferredPosition;
+            }
             return;
         }
         
