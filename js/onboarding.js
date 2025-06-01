@@ -326,15 +326,37 @@ class Onboarding {
         
         // Reduced delay and optimized operations
         setTimeout(() => {
-            // Show spotlight and tooltip together
+            // Show spotlight and tooltip together with smooth transition
             this.showSpotlight(step.targetSelector);
-            this.showTooltip(step);
+            this.showTooltipWithTransition(step);
             
             // Set up tracking after UI is ready
             setTimeout(() => {
                 this.setupSpotlightTracking(step.targetSelector);
             }, 50);
         }, 100);
+    }
+
+    // Show tooltip with smooth transition animation
+    showTooltipWithTransition(step) {
+        const wasVisible = this.tooltip && this.tooltip.classList.contains('show');
+        
+        if (wasVisible) {
+            // If tooltip is already visible, animate out then in
+            this.tooltip.style.transition = 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
+            this.tooltip.style.opacity = '0';
+            this.tooltip.style.transform = 'scale(0.95)';
+            
+            setTimeout(() => {
+                this.showTooltip(step);
+                // Force a reflow to ensure the transition applies
+                this.tooltip.offsetHeight;
+                this.tooltip.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+            }, 200);
+        } else {
+            // If tooltip is not visible, show it normally
+            this.showTooltip(step);
+        }
     }
 
     // Highlight the correct navigation button
@@ -507,11 +529,22 @@ class Onboarding {
                          rect.right > -buffer && 
                          rect.left < window.innerWidth + buffer;
         
+        const isMobile = window.innerWidth <= 768;
+        
         if (!isVisible) {
-            // Keep tooltip visible but position it at a safe location when target is off-screen
-            this.tooltip.style.top = '20px';
-            this.tooltip.style.left = '50%';
-            this.tooltip.style.transform = 'translateX(-50%)';
+            if (isMobile) {
+                // On mobile, when target is off-screen, position tooltip at safe location but still visible
+                const tooltipWidth = Math.min(300, window.innerWidth - 40);
+                this.tooltip.style.top = '20px';
+                this.tooltip.style.left = `${(window.innerWidth - tooltipWidth) / 2}px`;
+                this.tooltip.style.transform = 'none';
+                this.tooltip.style.maxWidth = `${tooltipWidth}px`;
+            } else {
+                // Desktop fallback
+                this.tooltip.style.top = '20px';
+                this.tooltip.style.left = '50%';
+                this.tooltip.style.transform = 'translateX(-50%)';
+            }
         } else {
             // Reposition tooltip relative to updated target position when target is visible
             this.positionTooltip(target);
@@ -546,22 +579,92 @@ class Onboarding {
             </div>
         `;
 
+        // Reset any inline styles from animations
+        this.tooltip.style.opacity = '';
+        this.tooltip.style.transform = '';
+        this.tooltip.style.transition = '';
+
         // Position tooltip near target element
+        const isMobile = window.innerWidth <= 768;
+        
         if (target) {
             this.positionTooltip(target);
         } else {
             // Fallback position
-            this.tooltip.style.top = '50%';
-            this.tooltip.style.left = '50%';
-            this.tooltip.style.transform = 'translate(-50%, -50%)';
+            if (isMobile) {
+                const tooltipWidth = Math.min(300, window.innerWidth - 40);
+                this.tooltip.style.top = '50%';
+                this.tooltip.style.left = `${(window.innerWidth - tooltipWidth) / 2}px`;
+                this.tooltip.style.transform = 'translateY(-50%)';
+                this.tooltip.style.maxWidth = `${tooltipWidth}px`;
+            } else {
+                this.tooltip.style.top = '50%';
+                this.tooltip.style.left = '50%';
+                this.tooltip.style.transform = 'translate(-50%, -50%)';
+            }
         }
         
         this.tooltip.classList.add('show');
+        
+        // Double-check tooltip visibility
+        setTimeout(() => {
+            const isVisible = this.tooltip.classList.contains('show');
+            const opacity = window.getComputedStyle(this.tooltip).opacity;
+        }, 100);
     }
 
     // Position tooltip relative to target element
     positionTooltip(target) {
+        // Check if we're on mobile device
+        const isMobile = window.innerWidth <= 768;
         const rect = target.getBoundingClientRect();
+        
+        if (isMobile) {
+            // Mobile positioning logic with smart placement
+            const tooltipWidth = Math.min(300, window.innerWidth - 40);
+            const tooltipHeight = 220; // Estimated height for mobile
+            const spacing = 20;
+            
+            let top, left;
+            
+            // Try to position below target first (most common case)
+            if (rect.bottom + spacing + tooltipHeight < window.innerHeight - 20) {
+                left = Math.max(spacing, Math.min(window.innerWidth - tooltipWidth - spacing, rect.left + (rect.width - tooltipWidth) / 2));
+                top = rect.bottom + spacing;
+            }
+            // Try to position above target
+            else if (rect.top - spacing - tooltipHeight > 20) {
+                left = Math.max(spacing, Math.min(window.innerWidth - tooltipWidth - spacing, rect.left + (rect.width - tooltipWidth) / 2));
+                top = rect.top - spacing - tooltipHeight;
+            }
+            // Try to position to the right (if wide enough)
+            else if (rect.right + spacing + tooltipWidth < window.innerWidth && rect.height > tooltipHeight * 0.6) {
+                left = rect.right + spacing;
+                top = Math.max(spacing, Math.min(window.innerHeight - tooltipHeight - spacing, rect.top + (rect.height - tooltipHeight) / 2));
+            }
+            // Try to position to the left (if wide enough)
+            else if (rect.left - spacing - tooltipWidth > 0 && rect.height > tooltipHeight * 0.6) {
+                left = rect.left - spacing - tooltipWidth;
+                top = Math.max(spacing, Math.min(window.innerHeight - tooltipHeight - spacing, rect.top + (rect.height - tooltipHeight) / 2));
+            }
+            // Fallback: position at bottom of screen with some margin from target
+            else {
+                left = Math.max(spacing, Math.min(window.innerWidth - tooltipWidth - spacing, rect.left + (rect.width - tooltipWidth) / 2));
+                top = Math.min(window.innerHeight - tooltipHeight - spacing, Math.max(rect.bottom + spacing, window.innerHeight - tooltipHeight - 60));
+            }
+            
+            // Ensure tooltip stays within viewport bounds
+            top = Math.max(spacing, Math.min(window.innerHeight - tooltipHeight - spacing, top));
+            left = Math.max(spacing, Math.min(window.innerWidth - tooltipWidth - spacing, left));
+            
+            this.tooltip.style.top = `${top}px`;
+            this.tooltip.style.left = `${left}px`;
+            this.tooltip.style.transform = 'none';
+            this.tooltip.style.maxWidth = `${tooltipWidth}px`;
+            return;
+        }
+        
+        // Desktop positioning logic
         const tooltipWidth = 350; // max-width from CSS
         const tooltipHeight = 200; // estimated height
         const spacing = 20;
@@ -596,6 +699,7 @@ class Onboarding {
         this.tooltip.style.top = `${top}px`;
         this.tooltip.style.left = `${left}px`;
         this.tooltip.style.transform = 'none';
+        this.tooltip.style.maxWidth = `${tooltipWidth}px`;
     }
 
     // Render progress dots
