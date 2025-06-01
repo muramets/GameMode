@@ -193,24 +193,28 @@
                         <div class="profile-separator"></div>
                     </div>
                     
+                    <!-- Mobile separator between user info and stats -->
+                    <div class="profile-separator"></div>
+                    
                     <div class="user-stats">
                         <div class="stat-item">
-                            <div class="stat-label">check-ins today</div>
+                            <span class="stat-label">check-ins today</span>
                             <div class="stat-value">
                                 <span class="stat-number" id="checkins-today">0</span>
-                                <span class="stat-detail" id="checkins-today-detail">(+0 XP)</span>
+                                <span class="stat-detail">entries</span>
                             </div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-label">check-ins this month</div>
+                            <span class="stat-label">total check-ins</span>
                             <div class="stat-value">
-                                <span class="stat-number" id="checkins-month">0</span>
-                                <span class="stat-detail" id="checkins-month-detail">(+0 XP total)</span>
+                                <span class="stat-number" id="total-checkins">0</span>
+                                <span class="stat-detail">entries</span>
                             </div>
                         </div>
                     </div>
                 </div>
                 
+                <!-- Character Stats Section -->
                 <div class="page-title-container">
                     <h1 class="page-title">Character Stats</h1>
                     <button class="add-icon-btn" onclick="Modals.openStateModal()" title="Add new state">

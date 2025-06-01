@@ -20,8 +20,8 @@
 
 #logo {
   cursor: pointer;
-  display: grid;
-  grid-template-columns: auto 1fr;
+  display: flex;
+  align-items: center;
   gap: 0.5rem;
   transition: none;
   text-decoration: none;
@@ -33,11 +33,12 @@
 
 #logo .icon {
   width: 2.5rem;
-  display: grid;
+  height: 2.5rem;
+  display: flex;
   align-items: center;
   justify-content: center;
   background-color: transparent;
-  align-self: center;
+  flex-shrink: 0;
 }
 
 #logo .icon i {
@@ -57,7 +58,9 @@
   margin-block-end: unset;
   margin-top: 0;
   color: var(--text-color);
-  align-self: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 #logo .text .top {
@@ -94,6 +97,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  height: 2.5rem;
 }
 
 .user-btn {
@@ -106,6 +110,11 @@
   transition: color 0.125s;
   font-size: 1rem;
   outline: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .user-btn:hover {

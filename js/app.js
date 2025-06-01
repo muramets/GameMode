@@ -116,6 +116,9 @@ function initMainApp() {
             // Initialize modals
             Modals.init();
             
+            // Setup swipe navigation for mobile
+            this.setupSwipeNavigation();
+            
             // Render initial page
             this.renderPage('dashboard');
             
@@ -1396,6 +1399,224 @@ function initMainApp() {
                     navSkillsGroup.classList.remove('expanded', 'hover-expanded');
                 }
             };
+        },
+
+        setupSwipeNavigation() {
+            // Only enable on mobile devices
+            if (window.innerWidth <= 768) {
+                let startX = null;
+                let startY = null;
+                let isScrolling = false;
+                const threshold = 100; // Minimum swipe distance
+                const restraint = 150; // Maximum vertical variance
+                
+                // Define page order for navigation
+                const pageOrder = ['dashboard', 'protocols', 'skills', 'history'];
+                
+                const container = document.querySelector('.container');
+                if (!container) return;
+                
+                // Create swipe hint element
+                this.createSwipeHint();
+                
+                // Show hint on first visit
+                this.showSwipeHint();
+                
+                // Touch start
+                container.addEventListener('touchstart', (e) => {
+                    // Don't interfere with modals or onboarding
+                    if (document.querySelector('.modal.show') || 
+                        document.querySelector('.onboarding-wrapper.show') ||
+                        document.querySelector('.spotlight-overlay.show')) {
+                        return;
+                    }
+                    
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                    isScrolling = false;
+                }, { passive: true });
+                
+                // Touch move - detect scrolling and provide visual feedback
+                container.addEventListener('touchmove', (e) => {
+                    if (!startX || !startY) return;
+                    
+                    const currentX = e.touches[0].clientX;
+                    const currentY = e.touches[0].clientY;
+                    const deltaX = Math.abs(currentX - startX);
+                    const deltaY = Math.abs(currentY - startY);
+                    
+                    // If vertical movement is greater, it's a scroll
+                    if (deltaY > deltaX) {
+                        isScrolling = true;
+                    } else {
+                        // Horizontal swipe detected - add subtle visual feedback
+                        const swipeDistance = currentX - startX;
+                        if (Math.abs(swipeDistance) > 20) {
+                            const currentPage = document.querySelector('.page.active');
+                            if (currentPage) {
+                                const progress = Math.min(Math.abs(swipeDistance) / threshold, 0.3);
+                                currentPage.style.transform = `translateX(${swipeDistance * 0.1}px)`;
+                                currentPage.style.opacity = `${1 - progress * 0.3}`;
+                            }
+                        }
+                    }
+                }, { passive: true });
+                
+                // Touch end - handle swipe
+                container.addEventListener('touchend', (e) => {
+                    // Reset page position
+                    const currentPage = document.querySelector('.page.active');
+                    if (currentPage) {
+                        currentPage.style.transform = '';
+                        currentPage.style.opacity = '';
+                    }
+                    
+                    if (!startX || !startY || isScrolling) {
+                        startX = startY = null;
+                        return;
+                    }
+                    
+                    const endX = e.changedTouches[0].clientX;
+                    const endY = e.changedTouches[0].clientY;
+                    const deltaX = endX - startX;
+                    const deltaY = Math.abs(endY - startY);
+                    
+                    // Check if it's a valid horizontal swipe
+                    if (Math.abs(deltaX) >= threshold && deltaY <= restraint) {
+                        const currentIndex = pageOrder.indexOf(this.currentPage);
+                        let targetPage = null;
+                        
+                        if (deltaX > 0) {
+                            // Swiping right - go to previous page
+                            if (currentIndex > 0) {
+                                targetPage = pageOrder[currentIndex - 1];
+                            }
+                        } else {
+                            // Swiping left - go to next page
+                            if (currentIndex < pageOrder.length - 1) {
+                                targetPage = pageOrder[currentIndex + 1];
+                            }
+                        }
+                        
+                        if (targetPage) {
+                            this.navigateTo(targetPage);
+                            
+                            // Haptic feedback if available (with error handling)
+                            try {
+                                if (navigator.vibrate) {
+                                    navigator.vibrate(50);
+                                }
+                            } catch (error) {
+                                // Vibration blocked by browser until user interaction - this is normal
+                            }
+                            
+                            // Hide hint after first successful swipe
+                            this.hideSwipeHint();
+                        }
+                    }
+                    
+                    startX = startY = null;
+                }, { passive: true });
+                
+                // Re-setup on window resize
+                window.addEventListener('resize', () => {
+                    if (window.innerWidth > 768) {
+                        // Remove touch listeners on desktop
+                        container.removeEventListener('touchstart', this.touchStartHandler);
+                        container.removeEventListener('touchmove', this.touchMoveHandler);
+                        container.removeEventListener('touchend', this.touchEndHandler);
+                    }
+                });
+            }
+        },
+
+        createSwipeHint() {
+            // Only create hint on mobile
+            if (window.innerWidth > 768) return;
+            
+            if (!document.querySelector('.swipe-hint')) {
+                const hint = document.createElement('div');
+                hint.className = 'swipe-hint';
+                hint.innerHTML = '• swipe to navigate →';
+                document.body.appendChild(hint);
+                
+                // Show hint if not seen before
+                if (!localStorage.getItem('swipe_hint_seen')) {
+                    setTimeout(() => {
+                        hint.classList.add('show');
+                    }, 1000);
+                    
+                    // Auto hide after 3 seconds
+                    setTimeout(() => {
+                        this.hideSwipeHint();
+                    }, 4000);
+                }
+            }
+        },
+
+        showSwipeHint() {
+            const hasSeenHint = localStorage.getItem('swipe_hint_seen');
+            if (!hasSeenHint) {
+                setTimeout(() => {
+                    const hint = document.querySelector('.swipe-hint');
+                    if (hint) {
+                        hint.classList.add('show');
+                        setTimeout(() => {
+                            this.hideSwipeHint();
+                        }, 3000);
+                    }
+                }, 1000);
+            }
+        },
+
+        hideSwipeHint() {
+            const hint = document.querySelector('.swipe-hint');
+            if (hint) {
+                hint.classList.remove('show');
+                localStorage.setItem('swipe_hint_seen', 'true');
+            }
+        },
+
+        // Test functions for swipe navigation (accessible from console)
+        testSwipeLeft() {
+            console.log('🧪 Testing swipe left...');
+            const pageOrder = ['dashboard', 'protocols', 'skills', 'history'];
+            const currentIndex = pageOrder.indexOf(this.currentPage);
+            if (currentIndex < pageOrder.length - 1) {
+                const targetPage = pageOrder[currentIndex + 1];
+                console.log(`📱 Swiping from ${this.currentPage} to ${targetPage}`);
+                this.navigateTo(targetPage);
+                return `✅ Swiped to ${targetPage}`;
+            } else {
+                console.log(`❌ Can't swipe left from ${this.currentPage} (last page)`);
+                return `❌ Already at last page (${this.currentPage})`;
+            }
+        },
+
+        testSwipeRight() {
+            console.log('🧪 Testing swipe right...');
+            const pageOrder = ['dashboard', 'protocols', 'skills', 'history'];
+            const currentIndex = pageOrder.indexOf(this.currentPage);
+            if (currentIndex > 0) {
+                const targetPage = pageOrder[currentIndex - 1];
+                console.log(`📱 Swiping from ${this.currentPage} to ${targetPage}`);
+                this.navigateTo(targetPage);
+                return `✅ Swiped to ${targetPage}`;
+            } else {
+                console.log(`❌ Can't swipe right from ${this.currentPage} (first page)`);
+                return `❌ Already at first page (${this.currentPage})`;
+            }
+        },
+
+        testSwipeNavigation() {
+            console.log('🧪 Testing complete swipe navigation...');
+            console.log('Current page:', this.currentPage);
+            console.log('Available commands:');
+            console.log('- App.testSwipeLeft() - simulate swipe left');
+            console.log('- App.testSwipeRight() - simulate swipe right');
+            console.log('- App.testSwipeNavigation() - show this help');
+            console.log('Page order: dashboard → protocols → skills → history');
+            return 'Check console for available test commands';
         }
     };
 

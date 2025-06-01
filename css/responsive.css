@@ -1,5 +1,76 @@
 /* === Mobile Responsive Design === */
 
+/* Mobile swipe navigation */
+@media (max-width: 768px) {
+  .container {
+    overflow-x: hidden;
+    position: relative;
+    padding: 1rem;
+  }
+  
+  .page {
+    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: transform;
+  }
+  
+  .page.swipe-transition {
+    transition-duration: 0.3s;
+  }
+  
+  /* Smooth page transitions */
+  .page.active {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  
+  .page:not(.active) {
+    transform: translateX(100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+  
+  /* Mobile swipe hint */
+  .swipe-hint {
+    position: fixed;
+    bottom: 6rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+  
+  .swipe-hint.show {
+    opacity: 1;
+  }
+  
+  /* Enhanced navigation dots for mobile */
+  .nav {
+    position: relative;
+  }
+  
+  .nav::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, 
+      var(--main-color) 0%, 
+      var(--main-color) calc(100% / 4 * var(--current-page, 0)), 
+      transparent calc(100% / 4 * var(--current-page, 0))
+    );
+    transition: all 0.3s ease;
+  }
+}
+
 /* Mobile styles for all screens smaller than tablet */
 @media (max-width: 768px) {
   .header {
@@ -16,10 +87,6 @@
 
   .container {
     padding: 1rem;
-  }
-
-  .nav {
-    gap: 0.5rem;
   }
 
   .nav-container {
@@ -170,6 +237,48 @@
   }
 }
 
+/* Extra small mobile phones (intermediate) */
+@media (max-width: 400px) {
+  .nav-item {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.75rem;
+  }
+  
+  .nav-item span {
+    font-size: 0.7rem;
+  }
+  
+  /* Enhanced history navigation for small screens */
+  .nav-expand-arrow {
+    opacity: 0.7 !important;
+    transform: scale(1) !important;
+    color: var(--sub-color) !important;
+  }
+  
+  .nav-expand-arrow:hover {
+    opacity: 1 !important;
+    color: var(--text-color) !important;
+  }
+  
+  .nav-expand-arrow.expanded {
+    opacity: 1 !important;
+    color: var(--main-color) !important;
+  }
+  
+  .nav-item-expandable.expanded {
+    min-width: 60px !important;
+    font-size: 0.7rem !important;
+    color: var(--text-color) !important;
+    background-color: var(--sub-alt-color) !important;
+  }
+  
+  /* Ensure proper reset when collapsed on very small screens */
+  .nav-item-expandable:not(.expanded):not(.program-expanded) {
+    color: var(--sub-color) !important;
+    background-color: transparent !important;
+  }
+}
+
 /* Very small mobile phones */
 @media (max-width: 480px) {
   .header {
@@ -186,6 +295,31 @@
 
   .container {
     padding: 0.75rem;
+  }
+  
+  /* Extra small navigation adjustments */
+  .nav-container {
+    padding: 0.25rem;
+    gap: 0.25rem;
+  }
+  
+  .nav-item {
+    padding: 0.375rem 0.5rem;
+    font-size: 0.7rem;
+    gap: 0.25rem;
+  }
+  
+  .nav-item i {
+    font-size: 0.7rem;
+  }
+  
+  .nav-item span {
+    display: none;
+  }
+  
+  /* Show only icons on very small screens */
+  .nav-item {
+    min-width: auto;
   }
 
   .page-title {
@@ -272,4 +406,115 @@
   .tooltip {
     font-size: 0.8rem;
   }
+}
+
+/* Mobile navigation expandable fixes */
+.nav-skills-group {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.nav-expand-arrow {
+  padding: 0.5rem 0.25rem !important;
+  font-size: 0.6rem !important;
+  opacity: 0.6 !important;
+  color: var(--sub-color) !important;
+}
+
+.nav-expand-arrow:hover {
+  opacity: 1 !important;
+  color: var(--text-color) !important;
+}
+
+.nav-expand-arrow.expanded {
+  opacity: 1 !important;
+  color: var(--main-color) !important;
+}
+
+.nav-item-expandable {
+  /* Better mobile styles for expandable items */
+  position: absolute;
+  top: 0;
+  left: 100%;
+  height: 100%;
+  width: 0;
+  padding: 0.5rem 0 !important;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateX(-10px);
+  white-space: nowrap;
+  border-radius: 0.25rem;
+  background-color: transparent !important;
+  color: var(--sub-color) !important; /* Default collapsed color */
+  z-index: 1;
+  border: none;
+  /* Smooth transitions to prevent jerking */
+  transition: 
+    width 0.25s ease,
+    padding 0.25s ease,
+    transform 0.25s ease,
+    opacity 0.2s ease !important;
+}
+
+.nav-item-expandable.expanded,
+.nav-item-expandable.program-expanded {
+  width: auto !important;
+  min-width: 70px !important;
+  padding: 0.5rem 0.75rem !important;
+  opacity: 1 !important;
+  transform: translateX(0) !important;
+  color: var(--text-color) !important; /* Visible text when expanded */
+  background-color: var(--sub-alt-color) !important; /* Proper background */
+}
+
+/* Fixed active state for history button - use main color instead of bg color */
+.nav-item-expandable.active {
+  color: var(--main-color) !important; /* Yellow text on gray background - visible */
+}
+
+.nav-item-expandable.active.expanded,
+.nav-item-expandable.active.program-expanded {
+  color: var(--main-color) !important; /* Yellow text when active and expanded */
+  background-color: var(--sub-alt-color) !important; /* Keep gray background */
+}
+
+/* Program expanded state styling */
+.nav-item-expandable.program-expanded {
+  background-color: rgba(226, 183, 20, 0.1) !important;
+}
+
+.nav-item-expandable.active.program-expanded {
+  color: var(--main-color) !important; /* Yellow text on light yellow background */
+  background-color: rgba(226, 183, 20, 0.1) !important;
+}
+
+/* Ensure background extends properly on mobile */
+.nav-skills-group::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 100%;
+  height: 100%;
+  width: 0;
+  background-color: var(--sub-alt-color);
+  border-radius: 0 0.25rem 0.25rem 0;
+  transition: width 0.25s ease;
+  z-index: 0;
+}
+
+.nav-skills-group.expanded::after,
+.nav-skills-group.hover-expanded::after {
+  width: 80px;
+}
+
+/* Important: Reset hover behavior on mobile to prevent conflicts */
+.nav-expand-arrow:hover + .nav-item-expandable:not(.expanded):not(.program-expanded) {
+  width: auto !important;
+  min-width: 70px !important;
+  padding: 0.5rem 0.75rem !important;
+  opacity: 1 !important;
+  transform: translateX(0) !important;
+  color: var(--text-color) !important;
+  background-color: var(--sub-alt-color) !important;
 } 

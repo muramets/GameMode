@@ -2,12 +2,13 @@
 
 .nav {
   background-color: var(--bg-color);
-  padding: 1rem 1.5rem;
   display: flex;
   justify-content: center;
   width: 100%;
   max-width: 1000px;
   margin: 0 auto;
+  padding: 0 1rem;
+  box-sizing: border-box;
 }
 
 .nav-container {
@@ -18,7 +19,7 @@
   background-color: var(--sub-alt-color);
   border-radius: 0.5rem;
   padding: 0.25rem;
-  /* Fixed width to prevent layout shifts */
+  justify-content: center;
   min-width: fit-content;
 }
 

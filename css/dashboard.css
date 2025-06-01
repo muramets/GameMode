@@ -165,12 +165,57 @@
   }
   
   .user-info {
-    justify-content: center;
+    justify-content: flex-start;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+    text-align: left;
+  }
+  
+  /* Hide the vertical separator inside user-info on mobile */
+  .user-info .profile-separator {
+    display: none;
+  }
+  
+  /* Show and style the horizontal separator between sections on mobile */
+  .user-profile-block > .profile-separator {
+    display: block !important;
+    width: 100%;
+    height: 3px;
+    background-color: var(--text-color);
+    border-radius: 1.5px;
+    opacity: 0.2;
+    margin: 0.5rem 0;
   }
   
   .user-stats {
     justify-content: center;
     gap: 1.5rem;
+    margin-top: 0;
+  }
+}
+
+/* Hide the horizontal separator on desktop */
+@media (min-width: 769px) {
+  .user-profile-block > .profile-separator {
+    display: none;
+  }
+}
+
+/* Dashboard separator for mobile */
+.dashboard-separator {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .dashboard-separator {
+    display: block;
+    width: 100%;
+    height: 4px;
+    background-color: var(--main-color);
+    border-radius: 2px;
+    opacity: 0.6;
+    margin: 2rem 0 1.5rem 0;
   }
 }
 
