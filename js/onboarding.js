@@ -30,7 +30,7 @@ class Onboarding {
                 emoji: '<i class="fas fa-tachometer-alt"></i>',
                 title: 'States',
                 text: `States are live feedback — your inner speedometer, shaped by your skills. Customize it to feel your rhythm.`,
-                targetSelector: '.state-card.empty-state',
+                targetSelector: '.state-card, .states-grid',
                 page: 'dashboard'
             }
         ];
@@ -370,7 +370,19 @@ class Onboarding {
 
     // Update spotlight position dynamically
     updateSpotlightPosition(selector) {
-        const target = document.querySelector(selector);
+        let target = null;
+        
+        // Handle multiple selectors (comma-separated)
+        if (selector.includes(',')) {
+            const selectors = selector.split(',').map(s => s.trim());
+            for (const sel of selectors) {
+                target = document.querySelector(sel);
+                if (target) break;
+            }
+        } else {
+            target = document.querySelector(selector);
+        }
+        
         if (!target) return;
         
         const rect = target.getBoundingClientRect();
@@ -485,13 +497,26 @@ class Onboarding {
             return;
         }
 
-        const target = document.querySelector(selector);
+        let target = null;
+        
+        // Handle multiple selectors (comma-separated)
+        if (selector.includes(',')) {
+            const selectors = selector.split(',').map(s => s.trim());
+            for (const sel of selectors) {
+                target = document.querySelector(sel);
+                if (target) break;
+            }
+        } else {
+            target = document.querySelector(selector);
+        }
+        
         if (!target) {
             this.hideSpotlight();
             return;
         }
 
-        // For empty state cards, we still show spotlight but don't add card animation
+        console.log(`🎯 Spotlighting element:`, target);
+
         const rect = target.getBoundingClientRect();
         const padding = 8;
         
