@@ -351,29 +351,134 @@ class Onboarding {
         // Clean up existing tracker first
         this.cleanupSpotlightTracking();
         
+        // Smooth throttling with requestAnimationFrame for better sync
+        let isThrottled = false;
         this.spotlightTracker = () => {
-            this.updateSpotlightPosition();
+            if (!isThrottled) {
+                isThrottled = true;
+                // Use requestAnimationFrame for smooth 60fps updates
+                requestAnimationFrame(() => {
+                    this.updateSpotlightPosition();
+                    this.updateTooltipPosition();
+                    // Add slight delay to reduce frequency
+                    setTimeout(() => {
+                        isThrottled = false;
+                    }, 16); // ~60fps with slight throttling
+                });
+            }
         };
         
+        // Add more comprehensive event listeners
         window.addEventListener('scroll', this.spotlightTracker, { passive: true });
         window.addEventListener('resize', this.spotlightTracker, { passive: true });
+        document.addEventListener('scroll', this.spotlightTracker, { passive: true });
+        
+        // Also listen for scroll events on main content areas
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+            mainContent.addEventListener('scroll', this.spotlightTracker, { passive: true });
+        }
+        
+        const appContainer = document.querySelector('.app');
+        if (appContainer) {
+            appContainer.addEventListener('scroll', this.spotlightTracker, { passive: true });
+        }
+        
+        // Store references for cleanup
+        this.trackedElements = [window, document, mainContent, appContainer].filter(Boolean);
     }
 
     // Clean up spotlight tracking
     cleanupSpotlightTracking() {
         if (this.spotlightTracker) {
-            window.removeEventListener('scroll', this.spotlightTracker);
-            window.removeEventListener('resize', this.spotlightTracker);
+            // Clean up all tracked elements
+            if (this.trackedElements) {
+                this.trackedElements.forEach(element => {
+                    element.removeEventListener('scroll', this.spotlightTracker);
+                    if (element === window) {
+                        element.removeEventListener('resize', this.spotlightTracker);
+                    }
+                });
+            } else {
+                // Fallback cleanup
+                window.removeEventListener('scroll', this.spotlightTracker);
+                window.removeEventListener('resize', this.spotlightTracker);
+                document.removeEventListener('scroll', this.spotlightTracker);
+            }
+            
             this.spotlightTracker = null;
+            this.trackedElements = null;
         }
     }
 
     // Update spotlight position when scrolling/resizing
     updateSpotlightPosition() {
-        if (!this.currentStep || !this.currentStep.targetSelector) return;
+        const step = this.steps[this.currentStep];
+        if (!step || !step.targetSelector) return;
         
         let target = null;
-        const selector = this.currentStep.targetSelector;
+        const selector = step.targetSelector;
+        
+        // Handle multiple selectors (comma-separated)
+        if (selector.includes(',')) {
+            const selectors = selector.split(',').map(s => s.trim());
+            for (const sel of selectors) {
+                target = document.querySelector(sel);
+                if (target) break;
+            }
+        } else {
+            target = document.querySelector(selector);
+        }
+        
+        // Special fallback for States step: if no state cards exist, target the container
+        if (!target && selector === '.state-card:first-child') {
+            target = document.querySelector('.states-grid');
+        }
+        
+        if (!target) {
+            this.hideSpotlight();
+            return;
+        }
+
+        const rect = target.getBoundingClientRect();
+        
+        // Check if element is visible on screen (with some buffer)
+        const buffer = 50;
+        const isVisible = rect.bottom > -buffer && 
+                         rect.top < window.innerHeight + buffer &&
+                         rect.right > -buffer && 
+                         rect.left < window.innerWidth + buffer;
+        
+        if (!isVisible) {
+            // Hide spotlight if element is not visible
+            this.spotlightOverlay.classList.remove('show');
+            return;
+        } else {
+            // Show spotlight if element is visible and we're in a guide step
+            if (!this.spotlightOverlay.classList.contains('show') && step.type === 'step') {
+                this.spotlightOverlay.classList.add('show');
+            }
+        }
+
+        const padding = 8;
+        const hole = this.spotlightOverlay.querySelector('.spotlight-hole');
+        
+        if (hole) {
+            hole.style.transform = `translate(${rect.left - padding}px, ${rect.top - padding}px)`;
+            hole.style.width = `${rect.width + padding * 2}px`;
+            hole.style.height = `${rect.height + padding * 2}px`;
+        }
+    }
+
+    // Update tooltip position when scrolling/resizing
+    updateTooltipPosition() {
+        const step = this.steps[this.currentStep];
+        if (!step || !step.targetSelector || !this.tooltip || !this.tooltip.classList.contains('show')) {
+            return;
+        }
+        
+        let target = null;
+        const selector = step.targetSelector;
         
         // Handle multiple selectors (comma-separated)
         if (selector.includes(',')) {
@@ -394,13 +499,22 @@ class Onboarding {
         if (!target) return;
 
         const rect = target.getBoundingClientRect();
-        const padding = 8;
-        const hole = this.spotlightOverlay.querySelector('.spotlight-hole');
         
-        if (hole) {
-            hole.style.transform = `translate(${rect.left - padding}px, ${rect.top - padding}px)`;
-            hole.style.width = `${rect.width + padding * 2}px`;
-            hole.style.height = `${rect.height + padding * 2}px`;
+        // Check if element is visible on screen (with some buffer)
+        const buffer = 50;
+        const isVisible = rect.bottom > -buffer && 
+                         rect.top < window.innerHeight + buffer &&
+                         rect.right > -buffer && 
+                         rect.left < window.innerWidth + buffer;
+        
+        if (!isVisible) {
+            // Keep tooltip visible but position it at a safe location when target is off-screen
+            this.tooltip.style.top = '20px';
+            this.tooltip.style.left = '50%';
+            this.tooltip.style.transform = 'translateX(-50%)';
+        } else {
+            // Reposition tooltip relative to updated target position when target is visible
+            this.positionTooltip(target);
         }
     }
 

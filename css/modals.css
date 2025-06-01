@@ -211,7 +211,7 @@
   background: transparent;
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
   border-radius: 8px;
-  transition: all 0.3s ease;
+  transition: transform 0.2s ease-out;
   animation: pulse-glow 2s infinite;
   z-index: 2050;
 }
