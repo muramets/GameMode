@@ -1,506 +1,511 @@
-# Storage System
+# 💾 RPG Therapy v1.0 - Система хранения данных
 
-Документация по системе хранения данных в RPG Therapy.
-
-## 📋 Обзор
-
-RPG Therapy использует **localStorage** браузера в качестве основной системы хранения. Все данные сохраняются локально и персистентны между сессиями.
-
-## 🏗️ Архитектура
-
-### Основной файл
-`js/storage.js` - содержит объект `Storage` со всей логикой хранения
-
-### Структура Storage объекта
-```javascript
-const Storage = {
-  // Ключи для localStorage
-  KEYS: {
-    PROTOCOLS: 'rpg_protocols',
-    SKILLS: 'rpg_skills', 
-    QUICK_ACTIONS: 'rpg_quick_actions',
-    QUICK_ACTION_ORDER: 'rpg_quick_action_order',
-    SKILL_ORDER: 'rpg_skill_order',
-    PROTOCOL_ORDER: 'rpg_protocol_order',
-    USER_STATS: 'rpg_user_stats',
-    HISTORY: 'rpg_history',
-    USER_STATES: 'rpg_user_states'
-  },
-  
-  // Базовые методы
-  get(key) { /* ... */ },
-  set(key, value) { /* ... */ },
-  remove(key) { /* ... */ },
-  clear() { /* ... */ }
-};
-```
-
-## 🗂️ Структуры данных
-
-### 1. Protocols (Протоколы)
-```javascript
-{
-  id: 1,
-  name: "Morning Routine",
-  description: "Daily morning protocol",
-  icon: "🌅",
-  targets: ["energy", "focus"],
-  weight: 1,
-  hover: "Tooltip text",
-  category: "daily"
-}
-```
-
-**Методы:**
-- `getProtocols()` - получить все протоколы
-- `getProtocol(id)` - получить протокол по ID
-- `updateProtocol(id, data)` - обновить протокол
-- `deleteProtocol(id)` - удалить протокол
-
-### 2. Skills (Навыки)
-```javascript
-{
-  id: 101,
-  name: "Discipline",
-  description: "Self-control and consistency",
-  icon: "🎯",
-  score: 75,
-  lastUpdated: "2024-01-15T10:30:00Z",
-  weight: 1,
-  hover: "Tooltip text"
-}
-```
-
-**Методы:**
-- `getSkills()` - получить все навыки
-- `getSkill(id)` - получить навык по ID
-- `updateSkillScore(id, newScore)` - обновить score навыка
-- `updateSkill(id, data)` - обновить данные навыка
-
-### 3. Quick Actions
-```javascript
-// Массив ID протоколов
-[1, 2, 7, 8, 10]
-```
-
-**Методы:**
-- `getQuickActions()` - получить Quick Actions
-- `addToQuickActions(protocolId)` - добавить протокол
-- `removeFromQuickActions(protocolId)` - удалить протокол
-- `setQuickActions(protocolIds)` - установить новый список
-
-### 4. User States (Состояния пользователя)
-```javascript
-{
-  energy: { value: 85, icon: "⚡", name: "Energy" },
-  focus: { value: 70, icon: "🎯", name: "Focus" },
-  mood: { value: 90, icon: "😊", name: "Mood" },
-  stress: { value: 30, icon: "😰", name: "Stress" }
-}
-```
-
-**Методы:**
-- `getUserStates()` - получить все состояния
-- `updateUserState(stateId, value)` - обновить состояние
-- `setUserStates(states)` - установить состояния
-
-### 5. History (История)
-```javascript
-{
-  id: "hist_1642234567890",
-  timestamp: "2024-01-15T10:30:00Z",
-  type: "protocol", // или "skill", "reorder"
-  action: "check_in",
-  targetId: 1,
-  changes: [
-    { skill: "energy", from: 70, to: 85 },
-    { skill: "focus", from: 60, to: 75 }
-  ],
-  details: "Morning Routine completed"
-}
-```
-
-**Методы:**
-- `getHistory()` - получить всю историю
-- `addToHistory(entry)` - добавить запись
-- `removeFromHistory(id)` - удалить запись
-- `clearHistory()` - очистить историю
-
-### 6. Order Management (Управление порядком)
-```javascript
-// Порядок протоколов
-[3, 1, 5, 2, 4]
-
-// Порядок навыков  
-[101, 103, 102, 105, 104]
-
-// Порядок Quick Actions
-[1, 7, 2, 10, 8]
-```
-
-**Методы:**
-- `getProtocolOrder()` / `setProtocolOrder(order)`
-- `getSkillOrder()` / `setSkillOrder(order)`
-- `getQuickActionOrder()` / `setQuickActionOrder(order)`
-
-## 💾 Persistence и синхронизация
-
-### Автоматическое сохранение
-Все изменения сохраняются немедленно:
-
-```javascript
-// Пример обновления навыка
-updateSkillScore(skillId, newScore) {
-  const skills = this.getSkills();
-  const skill = skills.find(s => s.id == skillId);
-  
-  if (skill) {
-    skill.score = newScore;
-    skill.lastUpdated = new Date().toISOString();
-    
-    // Немедленное сохранение
-    this.set(this.KEYS.SKILLS, skills);
-    
-    // Добавление в историю
-    this.addToHistory({
-      type: 'skill',
-      action: 'score_update',
-      targetId: skillId,
-      changes: [{ skill: skill.name, to: newScore }]
-    });
-  }
-}
-```
-
-### Error Handling
-```javascript
-set(key, value) {
-  try {
-    const jsonValue = JSON.stringify(value);
-    localStorage.setItem(key, jsonValue);
-    return true;
-  } catch (error) {
-    console.error('Storage error:', error);
-    // Fallback или уведомление пользователю
-    return false;
-  }
-}
-```
-
-## 🔄 Initialization и Defaults
-
-### Первичная инициализация
-```javascript
-init() {
-  // Инициализация протоколов
-  if (!this.get(this.KEYS.PROTOCOLS)) {
-    this.set(this.KEYS.PROTOCOLS, defaultProtocols);
-  }
-  
-  // Инициализация навыков
-  if (!this.get(this.KEYS.SKILLS)) {
-    this.set(this.KEYS.SKILLS, defaultSkills);
-  }
-  
-  // Quick Actions по умолчанию
-  if (!this.get(this.KEYS.QUICK_ACTIONS)) {
-    this.set(this.KEYS.QUICK_ACTIONS, [1, 2, 7, 8, 10]);
-  }
-  
-  // Состояния пользователя
-  if (!this.get(this.KEYS.USER_STATES)) {
-    this.set(this.KEYS.USER_STATES, defaultUserStates);
-  }
-}
-```
-
-### Проверка целостности данных
-```javascript
-validateData() {
-  // Проверка протоколов
-  const protocols = this.getProtocols();
-  const validProtocols = protocols.filter(p => p.id && p.name);
-  
-  if (validProtocols.length !== protocols.length) {
-    this.set(this.KEYS.PROTOCOLS, validProtocols);
-  }
-  
-  // Аналогично для других типов данных
-}
-```
-
-## 📊 Statistics и Analytics
-
-### User Stats
-```javascript
-{
-  totalSkills: 12,
-  averageScore: 67.5,
-  totalProtocols: 8,
-  completedActions: 45,
-  lastActivity: "2024-01-15T10:30:00Z"
-}
-```
-
-### Вычисление статистики
-```javascript
-updateUserStats() {
-  const skills = this.getSkills();
-  const protocols = this.getProtocols();
-  const history = this.getHistory();
-  
-  const stats = {
-    totalSkills: skills.length,
-    averageScore: skills.reduce((sum, skill) => sum + skill.score, 0) / skills.length,
-    totalProtocols: protocols.length,
-    completedActions: history.filter(h => h.action === 'check_in').length,
-    lastActivity: new Date().toISOString()
-  };
-  
-  this.set(this.KEYS.USER_STATS, stats);
-}
-```
-
-## 🔧 Utility методы
-
-### Backup и Export
-```javascript
-exportData() {
-  const data = {};
-  Object.values(this.KEYS).forEach(key => {
-    data[key] = this.get(key);
-  });
-  return JSON.stringify(data, null, 2);
-}
-
-importData(jsonData) {
-  try {
-    const data = JSON.parse(jsonData);
-    Object.entries(data).forEach(([key, value]) => {
-      if (Object.values(this.KEYS).includes(key)) {
-        this.set(key, value);
-      }
-    });
-    return true;
-  } catch (error) {
-    console.error('Import error:', error);
-    return false;
-  }
-}
-```
-
-### Data Migration
-```javascript
-migrateData() {
-  const version = this.get('data_version') || 1;
-  
-  if (version < 2) {
-    // Миграция до версии 2
-    this.migrateToV2();
-    this.set('data_version', 2);
-  }
-  
-  // Дополнительные миграции...
-}
-```
-
-## 🔍 Debug и Development
-
-### Storage Inspector
-```javascript
-inspect() {
-  console.group('RPG Therapy Storage');
-  Object.entries(this.KEYS).forEach(([name, key]) => {
-    const data = this.get(key);
-    console.log(`${name}:`, data);
-  });
-  console.groupEnd();
-}
-```
-
-### Storage Usage
-```javascript
-getStorageUsage() {
-  let totalSize = 0;
-  Object.values(this.KEYS).forEach(key => {
-    const data = localStorage.getItem(key);
-    if (data) {
-      totalSize += data.length;
-    }
-  });
-  
-  return {
-    total: totalSize,
-    formatted: `${(totalSize / 1024).toFixed(2)} KB`
-  };
-}
-```
-
-## ⚠️ Ограничения и considerations
-
-### LocalStorage Limits
-- **Размер**: ~5-10MB в зависимости от браузера
-- **Синхронизация**: Только локальное хранение
-- **Приватность**: Данные остаются в браузере
-
-### Backup Strategy
-- Регулярный экспорт данных
-- Cloud sync (будущая возможность)
-- Import/Export функциональность
-
-### Performance
-- Минимальные операции с localStorage
-- Кеширование часто используемых данных
-- Batch операции где возможно
-
-## 🛡️ Security
-
-### Data Validation
-```javascript
-validateProtocol(protocol) {
-  return protocol &&
-         typeof protocol.id === 'number' &&
-         typeof protocol.name === 'string' &&
-         protocol.name.length > 0;
-}
-```
-
-### Sanitization
-```javascript
-sanitizeInput(input) {
-  if (typeof input === 'string') {
-    return input.trim().slice(0, 1000); // Лимит длины
-  }
-  return input;
-}
-```
-
-## 🔧 Методы Quick Actions
-
-### addToQuickActions(protocolId)
-Добавляет протокол в Quick Actions.
-
-> **✅ ИСПРАВЛЕНО (30.05.2025)**: Устранена рассинхронизация данных при добавлении.
-
-```javascript
-addToQuickActions(protocolId) {
-  const quickActions = this.get(this.KEYS.QUICK_ACTIONS) || [];
-  
-  // Check if already in quick actions
-  if (quickActions.includes(protocolId)) {
-    return false;
-  }
-  
-  // Add new one at the end
-  quickActions.push(protocolId);
-  
-  // ✅ ИСПРАВЛЕНИЕ: Также обновляем массив порядка
-  const quickActionOrder = this.getQuickActionOrder();
-  quickActionOrder.push(protocolId);
-  this.set(this.KEYS.QUICK_ACTION_ORDER, quickActionOrder);
-  
-  this.set(this.KEYS.QUICK_ACTIONS, quickActions);
-  
-  // ✅ ДОБАВЛЕНО: Логирование в историю
-  const protocol = this.getProtocolById(protocolId);
-  if (protocol) {
-    const checkins = this.getCheckins();
-    const checkin = {
-      id: Date.now(),
-      timestamp: new Date().toISOString(),
-      type: 'quick_action',
-      subType: 'added',
-      protocolId: protocolId,
-      protocolName: protocol.name,
-      protocolIcon: protocol.icon || '📋'
-    };
-    checkins.push(checkin);
-    this.set(this.KEYS.HISTORY, checkins);
-  }
-  
-  return true;
-}
-```
-
-**Ключевые исправления:**
-- ✅ Синхронизация `QUICK_ACTIONS` и `QUICK_ACTION_ORDER` массивов
-- ✅ Добавление логирования операций в историю
-- ✅ Проверка существования протокола перед логированием
-
-### removeFromQuickActions(protocolId)
-Удаляет протокол из Quick Actions.
-
-> **✅ ДОБАВЛЕНО (30.05.2025)**: Логирование операций удаления.
-
-```javascript
-removeFromQuickActions(protocolId) {
-  const quickActions = this.get(this.KEYS.QUICK_ACTIONS) || [];
-  
-  // ✅ ДОБАВЛЕНО: Получаем информацию о протоколе до удаления
-  const protocol = this.getProtocolById(protocolId);
-  
-  // Remove protocol from quick actions
-  const updatedQuickActions = quickActions.filter(id => id !== protocolId);
-  
-  // Also remove from quick action order
-  const quickActionOrder = this.getQuickActionOrder();
-  const updatedOrder = quickActionOrder.filter(id => id !== protocolId);
-  this.set(this.KEYS.QUICK_ACTION_ORDER, updatedOrder);
-  
-  // Save updated quick actions
-  this.set(this.KEYS.QUICK_ACTIONS, updatedQuickActions);
-  
-  // ✅ ДОБАВЛЕНО: Логирование в историю
-  if (protocol) {
-    const checkins = this.getCheckins();
-    const checkin = {
-      id: Date.now(),
-      timestamp: new Date().toISOString(),
-      type: 'quick_action',
-      subType: 'removed',
-      protocolId: protocolId,
-      protocolName: protocol.name,
-      protocolIcon: protocol.icon || '📋'
-    };
-    checkins.push(checkin);
-    this.set(this.KEYS.HISTORY, checkins);
-  }
-}
-```
-
-## 🔄 Синхронизация данных
-
-### Проблемы с рассинхронизацией (РЕШЕНО)
-
-**Проблема**: UI рендеринг Quick Actions использует `getQuickActionsInOrder()`, который зависит от `QUICK_ACTION_ORDER` массива. Однако методы добавления/удаления обновляли только `QUICK_ACTIONS` массив.
-
-**Решение**: Все операции теперь синхронно обновляют оба массива:
-- `QUICK_ACTIONS` - содержит ID протоколов
-- `QUICK_ACTION_ORDER` - определяет порядок отображения
-
-## 📝 Структуры данных для Quick Actions
-
-### История операций
-```javascript
-{
-  "id": 1672531200000,
-  "timestamp": "2025-05-30T17:00:00.000Z", 
-  "type": "quick_action",
-  "subType": "added" | "removed",
-  "protocolId": "proto_123",
-  "protocolName": "Morning Routine",
-  "protocolIcon": "🌅"
-}
-```
-
-## 💾 Persistence гарантии
-
-Все операции Quick Actions теперь гарантируют:
-1. ✅ **Немедленное сохранение** в localStorage
-2. ✅ **Синхронизация массивов** QUICK_ACTIONS ↔ QUICK_ACTION_ORDER  
-3. ✅ **Логирование операций** в истории
-4. ✅ **Консистентность данных** между UI и хранилищем
+*Гибридная архитектура: LocalStorage + Cloud Sync*
 
 ---
 
-*Система хранения RPG Therapy обеспечивает надежное и быстрое сохранение всех пользовательских данных.* 
+## 📋 Обзор системы
+
+RPG Therapy v1.0 использует **гибридную систему хранения**, которая сочетает локальную производительность с облачной надежностью:
+
+- 🚀 **LocalStorage** - для мгновенного отклика интерфейса
+- ☁️ **MongoDB Atlas** - для персистентного облачного хранения
+- 🔄 **Background Sync** - для синхронизации между устройствами
+- 👤 **Multi-user Support** - изоляция данных по пользователям
+
+## 🏗️ Архитектура хранения v1.0
+
+### 📊 Схема данных
+
+```
+👤 User Authentication (Firebase)
+    ↓ JWT Token
+💾 Local Storage (Browser)           ☁️ Cloud Storage (MongoDB)
+    ├── User A Data                      ├── User A Document
+    ├── User B Data                      ├── User B Document  
+    └── Offline Cache                    └── Backup & Sync
+```
+
+### 🧩 Основные компоненты
+
+#### 1. 📁 **Storage Manager** (`js/storage.js`)
+
+**Класс Storage с гибридной логикой:**
+```javascript
+class Storage {
+  constructor() {
+    this.isOnline = navigator.onLine;
+    this.pendingSync = new Set();
+    this.currentUser = null;        // Firebase user
+    this.lastSyncTime = null;
+  }
+  
+  // Пользователь-специфичные ключи
+  getUserKey(key) {
+    return this.currentUser ? `${this.currentUser.uid}_${key}` : key;
+  }
+}
+```
+
+#### 2. 🔑 **User Data Isolation**
+
+**Каждый пользователь имеет изолированное хранилище:**
+```javascript
+// Пример ключей для пользователя abc123
+"abc123_protocols"     // Протоколы пользователя
+"abc123_skills"        // Навыки пользователя  
+"abc123_history"       // История пользователя
+"abc123_quickActions"  // Quick Actions пользователя
+```
+
+## 🗂️ Структуры данных v1.0
+
+### 1. 📋 **Protocols (Протоколы)**
+
+```javascript
+interface Protocol {
+  id: number | string;          // Уникальный идентификатор
+  name: string;                 // "Название действия"
+  icon: string;                 // Эмодзи иконка
+  hover: string;                // Описание при наведении
+  action: '+' | '-';            // Положительное/отрицательное действие
+  weight: number;               // Сила воздействия (0-1)
+  targets: SkillId[];           // ID целевых навыков (1-3)
+  order?: number;               // Порядок отображения
+  isQuickAction?: boolean;      // Входит ли в Quick Actions
+  createdAt?: ISOString;        // Дата создания
+}
+```
+
+**Методы управления:**
+```javascript
+// Локальные операции (мгновенные)
+getProtocols()                    // Получить все протоколы
+addProtocol(protocolData)         // Добавить новый протокол
+updateProtocolFull(id, data)      // Обновить протокол
+deleteProtocol(id)                // Удалить протокол
+
+// Синхронизация (асинхронная)
+syncWithBackend()                 // Отправить изменения в облако
+```
+
+### 2. 🎯 **Skills (Навыки)**
+
+```javascript
+interface Skill {
+  id: number | string;          // Уникальный идентификатор
+  name: string;                 // "Название. Описание"
+  icon: string;                 // Эмодзи иконка
+  hover: string;                // Подсказка при наведении
+  initialScore: number;         // Начальный балл (0-10)
+  order?: number;               // Порядок отображения
+  createdAt?: ISOString;        // Дата создания
+  // currentScore вычисляется динамически на основе истории
+}
+```
+
+**Методы управления:**
+```javascript
+// Основные операции
+getSkills()                       // Получить все навыки
+getSkillById(id)                  // Получить навык по ID
+addSkill(skillData)               // Добавить новый навык
+updateSkillFull(id, data)         // Обновить навык
+deleteSkill(id)                   // Удалить навык
+
+// Вычисления
+calculateCurrentScore(skillId)    // Текущий уровень навыка
+getSkillHistory(skillId)          // История изменений навыка
+```
+
+### 3. 🎭 **States (Состояния)**
+
+```javascript
+interface State {
+  id: number | string;          // Уникальный идентификатор
+  name: string;                 // "Название состояния/роли"
+  icon: string;                 // Эмодзи иконка
+  skillIds: SkillId[];          // Навыки, входящие в состояние
+  stateIds: StateId[];          // Зависимые состояния (рекурсия)
+  order?: number;               // Порядок отображения
+  level?: number;               // Вычисляемый уровень состояния
+}
+```
+
+**Методы управления:**
+```javascript
+getStates()                       // Получить все состояния
+addState(stateData)               // Добавить новое состояние
+updateState(id, data)             // Обновить состояние
+calculateStateScore(stateId)      // Вычислить уровень состояния
+```
+
+### 4. 📊 **History (История действий)**
+
+```javascript
+interface HistoryEntry {
+  id: string;                   // Timestamp-based ID
+  type: 'protocol' | 'drag_drop' | 'quick_action';
+  timestamp: ISOString;         // Время действия
+  
+  // Для протоколов
+  protocolId?: ProtocolId;
+  protocolName?: string;
+  action?: '+' | '-';
+  changes?: Record<SkillId, number>;
+  
+  // Для drag & drop
+  subType?: 'skill' | 'protocol' | 'state';
+  itemId?: number;
+  itemName?: string;
+  fromPosition?: number;
+  toPosition?: number;
+}
+```
+
+**Методы управления:**
+```javascript
+getCheckins()                     // Получить всю историю
+addCheckin(protocolId, action)    // Добавить выполнение протокола
+addDragDropOperation(...)         // Добавить операцию перестановки
+deleteCheckin(id)                 // Удалить запись истории
+clearAllCheckins()                // Очистить всю историю
+```
+
+### 5. ⚡ **Quick Actions**
+
+```javascript
+interface QuickActionsData {
+  quickActions: ProtocolId[];           // ID протоколов в Quick Actions
+  quickActionOrder: ProtocolId[];       // Порядок отображения
+}
+```
+
+**Методы управления:**
+```javascript
+getQuickActions()                 // Получить Quick Actions
+addToQuickActions(protocolId)     // Добавить протокол
+removeFromQuickActions(id)        // Удалить протокол
+setQuickActionOrder(order)        // Установить порядок
+getQuickActionsInOrder()          // Получить в правильном порядке
+```
+
+## 🔄 Гибридная синхронизация
+
+### 🚀 Optimistic Updates
+
+**Принцип работы:**
+1. Пользователь выполняет действие
+2. Изменение **мгновенно** применяется локально
+3. UI **немедленно** обновляется
+4. Данные **асинхронно** отправляются в облако
+5. При ошибке показывается уведомление
+
+```javascript
+// Пример: выполнение протокола
+addCheckin(protocolId, action = '+') {
+  // 1. Мгновенное локальное обновление
+  const checkin = this.createCheckinEntry(protocolId, action);
+  this.saveLocally(checkin);
+  
+  // 2. UI обновляется немедленно
+  UI.updateSkillBars();
+  
+  // 3. Фоновая синхронизация
+  this.scheduleCloudSync(checkin);
+}
+```
+
+### ☁️ Cloud Sync Architecture
+
+**Стратегии синхронизации:**
+
+#### 1. **Auto Sync** (автоматическая)
+```javascript
+async syncWithBackend() {
+  if (!this.isOnline || !this.currentUser) return;
+  
+  try {
+    // Отправляем все локальные данные
+    const userData = this.getAllUserData();
+    await apiClient.saveUserData(userData);
+    
+    this.lastSyncTime = Date.now();
+    this.clearPendingSync();
+  } catch (error) {
+    this.scheduleRetry();
+  }
+}
+```
+
+#### 2. **Load from Cloud** (при входе)
+```javascript
+async loadFromCloud() {
+  try {
+    const cloudData = await apiClient.getUserData();
+    
+    if (cloudData.success) {
+      // Мержим с локальными данными
+      this.mergeCloudData(cloudData.data);
+    }
+  } catch (error) {
+    // Работаем с локальными данными
+    console.warn('Cloud sync failed, using local data');
+  }
+}
+```
+
+#### 3. **Conflict Resolution** (разрешение конфликтов)
+```javascript
+mergeCloudData(cloudData) {
+  // Простая стратегия: облачные данные имеют приоритет
+  // при условии, что они новее локальных
+  
+  if (cloudData.lastUpdated > this.getLocalLastUpdated()) {
+    this.replaceLocalData(cloudData);
+  } else {
+    // Локальные данные новее - синхронизируем в облако
+    this.syncWithBackend();
+  }
+}
+```
+
+## 🔐 Безопасность данных
+
+### 👤 User Data Isolation
+
+**Изоляция по пользователям:**
+```javascript
+// Каждый пользователь имеет свое пространство имен
+setUser(user) {
+  this.currentUser = user;
+  // Все ключи теперь будут с префиксом user.uid
+}
+
+get(key) {
+  const userKey = this.getUserKey(key);  // uid_key
+  return JSON.parse(localStorage.getItem(userKey));
+}
+```
+
+### 🔄 Legacy Data Migration
+
+**Миграция старых данных при первом входе:**
+```javascript
+checkAndMigrateLegacyData() {
+  const legacyKeys = ['protocols', 'skills', 'history'];
+  
+  legacyKeys.forEach(key => {
+    const legacyData = localStorage.getItem(key);
+    const currentData = this.get(key);
+    
+    if (legacyData && !currentData) {
+      // Мигрируем старые данные в новую структуру
+      this.set(key, JSON.parse(legacyData));
+    }
+  });
+}
+```
+
+### 🛡️ Data Validation
+
+**Валидация данных перед сохранением:**
+```javascript
+validateProtocol(protocol) {
+  const required = ['id', 'name', 'targets', 'action'];
+  const missing = required.filter(field => !protocol[field]);
+  
+  if (missing.length > 0) {
+    throw new Error(`Missing required fields: ${missing.join(', ')}`);
+  }
+  
+  // Дополнительные проверки
+  if (protocol.targets.length === 0 || protocol.targets.length > 3) {
+    throw new Error('Protocol must have 1-3 target skills');
+  }
+}
+```
+
+## 📊 Performance Optimizations
+
+### 🚀 Lazy Loading
+
+**Загрузка данных по требованию:**
+```javascript
+getSkillsInOrder() {
+  if (this._cachedSkillsOrder) {
+    return this._cachedSkillsOrder;
+  }
+  
+  // Вычисляем и кэшируем
+  this._cachedSkillsOrder = this.calculateSkillsOrder();
+  return this._cachedSkillsOrder;
+}
+```
+
+### 💾 Caching Strategy
+
+**Кэширование вычислений:**
+```javascript
+calculateCurrentScore(skillId) {
+  const cacheKey = `score_${skillId}_${this.getHistoryVersion()}`;
+  
+  if (this._scoreCache[cacheKey]) {
+    return this._scoreCache[cacheKey];
+  }
+  
+  const score = this.computeScore(skillId);
+  this._scoreCache[cacheKey] = score;
+  return score;
+}
+```
+
+### 🔄 Debounced Sync
+
+**Избегание частых запросов к API:**
+```javascript
+scheduleCloudSync() {
+  clearTimeout(this.syncTimeout);
+  
+  this.syncTimeout = setTimeout(() => {
+    this.syncWithBackend();
+  }, 2000); // Синхронизация через 2 секунды после последнего изменения
+}
+```
+
+## 🛠️ API Integration
+
+### 📡 Cloud API Methods
+
+**Интеграция с APIClient:**
+```javascript
+async syncWithBackend() {
+  const userData = {
+    skills: this.getSkills(),
+    protocols: this.getProtocols(),
+    states: this.getStates(),
+    checkins: this.getCheckins()
+  };
+  
+  return await apiClient.saveUserData(userData);
+}
+
+async loadFromBackend() {
+  const response = await apiClient.getUserData();
+  
+  if (response.success) {
+    this.setSkills(response.data.skills);
+    this.setProtocols(response.data.protocols);
+    this.setStates(response.data.states);
+    this.setCheckins(response.data.checkins);
+  }
+}
+```
+
+### 🔄 Offline Support
+
+**Работа без интернета:**
+```javascript
+handleOnlineStatus() {
+  window.addEventListener('online', () => {
+    this.isOnline = true;
+    this.syncPendingChanges();
+  });
+  
+  window.addEventListener('offline', () => {
+    this.isOnline = false;
+    // Показать индикатор оффлайн режима
+    UI.showOfflineIndicator();
+  });
+}
+```
+
+## 📋 Примеры использования
+
+### 🎯 Создание нового навыка
+
+```javascript
+// 1. Создание данных навыка
+const newSkill = {
+  name: "Новый навык. Описание навыка",
+  icon: "🎯",
+  hover: "Подсказка при наведении",
+  initialScore: 5
+};
+
+// 2. Добавление в систему
+const skillId = Storage.addSkill(newSkill);
+
+// 3. Автоматическая синхронизация (фоновая)
+// Storage автоматически вызовет syncWithBackend()
+
+// 4. Обновление UI
+UI.renderSkills();
+```
+
+### 📋 Выполнение протокола
+
+```javascript
+// 1. Пользователь нажимает кнопку протокола
+const protocolId = 1;
+const action = '+';
+
+// 2. Обработка check-in
+Storage.addCheckin(protocolId, action);
+
+// 3. Мгновенное обновление интерфейса
+UI.updateSkillBars();
+UI.renderHistory();
+
+// 4. Фоновая синхронизация с облаком
+```
+
+### 🔄 Переключение пользователей
+
+```javascript
+// 1. Пользователь выходит
+Storage.setUser(null);
+
+// 2. Новый пользователь входит
+const newUser = { uid: 'user123', email: 'user@example.com' };
+Storage.setUser(newUser);
+
+// 3. Проверка на legacy данные
+Storage.checkAndMigrateLegacyData();
+
+// 4. Загрузка данных пользователя
+await Storage.loadFromBackend();
+
+// 5. Обновление интерфейса
+UI.renderAll();
+```
+
+## 🔮 Будущие улучшения
+
+### 📈 Планируемые оптимизации v1.1+
+
+1. **Delta Sync** - синхронизация только изменений
+2. **Compression** - сжатие данных при передаче
+3. **Background Sync** - Service Worker для оффлайн синхронизации
+4. **Real-time Updates** - WebSocket для мгновенных обновлений
+5. **Intelligent Caching** - умное кэширование на основе паттернов использования
+
+---
+
+## 📋 Заключение
+
+Система хранения RPG Therapy v1.0 обеспечивает:
+
+✅ **Высокую производительность** - мгновенный отклик интерфейса  
+✅ **Надежность** - облачное резервирование данных  
+✅ **Масштабируемость** - поддержка множества пользователей  
+✅ **Гибкость** - работа онлайн и оффлайн  
+✅ **Безопасность** - изоляция данных по пользователям  
+
+Гибридная архитектура сочетает лучшее из локального и облачного хранения, обеспечивая отличный пользовательский опыт при максимальной надежности данных.
+
+---
+
+*📝 Документация обновлена: Июнь 2024*  
+*💾 Версия системы хранения: 1.0*  
+*☁️ Гибридная LocalStorage + Cloud архитектура* 
