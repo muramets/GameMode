@@ -41,6 +41,11 @@ class Storage {
   checkAndMigrateLegacyData() {
     if (!this.currentUser) return;
     
+    // Only migrate legacy data for the original user
+    if (this.currentUser.email !== 'dev.muramets@gmail.com') {
+      return;
+    }
+    
     // Check if this user has a legacy migration marker
     const legacyMigrationKey = `legacy_migrated_${this.currentUser.uid}`;
     const hasBeenMigrated = localStorage.getItem(legacyMigrationKey);
@@ -146,17 +151,21 @@ class Storage {
       this.checkAndMigrateLegacyData();
     }
     
+    // Check if this is the original user who should have default data
+    const shouldLoadDefaultData = this.currentUser && 
+                                  this.currentUser.email === 'dev.muramets@gmail.com';
+    
     // Initialize each key separately if it doesn't exist
     if (!this.get(this.KEYS.PROTOCOLS)) {
-      this.set(this.KEYS.PROTOCOLS, INITIAL_DATA.protocols);
+      this.set(this.KEYS.PROTOCOLS, shouldLoadDefaultData ? INITIAL_DATA.protocols : []);
     }
     
     if (!this.get(this.KEYS.SKILLS)) {
-      this.set(this.KEYS.SKILLS, INITIAL_DATA.skills);
+      this.set(this.KEYS.SKILLS, shouldLoadDefaultData ? INITIAL_DATA.skills : []);
     }
     
     if (!this.get(this.KEYS.STATES)) {
-      this.set(this.KEYS.STATES, INITIAL_DATA.states);
+      this.set(this.KEYS.STATES, shouldLoadDefaultData ? INITIAL_DATA.states : []);
     }
     
     if (!this.get(this.KEYS.HISTORY)) {
@@ -172,8 +181,9 @@ class Storage {
         this.set(this.KEYS.QUICK_ACTIONS, defaultQuickActions);
         this.set(this.KEYS.QUICK_ACTION_ORDER, defaultQuickActions);
       } else {
-        this.set(this.KEYS.QUICK_ACTIONS, [1, 2, 7, 8, 10]);
-        this.set(this.KEYS.QUICK_ACTION_ORDER, [1, 2, 7, 8, 10]);
+        // For users without protocols, set empty quick actions
+        this.set(this.KEYS.QUICK_ACTIONS, []);
+        this.set(this.KEYS.QUICK_ACTION_ORDER, []);
       }
     }
     
