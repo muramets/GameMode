@@ -18,14 +18,20 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initializeApp() {
-    // Initialize Storage
-    window.Storage.init();
-    
-    // Initialize Firebase Auth state listener
-    window.firebaseAuth.onAuthStateChanged((user) => {
+    // Initialize Firebase Auth state listener first
+    window.firebaseAuth.onAuthStateChanged(async (user) => {
         if (user) {
             // User is signed in
+            console.log('🔑 User authenticated:', user.email);
+            
+            // Set user in Storage first
             window.Storage.setUser(user);
+            
+            // Initialize Storage data for this user
+            window.Storage.init();
+            
+            // Sync with server
+            await syncUserData();
             
             // Update username immediately when user object changes
             const appContainer = document.getElementById('appContainer');
@@ -34,10 +40,9 @@ function initializeApp() {
             } else {
                 showApp(user);
             }
-            
-            syncUserData();
         } else {
             // User is signed out
+            console.log('🚪 User signed out');
             window.Storage.setUser(null);
             showAuth();
         }
@@ -72,8 +77,24 @@ function showAuth() {
 
 async function syncUserData() {
     try {
-        // Backend sync will be implemented when deployed
-        console.log('📡 Sync ready - backend deployed to Railway');
+        console.log('📡 Starting user data sync...');
+        
+        // Skip server sync for local development
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.log('🏠 Local development detected, skipping server sync');
+            return;
+        }
+        
+        // Try to load data from server first
+        const hasServerData = await window.Storage.loadFromBackend();
+        
+        if (!hasServerData) {
+            // No server data found, upload current local data
+            console.log('📤 No server data found, uploading local data...');
+            await window.Storage.syncWithBackend();
+        }
+        
+        console.log('✅ User data sync completed');
     } catch (error) {
         console.error('❌ Sync failed:', error);
     }
@@ -386,7 +407,7 @@ function initMainApp() {
         checkin(protocolId, action = '+') {
             const checkin = window.Storage.addCheckin(protocolId, action);
             if (checkin) {
-                this.showToast('Check-in successful!', 'success');
+                this.showToast('Check-in successful! 📡 Syncing...', 'success');
                 
                 // Always update dashboard stats since skills changed
                 UI.updateUserStats();

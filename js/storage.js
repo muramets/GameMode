@@ -6,6 +6,7 @@ class Storage {
     this.pendingSync = new Set();
     this.lastSyncTime = null;
     this.currentUser = null;
+    this.syncTimeout = null;
     
     // Listen for online/offline status
     window.addEventListener('online', () => {
@@ -40,11 +41,6 @@ class Storage {
   // Check for legacy data and migrate if needed (one-time operation per user)
   checkAndMigrateLegacyData() {
     if (!this.currentUser) return;
-    
-    // Only migrate legacy data for the original user
-    if (this.currentUser.email !== 'dev.muramets@gmail.com') {
-      return;
-    }
     
     // Check if this user has a legacy migration marker
     const legacyMigrationKey = `legacy_migrated_${this.currentUser.uid}`;
@@ -151,41 +147,21 @@ class Storage {
       this.checkAndMigrateLegacyData();
     }
     
-    // Check if this is the original user who should have default data
-    const isOriginalUser = this.currentUser && 
-                           this.currentUser.email === 'dev.muramets@gmail.com';
+    // Always start with empty arrays for all users
+    // No more default data initialization
+    console.log('👤 Initializing user with empty state');
     
-    // Initialize each key separately if it doesn't exist
+    // Only ensure empty arrays exist
     if (!this.get(this.KEYS.PROTOCOLS)) {
-      // For original user: load INITIAL_DATA only if no existing data
-      // For other users: always empty array
-      this.set(this.KEYS.PROTOCOLS, isOriginalUser ? INITIAL_DATA.protocols : []);
-    } else if (isOriginalUser) {
-      // For original user: check if existing data is just empty or default
-      const existingProtocols = this.get(this.KEYS.PROTOCOLS);
-      if (Array.isArray(existingProtocols) && existingProtocols.length === 0) {
-        // User has empty data, can safely load defaults
-        this.set(this.KEYS.PROTOCOLS, INITIAL_DATA.protocols);
-      }
-      // If user has custom data (length > 0), keep it as is
+      this.set(this.KEYS.PROTOCOLS, []);
     }
     
     if (!this.get(this.KEYS.SKILLS)) {
-      this.set(this.KEYS.SKILLS, isOriginalUser ? INITIAL_DATA.skills : []);
-    } else if (isOriginalUser) {
-      const existingSkills = this.get(this.KEYS.SKILLS);
-      if (Array.isArray(existingSkills) && existingSkills.length === 0) {
-        this.set(this.KEYS.SKILLS, INITIAL_DATA.skills);
-      }
+      this.set(this.KEYS.SKILLS, []);
     }
     
     if (!this.get(this.KEYS.STATES)) {
-      this.set(this.KEYS.STATES, isOriginalUser ? INITIAL_DATA.states : []);
-    } else if (isOriginalUser) {
-      const existingStates = this.get(this.KEYS.STATES);
-      if (Array.isArray(existingStates) && existingStates.length === 0) {
-        this.set(this.KEYS.STATES, INITIAL_DATA.states);
-      }
+      this.set(this.KEYS.STATES, []);
     }
     
     if (!this.get(this.KEYS.HISTORY)) {
@@ -193,44 +169,13 @@ class Storage {
     }
     
     if (!this.get(this.KEYS.QUICK_ACTIONS)) {
-      // Set default quick actions only if user has existing protocols
-      const existingProtocols = this.get(this.KEYS.PROTOCOLS);
-      if (existingProtocols && existingProtocols.length > 0) {
-        // Use first 5 available protocol IDs as defaults
-        const defaultQuickActions = existingProtocols.slice(0, 5).map(p => p.id);
-        this.set(this.KEYS.QUICK_ACTIONS, defaultQuickActions);
-        this.set(this.KEYS.QUICK_ACTION_ORDER, defaultQuickActions);
-      } else {
-        // For users without protocols, set empty quick actions
-        this.set(this.KEYS.QUICK_ACTIONS, []);
-        this.set(this.KEYS.QUICK_ACTION_ORDER, []);
-      }
+      this.set(this.KEYS.QUICK_ACTIONS, []);
     }
     
-    // Initialize quick action order if missing
-    if (!this.get(this.KEYS.QUICK_ACTION_ORDER)) {
-      const quickActions = this.get(this.KEYS.QUICK_ACTIONS) || [];
-      this.set(this.KEYS.QUICK_ACTION_ORDER, quickActions);
-    }
-    
-    // Initialize other order keys if missing
-    if (!this.get(this.KEYS.PROTOCOL_ORDER)) {
-      this.set(this.KEYS.PROTOCOL_ORDER, []);
-    }
-    
-    if (!this.get(this.KEYS.SKILL_ORDER)) {
-      this.set(this.KEYS.SKILL_ORDER, []);
-    }
-    
-    if (!this.get(this.KEYS.STATE_ORDER)) {
-      this.set(this.KEYS.STATE_ORDER, []);
-    }
-    
-    if (!this.get(this.KEYS.SKILL_MIGRATION)) {
-      this.set(this.KEYS.SKILL_MIGRATION, false);
-    }
+    // Initialize order arrays if they don't exist
+    this.initializeOrdering();
   }
-
+  
   // Get data from localStorage
   get(key) {
     try {
@@ -246,11 +191,28 @@ class Storage {
   set(key, value) {
     try {
       localStorage.setItem(this.getUserKey(key), JSON.stringify(value));
+      
+      // Auto-sync to server after local save (debounced)
+      if (this.currentUser && this.isOnline) {
+        this.scheduleSync();
+      }
+      
       return true;
     } catch (e) {
       console.error('Error writing to localStorage:', e);
       return false;
     }
+  }
+
+  // Schedule sync with debouncing to avoid too frequent calls
+  scheduleSync() {
+    if (this.syncTimeout) {
+      clearTimeout(this.syncTimeout);
+    }
+    
+    this.syncTimeout = setTimeout(() => {
+      this.syncWithBackend();
+    }, 2000); // Wait 2 seconds before syncing
   }
 
   // Get all protocols
@@ -643,18 +605,34 @@ class Storage {
     return history[history.length - 1].timestamp;
   }
 
-  // Export data
+  // Export data for backup or sync
   exportData() {
-    const data = {
-      version: '1.0',
-      exportDate: new Date().toISOString(),
+    return {
       protocols: this.getProtocols(),
       skills: this.getSkills(),
       states: this.getStates(),
-      checkins: this.getCheckins(),
-      settings: this.get(this.KEYS.SETTINGS)
+      history: this.getCheckins(),
+      quickActions: this.getQuickActions(),
+      protocolOrder: this.getProtocolOrder(),
+      skillOrder: this.getSkillOrder(),
+      stateOrder: this.getStateOrder(),
+      quickActionOrder: this.getQuickActionOrder()
     };
-    return data;
+  }
+
+  // Get all user data for API sync
+  getAllData() {
+    return {
+      protocols: this.get(this.KEYS.PROTOCOLS) || [],
+      skills: this.get(this.KEYS.SKILLS) || [],
+      states: this.get(this.KEYS.STATES) || [],
+      history: this.get(this.KEYS.HISTORY) || [],
+      quickActions: this.get(this.KEYS.QUICK_ACTIONS) || [],
+      protocolOrder: this.get(this.KEYS.PROTOCOL_ORDER) || [],
+      skillOrder: this.get(this.KEYS.SKILL_ORDER) || [],
+      stateOrder: this.get(this.KEYS.STATE_ORDER) || [],
+      quickActionOrder: this.get(this.KEYS.QUICK_ACTION_ORDER) || []
+    };
   }
 
   // Import data
@@ -1176,46 +1154,68 @@ class Storage {
         skills: this.get(this.KEYS.SKILLS),
         states: this.get(this.KEYS.STATES),
         history: this.get(this.KEYS.HISTORY),
-        quickActions: this.get(this.KEYS.QUICK_ACTIONS)
+        quickActions: this.get(this.KEYS.QUICK_ACTIONS),
+        protocolOrder: this.get(this.KEYS.PROTOCOL_ORDER),
+        skillOrder: this.get(this.KEYS.SKILL_ORDER),
+        stateOrder: this.get(this.KEYS.STATE_ORDER),
+        quickActionOrder: this.get(this.KEYS.QUICK_ACTION_ORDER)
       };
       
-      const response = await fetch(`${BACKEND_URL}/api/sync`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await this.currentUser.getIdToken()}`
-        },
-        body: JSON.stringify(userData)
-      });
+      // Save current user data to server
+      await window.apiClient.saveUserData(userData);
+      this.lastSyncTime = new Date().toISOString();
       
-      if (response.ok) {
-        const serverData = await response.json();
-        this.lastSyncTime = new Date().toISOString();
-        
-        // Check if this is the original user who should have cloud data
-        const isOriginalUser = this.currentUser && 
-                               this.currentUser.email === 'dev.muramets@gmail.com';
-        
-        // Update local data with server data ONLY for original user AND only if local data is empty
-        if (serverData.data && isOriginalUser) {
-          Object.keys(serverData.data).forEach(key => {
-            if (serverData.data[key]) {
-              const currentData = this.get(this.KEYS[key.toUpperCase()]);
-              // Only load server data if local is empty or null
-              if (!currentData || (Array.isArray(currentData) && currentData.length === 0)) {
-                this.set(this.KEYS[key.toUpperCase()], serverData.data[key]);
-              }
-              // If user has custom data (length > 0), preserve it
-            }
-          });
-        }
-        
-        console.log('✅ Data synced successfully');
-      }
+      console.log('✅ Data synced successfully to server');
     } catch (error) {
       console.error('Sync failed:', error);
       this.markForSync();
     }
+  }
+
+  // Load data from server
+  async loadFromBackend() {
+    if (!this.isOnline || !this.currentUser) return;
+    
+    try {
+      const serverData = await window.apiClient.getUserData();
+      
+      if (serverData && Object.keys(serverData).length > 0) {
+        // Update local data with server data
+        if (serverData.protocols) {
+          this.set(this.KEYS.PROTOCOLS, serverData.protocols);
+        }
+        if (serverData.skills) {
+          this.set(this.KEYS.SKILLS, serverData.skills);
+        }
+        if (serverData.states) {
+          this.set(this.KEYS.STATES, serverData.states);
+        }
+        if (serverData.history) {
+          this.set(this.KEYS.HISTORY, serverData.history);
+        }
+        if (serverData.quickActions) {
+          this.set(this.KEYS.QUICK_ACTIONS, serverData.quickActions);
+        }
+        if (serverData.protocolOrder) {
+          this.set(this.KEYS.PROTOCOL_ORDER, serverData.protocolOrder);
+        }
+        if (serverData.skillOrder) {
+          this.set(this.KEYS.SKILL_ORDER, serverData.skillOrder);
+        }
+        if (serverData.stateOrder) {
+          this.set(this.KEYS.STATE_ORDER, serverData.stateOrder);
+        }
+        if (serverData.quickActionOrder) {
+          this.set(this.KEYS.QUICK_ACTION_ORDER, serverData.quickActionOrder);
+        }
+        
+        console.log('✅ Data loaded successfully from server');
+        return true;
+      }
+    } catch (error) {
+      console.error('Load from backend failed:', error);
+    }
+    return false;
   }
 
   // Mark data for sync when online
@@ -1248,6 +1248,62 @@ class Storage {
     if (!Array.isArray(states)) return false;
     return states.length === INITIAL_DATA.states.length && 
            states.every((s, i) => s.id === INITIAL_DATA.states[i].id);
+  }
+
+  // Initialize ordering arrays
+  initializeOrdering() {
+    // Initialize quick action order if missing
+    if (!this.get(this.KEYS.QUICK_ACTION_ORDER)) {
+      const quickActions = this.get(this.KEYS.QUICK_ACTIONS) || [];
+      this.set(this.KEYS.QUICK_ACTION_ORDER, quickActions);
+    }
+    
+    // Initialize other order keys if missing
+    if (!this.get(this.KEYS.PROTOCOL_ORDER)) {
+      this.set(this.KEYS.PROTOCOL_ORDER, []);
+    }
+    
+    if (!this.get(this.KEYS.SKILL_ORDER)) {
+      this.set(this.KEYS.SKILL_ORDER, []);
+    }
+    
+    if (!this.get(this.KEYS.STATE_ORDER)) {
+      this.set(this.KEYS.STATE_ORDER, []);
+    }
+    
+    if (!this.get(this.KEYS.SKILL_MIGRATION)) {
+      this.set(this.KEYS.SKILL_MIGRATION, false);
+    }
+  }
+
+  // Clear all user data (for testing)
+  clearUserData() {
+    if (!this.currentUser) return;
+    
+    console.log('🗑️ Clearing all user data for:', this.currentUser.email);
+    
+    // Clear all user-specific data
+    Object.values(this.KEYS).forEach(key => {
+      const userKey = this.getUserKey(key);
+      localStorage.removeItem(userKey);
+    });
+    
+    // Clear all user initialization and migration flags
+    const userInitKey = `user_initialized_${this.currentUser.uid}`;
+    localStorage.removeItem(userInitKey);
+    
+    const legacyMigrationKey = `legacy_migrated_${this.currentUser.uid}`;
+    localStorage.removeItem(legacyMigrationKey);
+    
+    console.log('✅ User data cleared, ready for fresh start');
+  }
+  
+  // Reset user to new state (for testing)
+  resetUserToNew() {
+    if (!this.currentUser) return;
+    
+    this.clearUserData();
+    this.init(); // Re-initialize as new user
   }
 }
 
