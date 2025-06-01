@@ -491,6 +491,15 @@ const UI = {
           <div class="skill-cell skill-initial-cell">${initial.toFixed(2)}</div>
           <div class="skill-cell skill-current-cell">
             <span style="color: ${color}; font-weight: 600;">${current.toFixed(2)}</span>
+            ${(() => {
+              const diff = current - initial;
+              if (diff > 0.01) {
+                return '<span class="skill-change-arrow increase"><i class="fas fa-arrow-trend-up"></i></span>';
+              } else if (diff < -0.01) {
+                return '<span class="skill-change-arrow decrease"><i class="fas fa-arrow-trend-down"></i></span>';
+              }
+              return '';
+            })()}
           </div>
           <div class="skill-cell skill-progress-cell">
             <div class="skill-progress-bar">

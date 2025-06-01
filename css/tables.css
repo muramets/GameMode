@@ -1089,4 +1089,28 @@
 .protocol-name-cell .protocol-history-btn:hover,
 .protocol-name-cell .protocol-settings-btn:hover {
   color: var(--main-color) !important;
+}
+
+.skill-current-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.skill-change-arrow {
+  color: var(--sub-color);
+  font-size: 0.8rem;
+  transition: color 0.125s ease;
+  opacity: 0.7;
+}
+
+.skill-row:hover .skill-change-arrow.increase {
+  color: var(--correct-color);
+  opacity: 1;
+}
+
+.skill-row:hover .skill-change-arrow.decrease {
+  color: var(--error-color);
+  opacity: 1;
 } 
