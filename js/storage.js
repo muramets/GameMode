@@ -335,6 +335,7 @@ class Storage {
       protocolName: protocol.name,
       protocolIcon: protocol.icon,
       timestamp: new Date().toISOString(),
+      action: action, // Save the original action ('+' or '-')
       changes: {}
     };
 
@@ -365,6 +366,21 @@ class Storage {
 
     checkins.forEach(checkin => {
       if (checkin.type === 'protocol' && checkin.protocolId === protocolId) {
+        // Use the saved action if available, otherwise try to determine from changes
+        let originalAction = '+'; // default
+        
+        if (checkin.action) {
+          // Use the explicitly saved action (new format)
+          originalAction = checkin.action;
+        } else if (checkin.changes && Object.keys(checkin.changes).length > 0) {
+          // Fallback: try to determine action from existing changes (legacy format)
+          const firstChange = Object.values(checkin.changes)[0];
+          originalAction = firstChange >= 0 ? '+' : '-';
+        }
+        
+        // Get the current weight for this protocol
+        const changeValue = originalAction === '+' ? protocol.weight : -protocol.weight;
+        
         // Remove old target effects
         if (oldTargets && oldTargets.length > 0) {
           oldTargets.forEach(skillId => {
@@ -375,8 +391,13 @@ class Storage {
           });
         }
 
-        // For recalculation, we can't determine the original action, so we skip adding new effects
-        // New check-ins will use the current protocol settings
+        // Add new target effects with the current protocol weight
+        if (newTargets && newTargets.length > 0) {
+          newTargets.forEach(skillId => {
+            checkin.changes[skillId] = changeValue;
+            hasChanges = true;
+          });
+        }
       }
     });
 
@@ -878,19 +899,14 @@ class Storage {
     const weightChanged = oldProtocol.weight !== protocolData.weight;
     
     if (targetsChanged || weightChanged) {
-      // If weight changed, we need to recalculate using all targets (old and new)
-      if (weightChanged) {
-        // Get all unique targets from old and new
-        const allTargets = [...new Set([...oldTargets, ...newTargets])];
-        const wasRecalculated = this.recalculateProtocolHistory(protocolId, allTargets, newTargets);
-        if (wasRecalculated && window.App) {
-          window.App.showToast('Protocol history recalculated retroactively', 'info');
-        }
-      } else {
-        // Only targets changed
-        const wasRecalculated = this.recalculateProtocolHistory(protocolId, oldTargets, newTargets);
-        if (wasRecalculated && window.App) {
-          window.App.showToast('Protocol history recalculated retroactively', 'info');
+      const wasRecalculated = this.recalculateProtocolHistory(protocolId, oldTargets, newTargets);
+      if (wasRecalculated && window.App) {
+        if (targetsChanged && weightChanged) {
+          window.App.showToast('Protocol targets and weight updated retroactively', 'info');
+        } else if (targetsChanged) {
+          window.App.showToast('Protocol targets updated retroactively', 'info');
+        } else {
+          window.App.showToast('Protocol weight updated retroactively', 'info');
         }
       }
     }

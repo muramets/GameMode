@@ -391,6 +391,18 @@ function initMainApp() {
                 // Update current page
                 this.renderPage(this.currentPage);
                 
+                // Update history in real-time if we're on the history page
+                if (this.currentPage === 'history') {
+                    // Reset history filter to refresh data and re-apply current filters
+                    this.filteredHistory = [];
+                    this.historyInitialized = false;
+                    this.applyHistoryFilters();
+                } else {
+                    // If not on history page, just reset the history data for next visit
+                    this.filteredHistory = [];
+                    this.historyInitialized = false;
+                }
+                
                 // If we're not on skills page, but skills were affected, update skills data
                 if (this.currentPage !== 'skills') {
                     this.filteredSkills = window.Storage.getSkillsInOrder();
