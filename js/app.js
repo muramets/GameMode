@@ -58,7 +58,7 @@ function showAuth() {
 async function syncUserData() {
     try {
         // Backend sync will be implemented when deployed
-        console.log('📡 Sync ready (backend deployment pending)');
+        console.log('📡 Sync ready - backend deployed to Railway');
     } catch (error) {
         console.error('❌ Sync failed:', error);
     }

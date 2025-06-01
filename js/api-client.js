@@ -1,8 +1,8 @@
 // js/api-client.js
 class APIClient {
   constructor() {
-    // Используем локальный backend для разработки
-    this.baseURL = 'http://localhost:5001/api';
+    // Используем production backend на Railway
+    this.baseURL = 'https://rpg-therapy-backend-production.up.railway.app/api';
   }
   
   async request(endpoint, options = {}) {
