@@ -181,6 +181,14 @@ class Auth {
                 displayName: name
             });
             
+            // Force reload user to get updated displayName
+            await userCredential.user.reload();
+            
+            // Update username in UI immediately if app is already showing
+            if (window.updateUsername && typeof window.updateUsername === 'function') {
+                window.updateUsername(userCredential.user);
+            }
+            
             console.log('✅ Registration successful:', userCredential.user.email);
             
             this.hideLoading();

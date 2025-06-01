@@ -26,7 +26,15 @@ function initializeApp() {
         if (user) {
             // User is signed in
             window.Storage.setUser(user);
-            showApp(user);
+            
+            // Update username immediately when user object changes
+            const appContainer = document.getElementById('appContainer');
+            if (appContainer && appContainer.style.display !== 'none') {
+                updateUsername(user);
+            } else {
+                showApp(user);
+            }
+            
             syncUserData();
         } else {
             // User is signed out
@@ -41,14 +49,21 @@ function showApp(user) {
     document.getElementById('appContainer').style.display = 'block';
     
     // Update username in UI
-    const usernameElement = document.getElementById('username');
-    if (usernameElement) {
-        usernameElement.textContent = user.displayName || user.email || 'player';
-    }
+    updateUsername(user);
     
     // Initialize main app
     initMainApp();
 }
+
+function updateUsername(user) {
+    const usernameElement = document.getElementById('username');
+    if (usernameElement && user) {
+        usernameElement.textContent = user.displayName || user.email || 'player';
+    }
+}
+
+// Make updateUsername globally available
+window.updateUsername = updateUsername;
 
 function showAuth() {
     document.getElementById('authContainer').style.display = 'flex';
