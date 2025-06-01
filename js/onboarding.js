@@ -30,7 +30,7 @@ class Onboarding {
                 emoji: '<i class="fas fa-tachometer-alt"></i>',
                 title: 'States',
                 text: `States are live feedback — your inner speedometer, shaped by your skills. Customize it to feel your rhythm.`,
-                targetSelector: '.state-card, .states-grid',
+                targetSelector: '.state-card:first-child',
                 page: 'dashboard'
             }
         ];
@@ -352,7 +352,7 @@ class Onboarding {
         this.cleanupSpotlightTracking();
         
         this.spotlightTracker = () => {
-            this.updateSpotlightPosition(selector);
+            this.updateSpotlightPosition();
         };
         
         window.addEventListener('scroll', this.spotlightTracker, { passive: true });
@@ -368,9 +368,12 @@ class Onboarding {
         }
     }
 
-    // Update spotlight position dynamically
-    updateSpotlightPosition(selector) {
+    // Update spotlight position when scrolling/resizing
+    updateSpotlightPosition() {
+        if (!this.currentStep || !this.currentStep.targetSelector) return;
+        
         let target = null;
+        const selector = this.currentStep.targetSelector;
         
         // Handle multiple selectors (comma-separated)
         if (selector.includes(',')) {
@@ -383,19 +386,21 @@ class Onboarding {
             target = document.querySelector(selector);
         }
         
-        if (!target) return;
+        // Special fallback for States step: if no state cards exist, target the container
+        if (!target && selector === '.state-card:first-child') {
+            target = document.querySelector('.states-grid');
+        }
         
+        if (!target) return;
+
         const rect = target.getBoundingClientRect();
         const padding = 8;
-        
         const hole = this.spotlightOverlay.querySelector('.spotlight-hole');
+        
         if (hole) {
-            // Use transform for better performance
             hole.style.transform = `translate(${rect.left - padding}px, ${rect.top - padding}px)`;
             hole.style.width = `${rect.width + padding * 2}px`;
             hole.style.height = `${rect.height + padding * 2}px`;
-            hole.style.top = '0';
-            hole.style.left = '0';
         }
     }
 
@@ -508,6 +513,12 @@ class Onboarding {
             }
         } else {
             target = document.querySelector(selector);
+        }
+        
+        // Special fallback for States step: if no state cards exist, target the container
+        if (!target && selector === '.state-card:first-child') {
+            target = document.querySelector('.states-grid');
+            console.log(`🎯 No state cards found, falling back to states-grid`);
         }
         
         if (!target) {
