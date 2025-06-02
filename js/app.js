@@ -71,6 +71,9 @@ function showApp(user) {
     // Initialize storage data
     window.Storage.init();
     
+    // 🔑 ВАЖНО: Обновляем имя пользователя сразу при показе приложения
+    updateUsername(user);
+    
     // Initialize app
     initMainApp();
     
