@@ -1564,8 +1564,25 @@ class Storage {
               }
               
               // If merged data differs from server, mark for sync
-              if (!this.arraysEqual(mergedData, serverArray)) {
-                this.markForSync();
+              // 🚨 КРИТИЧНО: НЕ отправляем данные при server-first стратегии
+              // если мы просто получили больше данных с сервера
+              if (key === 'protocols' || key === 'skills') {
+                // Для server-first стратегии отправляем данные ТОЛЬКО если есть 
+                // новые локальные элементы которых нет на сервере
+                const hasNewLocalItems = localArray.some(localItem => 
+                  !serverArray.find(serverItem => serverItem.id === localItem.id)
+                );
+                if (hasNewLocalItems) {
+                  console.log(`🚀 SERVER-FIRST: Found new local ${key}, marking for sync`);
+                  this.markForSync();
+                } else {
+                  console.log(`📥 SERVER-FIRST: No new local ${key}, NOT marking for sync (preventing server data overwrite)`);
+                }
+              } else {
+                // Для остальных типов данных используем старую логику
+                if (!this.arraysEqual(mergedData, serverArray)) {
+                  this.markForSync();
+                }
               }
               
               mergeResults[key] = { 
