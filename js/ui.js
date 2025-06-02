@@ -895,3 +895,6 @@ const UI = {
     // No longer needed, but keeping for compatibility
   }
 };
+
+// 🔧 ИСПРАВЛЕНИЕ: Делаем UI объект глобально доступным
+window.UI = UI;
