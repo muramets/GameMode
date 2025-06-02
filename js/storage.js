@@ -1103,6 +1103,18 @@ class Storage {
     
     this.set(this.KEYS.STATES, filtered);
     
+    // 🔧 Also remove from state order array
+    const stateOrder = this.getStateOrder();
+    const updatedStateOrder = stateOrder.filter(id => id !== stateId);
+    this.setStateOrder(updatedStateOrder);
+    
+    console.log('🗑️ STATE DELETION:', {
+      deletedStateId: stateId,
+      remainingStates: filtered.length,
+      oldStateOrder: stateOrder,
+      newStateOrder: updatedStateOrder
+    });
+    
     // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ УДАЛЕНИЯ СОСТОЯНИЯ
     this.syncWithBackend().catch(error => {
       console.warn('⚠️ Background sync after state deletion failed:', error);
@@ -1118,7 +1130,13 @@ class Storage {
 
   // Quick Actions Management
   getQuickActions() {
-    const quickActionIds = this.get(this.KEYS.QUICK_ACTIONS) || [];
+    // Return the array of protocol IDs (not objects!)
+    return this.get(this.KEYS.QUICK_ACTIONS) || [];
+  }
+
+  // New method to get Quick Actions as protocol objects (for UI display)
+  getQuickActionProtocols() {
+    const quickActionIds = this.getQuickActions();
     const protocols = this.getProtocols();
     
     // Return protocols that are in quick actions, in the correct order
@@ -1266,7 +1284,7 @@ class Storage {
   }
 
   getQuickActionsInOrder() {
-    const quickActionIds = this.getQuickActions();
+    const quickActionIds = this.getQuickActions(); // Now returns IDs, not objects
     const customOrder = this.getQuickActionOrder();
     const protocols = this.getProtocols();
     
