@@ -430,6 +430,13 @@ function initMainApp() {
                     // Update states data for next dashboard visit
                     this.states = window.Storage.getStatesInOrder();
                 }
+                
+                // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ ЧЕКИНА
+                // Синхронизируем данные с сервером в фоне
+                window.Storage.syncWithBackend().catch(error => {
+                    console.warn('⚠️ Background sync after checkin failed:', error);
+                    // Не показываем ошибку пользователю, так как данные сохранены локально
+                });
             }
         },
 

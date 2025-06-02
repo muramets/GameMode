@@ -450,6 +450,11 @@ class Storage {
     checkins.push(operation);
     this.set(this.KEYS.HISTORY, checkins);
 
+    // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ DRAG & DROP
+    this.syncWithBackend().catch(error => {
+      console.warn('⚠️ Background sync after drag & drop failed:', error);
+    });
+
     return operation;
   }
 
@@ -809,6 +814,11 @@ class Storage {
     skills.push(newSkill);
     this.set(this.KEYS.SKILLS, skills);
     
+    // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ СОЗДАНИЯ НАВЫКА
+    this.syncWithBackend().catch(error => {
+      console.warn('⚠️ Background sync after skill creation failed:', error);
+    });
+    
     return newSkill;
   }
 
@@ -852,6 +862,11 @@ class Storage {
     // Note: We're not removing checkins/history related to this skill
     // This preserves historical data integrity
     
+    // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ УДАЛЕНИЯ НАВЫКА
+    this.syncWithBackend().catch(error => {
+      console.warn('⚠️ Background sync after skill deletion failed:', error);
+    });
+    
     return true;
   }
 
@@ -877,6 +892,11 @@ class Storage {
     // Add to protocols array
     protocols.push(newProtocol);
     this.set(this.KEYS.PROTOCOLS, protocols);
+    
+    // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ СОЗДАНИЯ ПРОТОКОЛА
+    this.syncWithBackend().catch(error => {
+      console.warn('⚠️ Background sync after protocol creation failed:', error);
+    });
     
     return newProtocol;
   }
@@ -965,6 +985,11 @@ class Storage {
     });
     this.set(this.KEYS.HISTORY, filteredCheckins);
     
+    // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ УДАЛЕНИЯ ПРОТОКОЛА
+    this.syncWithBackend().catch(error => {
+      console.warn('⚠️ Background sync after protocol deletion failed:', error);
+    });
+    
     return true;
   }
 
@@ -988,6 +1013,12 @@ class Storage {
     
     states.push(newState);
     this.set(this.KEYS.STATES, states);
+    
+    // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ СОЗДАНИЯ СОСТОЯНИЯ
+    this.syncWithBackend().catch(error => {
+      console.warn('⚠️ Background sync after state creation failed:', error);
+    });
+    
     return newState;
   }
 
@@ -1023,6 +1054,12 @@ class Storage {
     });
     
     this.set(this.KEYS.STATES, filtered);
+    
+    // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ УДАЛЕНИЯ СОСТОЯНИЯ
+    this.syncWithBackend().catch(error => {
+      console.warn('⚠️ Background sync after state deletion failed:', error);
+    });
+    
     return true;
   }
 
