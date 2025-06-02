@@ -119,7 +119,7 @@ function setupPeriodicSync() {
     
     // Синхронизация каждые 2 минуты (120000 ms)
     syncIntervalId = setInterval(() => {
-        if (window.Firebase.isAuthenticated()) {
+        if (window.firebaseAuth?.currentUser && window.Storage) {
             console.log('⏰ Periodic sync starting...');
             window.Storage.syncWithBackend().catch(error => {
                 console.warn('⚠️ Periodic sync failed:', error);
