@@ -1799,6 +1799,12 @@ class Storage {
             window.UI.updateUserStats();
           }
           
+          // 🚀 ВАЖНО: Обновляем Quick Actions панель после синхронизации
+          if (window.UI && window.UI.renderQuickProtocols) {
+            console.log('⚡ Updating Quick Actions panel after sync...');
+            window.UI.renderQuickProtocols();
+          }
+          
           // Use the correct renderPage method to refresh current view
           const currentPage = window.App.currentPage;
           console.log('Current page:', currentPage);
@@ -2281,6 +2287,12 @@ class Storage {
         if (window.App && window.App.renderPage) {
           window.App.renderPage(window.App.currentPage);
           console.log('🖥️ UI refreshed after integrity check fixes');
+        }
+        
+        // 🚀 ВАЖНО: Обновляем Quick Actions панель после integrity check
+        if (window.UI && window.UI.renderQuickProtocols) {
+          console.log('⚡ Updating Quick Actions panel after integrity check...');
+          window.UI.renderQuickProtocols();
         }
         
         // Show user notification
