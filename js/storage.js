@@ -573,7 +573,13 @@ class Storage {
   // Clear all checkins
   clearAllCheckins() {
     this.set(this.KEYS.HISTORY, []);
-    return true;
+    console.log('📊 All checkins cleared');
+  }
+
+  // Clear the list of deleted checkins (for debugging)
+  clearDeletedCheckins() {
+    this.set('deletedCheckins', []);
+    console.log('🗑️ Deleted checkins list cleared');
   }
 
   // Calculate current skill score
@@ -2066,9 +2072,9 @@ class Storage {
         
         console.log('✅ SYNC COMPLETED SUCCESSFULLY');
         
-        // Clear deleted checkins list after successful sync
-        // (the deletions have been processed and sent to server)
-        this.set('deletedCheckins', []);
+        // Do NOT clear deleted checkins list anymore
+        // (we need to keep track of deletions permanently until they're processed by server)
+        // this.set('deletedCheckins', []);
         
         // Update UI after successful sync
         if (window.App && window.App.renderPage) {
