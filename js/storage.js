@@ -1848,7 +1848,23 @@ class Storage {
             // 🔧 ИСПРАВЛЕНИЕ: Получаем АКТУАЛЬНЫЕ локальные данные из localStorage
             // а не используем userData который может содержать устаревшие данные
             const localStorageKey = this.getKeyConstant(key);
-            const localArray = localStorageKey ? (this.get(localStorageKey) || []) : [];
+            
+            // 🔄 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем реальное состояние localStorage, а не кэш
+            let localArray = [];
+            if (localStorageKey) {
+                const rawLocalData = localStorage.getItem(localStorageKey);
+                if (rawLocalData && rawLocalData !== 'null' && rawLocalData !== 'undefined') {
+                    try {
+                        localArray = JSON.parse(rawLocalData) || [];
+                    } catch (e) {
+                        console.warn(`⚠️ Failed to parse ${key} from localStorage:`, e);
+                        localArray = [];
+                    }
+                } else {
+                    console.log(`🔍 ${key} not found in localStorage (raw: ${rawLocalData})`);
+                    localArray = [];
+                }
+            }
             
             console.log(`🔧 VALIDATING ORDER ARRAY: ${key}`);
             
