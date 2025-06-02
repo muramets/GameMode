@@ -1316,6 +1316,29 @@ class Storage {
     return result;
   }
 
+  // Helper method to map server keys to localStorage constants
+  getKeyConstant(serverKey) {
+    const keyMap = {
+      'quickActions': 'QUICK_ACTIONS',
+      'quickActionOrder': 'QUICK_ACTION_ORDER',
+      'protocolOrder': 'PROTOCOL_ORDER',
+      'skillOrder': 'SKILL_ORDER',
+      'stateOrder': 'STATE_ORDER',
+      'protocols': 'PROTOCOLS',
+      'skills': 'SKILLS',
+      'states': 'STATES',
+      'history': 'HISTORY'
+    };
+    
+    const mappedKey = keyMap[serverKey];
+    if (mappedKey && this.KEYS[mappedKey]) {
+      return this.KEYS[mappedKey];
+    }
+    
+    console.error(`🚨 getKeyConstant: No mapping found for server key '${serverKey}'`);
+    return null;
+  }
+
   // Sync with Firebase backend
   async syncWithBackend() {
     if (!this.isOnline || !this.currentUser) {
@@ -1410,7 +1433,7 @@ class Storage {
           
           Object.keys(serverData.data).forEach(key => {
             if (serverData.data[key]) {
-              const currentData = this.get(this.KEYS[key.toUpperCase()]);
+              const currentData = this.get(this.getKeyConstant(key));
               const serverArray = serverData.data[key];
               const localArray = currentData || [];
               
@@ -1702,7 +1725,7 @@ class Storage {
               });
               
               // Save merged data
-              this.set(this.KEYS[key.toUpperCase()], mergedData);
+              this.set(this.getKeyConstant(key), mergedData);
               
               // 🚀 КРИТИЧНО: Пересчет истории для обновленных протоколов
               if (key === 'protocols' && hasUpdates) {
