@@ -1393,6 +1393,9 @@ class Storage {
                 if (isHistory) {
                     console.log('🔄 USING LOCAL-FIRST STRATEGY FOR HISTORY (preserving recalculations)');
                     
+                    // Create a map to track unique items by ID for history
+                    const mergedMap = new Map();
+                    
                     // For history, we need special handling since items might be updated (recalculated)
                     // Add all local items first for history (they have latest recalculated data)
                     localArray.forEach(item => {
@@ -1415,8 +1418,19 @@ class Storage {
                       }
                     });
                     
-                    console.log(`🔄 HISTORY MERGE STRATEGY: Local-first merge, added ${addedFromServer} server-only items`);
+                    // Convert map back to array and remove source tracking
+                    mergedData = Array.from(mergedMap.values()).map(item => {
+                      const { source, ...itemWithoutSource } = item;
+                      return itemWithoutSource;
+                    });
                     
+                    // Sort by ID for consistency (if items have numeric IDs)
+                    if (mergedData.length > 0 && typeof mergedData[0].id === 'number') {
+                      mergedData.sort((a, b) => a.id - b.id);
+                    }
+                    
+                    console.log(`🔄 HISTORY MERGE STRATEGY: Local-first merge, added ${addedFromServer} server-only items`);
+                    hasUpdates = addedFromServer > 0;
                 } else if (key === 'protocols') {
                     console.log('🔄 USING SERVER-FIRST STRATEGY FOR PROTOCOLS');
                     
