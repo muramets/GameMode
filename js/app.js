@@ -451,9 +451,9 @@ function initMainApp() {
                     this.setupTooltips();
                     break;
                 case 'history':
-                    // Initialize filtered history if not already set
+                    // Initialize filtered history if not already set and apply proper sorting
                     if (this.filteredHistory.length === 0) {
-                        this.filteredHistory = window.Storage.getCheckins().reverse();
+                        this.applyHistoryFilters(); // This ensures proper newest-to-oldest sorting
                     }
                     
                     UI.renderHistory();
