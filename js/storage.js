@@ -42,7 +42,7 @@ class Storage {
     if (!this.currentUser) return;
     
     // Only migrate legacy data for the original user
-    if (this.currentUser.email !== 'dev.muramets@gmail.com') {
+    if (this.currentUser.email !== 'muramets007@gmail.com') {
       return;
     }
     
@@ -157,33 +157,52 @@ class Storage {
     
     // Initialize each key separately if it doesn't exist
     if (!this.get(this.KEYS.PROTOCOLS)) {
-      // Load default data for all users if no existing data
-      this.set(this.KEYS.PROTOCOLS, INITIAL_DATA.protocols);
+      // Only load default data for the original developer, others start with empty arrays
+      const isDevUser = this.currentUser && this.currentUser.email === 'muramets007@gmail.com';
+      this.set(this.KEYS.PROTOCOLS, isDevUser ? INITIAL_DATA.protocols : []);
     } else {
       // Check if existing data is just empty
       const existingProtocols = this.get(this.KEYS.PROTOCOLS);
       if (Array.isArray(existingProtocols) && existingProtocols.length === 0) {
-        // User has empty data, can safely load defaults
-        this.set(this.KEYS.PROTOCOLS, INITIAL_DATA.protocols);
+        // For dev user only, load defaults if they have empty data
+        const isDevUser = this.currentUser && this.currentUser.email === 'muramets007@gmail.com';
+        if (isDevUser) {
+          this.set(this.KEYS.PROTOCOLS, INITIAL_DATA.protocols);
+        }
+        // Other users keep empty arrays - sync will load their server data
       }
       // If user has custom data (length > 0), keep it as is
     }
     
     if (!this.get(this.KEYS.SKILLS)) {
-      this.set(this.KEYS.SKILLS, INITIAL_DATA.skills);
+      // Only load default data for the original developer, others start with empty arrays
+      const isDevUser = this.currentUser && this.currentUser.email === 'muramets007@gmail.com';
+      this.set(this.KEYS.SKILLS, isDevUser ? INITIAL_DATA.skills : []);
     } else {
       const existingSkills = this.get(this.KEYS.SKILLS);
       if (Array.isArray(existingSkills) && existingSkills.length === 0) {
-        this.set(this.KEYS.SKILLS, INITIAL_DATA.skills);
+        // For dev user only, load defaults if they have empty data
+        const isDevUser = this.currentUser && this.currentUser.email === 'muramets007@gmail.com';
+        if (isDevUser) {
+          this.set(this.KEYS.SKILLS, INITIAL_DATA.skills);
+        }
+        // Other users keep empty arrays - sync will load their server data
       }
     }
     
     if (!this.get(this.KEYS.STATES)) {
-      this.set(this.KEYS.STATES, INITIAL_DATA.states);
+      // Only load default data for the original developer, others start with empty arrays
+      const isDevUser = this.currentUser && this.currentUser.email === 'muramets007@gmail.com';
+      this.set(this.KEYS.STATES, isDevUser ? INITIAL_DATA.states : []);
     } else {
       const existingStates = this.get(this.KEYS.STATES);
       if (Array.isArray(existingStates) && existingStates.length === 0) {
-        this.set(this.KEYS.STATES, INITIAL_DATA.states);
+        // For dev user only, load defaults if they have empty data
+        const isDevUser = this.currentUser && this.currentUser.email === 'muramets007@gmail.com';
+        if (isDevUser) {
+          this.set(this.KEYS.STATES, INITIAL_DATA.states);
+        }
+        // Other users keep empty arrays - sync will load their server data
       }
     }
     
