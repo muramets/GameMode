@@ -1391,46 +1391,46 @@ class Storage {
               } else {
                 // Оба массива содержат данные - выполняем умную стратегию
                 if (isHistory) {
-                    console.log('🔄 USING LOCAL-FIRST STRATEGY FOR HISTORY (preserving recalculations)');
+                    console.log('🔄 USING SMART MERGE STRATEGY FOR HISTORY (preserving maximum effects)');
                     
-                    // Create a map to track unique items by ID for history
+                    // Create a map to track items by ID and choose version with maximum effects
                     const mergedMap = new Map();
                     
-                    // For history, we need special handling since items might be updated (recalculated)
-                    // Add all local items first for history (they have latest recalculated data)
+                    // Add all local items first
                     localArray.forEach(item => {
-                      if (item && item.id !== undefined) {
-                        mergedMap.set(item.id, { ...item, source: 'local' });
-                      }
-                    });
-                    
-                    // Only add server items that don't exist locally
-                    let addedFromServer = 0;
-                    serverArray.forEach(item => {
-                      if (item && item.id !== undefined) {
-                        if (!mergedMap.has(item.id)) {
-                          mergedMap.set(item.id, { ...item, source: 'server' });
-                          addedFromServer++;
-                        } else {
-                          // For history, prefer local version (it has latest recalculated data)
-                          console.log(`📋 History item ${item.id} exists in both, keeping local version (has recalculations)`);
+                        if (item && item.id !== undefined) {
+                            mergedMap.set(item.id, { ...item, source: 'local' });
                         }
-                      }
                     });
                     
-                    // Convert map back to array and remove source tracking
-                    mergedData = Array.from(mergedMap.values()).map(item => {
-                      const { source, ...itemWithoutSource } = item;
-                      return itemWithoutSource;
+                    // Compare with server items and choose version with more effects
+                    serverArray.forEach(item => {
+                        if (item && item.id !== undefined) {
+                            const localItem = mergedMap.get(item.id);
+                            if (localItem) {
+                                // Compare which version has more effects
+                                const localEffectsCount = Object.keys(localItem.changes || {}).length;
+                                const serverEffectsCount = Object.keys(item.changes || {}).length;
+                                
+                                if (serverEffectsCount > localEffectsCount) {
+                                    console.log(`📋 History item ${item.id}: choosing server version (${serverEffectsCount} effects vs ${localEffectsCount})`);
+                                    mergedMap.set(item.id, { ...item, source: 'server' });
+                                } else if (localEffectsCount > serverEffectsCount) {
+                                    console.log(`📋 History item ${item.id}: keeping local version (${localEffectsCount} effects vs ${serverEffectsCount})`);
+                                } else {
+                                    console.log(`📋 History item ${item.id}: same effects count (${localEffectsCount}), keeping local version`);
+                                }
+                            } else {
+                                // Server-only item
+                                console.log(`📋 History item ${item.id}: server-only item, adding`);
+                                mergedMap.set(item.id, { ...item, source: 'server' });
+                            }
+                        }
                     });
                     
-                    // Sort by ID for consistency (if items have numeric IDs)
-                    if (mergedData.length > 0 && typeof mergedData[0].id === 'number') {
-                      mergedData.sort((a, b) => a.id - b.id);
-                    }
-                    
-                    console.log(`🔄 HISTORY MERGE STRATEGY: Local-first merge, added ${addedFromServer} server-only items`);
-                    hasUpdates = addedFromServer > 0;
+                    // Convert map to array
+                    mergedData = Array.from(mergedMap.values());
+                    console.log(`🔄 HISTORY SMART MERGE: Combined ${localArray.length} local + ${serverArray.length} server = ${mergedData.length} items with maximum effects`);
                 } else if (key === 'protocols') {
                     console.log('🔄 USING SERVER-FIRST STRATEGY FOR PROTOCOLS');
                     
