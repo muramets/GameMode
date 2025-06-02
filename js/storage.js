@@ -443,6 +443,11 @@ class Storage {
     if (hasChanges) {
       this.set(this.KEYS.HISTORY, checkins);
       console.log(`✅ RECALCULATION COMPLETE: Updated ${affectedCheckins} checkins for protocol ${protocolId}`);
+      
+      // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ ПЕРЕСЧЕТА ИСТОРИИ
+      this.syncWithBackend().catch(error => {
+        console.warn('⚠️ Background sync after recalculation failed:', error);
+      });
     } else {
       console.log(`ℹ️ RECALCULATION SKIPPED: No changes needed for protocol ${protocolId}`);
     }
@@ -1386,34 +1391,31 @@ class Storage {
               } else {
                 // Оба массива содержат данные - выполняем умную стратегию
                 if (isHistory) {
-                    console.log('🔄 USING SERVER-FIRST STRATEGY FOR HISTORY');
+                    console.log('🔄 USING LOCAL-FIRST STRATEGY FOR HISTORY (preserving recalculations)');
                     
-                    // История - сервер имеет пересчитанные значения, доверяем ему больше
-                    // ИСПРАВЛЕНИЕ: Начинаем с серверных данных как основы
-                    console.log(`📊 HISTORY SYNC DEBUG:`, {
-                        localCount: localArray.length,
-                        serverCount: serverArray.length,
-                        localIds: localArray.map(item => item.id),
-                        serverIds: serverArray.map(item => item.id),
-                        missingFromLocal: serverArray.filter(s => !localArray.find(l => l.id === s.id)).map(item => item.id),
-                        missingFromServer: localArray.filter(l => !serverArray.find(s => s.id === l.id)).map(item => item.id),
-                        timestamp: new Date().toISOString()
+                    // For history, we need special handling since items might be updated (recalculated)
+                    // Add all local items first for history (they have latest recalculated data)
+                    localArray.forEach(item => {
+                      if (item && item.id !== undefined) {
+                        mergedMap.set(item.id, { ...item, source: 'local' });
+                      }
                     });
                     
-                    mergedData = [...serverArray];
-                    
-                    // Добавляем локальные элементы, которых нет на сервере
-                    for (const item of localArray) {
-                        const existsOnServer = mergedData.find(m => m.id === item.id);
-                        if (!existsOnServer) {
-                            console.log(`📋 History item ${item.id} found only locally, adding to server data`);
-                            mergedData.push(item);
+                    // Only add server items that don't exist locally
+                    let addedFromServer = 0;
+                    serverArray.forEach(item => {
+                      if (item && item.id !== undefined) {
+                        if (!mergedMap.has(item.id)) {
+                          mergedMap.set(item.id, { ...item, source: 'server' });
+                          addedFromServer++;
                         } else {
-                            console.log(`📋 History item ${item.id} exists in both, keeping server version (more recent)`);
+                          // For history, prefer local version (it has latest recalculated data)
+                          console.log(`📋 History item ${item.id} exists in both, keeping local version (has recalculations)`);
                         }
-                    }
+                      }
+                    });
                     
-                    console.log('🔄 HISTORY MERGE STRATEGY: Server-first merge, added', localArray.filter(l => !serverArray.find(s => s.id === l.id)).length, 'local-only items');
+                    console.log(`🔄 HISTORY MERGE STRATEGY: Local-first merge, added ${addedFromServer} server-only items`);
                     
                 } else if (key === 'protocols') {
                     console.log('🔄 USING SERVER-FIRST STRATEGY FOR PROTOCOLS');
@@ -1966,29 +1968,29 @@ class Storage {
     
     // For history, we need special handling since items might be updated (recalculated)
     if (dataType === 'history') {
-      console.log('🔄 USING SERVER-FIRST STRATEGY FOR HISTORY');
-      // Add all server items first for history (server has latest recalculated data)
-      serverArray.forEach(item => {
+      console.log('🔄 USING LOCAL-FIRST STRATEGY FOR HISTORY (preserving recalculations)');
+      // Add all local items first for history (they have latest recalculated data)
+      localArray.forEach(item => {
         if (item && item.id !== undefined) {
-          mergedMap.set(item.id, { ...item, source: 'server' });
+          mergedMap.set(item.id, { ...item, source: 'local' });
         }
       });
       
-      // Only add local items that don't exist on server
-      let addedFromLocal = 0;
-      localArray.forEach(item => {
+      // Only add server items that don't exist locally
+      let addedFromServer = 0;
+      serverArray.forEach(item => {
         if (item && item.id !== undefined) {
           if (!mergedMap.has(item.id)) {
-            mergedMap.set(item.id, { ...item, source: 'local' });
-            addedFromLocal++;
+            mergedMap.set(item.id, { ...item, source: 'server' });
+            addedFromServer++;
           } else {
-            // For history, prefer server version (it has recalculated data)
-            console.log(`📋 History item ${item.id} exists in both, keeping server version (more recent)`);
+            // For history, prefer local version (it has latest recalculated data)
+            console.log(`📋 History item ${item.id} exists in both, keeping local version (has recalculations)`);
           }
         }
       });
       
-      console.log(`🔄 HISTORY MERGE STRATEGY: Server-first merge, added ${addedFromLocal} local-only items`);
+      console.log(`🔄 HISTORY MERGE STRATEGY: Local-first merge, added ${addedFromServer} server-only items`);
     } else {
       console.log('🔄 USING LOCAL-FIRST STRATEGY FOR NON-HISTORY DATA');
       // For other data types, use the original local-first strategy
@@ -2032,7 +2034,7 @@ class Storage {
       localItems: localArray.length,
       serverItems: serverArray.length,
       mergedItems: mergedArray.length,
-      strategy: dataType === 'history' ? 'server-first' : 'local-first',
+      strategy: dataType === 'history' ? 'local-first' : 'local-first',
       netGain: mergedArray.length - localArray.length
     });
     
