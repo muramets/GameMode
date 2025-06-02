@@ -15,8 +15,13 @@
   width: 100%;
   height: 100%;
   z-index: 1000;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding: 1rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding-top: 2vh;
+  padding-bottom: 2vh;
 }
 
 /* Main App Modal Overlay */
@@ -37,12 +42,17 @@
   border-radius: 12px;
   width: 90%;
   max-width: 450px;
-  min-height: auto;
+  max-height: calc(100vh - 2rem);
   position: relative;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   transform: scale(1);
   transition: transform 0.15s ease;
   z-index: 1001;
+  overflow-y: auto;
+  box-sizing: border-box;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-header {
@@ -82,6 +92,9 @@
   color: var(--text-color);
   line-height: 1.6;
   padding: 0;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .modal-footer {
@@ -91,6 +104,7 @@
   display: flex;
   justify-content: space-between;
   gap: 1rem;
+  flex-shrink: 0;
 }
 
 /* Modal Actions - используется в формах */
@@ -102,6 +116,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
+  flex-shrink: 0;
 }
 
 /* Кнопка Delete остается слева */
@@ -185,13 +200,14 @@
   left: 0;
   top: 0;
   z-index: 1000;
-  display: grid;
+  display: flex;
   justify-content: center;
-  justify-items: center;
-  align-items: center;
+  align-items: flex-start;
   padding: 2rem;
-  border: none;
-  grid-template-columns: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding-top: 4vh;
+  padding-bottom: 4vh;
   opacity: 0;
   visibility: hidden;
   transition: all 0.3s ease;
@@ -210,16 +226,18 @@
   background: var(--bg-color);
   border-radius: 12px;
   padding: 2rem;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 1.5rem;
   width: 100%;
-  max-height: 90vh;
+  max-height: calc(100vh - 4rem);
   max-width: 500px;
   color: var(--text-color);
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   transform: scale(0.9);
   transition: transform 0.15s ease;
+  margin: auto;
 }
 
 .modal-wrapper.show .modal {
@@ -1297,14 +1315,38 @@
     width: 95%;
     max-width: none;
     border-radius: 0.5rem;
+    max-height: calc(100vh - 1rem);
+    padding: 1.5rem;
+    margin: 0.5rem auto;
   }
   
   .modal-header {
-    padding: 1rem 1rem 0.75rem;
+    margin-bottom: 1.5rem;
   }
   
   .modal-body {
-    padding: 1rem;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  .modal-actions {
+    margin-top: 1.5rem;
+    gap: 0.75rem;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .modal-actions-right {
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+  }
+
+  .modal .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.875rem 1rem;
   }
   
   .form-row {
