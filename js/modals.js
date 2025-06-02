@@ -7,19 +7,27 @@ const Modals = {
   selectedTargets: [null, null, null], // Array for 3 targets
 
   init() {
+    console.log('🔧 Modals.init() called - initializing modal handlers');
     this.setupAddSkillModal();
     this.setupAddProtocolModal();
     this.setupAddStateModal();
     this.setupQuickActionModal();
+    console.log('✅ All modal handlers initialized');
   },
 
   setupAddSkillModal() {
+    console.log('🔧 Setting up add skill modal');
     const addSkillBtn = document.getElementById('add-skill-btn');
     const modal = document.getElementById('add-skill-modal');
     const modalContent = modal.querySelector('.modal-content');
     const form = document.getElementById('add-skill-form');
     
-    if (!addSkillBtn || !modal || !form) return;
+    console.log('🔧 Add skill elements:', { addSkillBtn, modal, form });
+    
+    if (!addSkillBtn || !modal || !form) {
+      console.error('❌ Missing elements for skill modal:', { addSkillBtn, modal, form });
+      return;
+    }
     
     const closeModal = () => {
       modal.classList.remove('active');
@@ -136,8 +144,11 @@ const Modals = {
   },
 
   openSkillModal() {
+    console.log('🔧 openSkillModal() called');
     const modal = document.getElementById('add-skill-modal');
+    console.log('🔧 Modal element:', modal);
     if (modal) {
+      console.log('🔧 Adding active class to modal');
       modal.classList.add('active');
       document.body.style.overflow = 'hidden';
       
@@ -146,6 +157,8 @@ const Modals = {
       if (firstInput) {
         setTimeout(() => firstInput.focus(), 100);
       }
+    } else {
+      console.error('❌ Modal element not found!');
     }
   },
 
