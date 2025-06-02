@@ -1606,6 +1606,52 @@ class Storage {
               if (key === 'protocols' && hasUpdates) {
                 this.checkAndRecalculateProtocolHistory(localArray, mergedData);
               }
+
+              // 🔄 КРИТИЧНО: После синхронизации протоколов проверяем, нужна ли дополнительная проверка истории
+              if (key === 'protocols') {
+                console.log('🔍 POST-SYNC PROTOCOL HISTORY VALIDATION starting...');
+                const protocolsToCheck = mergedData.filter(protocol => protocol.targets && protocol.targets.length > 0);
+                
+                for (const protocol of protocolsToCheck) {
+                  const protocolCheckins = this.getCheckins().filter(c => c.type === 'protocol' && c.protocolId === protocol.id);
+                  const missingEffectsCheckins = protocolCheckins.filter(checkin => {
+                    if (!checkin.changes) return true; // No changes at all
+                    
+                    // Check if all targets are present in changes
+                    const hasAllTargets = protocol.targets.every(targetId => 
+                      checkin.changes.hasOwnProperty(targetId)
+                    );
+                    return !hasAllTargets;
+                  });
+                  
+                  if (missingEffectsCheckins.length > 0) {
+                    console.log(`🚨 FOUND ${missingEffectsCheckins.length} CHECKINS MISSING TARGET EFFECTS for protocol ${protocol.id}`);
+                    console.log(`📊 Protocol targets:`, protocol.targets);
+                    console.log(`�� Checkins to fix:`, missingEffectsCheckins.map(c => c.id));
+                    
+                    // Запускаем пересчет истории
+                    const recalculated = this.recalculateProtocolHistory(protocol.id, [], protocol.targets);
+                    if (recalculated) {
+                      console.log(`✅ POST-SYNC RECALCULATION completed for protocol ${protocol.id}`);
+                      
+                      // 🔄 ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ UI после пересчета
+                      console.log('🖥️ Triggering UI refresh after post-sync recalculation...');
+                      if (window.App && window.App.renderPage) {
+                        window.App.renderPage(window.App.currentPage);
+                        console.log('📄 UI refreshed after post-sync recalculation');
+                      }
+                      
+                      // Показываем уведомление
+                      if (window.App && window.App.showToast) {
+                        window.App.showToast('История ретроспективно пересчиталась', 'success');
+                      }
+                    }
+                  } else {
+                    console.log(`✅ Protocol ${protocol.id} history is consistent`);
+                  }
+                }
+                console.log('🏁 POST-SYNC PROTOCOL HISTORY VALIDATION completed');
+              }
             }
           });
           
