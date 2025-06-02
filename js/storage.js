@@ -1278,7 +1278,14 @@ class Storage {
       quickActionOrderKey: 'quickActionOrder',
       // 🔧 ДОПОЛНИТЕЛЬНАЯ ОТЛАДКА для проблемы с пустыми Quick Actions
       rawQuickActions: this.get(this.KEYS.QUICK_ACTIONS),
-      rawQuickActionOrder: this.get(this.KEYS.QUICK_ACTION_ORDER)
+      rawQuickActionOrder: this.get(this.KEYS.QUICK_ACTION_ORDER),
+      // 🔧 ПОЛНАЯ ОТЛАДКА ключей localStorage
+      keyMappings: {
+        QUICK_ACTIONS: this.KEYS.QUICK_ACTIONS,
+        QUICK_ACTION_ORDER: this.KEYS.QUICK_ACTION_ORDER
+      },
+      getQuickActionsMethod: this.getQuickActions(),
+      getQuickActionOrderMethod: this.getQuickActionOrder()
     });
     
     // If no quick actions, return empty
@@ -1760,9 +1767,113 @@ class Storage {
           // Log merge summary
           console.log('📊 MERGE RESULTS:', mergeResults);
           
-          // 🔄 КРИТИЧНО: Перенесенная проверка истории ПОСЛЕ всех данных
-          // Это предотвращает перезапись пересчитанных данных server-first merge
-          console.log('🔍 POST-SYNC PROTOCOL HISTORY VALIDATION starting (after all data synced)...');
+          // 🔄 КРИТИЧНО: Обработка Order массивов ПОСЛЕ обновления всех данных
+          console.log('🔧 PROCESSING DEFERRED ORDER ARRAYS...');
+          
+          const orderArraysToProcess = Object.keys(mergedData).filter(key => key.includes('Order'));
+          orderArraysToProcess.forEach(key => {
+            const serverArray = mergedData[key];
+            const localArray = localData[key] || [];
+            
+            console.log(`🔧 VALIDATING ORDER ARRAY: ${key}`);
+            
+            // Получаем актуальные данные для валидации (ПОСЛЕ обновления)
+            let validIds = [];
+            if (key === 'stateOrder') {
+                const currentStates = this.getStates();
+                validIds = currentStates.map(s => s.id);
+            } else if (key === 'protocolOrder') {
+                const currentProtocols = this.getProtocols();
+                validIds = currentProtocols.map(p => p.id);
+            } else if (key === 'skillOrder') {
+                const currentSkills = this.getSkills();
+                validIds = currentSkills.map(s => s.id);
+            } else if (key === 'quickActionOrder') {
+                const currentQuickActions = this.getQuickActions();
+                validIds = currentQuickActions;
+            }
+            
+            console.log(`🔍 VALIDATION ${key}:`, {
+                validIds,
+                localOrder: localArray,
+                serverOrder: serverArray
+            });
+            
+            // Фильтруем только валидные ID'шники из локального и серверного массива
+            const validLocalIds = localArray.filter(id => validIds.includes(id));
+            const validServerIds = serverArray.filter(id => validIds.includes(id));
+            
+            console.log(`🔍 FILTERED ${key}:`, {
+                validLocal: validLocalIds,
+                validServer: validServerIds,
+                invalidLocalCount: localArray.length - validLocalIds.length,
+                invalidServerCount: serverArray.length - validServerIds.length
+            });
+            
+            // Сначала добавляем все валидные локальные ID'шники
+            let orderMergedData = [...validLocalIds];
+            
+            // Затем добавляем валидные серверные ID'шники, которых нет локально
+            for (const serverId of validServerIds) {
+                if (!orderMergedData.includes(serverId)) {
+                    console.log(`📋 ${key} ID ${serverId} found only on server, adding to local`);
+                    orderMergedData.push(serverId);
+                } else {
+                    console.log(`📋 ${key} ID ${serverId} exists in both local and server, keeping local position`);
+                }
+            }
+            
+            console.log(`✅ ${key} VALIDATION COMPLETE:`, {
+                finalOrder: orderMergedData,
+                allValidIds: orderMergedData.every(id => validIds.includes(id))
+            });
+            
+            // Обновляем статистику мержа для order массивов
+            const originalLocalCount = localArray.length;
+            const originalServerCount = serverArray.length;
+            const mergedCount = orderMergedData.length;
+            
+            let orderMergeAction;
+            if (mergedCount > originalLocalCount) {
+              orderMergeAction = `merged_gained_${mergedCount - originalLocalCount}_items`;
+            } else if (mergedCount === originalLocalCount) {
+              orderMergeAction = 'no_new_items_found';
+            } else {
+              orderMergeAction = `merged_deduplicated_${originalLocalCount - mergedCount}_items`;
+            }
+            
+            // Обновляем результаты мержа
+            mergeResults[key] = { 
+              action: orderMergeAction, 
+              localCount: originalLocalCount, 
+              serverCount: originalServerCount,
+              mergedCount: orderMergedData.length
+            };
+            
+            console.log(`🔄 DEFERRED SYNC MERGE ${key}:`, {
+              localItems: originalLocalCount,
+              serverItems: originalServerCount,
+              mergedItems: orderMergedData.length,
+              action: orderMergeAction
+            });
+            
+            // Сохраняем обновленный order массив
+            const localStorageKey = this.getKeyConstant(key);
+            if (localStorageKey) {
+              this.set(localStorageKey, orderMergedData);
+            } else {
+              console.error(`🚨 Failed to save ${key}: invalid key mapping`);
+            }
+            
+            // Помечаем для синхронизации если нужно
+            if (!this.arraysEqual(orderMergedData, serverArray)) {
+              this.markForSync();
+            }
+          });
+          
+          console.log('✅ DEFERRED ORDER ARRAYS PROCESSING COMPLETE');
+          
+          // 🔍 POST-SYNC PROTOCOL HISTORY VALIDATION starting (after all data synced)...
           const protocolsData = mergeResults.protocols?.mergedData || this.getProtocols();
           const protocolsToCheck = protocolsData.filter(protocol => protocol.targets && protocol.targets.length > 0);
           
