@@ -10,8 +10,8 @@ const firebaseConfig = {
   measurementId: "G-0K3GTYXNQE"
 };
 
-// Backend URL (will be set to Railway deployment)
-const BACKEND_URL = 'https://rpg-therapy-backend.railway.app'; // Will update after Railway deploy
+// Backend URL (updated to match api-client.js)
+const BACKEND_URL = 'https://rpg-therapy-backend-production.up.railway.app'; // Production Railway deploy
 
 // Make available globally for non-module scripts
 window.firebaseConfig = firebaseConfig;
