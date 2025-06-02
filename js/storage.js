@@ -1613,30 +1613,56 @@ class Storage {
     // Create a map to track unique items by ID
     const mergedMap = new Map();
     
-    // Add all local items first (preserving local version in case of conflicts)
-    localArray.forEach(item => {
-      if (item && item.id !== undefined) {
-        mergedMap.set(item.id, { ...item, source: 'local' });
-      }
-    });
-    
-    // Add server items, but only if they don't exist locally
-    let addedFromServer = 0;
-    let duplicatesSkipped = 0;
-    
-    serverArray.forEach(item => {
-      if (item && item.id !== undefined) {
-        if (!mergedMap.has(item.id)) {
+    // For history, we need special handling since items might be updated (recalculated)
+    if (dataType === 'history') {
+      // Add all server items first for history (server has latest recalculated data)
+      serverArray.forEach(item => {
+        if (item && item.id !== undefined) {
           mergedMap.set(item.id, { ...item, source: 'server' });
-          addedFromServer++;
-        } else {
-          duplicatesSkipped++;
-          // Item exists in both - could potentially merge properties here
-          // For now, we keep the local version
-          console.log(`📋 ${dataType} item ${item.id} exists in both local and server, keeping local version`);
         }
-      }
-    });
+      });
+      
+      // Only add local items that don't exist on server
+      let addedFromLocal = 0;
+      localArray.forEach(item => {
+        if (item && item.id !== undefined) {
+          if (!mergedMap.has(item.id)) {
+            mergedMap.set(item.id, { ...item, source: 'local' });
+            addedFromLocal++;
+          } else {
+            // For history, prefer server version (it has recalculated data)
+            console.log(`📋 History item ${item.id} exists in both, keeping server version (more recent)`);
+          }
+        }
+      });
+      
+      console.log(`🔄 HISTORY MERGE STRATEGY: Server-first merge, added ${addedFromLocal} local-only items`);
+    } else {
+      // For other data types, use the original local-first strategy
+      // Add all local items first (preserving local version in case of conflicts)
+      localArray.forEach(item => {
+        if (item && item.id !== undefined) {
+          mergedMap.set(item.id, { ...item, source: 'local' });
+        }
+      });
+      
+      // Add server items, but only if they don't exist locally
+      let addedFromServer = 0;
+      let duplicatesSkipped = 0;
+      
+      serverArray.forEach(item => {
+        if (item && item.id !== undefined) {
+          if (!mergedMap.has(item.id)) {
+            mergedMap.set(item.id, { ...item, source: 'server' });
+            addedFromServer++;
+          } else {
+            duplicatesSkipped++;
+            // Item exists in both - keeping local version for non-history data
+            console.log(`📋 ${dataType} item ${item.id} exists in both local and server, keeping local version`);
+          }
+        }
+      });
+    }
     
     // Convert map back to array and remove source tracking
     const mergedArray = Array.from(mergedMap.values()).map(item => {
@@ -1653,8 +1679,7 @@ class Storage {
       localItems: localArray.length,
       serverItems: serverArray.length,
       mergedItems: mergedArray.length,
-      addedFromServer,
-      duplicatesSkipped,
+      strategy: dataType === 'history' ? 'server-first' : 'local-first',
       netGain: mergedArray.length - localArray.length
     });
     

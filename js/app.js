@@ -61,14 +61,22 @@ function initializeApp() {
 }
 
 function showApp(user) {
+    console.log('User authenticated, showing app:', user.email);
     document.getElementById('authContainer').style.display = 'none';
     document.getElementById('appContainer').style.display = 'block';
     
-    // Update username in UI
-    updateUsername(user);
+    // Set user in storage
+    window.Storage.setUser(user);
     
-    // Initialize main app
+    // Initialize storage data
+    window.Storage.init();
+    
+    // Initialize app and sync
     initMainApp();
+    syncUserData();
+    
+    // 🚀 НОВОЕ: Установить периодическую синхронизацию каждые 30 секунд
+    setupPeriodicSync();
 }
 
 function updateUsername(user) {
@@ -95,6 +103,46 @@ async function syncUserData() {
         console.error('❌ Automatic sync failed:', error);
     }
 }
+
+// 🚀 НОВАЯ ФУНКЦИЯ: Периодическая синхронизация
+let syncIntervalId = null;
+function setupPeriodicSync() {
+    // Очистить существующий интервал если есть
+    if (syncIntervalId) {
+        clearInterval(syncIntervalId);
+    }
+    
+    console.log('⏰ Setting up periodic sync every 30 seconds...');
+    
+    // Синхронизация каждые 30 секунд
+    syncIntervalId = setInterval(async () => {
+        try {
+            console.log('🔄 Periodic sync triggered...');
+            await window.Storage.syncWithBackend();
+            console.log('✅ Periodic sync completed');
+        } catch (error) {
+            console.warn('⚠️ Periodic sync failed (will retry):', error);
+        }
+    }, 30000); // 30 секунд
+    
+    // Также добавить синхронизацию при фокусе окна
+    window.addEventListener('focus', async () => {
+        try {
+            console.log('👁️ Window focused - triggering sync...');
+            await window.Storage.syncWithBackend();
+            console.log('✅ Focus sync completed');
+        } catch (error) {
+            console.warn('⚠️ Focus sync failed:', error);
+        }
+    });
+}
+
+// Очистить интервал при выходе
+window.addEventListener('beforeunload', () => {
+    if (syncIntervalId) {
+        clearInterval(syncIntervalId);
+    }
+});
 
 function initMainApp() {
     // Main App Object
@@ -365,6 +413,12 @@ function initMainApp() {
         },
 
         renderPage(page) {
+            // 🚀 ПРИНУДИТЕЛЬНАЯ СИНХРОНИЗАЦИЯ ПРИ ПЕРЕКЛЮЧЕНИИ СТРАНИЦ
+            // Получаем свежие данные с сервера перед рендерингом
+            window.Storage.syncWithBackend().catch(error => {
+                console.warn('⚠️ Page sync failed, using cached data:', error);
+            });
+            
             switch(page) {
                 case 'dashboard':
                     UI.renderDashboard();
