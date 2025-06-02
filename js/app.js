@@ -1470,6 +1470,9 @@ function initMainApp() {
         // Force reset user data on server and resync
         async forceResetAndSync() {
             console.log('🗑️ Force resetting user data on server and resyncing...');
+            console.warn('⚠️ WARNING: This will DELETE ALL server data and upload only local data from THIS device!');
+            console.warn('⚠️ Data from other devices will be LOST permanently!');
+            console.warn('⚠️ Use debugSync.smartSync() for safer sync debugging.');
             
             if (!window.Storage.currentUser) {
                 console.error('❌ No authenticated user');
@@ -1512,6 +1515,38 @@ function initMainApp() {
                 }
             } catch (error) {
                 console.error('❌ Force reset and sync failed:', error);
+            }
+        },
+        
+        // Safer sync debugging - tries to preserve data
+        async smartSync() {
+            console.log('🧠 Smart sync debugging - preserving data from all devices...');
+            
+            if (!window.Storage.currentUser) {
+                console.error('❌ No authenticated user');
+                return;
+            }
+            
+            try {
+                // Step 1: Force multiple sync cycles to resolve conflicts
+                console.log('🔄 Running multiple sync cycles...');
+                
+                for (let i = 1; i <= 3; i++) {
+                    console.log(`🔄 Sync cycle ${i}/3...`);
+                    await window.Storage.syncWithBackend();
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second between syncs
+                }
+                
+                console.log('✅ Smart sync completed - data should be consistent now');
+                
+                // Step 2: Refresh current page
+                if (window.App && window.App.renderPage) {
+                    window.App.renderPage(window.App.currentPage);
+                    console.log('🔄 Page refreshed after smart sync');
+                }
+                
+            } catch (error) {
+                console.error('❌ Smart sync failed:', error);
             }
         }
     };
@@ -1676,6 +1711,9 @@ window.debugSync = {
   // Force reset user data on server and resync
   async forceResetAndSync() {
     console.log('🗑️ Force resetting user data on server and resyncing...');
+    console.warn('⚠️ WARNING: This will DELETE ALL server data and upload only local data from THIS device!');
+    console.warn('⚠️ Data from other devices will be LOST permanently!');
+    console.warn('⚠️ Use debugSync.smartSync() for safer sync debugging.');
     
     if (!window.Storage.currentUser) {
       console.error('❌ No authenticated user');
@@ -1719,6 +1757,38 @@ window.debugSync = {
     } catch (error) {
       console.error('❌ Force reset and sync failed:', error);
     }
+  },
+  
+  // Safer sync debugging - tries to preserve data
+  async smartSync() {
+    console.log('🧠 Smart sync debugging - preserving data from all devices...');
+    
+    if (!window.Storage.currentUser) {
+      console.error('❌ No authenticated user');
+      return;
+    }
+    
+    try {
+      // Step 1: Force multiple sync cycles to resolve conflicts
+      console.log('🔄 Running multiple sync cycles...');
+      
+      for (let i = 1; i <= 3; i++) {
+        console.log(`🔄 Sync cycle ${i}/3...`);
+        await window.Storage.syncWithBackend();
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second between syncs
+      }
+      
+      console.log('✅ Smart sync completed - data should be consistent now');
+      
+      // Step 2: Refresh current page
+      if (window.App && window.App.renderPage) {
+        window.App.renderPage(window.App.currentPage);
+        console.log('🔄 Page refreshed after smart sync');
+      }
+      
+    } catch (error) {
+      console.error('❌ Smart sync failed:', error);
+    }
   }
 };
 
@@ -1729,3 +1799,4 @@ console.log('  - debugSync.compare() - Compare local vs server data');
 console.log('  - debugSync.status() - Check sync status');  
 console.log('  - debugSync.testBackend() - Test backend connectivity');
 console.log('  - debugSync.forceResetAndSync() - Force reset user data on server and resync');
+console.log('  - debugSync.smartSync() - Safer sync debugging');
