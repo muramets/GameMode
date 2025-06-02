@@ -71,11 +71,11 @@ function showApp(user) {
     // Initialize storage data
     window.Storage.init();
     
-    // Initialize app and sync
+    // Initialize app
     initMainApp();
-    syncUserData();
     
-    // 🚀 НОВОЕ: Установить периодическую синхронизацию каждые 30 секунд
+    // 🚀 ЕДИНСТВЕННАЯ начальная синхронизация + периодическая 
+    syncUserData();
     setupPeriodicSync();
 }
 
@@ -107,34 +107,22 @@ async function syncUserData() {
 // 🚀 НОВАЯ ФУНКЦИЯ: Периодическая синхронизация
 let syncIntervalId = null;
 function setupPeriodicSync() {
+    console.log('⏰ Setting up periodic sync every 2 minutes...');
+    
     // Очистить существующий интервал если есть
     if (syncIntervalId) {
         clearInterval(syncIntervalId);
     }
     
-    console.log('⏰ Setting up periodic sync every 30 seconds...');
-    
-    // Синхронизация каждые 30 секунд
-    syncIntervalId = setInterval(async () => {
-        try {
-            console.log('🔄 Periodic sync triggered...');
-            await window.Storage.syncWithBackend();
-            console.log('✅ Periodic sync completed');
-        } catch (error) {
-            console.warn('⚠️ Periodic sync failed (will retry):', error);
+    // Синхронизация каждые 2 минуты (120000 ms)
+    syncIntervalId = setInterval(() => {
+        if (window.Firebase.isAuthenticated()) {
+            console.log('⏰ Periodic sync starting...');
+            window.Storage.syncWithBackend().catch(error => {
+                console.warn('⚠️ Periodic sync failed:', error);
+            });
         }
-    }, 30000); // 30 секунд
-    
-    // Также добавить синхронизацию при фокусе окна
-    window.addEventListener('focus', async () => {
-        try {
-            console.log('👁️ Window focused - triggering sync...');
-            await window.Storage.syncWithBackend();
-            console.log('✅ Focus sync completed');
-        } catch (error) {
-            console.warn('⚠️ Focus sync failed:', error);
-        }
-    });
+    }, 120000); // 2 минуты вместо 30 секунд
 }
 
 // Очистить интервал при выходе
@@ -413,11 +401,11 @@ function initMainApp() {
         },
 
         renderPage(page) {
-            // 🚀 ПРИНУДИТЕЛЬНАЯ СИНХРОНИЗАЦИЯ ПРИ ПЕРЕКЛЮЧЕНИИ СТРАНИЦ
-            // Получаем свежие данные с сервера перед рендерингом
-            window.Storage.syncWithBackend().catch(error => {
-                console.warn('⚠️ Page sync failed, using cached data:', error);
-            });
+            // 🚫 УБИРАЕМ ПРИНУДИТЕЛЬНУЮ СИНХРОНИЗАЦИЮ ПРИ ПЕРЕКЛЮЧЕНИИ СТРАНИЦ
+            // Слишком шумно и не нужно при наличии периодической синхронизации
+            // window.Storage.syncWithBackend().catch(error => {
+            //     console.warn('⚠️ Page sync failed, using cached data:', error);
+            // });
             
             switch(page) {
                 case 'dashboard':

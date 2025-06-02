@@ -1330,7 +1330,9 @@ class Storage {
               let mergedData = [];
               let mergeAction = '';
               
-              // True merge strategy: combine all unique items
+              // Определяем стратегию мержа в зависимости от типа данных
+              const isHistory = key === 'history';
+              
               if (!hasLocalData && !hasServerData) {
                 mergedData = [];
                 mergeAction = 'both_empty';
@@ -1344,9 +1346,54 @@ class Storage {
                 // Mark for upload since server doesn't have our data
                 this.markForSync();
               } else {
-                // Both have data - perform intelligent merge
-                mergedData = this.mergeDataArrays(localArray, serverArray, key);
+                // Оба массива содержат данные - выполняем умную стратегию
+                if (isHistory) {
+                    console.log('🔄 USING SERVER-FIRST STRATEGY FOR HISTORY');
+                    
+                    // История - сервер имеет пересчитанные значения, доверяем ему больше
+                    for (const item of localArray) {
+                        if (!mergedData.find(m => m.id === item.id)) {
+                            mergedData.push(item);
+                        }
+                    }
+                    
+                    // Добавляем серверные элементы (они могут перезаписать локальные)
+                    for (const item of serverArray) {
+                        const existingIndex = mergedData.findIndex(m => m.id === item.id);
+                        if (existingIndex !== -1) {
+                            console.log(`📋 History item ${item.id} exists in both, keeping server version (more recent)`);
+                            mergedData[existingIndex] = item; // Заменяем на серверную версию
+                        } else {
+                            console.log(`📋 History item ${item.id} found only on server, adding`);
+                            mergedData.push(item);
+                        }
+                    }
+                    
+                    console.log('🔄 HISTORY MERGE STRATEGY: Server-first merge, added', localArray.filter(l => !serverArray.find(s => s.id === l.id)).length, 'local-only items');
+                    
+                } else {
+                    console.log('🔄 USING SMART MERGE STRATEGY FOR DATA');
+                    
+                    // Для всех остальных данных - умная стратегия:
+                    // 1. Локальные элементы остаются (если есть конфликт)
+                    // 2. Серверные элементы добавляются (если их нет локально)
+                    
+                    // Сначала добавляем все локальные элементы
+                    mergedData = [...localArray];
+                    
+                    // Затем добавляем серверные элементы, которых нет локально
+                    for (const item of serverArray) {
+                        const existsLocally = mergedData.find(m => m.id === item.id);
+                        if (existsLocally) {
+                            console.log(`📋 ${key} item ${item.id} exists in both local and server, keeping local version`);
+                        } else {
+                            console.log(`📋 ${key} item ${item.id} found only on server, adding to local`);
+                            mergedData.push(item);
+                        }
+                    }
+                }
                 
+                // Определяем действие мержа для статистики
                 const originalLocalCount = localArray.length;
                 const originalServerCount = serverArray.length;
                 const mergedCount = mergedData.length;
