@@ -1226,96 +1226,32 @@ class Storage {
     return this.get(this.KEYS.STATE_ORDER) || [];
   }
 
-  setStateOrder(stateOrder, preventSync = false) {
-    // Фильтруем undefined значения перед сохранением
-    const cleanStateOrder = stateOrder.filter(id => id !== undefined && id !== null);
-    console.log('🔄 Cleaning state order:', {
-      original: stateOrder,
-      cleaned: cleanStateOrder,
-      removedItems: stateOrder.length - cleanStateOrder.length,
-      preventSync
-    });
-    
-    this.set(this.KEYS.STATE_ORDER, cleanStateOrder);
-    
-    // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ ИЗМЕНЕНИЯ ПОРЯДКА СОСТОЯНИЙ
-    // НО НЕ при инициализации, чтобы избежать бесконечного цикла
-    if (!preventSync) {
-      this.syncWithBackend().catch(error => {
-        console.warn('⚠️ Background sync after state reorder failed:', error);
-      });
-    }
+  setStateOrder(stateOrder) {
+    this.set(this.KEYS.STATE_ORDER, stateOrder);
   }
 
   getStatesInOrder() {
     const states = this.getStates();
     const customOrder = this.getStateOrder();
     
-    console.log('🔍 getStatesInOrder DEBUG:', {
-      statesCount: states.length,
-      customOrderCount: customOrder.length,
-      customOrder,
-      stateIds: states.map(s => s.id),
-      statesData: states.map(s => ({id: s.id, name: s.name}))
-    });
-    
-    // Фильтруем undefined значения из порядка
-    const cleanCustomOrder = customOrder.filter(id => id !== undefined && id !== null && id !== '');
-    
-    // If we have a clean custom order, use it
-    if (cleanCustomOrder.length > 0) {
-      // Filter out any order IDs that don't exist in states
-      const validOrderIds = cleanCustomOrder.filter(id => 
-        states.some(state => state.id === id)
-      );
-      
-      console.log('🔍 VALIDATION CHECK:', {
-        cleanCustomOrder,
-        validOrderIds,
-        stateIds: states.map(s => s.id),
-        hasValidIds: validOrderIds.length > 0,
-        orderIdTypes: cleanCustomOrder.map(id => ({id, type: typeof id})),
-        stateIdTypes: states.map(s => ({id: s.id, type: typeof s.id}))
-      });
-      
-      // If we have valid IDs, proceed with custom order
-      if (validOrderIds.length > 0) {
-        // Add any missing states to the end
-        const orderedStates = [];
-        
-        // Add states in custom order
-        validOrderIds.forEach(id => {
-          const state = states.find(s => s.id === id);
-          if (state) {
-            orderedStates.push(state);
-          }
-        });
-        
-        // Add any states not in custom order
-        states.forEach(state => {
-          if (!validOrderIds.includes(state.id)) {
-            orderedStates.push(state);
-          }
-        });
-        
-        console.log('🔄 Using custom state order:', {
-          originalOrder: customOrder,
-          cleanOrder: cleanCustomOrder,
-          validOrder: validOrderIds,
-          finalStatesCount: orderedStates.length
-        });
-        
-        return orderedStates;
-      }
+    if (customOrder.length === 0) {
+      // Return original order if no custom order is set
+      return states;
     }
     
-    // If no valid custom order, initialize it and return states as is
-    console.log('🔄 Initializing state order from scratch or no valid custom order');
-    const initialOrder = states.map(state => state.id);
-    // 🔧 FIX: Prevent sync during initialization to avoid infinite loop
-    this.setStateOrder(initialOrder, true);
+    // Create a map for quick lookup
+    const stateMap = new Map(states.map(s => [s.id, s]));
     
-    return states;
+    // Start with states in custom order
+    const orderedStates = customOrder
+      .map(id => stateMap.get(id))
+      .filter(Boolean);
+    
+    // Add any states not in custom order at the end
+    const statesInOrder = new Set(customOrder);
+    const remainingStates = states.filter(s => !statesInOrder.has(s.id));
+    
+    return [...orderedStates, ...remainingStates];
   }
 
   // Quick Actions Order Management
@@ -1334,31 +1270,13 @@ class Storage {
     const customOrder = this.getQuickActionOrder();
     const protocols = this.getProtocols();
     
-    console.log('🔍 getQuickActionsInOrder DEBUG:', {
-      quickActionIds,
-      customOrder,
-      protocols: protocols.length,
-      quickActionKey: this.KEYS.QUICK_ACTIONS,
-      quickActionOrderKey: this.KEYS.QUICK_ACTION_ORDER
-    });
-    
     // Use custom order if available, otherwise use stored quick actions order
     const orderToUse = customOrder.length > 0 ? customOrder : quickActionIds;
     
     // Return protocols that are in quick actions, in the correct order
-    const result = orderToUse.map(id => {
-      const protocol = protocols.find(p => p.id === id);
-      console.log(`🔍 Looking for protocol ${id}:`, protocol ? `Found: ${protocol.name}` : 'NOT FOUND');
-      return protocol;
+    return orderToUse.map(id => {
+      return protocols.find(p => p.id === id);
     }).filter(Boolean);
-    
-    console.log('🔍 getQuickActionsInOrder RESULT:', {
-      orderToUse,
-      foundProtocols: result.length,
-      result
-    });
-    
-    return result;
   }
 
   // Sync with Firebase backend
@@ -1458,10 +1376,6 @@ class Storage {
               const currentData = this.get(this.KEYS[key.toUpperCase()]);
               const serverArray = serverData.data[key];
               const localArray = currentData || [];
-              
-              // Declare cleaned arrays at the beginning for all strategies
-              let cleanedLocalArray = localArray;
-              let cleanedServerArray = serverArray;
               
               const hasLocalData = Array.isArray(localArray) && localArray.length > 0;
               const hasServerData = Array.isArray(serverArray) && serverArray.length > 0;
@@ -1643,16 +1557,6 @@ class Storage {
                     // чтобы изменения Quick Actions синхронизировались между устройствами
                     mergedData = [...serverArray];
                     
-                    // 🚨 ДОПОЛНИТЕЛЬНОЕ ЛОГИРОВАНИЕ ДЛЯ ДЕБАГА
-                    console.log(`🔍 QUICK ACTIONS MERGE DEBUG for ${key}:`, {
-                        localArray: localArray,
-                        serverArray: serverArray,
-                        mergedData: mergedData,
-                        localLength: localArray.length,
-                        serverLength: serverArray.length,
-                        mergedLength: mergedData.length
-                    });
-                    
                     // Проверяем локальные изменения
                     const hasLocalChanges = !this.arraysEqual(localArray, serverArray);
                     if (hasLocalChanges && localArray.length > 0) {
@@ -1667,55 +1571,88 @@ class Storage {
                 } else {
                     console.log('🔄 USING SMART MERGE STRATEGY FOR DATA');
                     
-                    // Для всех остальных данных - умная стратегия:
-                    // 1. Локальные элементы остаются (если есть конфликт)
-                    // 2. Серверные элементы добавляются (если их нет локально)
-                    
-                    // 🧹 ОЧИСТКА: Для order массивов удаляем undefined значения
+                    // 🔧 СПЕЦИАЛЬНАЯ ВАЛИДАЦИЯ для Order массивов
                     if (key.includes('Order')) {
-                      console.log(`🧹 Cleaning order arrays for ${key}...`);
-                      cleanedLocalArray = this.cleanOrderArray(localArray, key);
-                      cleanedServerArray = this.cleanOrderArray(serverArray, key);
-                      
-                      // ⚡ СПЕЦИАЛЬНАЯ ЛОГИКА ДЛЯ ORDER МАССИВОВ
-                      // Order массивы содержат ID'шники, а не объекты, поэтому обрабатываем их по-другому
-                      
-                      // Сначала добавляем все локальные ID'шники
-                      mergedData = [...cleanedLocalArray];
-                      
-                      // Затем добавляем серверные ID'шники, которых нет локально
-                      for (const serverId of cleanedServerArray) {
-                        if (!mergedData.includes(serverId)) {
-                          console.log(`📋 ${key} ID ${serverId} found only on server, adding to local`);
-                          mergedData.push(serverId);
-                          hasUpdates = true;
-                        } else {
-                          console.log(`📋 ${key} ID ${serverId} exists in both local and server, keeping local position`);
+                        console.log(`🔧 VALIDATING ORDER ARRAY: ${key}`);
+                        
+                        // Получаем соответствующие данные для валидации
+                        let validIds = [];
+                        if (key === 'stateOrder') {
+                            const currentStates = this.getStates();
+                            validIds = currentStates.map(s => s.id);
+                        } else if (key === 'protocolOrder') {
+                            const currentProtocols = this.getProtocols();
+                            validIds = currentProtocols.map(p => p.id);
+                        } else if (key === 'skillOrder') {
+                            const currentSkills = this.getSkills();
+                            validIds = currentSkills.map(s => s.id);
+                        } else if (key === 'quickActionOrder') {
+                            const currentQuickActions = this.getQuickActions();
+                            validIds = currentQuickActions;
                         }
-                      }
-                      
+                        
+                        console.log(`🔍 VALIDATION ${key}:`, {
+                            validIds,
+                            localOrder: localArray,
+                            serverOrder: serverArray
+                        });
+                        
+                        // Фильтруем только валидные ID'шники из локального и серверного массива
+                        const validLocalIds = localArray.filter(id => validIds.includes(id));
+                        const validServerIds = serverArray.filter(id => validIds.includes(id));
+                        
+                        console.log(`🔍 FILTERED ${key}:`, {
+                            validLocal: validLocalIds,
+                            validServer: validServerIds,
+                            invalidLocalCount: localArray.length - validLocalIds.length,
+                            invalidServerCount: serverArray.length - validServerIds.length
+                        });
+                        
+                        // Сначала добавляем все валидные локальные ID'шники
+                        mergedData = [...validLocalIds];
+                        
+                        // Затем добавляем валидные серверные ID'шники, которых нет локально
+                        for (const serverId of validServerIds) {
+                            if (!mergedData.includes(serverId)) {
+                                console.log(`📋 ${key} ID ${serverId} found only on server, adding to local`);
+                                mergedData.push(serverId);
+                                hasUpdates = true;
+                            } else {
+                                console.log(`📋 ${key} ID ${serverId} exists in both local and server, keeping local position`);
+                            }
+                        }
+                        
+                        console.log(`✅ ${key} VALIDATION COMPLETE:`, {
+                            finalOrder: mergedData,
+                            allValidIds: mergedData.every(id => validIds.includes(id))
+                        });
+                        
                     } else {
-                      // Сначала добавляем все локальные элементы
-                      mergedData = [...cleanedLocalArray];
-                      
-                      // Затем добавляем серверные элементы, которых нет локально
-                      for (const item of cleanedServerArray) {
-                          const existsLocally = mergedData.find(m => m.id === item.id);
-                          if (existsLocally) {
-                              console.log(`📋 ${key} item ${item.id} exists in both local and server, keeping local version`);
-                          } else {
-                              console.log(`📋 ${key} item ${item.id} found only on server, adding to local`);
-                              mergedData.push(item);
-                              hasUpdates = true;
-                          }
-                      }
+                        // Для всех остальных данных - умная стратегия:
+                        // 1. Локальные элементы остаются (если есть конфликт)
+                        // 2. Серверные элементы добавляются (если их нет локально)
+                        
+                        // Сначала добавляем все локальные элементы
+                        mergedData = [...localArray];
+                        
+                        // Затем добавляем серверные элементы, которых нет локально
+                        for (const item of serverArray) {
+                            const existsLocally = mergedData.find(m => m.id === item.id);
+                            if (existsLocally) {
+                                console.log(`📋 ${key} item ${item.id} exists in both local and server, keeping local version`);
+                            } else {
+                                console.log(`📋 ${key} item ${item.id} found only on server, adding to local`);
+                                mergedData.push(item);
+                                hasUpdates = true;
+                            }
+                        }
                     }
                 }
               }
               
               // Определяем действие мержа для статистики
-              const originalLocalCount = cleanedLocalArray?.length || localArray.length;
-              const originalServerCount = cleanedServerArray?.length || serverArray.length;
+              const originalLocalCount = localArray.length;
+              const originalServerCount = serverArray.length;
               const mergedCount = mergedData.length;
               
               if (mergedCount > originalLocalCount) {
@@ -1736,9 +1673,8 @@ class Storage {
                 // новые локальные элементы которых нет на сервере
                 if (key === 'quickActions' || key === 'quickActionOrder') {
                   // Для quickActions используем специальную логику - сравниваем массивы
-                  const arrayToCompare = cleanedLocalArray || localArray;
-                  const hasLocalChanges = !this.arraysEqual(arrayToCompare, serverArray);
-                  if (hasLocalChanges && arrayToCompare.length > 0) {
+                  const hasLocalChanges = !this.arraysEqual(localArray, serverArray);
+                  if (hasLocalChanges && localArray.length > 0) {
                     console.log(`🚀 SERVER-FIRST: Found local changes in ${key}, marking for sync`);
                     this.markForSync();
                   } else {
@@ -1746,8 +1682,7 @@ class Storage {
                   }
                 } else {
                   // Для protocols и skills проверяем новые элементы по ID
-                  const arrayToCompare = cleanedLocalArray || localArray;
-                  const hasNewLocalItems = arrayToCompare.some(localItem => 
+                  const hasNewLocalItems = localArray.some(localItem => 
                     !serverArray.find(serverItem => serverItem.id === localItem.id)
                   );
                   if (hasNewLocalItems) {
@@ -1766,39 +1701,24 @@ class Storage {
               
               mergeResults[key] = { 
                 action: mergeAction, 
-                localCount: originalLocalCount, 
-                serverCount: originalServerCount,
+                localCount: localArray.length, 
+                serverCount: serverArray.length,
                 mergedCount: mergedData.length
               };
               
               console.log(`🔄 SYNC MERGE ${key}:`, {
-                localItems: originalLocalCount,
-                serverItems: originalServerCount,
+                localItems: localArray.length,
+                serverItems: serverArray.length,
                 mergedItems: mergedData.length,
                 action: mergeAction
               });
               
               // Save merged data
-              const localStorageKey = this.getKeyConstant(key);
-              if (localStorageKey) {
-                this.set(localStorageKey, mergedData);
-              } else {
-                console.error(`🚨 Failed to save ${key}: invalid key mapping`);
-              }
-              
-              // 🚨 ДОПОЛНИТЕЛЬНОЕ ЛОГИРОВАНИЕ ДЛЯ ДЕБАГА quickActions
-              if (key === 'quickActions' || key === 'quickActionOrder') {
-                console.log(`🚨 QUICK ACTIONS SAVE DEBUG for ${key}:`, {
-                  keyUsed: localStorageKey,
-                  dataBeingSaved: mergedData,
-                  verifyAfterSave: localStorageKey ? this.get(localStorageKey) : 'KEY_NOT_FOUND'
-                });
-              }
+              this.set(this.KEYS[key.toUpperCase()], mergedData);
               
               // 🚀 КРИТИЧНО: Пересчет истории для обновленных протоколов
               if (key === 'protocols' && hasUpdates) {
-                const arrayToCheck = cleanedLocalArray || localArray;
-                this.checkAndRecalculateProtocolHistory(arrayToCheck, mergedData);
+                this.checkAndRecalculateProtocolHistory(localArray, mergedData);
               }
 
               // 🔄 КРИТИЧНО: После синхронизации протоколов проверяем, нужна ли дополнительная проверка истории
@@ -1941,19 +1861,6 @@ class Storage {
           if (window.UI && window.UI.renderQuickProtocols) {
             console.log('⚡ Updating Quick Actions panel after sync...');
             window.UI.renderQuickProtocols();
-            
-            // Verify the update worked
-            console.log('⚡ Quick Actions panel update completed, verifying data...');
-            console.log('⚡ Current quickActions from localStorage:', this.get(this.KEYS.QUICK_ACTIONS));
-            console.log('⚡ Current quickActionOrder from localStorage:', this.get(this.KEYS.QUICK_ACTION_ORDER));
-            
-            // Check if container has content
-            const container = document.querySelector('.quick-protocols');
-            if (container) {
-              console.log('⚡ Quick Actions container content:', container.innerHTML.length > 0 ? 'HAS CONTENT' : 'EMPTY');
-            } else {
-              console.log('⚡ Quick Actions container: NOT FOUND');
-            }
           }
           
           // Use the correct renderPage method to refresh current view
@@ -2109,7 +2016,7 @@ class Storage {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
-          'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
           'Expires': '0'
         },
@@ -2460,48 +2367,6 @@ class Storage {
       console.error('❌ INTEGRITY CHECK FAILED:', error);
       return false;
     }
-  }
-
-  // Helper function to map server data keys to KEYS constants
-  getKeyConstant(serverKey) {
-    const keyMap = {
-      'protocols': 'PROTOCOLS',
-      'skills': 'SKILLS', 
-      'states': 'STATES',
-      'history': 'HISTORY',
-      'quickActions': 'QUICK_ACTIONS',
-      'quickActionOrder': 'QUICK_ACTION_ORDER',
-      'protocolOrder': 'PROTOCOL_ORDER',
-      'skillOrder': 'SKILL_ORDER',
-      'stateOrder': 'STATE_ORDER'
-    };
-    
-    const keyConstant = keyMap[serverKey];
-    if (!keyConstant) {
-      console.warn(`🚨 Unknown server key: ${serverKey}`);
-      return null;
-    }
-    
-    const localStorageKey = this.KEYS[keyConstant];
-    console.log(`🔑 Key mapping: ${serverKey} → ${keyConstant} → ${localStorageKey}`);
-    return localStorageKey;
-  }
-
-  // Helper function to clean order arrays from undefined values
-  cleanOrderArray(orderArray, dataType) {
-    if (!Array.isArray(orderArray)) {
-      console.warn(`🧹 Invalid order array for ${dataType}:`, orderArray);
-      return [];
-    }
-    
-    const cleaned = orderArray.filter(id => id !== undefined && id !== null);
-    if (cleaned.length !== orderArray.length) {
-      console.log(`🧹 Cleaned ${dataType} order: ${orderArray.length} → ${cleaned.length}`, {
-        original: orderArray,
-        cleaned: cleaned
-      });
-    }
-    return cleaned;
   }
 }
 
