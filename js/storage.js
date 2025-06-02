@@ -1555,7 +1555,57 @@ class Storage {
                     
                     // 🔄 КРИТИЧНО: Используем server-first стратегию для quickActions
                     // чтобы изменения Quick Actions синхронизировались между устройствами
+                    
+                    // 🚨 ДЕБАГ: Подробное логирование ПЕРЕД мержем
+                    console.log(`🔍 PRE-MERGE DEBUG for ${key}:`, {
+                        localArray: localArray,
+                        serverArray: serverArray,
+                        localLength: localArray.length,
+                        serverLength: serverArray.length,
+                        localType: Array.isArray(localArray) ? 'array' : typeof localArray,
+                        serverType: Array.isArray(serverArray) ? 'array' : typeof serverArray
+                    });
+                    
                     mergedData = [...serverArray];
+                    
+                    // 🚨 ДЕБАГ: Логирование ПОСЛЕ мержа
+                    console.log(`🔍 POST-MERGE DEBUG for ${key}:`, {
+                        mergedData: mergedData,
+                        mergedLength: mergedData.length,
+                        mergedType: Array.isArray(mergedData) ? 'array' : typeof mergedData,
+                        mergedContents: JSON.stringify(mergedData)
+                    });
+                    
+                    // 🚨 ДЕБАГ: Логирование ПЕРЕД сохранением
+                    const keyToSave = this.KEYS[key.toUpperCase()];
+                    console.log(`🔍 PRE-SAVE DEBUG for ${key}:`, {
+                        keyToSave: keyToSave,
+                        dataToSave: mergedData,
+                        dataToSaveString: JSON.stringify(mergedData)
+                    });
+                    
+                    // Сохраняем данные
+                    this.set(keyToSave, mergedData);
+                    
+                    // 🚨 ДЕБАГ: Верификация ПОСЛЕ сохранения
+                    const verifyAfterSave = this.get(keyToSave);
+                    console.log(`🔍 POST-SAVE VERIFICATION for ${key}:`, {
+                        savedData: verifyAfterSave,
+                        savedLength: verifyAfterSave ? verifyAfterSave.length : 'null/undefined',
+                        savedType: Array.isArray(verifyAfterSave) ? 'array' : typeof verifyAfterSave,
+                        savedContents: JSON.stringify(verifyAfterSave),
+                        saveSuccess: verifyAfterSave && JSON.stringify(verifyAfterSave) === JSON.stringify(mergedData)
+                    });
+                    
+                    // 🚨 ДОПОЛНИТЕЛЬНОЕ ЛОГИРОВАНИЕ ДЛЯ ДЕБАГА
+                    console.log(`🚨 QUICK ACTIONS MERGE DEBUG for ${key}:`, {
+                        localArray: localArray,
+                        serverArray: serverArray,
+                        mergedData: mergedData,
+                        localLength: localArray.length,
+                        serverLength: serverArray.length,
+                        mergedLength: mergedData.length
+                    });
                     
                     // Проверяем локальные изменения
                     const hasLocalChanges = !this.arraysEqual(localArray, serverArray);
@@ -1567,7 +1617,6 @@ class Storage {
                     } else {
                         console.log(`📋 ${key} matches or local empty, keeping server version (server-first)`);
                     }
-                    
                 } else {
                     console.log('🔄 USING SMART MERGE STRATEGY FOR DATA');
                     
@@ -1657,6 +1706,15 @@ class Storage {
               
               // Save merged data
               this.set(this.KEYS[key.toUpperCase()], mergedData);
+              
+              // 🚨 ДОПОЛНИТЕЛЬНОЕ ЛОГИРОВАНИЕ ДЛЯ ДЕБАГА quickActions
+              if (key === 'quickActions' || key === 'quickActionOrder') {
+                console.log(`🚨 QUICK ACTIONS SAVE DEBUG for ${key}:`, {
+                  keyUsed: this.KEYS[key.toUpperCase()],
+                  dataBeingSaved: mergedData,
+                  verifyAfterSave: this.get(this.KEYS[key.toUpperCase()])
+                });
+              }
               
               // 🚀 КРИТИЧНО: Пересчет истории для обновленных протоколов
               if (key === 'protocols' && hasUpdates) {
