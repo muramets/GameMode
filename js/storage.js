@@ -1226,21 +1226,25 @@ class Storage {
     return this.get(this.KEYS.STATE_ORDER) || [];
   }
 
-  setStateOrder(stateOrder) {
+  setStateOrder(stateOrder, preventSync = false) {
     // Фильтруем undefined значения перед сохранением
     const cleanStateOrder = stateOrder.filter(id => id !== undefined && id !== null);
     console.log('🔄 Cleaning state order:', {
       original: stateOrder,
       cleaned: cleanStateOrder,
-      removedItems: stateOrder.length - cleanStateOrder.length
+      removedItems: stateOrder.length - cleanStateOrder.length,
+      preventSync
     });
     
     this.set(this.KEYS.STATE_ORDER, cleanStateOrder);
     
     // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ ИЗМЕНЕНИЯ ПОРЯДКА СОСТОЯНИЙ
-    this.syncWithBackend().catch(error => {
-      console.warn('⚠️ Background sync after state reorder failed:', error);
-    });
+    // НО НЕ при инициализации, чтобы избежать бесконечного цикла
+    if (!preventSync) {
+      this.syncWithBackend().catch(error => {
+        console.warn('⚠️ Background sync after state reorder failed:', error);
+      });
+    }
   }
 
   getStatesInOrder() {
@@ -1251,7 +1255,8 @@ class Storage {
       statesCount: states.length,
       customOrderCount: customOrder.length,
       customOrder,
-      stateIds: states.map(s => s.id)
+      stateIds: states.map(s => s.id),
+      statesData: states.map(s => ({id: s.id, name: s.name}))
     });
     
     // Фильтруем undefined значения из порядка
@@ -1268,7 +1273,9 @@ class Storage {
         cleanCustomOrder,
         validOrderIds,
         stateIds: states.map(s => s.id),
-        hasValidIds: validOrderIds.length > 0
+        hasValidIds: validOrderIds.length > 0,
+        orderIdTypes: cleanCustomOrder.map(id => ({id, type: typeof id})),
+        stateIdTypes: states.map(s => ({id: s.id, type: typeof s.id}))
       });
       
       // If we have valid IDs, proceed with custom order
@@ -1305,7 +1312,8 @@ class Storage {
     // If no valid custom order, initialize it and return states as is
     console.log('🔄 Initializing state order from scratch or no valid custom order');
     const initialOrder = states.map(state => state.id);
-    this.setStateOrder(initialOrder);
+    // 🔧 FIX: Prevent sync during initialization to avoid infinite loop
+    this.setStateOrder(initialOrder, true);
     
     return states;
   }
