@@ -554,8 +554,19 @@ class Storage {
       }
     }
     
+    // Track deleted checkin IDs to prevent restoration from server
+    const deletedCheckins = this.get('deletedCheckins') || [];
+    if (!deletedCheckins.includes(checkinId)) {
+      deletedCheckins.push(checkinId);
+      this.set('deletedCheckins', deletedCheckins);
+    }
+    
     const filtered = checkins.filter(c => c.id !== checkinId);
     this.set(this.KEYS.HISTORY, filtered);
+    
+    // Mark for sync to ensure deletion is propagated to server
+    this.markForSync();
+    
     return true;
   }
 
@@ -1384,7 +1395,8 @@ class Storage {
         quickActionOrder: this.get(this.KEYS.QUICK_ACTION_ORDER),
         protocolOrder: this.get(this.KEYS.PROTOCOL_ORDER),
         skillOrder: this.get(this.KEYS.SKILL_ORDER),
-        stateOrder: this.get(this.KEYS.STATE_ORDER)
+        stateOrder: this.get(this.KEYS.STATE_ORDER),
+        deletedCheckins: this.get('deletedCheckins') || []
       };
       
       console.log('📤 SYNC DATA TO SEND:', {
@@ -1393,6 +1405,7 @@ class Storage {
         statesCount: userData.states?.length || 0,
         historyCount: userData.history?.length || 0,
         quickActionsCount: userData.quickActions?.length || 0,
+        deletedCheckinsCount: userData.deletedCheckins?.length || 0,
         userData: userData
       });
       
@@ -1481,6 +1494,9 @@ class Storage {
                 if (isHistory) {
                     console.log('🔄 USING SMART MERGE STRATEGY FOR HISTORY (preserving maximum effects)');
                     
+                    // Get list of deleted checkin IDs to prevent restoration
+                    const deletedCheckins = this.get('deletedCheckins') || [];
+                    
                     // Create a map to track items by ID and choose version with maximum effects
                     const mergedMap = new Map();
                     
@@ -1492,8 +1508,15 @@ class Storage {
                     });
                     
                     // Compare with server items and choose version with more effects
+                    // BUT do not restore items that were intentionally deleted
                     serverArray.forEach(item => {
                         if (item && item.id !== undefined) {
+                            // Skip if this item was intentionally deleted by user
+                            if (deletedCheckins.includes(item.id)) {
+                                console.log(`📋 History item ${item.id}: was deleted by user, not restoring from server`);
+                                return;
+                            }
+                            
                             const localItem = mergedMap.get(item.id);
                             if (localItem) {
                                 // Compare which version has more effects
@@ -1509,7 +1532,7 @@ class Storage {
                                     console.log(`📋 History item ${item.id}: same effects count (${localEffectsCount}), keeping local version`);
                                 }
                             } else {
-                                // Server-only item
+                                // Server-only item - only add if not deleted locally
                                 console.log(`📋 History item ${item.id}: server-only item, adding`);
                                 mergedMap.set(item.id, { ...item, source: 'server' });
                             }
@@ -2026,7 +2049,13 @@ class Storage {
           // Show user-friendly notification about merge results
           if (hasUpdates && window.App) {
             const updates = Object.entries(mergeResults)
-              .filter(([key, result]) => result.action.includes('gained') || result.action.includes('loaded'))
+              .filter(([key, result]) => {
+                // Exclude technical order arrays and empty gains from notifications
+                if (key.includes('Order')) return false;
+                if (key === 'quickActions' && result.action.includes('gained') && result.mergedCount - Math.min(result.localCount, result.serverCount) === 0) return false;
+                if (key === 'quickActions' && result.action === 'no_new_items_found') return false;
+                return result.action.includes('gained') || result.action.includes('loaded');
+              })
               .map(([key, result]) => `${key}: +${result.mergedCount - Math.min(result.localCount, result.serverCount)} items`);
             
             if (updates.length > 0) {
@@ -2036,6 +2065,10 @@ class Storage {
         }
         
         console.log('✅ SYNC COMPLETED SUCCESSFULLY');
+        
+        // Clear deleted checkins list after successful sync
+        // (the deletions have been processed and sent to server)
+        this.set('deletedCheckins', []);
         
         // Update UI after successful sync
         if (window.App && window.App.renderPage) {
