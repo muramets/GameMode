@@ -2022,6 +2022,145 @@ window.debugSync = {
     } catch (error) {
       console.error('❌ Smart sync failed:', error);
     }
+  },
+
+  // Inspect protocol history in detail
+  inspectProtocolHistory(protocolId) {
+    console.log('🔍 INSPECTING PROTOCOL HISTORY for protocol:', protocolId);
+    
+    const protocol = window.Storage.getProtocolById(protocolId);
+    if (!protocol) {
+      console.error('❌ Protocol not found:', protocolId);
+      return;
+    }
+    
+    console.log('📋 Protocol details:', {
+      id: protocol.id,
+      name: protocol.name,
+      icon: protocol.icon,
+      weight: protocol.weight,
+      targets: protocol.targets
+    });
+    
+    const checkins = window.Storage.getCheckins();
+    const protocolCheckins = checkins.filter(c => c.type === 'protocol' && c.protocolId === protocolId);
+    
+    console.log(`📊 ALL CHECKINS for protocol ${protocolId} (${protocolCheckins.length} total):`);
+    protocolCheckins.forEach((checkin, index) => {
+      console.log(`${index + 1}. Checkin ${checkin.id}:`, {
+        timestamp: new Date(checkin.timestamp).toLocaleString(),
+        action: checkin.action,
+        changes: checkin.changes,
+        hasTargetEffects: Object.keys(checkin.changes || {}).length > 0,
+        affectedSkills: Object.keys(checkin.changes || {}),
+        raw: checkin
+      });
+    });
+    
+    // Check if protocol targets are properly applied in recent checkins
+    const recentCheckins = protocolCheckins.slice(-5); // Last 5 checkins
+    console.log('🔍 Recent checkins analysis:');
+    recentCheckins.forEach((checkin, index) => {
+      const expectedTargets = protocol.targets || [];
+      const actualTargets = Object.keys(checkin.changes || {}).map(id => parseInt(id));
+      const hasCorrectTargets = expectedTargets.every(target => actualTargets.includes(target)) &&
+                               actualTargets.every(target => expectedTargets.includes(target));
+      
+      console.log(`${index + 1}. Checkin ${checkin.id}:`, {
+        expectedTargets,
+        actualTargets,
+        hasCorrectTargets,
+        status: hasCorrectTargets ? '✅ Correct' : '❌ Incorrect'
+      });
+    });
+  },
+  
+  // Debug function to test specific protocol issues
+  debugProtocolTargets(protocolId) {
+    console.log('🐛 DEBUGGING PROTOCOL TARGETS for protocol:', protocolId);
+    
+    const protocol = window.Storage.getProtocolById(protocolId);
+    if (!protocol) {
+      console.error('❌ Protocol not found:', protocolId);
+      return;
+    }
+    
+    console.log('📋 Current protocol targets:', protocol.targets || []);
+    
+    // Find all checkins for this protocol
+    const checkins = window.Storage.getCheckins();
+    const protocolCheckins = checkins.filter(c => c.type === 'protocol' && c.protocolId === protocolId);
+    
+    console.log(`📊 Found ${protocolCheckins.length} checkins for this protocol`);
+    
+    // Find checkins missing target effects
+    const missingEffectsCheckins = protocolCheckins.filter(checkin => {
+      if (!checkin.changes) return true; // No changes at all
+      
+      // Check if all targets are present in changes
+      const hasAllTargets = (protocol.targets || []).every(targetId => 
+        checkin.changes.hasOwnProperty(targetId)
+      );
+      return !hasAllTargets;
+    });
+    
+    if (missingEffectsCheckins.length > 0) {
+      console.log(`🚨 FOUND ${missingEffectsCheckins.length} CHECKINS MISSING TARGET EFFECTS:`);
+      missingEffectsCheckins.forEach(checkin => {
+        const missingTargets = (protocol.targets || []).filter(targetId => 
+          !checkin.changes || !checkin.changes.hasOwnProperty(targetId)
+        );
+        console.log(`  - Checkin ${checkin.id} (${new Date(checkin.timestamp).toLocaleString()}):`, {
+          action: checkin.action,
+          currentChanges: checkin.changes || {},
+          missingTargets,
+          expectedTargets: protocol.targets || []
+        });
+      });
+      
+      // Offer to fix them
+      console.log('🔧 Run debugSync.fixProtocolHistory(' + protocolId + ') to fix these checkins');
+    } else {
+      console.log('✅ All checkins have proper target effects');
+    }
+  },
+  
+  // Fix protocol history by running recalculation
+  fixProtocolHistory(protocolId) {
+    console.log('🔧 FIXING PROTOCOL HISTORY for protocol:', protocolId);
+    
+    const protocol = window.Storage.getProtocolById(protocolId);
+    if (!protocol) {
+      console.error('❌ Protocol not found:', protocolId);
+      return;
+    }
+    
+    const oldTargets = [];
+    const newTargets = protocol.targets || [];
+    
+    console.log('📊 Attempting recalculation with:', {
+      protocolId,
+      protocolName: protocol.name,
+      oldTargets,
+      newTargets
+    });
+    
+    const result = window.Storage.recalculateProtocolHistory(protocolId, oldTargets, newTargets);
+    
+    if (result) {
+      console.log('✅ Recalculation completed successfully');
+      
+      // Refresh UI
+      if (window.App && window.App.renderPage) {
+        window.App.renderPage(window.App.currentPage);
+        console.log('🔄 UI refreshed');
+      }
+      
+      // Show updated state
+      this.debugProtocolTargets(protocolId);
+    } else {
+      console.log('ℹ️ No changes were needed');
+    }
   }
 };
 
