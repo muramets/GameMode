@@ -1227,38 +1227,77 @@ class Storage {
   }
 
   setStateOrder(stateOrder) {
-    this.set(this.KEYS.STATE_ORDER, stateOrder);
+    // Фильтруем undefined значения перед сохранением
+    const cleanStateOrder = stateOrder.filter(id => id !== undefined && id !== null);
+    console.log('🔄 Cleaning state order:', {
+      original: stateOrder,
+      cleaned: cleanStateOrder,
+      removedItems: stateOrder.length - cleanStateOrder.length
+    });
     
-    // 🚀 ВРЕМЕННО ОТКЛЮЧЕНО: Автоматическая синхронизация для исправления drag & drop
-    // this.syncWithBackend().catch(error => {
-    //   console.warn('⚠️ Background sync after state reorder failed:', error);
-    // });
+    this.set(this.KEYS.STATE_ORDER, cleanStateOrder);
     
-    console.log('🔄 State order saved without auto-sync:', stateOrder);
+    // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ ИЗМЕНЕНИЯ ПОРЯДКА СОСТОЯНИЙ
+    this.syncWithBackend().catch(error => {
+      console.warn('⚠️ Background sync after state reorder failed:', error);
+    });
   }
 
   getStatesInOrder() {
     const states = this.getStates();
     const customOrder = this.getStateOrder();
     
-    if (customOrder.length === 0) {
-      // Return original order if no custom order is set
-      return states;
+    console.log('🔍 getStatesInOrder DEBUG:', {
+      statesCount: states.length,
+      customOrderCount: customOrder.length,
+      customOrder,
+      stateIds: states.map(s => s.id)
+    });
+    
+    // Фильтруем undefined значения из порядка
+    const cleanCustomOrder = customOrder.filter(id => id !== undefined && id !== null);
+    
+    // If we have a clean custom order, use it
+    if (cleanCustomOrder.length > 0) {
+      // Filter out any order IDs that don't exist in states
+      const validOrderIds = cleanCustomOrder.filter(id => 
+        states.some(state => state.id === id)
+      );
+      
+      // Add any missing states to the end
+      const orderedStates = [];
+      
+      // Add states in custom order
+      validOrderIds.forEach(id => {
+        const state = states.find(s => s.id === id);
+        if (state) {
+          orderedStates.push(state);
+        }
+      });
+      
+      // Add any states not in custom order
+      states.forEach(state => {
+        if (!validOrderIds.includes(state.id)) {
+          orderedStates.push(state);
+        }
+      });
+      
+      console.log('🔄 Using custom state order:', {
+        originalOrder: customOrder,
+        cleanOrder: cleanCustomOrder,
+        validOrder: validOrderIds,
+        finalStatesCount: orderedStates.length
+      });
+      
+      return orderedStates;
     }
     
-    // Create a map for quick lookup
-    const stateMap = new Map(states.map(s => [s.id, s]));
+    // If no custom order, initialize it and return states as is
+    console.log('🔄 Initializing state order from scratch');
+    const initialOrder = states.map(state => state.id);
+    this.setStateOrder(initialOrder);
     
-    // Start with states in custom order
-    const orderedStates = customOrder
-      .map(id => stateMap.get(id))
-      .filter(Boolean);
-    
-    // Add any states not in custom order at the end
-    const statesInOrder = new Set(customOrder);
-    const remainingStates = states.filter(s => !statesInOrder.has(s.id));
-    
-    return [...orderedStates, ...remainingStates];
+    return states;
   }
 
   // Quick Actions Order Management
@@ -1609,6 +1648,13 @@ class Storage {
                     // Для всех остальных данных - умная стратегия:
                     // 1. Локальные элементы остаются (если есть конфликт)
                     // 2. Серверные элементы добавляются (если их нет локально)
+                    
+                    // 🧹 ОЧИСТКА: Для order массивов удаляем undefined значения
+                    if (key.includes('Order')) {
+                      console.log(`🧹 Cleaning order arrays for ${key}...`);
+                      localArray = this.cleanOrderArray(localArray, key);
+                      serverArray = this.cleanOrderArray(serverArray, key);
+                    }
                     
                     // Сначала добавляем все локальные элементы
                     mergedData = [...localArray];
@@ -2020,7 +2066,7 @@ class Storage {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
           'Pragma': 'no-cache',
           'Expires': '0'
         },
@@ -2396,6 +2442,23 @@ class Storage {
     const localStorageKey = this.KEYS[keyConstant];
     console.log(`🔑 Key mapping: ${serverKey} → ${keyConstant} → ${localStorageKey}`);
     return localStorageKey;
+  }
+
+  // Helper function to clean order arrays from undefined values
+  cleanOrderArray(orderArray, dataType) {
+    if (!Array.isArray(orderArray)) {
+      console.warn(`🧹 Invalid order array for ${dataType}:`, orderArray);
+      return [];
+    }
+    
+    const cleaned = orderArray.filter(id => id !== undefined && id !== null);
+    if (cleaned.length !== orderArray.length) {
+      console.log(`🧹 Cleaned ${dataType} order: ${orderArray.length} → ${cleaned.length}`, {
+        original: orderArray,
+        cleaned: cleaned
+      });
+    }
+    return cleaned;
   }
 }
 
