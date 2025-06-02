@@ -1684,14 +1684,19 @@ class Storage {
               });
               
               // Save merged data
-              this.set(this.KEYS[key.toUpperCase()], mergedData);
+              const localStorageKey = this.getKeyConstant(key);
+              if (localStorageKey) {
+                this.set(localStorageKey, mergedData);
+              } else {
+                console.error(`🚨 Failed to save ${key}: invalid key mapping`);
+              }
               
               // 🚨 ДОПОЛНИТЕЛЬНОЕ ЛОГИРОВАНИЕ ДЛЯ ДЕБАГА quickActions
               if (key === 'quickActions' || key === 'quickActionOrder') {
                 console.log(`🚨 QUICK ACTIONS SAVE DEBUG for ${key}:`, {
-                  keyUsed: this.KEYS[key.toUpperCase()],
+                  keyUsed: localStorageKey,
                   dataBeingSaved: mergedData,
-                  verifyAfterSave: this.get(this.KEYS[key.toUpperCase()])
+                  verifyAfterSave: localStorageKey ? this.get(localStorageKey) : 'KEY_NOT_FOUND'
                 });
               }
               
@@ -2359,6 +2364,31 @@ class Storage {
       console.error('❌ INTEGRITY CHECK FAILED:', error);
       return false;
     }
+  }
+
+  // Helper function to map server data keys to KEYS constants
+  getKeyConstant(serverKey) {
+    const keyMap = {
+      'protocols': 'PROTOCOLS',
+      'skills': 'SKILLS', 
+      'states': 'STATES',
+      'history': 'HISTORY',
+      'quickActions': 'QUICK_ACTIONS',
+      'quickActionOrder': 'QUICK_ACTION_ORDER',
+      'protocolOrder': 'PROTOCOL_ORDER',
+      'skillOrder': 'SKILL_ORDER',
+      'stateOrder': 'STATE_ORDER'
+    };
+    
+    const keyConstant = keyMap[serverKey];
+    if (!keyConstant) {
+      console.warn(`🚨 Unknown server key: ${serverKey}`);
+      return null;
+    }
+    
+    const localStorageKey = this.KEYS[keyConstant];
+    console.log(`🔑 Key mapping: ${serverKey} → ${keyConstant} → ${localStorageKey}`);
+    return localStorageKey;
   }
 }
 
