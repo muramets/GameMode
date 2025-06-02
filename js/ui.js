@@ -718,22 +718,53 @@ const UI = {
     
     // Calculate current level - priority: states average, then skills average
     let currentLevel = 0;
+    
+    // 🔧 ИСПРАВЛЕНИЕ: Правильная логика расчета уровня персонажа
+    // Если есть хотя бы один state - считаем среднее по states
+    // Если нет ни одного state - считаем среднее по skills
     if (states.length > 0) {
-      // Use states average
+      // Use states average (приоритет states если они есть)
       let totalStateScore = 0;
+      let validStatesCount = 0;
+      
       states.forEach(state => {
         const stateScore = window.Storage.calculateStateScore(state.id);
-        totalStateScore += stateScore;
+        if (!isNaN(stateScore)) {
+          totalStateScore += stateScore;
+          validStatesCount++;
+        }
       });
-      currentLevel = totalStateScore / states.length;
+      
+      currentLevel = validStatesCount > 0 ? totalStateScore / validStatesCount : 0;
+      console.log('📊 Character level calculated from STATES:', {
+        statesCount: states.length,
+        validStatesCount,
+        totalStateScore,
+        averageLevel: currentLevel
+      });
     } else if (skills.length > 0) {
-      // Fallback to skills average
+      // Fallback to skills average (если нет states)
       let totalSkillScore = 0;
+      let validSkillsCount = 0;
+      
       skills.forEach(skill => {
         const skillScore = window.Storage.calculateCurrentScore(skill.id);
-        totalSkillScore += skillScore;
+        if (!isNaN(skillScore)) {
+          totalSkillScore += skillScore;
+          validSkillsCount++;
+        }
       });
-      currentLevel = totalSkillScore / skills.length;
+      
+      currentLevel = validSkillsCount > 0 ? totalSkillScore / validSkillsCount : 0;
+      console.log('📊 Character level calculated from SKILLS:', {
+        skillsCount: skills.length,
+        validSkillsCount,
+        totalSkillScore,
+        averageLevel: currentLevel
+      });
+    } else {
+      console.log('📊 Character level: No states or skills found, defaulting to 0');
+      currentLevel = 0;
     }
     
     // Update level progress bar with color
