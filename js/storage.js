@@ -1650,17 +1650,19 @@ class Storage {
                     // 2. Серверные элементы добавляются (если их нет локально)
                     
                     // 🧹 ОЧИСТКА: Для order массивов удаляем undefined значения
+                    let cleanedLocalArray = localArray;
+                    let cleanedServerArray = serverArray;
                     if (key.includes('Order')) {
                       console.log(`🧹 Cleaning order arrays for ${key}...`);
-                      localArray = this.cleanOrderArray(localArray, key);
-                      serverArray = this.cleanOrderArray(serverArray, key);
+                      cleanedLocalArray = this.cleanOrderArray(localArray, key);
+                      cleanedServerArray = this.cleanOrderArray(serverArray, key);
                     }
                     
                     // Сначала добавляем все локальные элементы
-                    mergedData = [...localArray];
+                    mergedData = [...cleanedLocalArray];
                     
                     // Затем добавляем серверные элементы, которых нет локально
-                    for (const item of serverArray) {
+                    for (const item of cleanedServerArray) {
                         const existsLocally = mergedData.find(m => m.id === item.id);
                         if (existsLocally) {
                             console.log(`📋 ${key} item ${item.id} exists in both local and server, keeping local version`);
@@ -1674,8 +1676,8 @@ class Storage {
               }
               
               // Определяем действие мержа для статистики
-              const originalLocalCount = localArray.length;
-              const originalServerCount = serverArray.length;
+              const originalLocalCount = cleanedLocalArray?.length || localArray.length;
+              const originalServerCount = cleanedServerArray?.length || serverArray.length;
               const mergedCount = mergedData.length;
               
               if (mergedCount > originalLocalCount) {
@@ -1696,8 +1698,9 @@ class Storage {
                 // новые локальные элементы которых нет на сервере
                 if (key === 'quickActions' || key === 'quickActionOrder') {
                   // Для quickActions используем специальную логику - сравниваем массивы
-                  const hasLocalChanges = !this.arraysEqual(localArray, serverArray);
-                  if (hasLocalChanges && localArray.length > 0) {
+                  const arrayToCompare = cleanedLocalArray || localArray;
+                  const hasLocalChanges = !this.arraysEqual(arrayToCompare, serverArray);
+                  if (hasLocalChanges && arrayToCompare.length > 0) {
                     console.log(`🚀 SERVER-FIRST: Found local changes in ${key}, marking for sync`);
                     this.markForSync();
                   } else {
@@ -1705,7 +1708,8 @@ class Storage {
                   }
                 } else {
                   // Для protocols и skills проверяем новые элементы по ID
-                  const hasNewLocalItems = localArray.some(localItem => 
+                  const arrayToCompare = cleanedLocalArray || localArray;
+                  const hasNewLocalItems = arrayToCompare.some(localItem => 
                     !serverArray.find(serverItem => serverItem.id === localItem.id)
                   );
                   if (hasNewLocalItems) {
@@ -1724,14 +1728,14 @@ class Storage {
               
               mergeResults[key] = { 
                 action: mergeAction, 
-                localCount: localArray.length, 
-                serverCount: serverArray.length,
+                localCount: originalLocalCount, 
+                serverCount: originalServerCount,
                 mergedCount: mergedData.length
               };
               
               console.log(`🔄 SYNC MERGE ${key}:`, {
-                localItems: localArray.length,
-                serverItems: serverArray.length,
+                localItems: originalLocalCount,
+                serverItems: originalServerCount,
                 mergedItems: mergedData.length,
                 action: mergeAction
               });
@@ -1755,7 +1759,8 @@ class Storage {
               
               // 🚀 КРИТИЧНО: Пересчет истории для обновленных протоколов
               if (key === 'protocols' && hasUpdates) {
-                this.checkAndRecalculateProtocolHistory(localArray, mergedData);
+                const arrayToCheck = cleanedLocalArray || localArray;
+                this.checkAndRecalculateProtocolHistory(arrayToCheck, mergedData);
               }
 
               // 🔄 КРИТИЧНО: После синхронизации протоколов проверяем, нужна ли дополнительная проверка истории
