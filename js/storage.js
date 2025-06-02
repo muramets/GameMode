@@ -1649,8 +1649,35 @@ class Storage {
                 } else {
                     console.log('🔄 USING SMART MERGE STRATEGY FOR DATA');
                     
-                    // 🔧 СПЕЦИАЛЬНАЯ ВАЛИДАЦИЯ для Order массивов - ОТЛОЖЕНА ПОСЛЕ ОБНОВЛЕНИЯ ДАННЫХ
-                    if (key.includes('Order')) {
+                    // 🔧 СПЕЦИАЛЬНАЯ ОБРАБОТКА для STATES - используем server-first с уважением к локальным удалениям
+                    if (key === 'states') {
+                        console.log('🔄 USING SERVER-FIRST STRATEGY FOR STATES (respecting local deletions)');
+                        
+                        // Для states используем локальные данные как приоритетные (уважаем удаления)
+                        mergedData = [...localArray];
+                        
+                        // Добавляем только новые states с сервера (но НЕ восстанавливаем удаленные)
+                        for (const serverState of serverArray) {
+                            const existsLocally = localArray.find(s => s.id === serverState.id);
+                            if (existsLocally) {
+                                console.log(`📋 states item ${serverState.id} exists in both local and server, keeping local version`);
+                            } else {
+                                // Проверяем, что это действительно новый state, а не удаленный локально
+                                // Для простоты сейчас не добавляем серверные states которых нет локально
+                                console.log(`📋 states item ${serverState.id} found only on server, but respecting local deletion (not adding)`);
+                            }
+                        }
+                        
+                        // Проверяем нужно ли синхронизировать локальные изменения
+                        const hasLocalChanges = !this.arraysEqual(localArray, serverArray);
+                        if (hasLocalChanges) {
+                            console.log('🚀 SERVER-FIRST: Found local state changes, marking for sync');
+                            this.markForSync();
+                        } else {
+                            console.log('📥 SERVER-FIRST: No state changes, NOT marking for sync');
+                        }
+                        
+                    } else if (key.includes('Order')) {
                         console.log(`🔄 DEFERRING ORDER ARRAY VALIDATION: ${key} (will process after data update)`);
                         
                         // Временно сохраняем локальные данные, обработаем после обновления всех данных
@@ -1697,7 +1724,7 @@ class Storage {
               // If merged data differs from server, mark for sync
               // 🚨 КРИТИЧНО: НЕ отправляем данные при server-first стратегии
               // если мы просто получили больше данных с сервера
-              if (key === 'protocols' || key === 'skills' || key === 'quickActions' || key === 'quickActionOrder') {
+              if (key === 'protocols' || key === 'skills' || key === 'quickActions' || key === 'quickActionOrder' || key === 'states') {
                 // Для server-first стратегии отправляем данные ТОЛЬКО если есть 
                 // новые локальные элементы которых нет на сервере
                 if (key === 'quickActions' || key === 'quickActionOrder') {
@@ -1709,6 +1736,9 @@ class Storage {
                   } else {
                     console.log(`📥 SERVER-FIRST: No new local ${key} changes, NOT marking for sync (preventing server data overwrite)`);
                   }
+                } else if (key === 'states') {
+                  // Для states используем специальную логику - sync уже вызван внутри блока обработки states
+                  console.log(`📥 SERVER-FIRST: States sync handling completed above`);
                 } else {
                   // Для protocols и skills проверяем новые элементы по ID
                   const hasNewLocalItems = localArray.some(localItem => 
