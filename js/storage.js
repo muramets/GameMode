@@ -1255,7 +1255,7 @@ class Storage {
     });
     
     // Фильтруем undefined значения из порядка
-    const cleanCustomOrder = customOrder.filter(id => id !== undefined && id !== null);
+    const cleanCustomOrder = customOrder.filter(id => id !== undefined && id !== null && id !== '');
     
     // If we have a clean custom order, use it
     if (cleanCustomOrder.length > 0) {
@@ -1264,36 +1264,46 @@ class Storage {
         states.some(state => state.id === id)
       );
       
-      // Add any missing states to the end
-      const orderedStates = [];
-      
-      // Add states in custom order
-      validOrderIds.forEach(id => {
-        const state = states.find(s => s.id === id);
-        if (state) {
-          orderedStates.push(state);
-        }
+      console.log('🔍 VALIDATION CHECK:', {
+        cleanCustomOrder,
+        validOrderIds,
+        stateIds: states.map(s => s.id),
+        hasValidIds: validOrderIds.length > 0
       });
       
-      // Add any states not in custom order
-      states.forEach(state => {
-        if (!validOrderIds.includes(state.id)) {
-          orderedStates.push(state);
-        }
-      });
-      
-      console.log('🔄 Using custom state order:', {
-        originalOrder: customOrder,
-        cleanOrder: cleanCustomOrder,
-        validOrder: validOrderIds,
-        finalStatesCount: orderedStates.length
-      });
-      
-      return orderedStates;
+      // If we have valid IDs, proceed with custom order
+      if (validOrderIds.length > 0) {
+        // Add any missing states to the end
+        const orderedStates = [];
+        
+        // Add states in custom order
+        validOrderIds.forEach(id => {
+          const state = states.find(s => s.id === id);
+          if (state) {
+            orderedStates.push(state);
+          }
+        });
+        
+        // Add any states not in custom order
+        states.forEach(state => {
+          if (!validOrderIds.includes(state.id)) {
+            orderedStates.push(state);
+          }
+        });
+        
+        console.log('🔄 Using custom state order:', {
+          originalOrder: customOrder,
+          cleanOrder: cleanCustomOrder,
+          validOrder: validOrderIds,
+          finalStatesCount: orderedStates.length
+        });
+        
+        return orderedStates;
+      }
     }
     
-    // If no custom order, initialize it and return states as is
-    console.log('🔄 Initializing state order from scratch');
+    // If no valid custom order, initialize it and return states as is
+    console.log('🔄 Initializing state order from scratch or no valid custom order');
     const initialOrder = states.map(state => state.id);
     this.setStateOrder(initialOrder);
     
@@ -1658,21 +1668,39 @@ class Storage {
                       console.log(`🧹 Cleaning order arrays for ${key}...`);
                       cleanedLocalArray = this.cleanOrderArray(localArray, key);
                       cleanedServerArray = this.cleanOrderArray(serverArray, key);
-                    }
-                    
-                    // Сначала добавляем все локальные элементы
-                    mergedData = [...cleanedLocalArray];
-                    
-                    // Затем добавляем серверные элементы, которых нет локально
-                    for (const item of cleanedServerArray) {
-                        const existsLocally = mergedData.find(m => m.id === item.id);
-                        if (existsLocally) {
-                            console.log(`📋 ${key} item ${item.id} exists in both local and server, keeping local version`);
+                      
+                      // ⚡ СПЕЦИАЛЬНАЯ ЛОГИКА ДЛЯ ORDER МАССИВОВ
+                      // Order массивы содержат ID'шники, а не объекты, поэтому обрабатываем их по-другому
+                      
+                      // Сначала добавляем все локальные ID'шники
+                      mergedData = [...cleanedLocalArray];
+                      
+                      // Затем добавляем серверные ID'шники, которых нет локально
+                      for (const serverId of cleanedServerArray) {
+                        if (!mergedData.includes(serverId)) {
+                          console.log(`📋 ${key} ID ${serverId} found only on server, adding to local`);
+                          mergedData.push(serverId);
+                          hasUpdates = true;
                         } else {
-                            console.log(`📋 ${key} item ${item.id} found only on server, adding to local`);
-                            mergedData.push(item);
-                            hasUpdates = true;
+                          console.log(`📋 ${key} ID ${serverId} exists in both local and server, keeping local position`);
                         }
+                      }
+                      
+                    } else {
+                      // Сначала добавляем все локальные элементы
+                      mergedData = [...cleanedLocalArray];
+                      
+                      // Затем добавляем серверные элементы, которых нет локально
+                      for (const item of cleanedServerArray) {
+                          const existsLocally = mergedData.find(m => m.id === item.id);
+                          if (existsLocally) {
+                              console.log(`📋 ${key} item ${item.id} exists in both local and server, keeping local version`);
+                          } else {
+                              console.log(`📋 ${key} item ${item.id} found only on server, adding to local`);
+                              mergedData.push(item);
+                              hasUpdates = true;
+                          }
+                      }
                     }
                 }
               }
