@@ -1882,16 +1882,23 @@ class Storage {
                 invalidServerCount: serverArray.length - validServerIds.length
             });
             
-            // Сначала добавляем все валидные локальные ID'шники
-            let orderMergedData = [...validLocalIds];
-            
-            // Затем добавляем валидные серверные ID'шники, которых нет локально
-            for (const serverId of validServerIds) {
-                if (!orderMergedData.includes(serverId)) {
-                    console.log(`📋 ${key} ID ${serverId} found only on server, adding to local`);
-                    orderMergedData.push(serverId);
-                } else {
-                    console.log(`📋 ${key} ID ${serverId} exists in both local and server, keeping local position`);
+            // 🔄 ИСПРАВЛЕНИЕ: Если локальный порядок пустой, используем серверный порядок полностью
+            let orderMergedData;
+            if (validLocalIds.length === 0 && validServerIds.length > 0) {
+                console.log(`📥 ${key} local order is empty, using server order completely`);
+                orderMergedData = [...validServerIds];
+            } else {
+                // Сначала добавляем все валидные локальные ID'шники
+                orderMergedData = [...validLocalIds];
+                
+                // Затем добавляем валидные серверные ID'шники, которых нет локально
+                for (const serverId of validServerIds) {
+                    if (!orderMergedData.includes(serverId)) {
+                        console.log(`📋 ${key} ID ${serverId} found only on server, adding to local`);
+                        orderMergedData.push(serverId);
+                    } else {
+                        console.log(`📋 ${key} ID ${serverId} exists in both local and server, keeping local position`);
+                    }
                 }
             }
             
