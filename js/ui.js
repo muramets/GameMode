@@ -524,11 +524,8 @@ const UI = {
 
   // History
   renderHistory() {
-    // Only initialize filtered history on first load (not when filter results are empty)
-    if (!App.historyInitialized) {
-      App.filteredHistory = window.Storage.getCheckins().reverse();
-      App.historyInitialized = true;
-    }
+    // History should be initialized through App.applyHistoryFilters() for proper sorting
+    // This ensures newest-to-oldest order is maintained
     
     const container = document.querySelector('.history-body');
     const skills = window.Storage.getSkills();

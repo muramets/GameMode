@@ -390,12 +390,10 @@ const Modals = {
           if (App.currentPage === 'history') {
             // Reset history filter to refresh data and re-apply current filters
             App.filteredHistory = [];
-            App.historyInitialized = false;
             App.applyHistoryFilters();
           } else {
             // If not on history page, just reset the history data for next visit
             App.filteredHistory = [];
-            App.historyInitialized = false;
           }
           
           // 🔄 Sync with backend after successful update
@@ -421,6 +419,16 @@ const Modals = {
             UI.renderProtocols();
             DragDrop.setupProtocols();
             App.setupTooltips();
+          }
+          
+          // Update history in real-time if we're on the history page or need to refresh it
+          if (App.currentPage === 'history') {
+            // Reset history filter to refresh data and re-apply current filters
+            App.filteredHistory = [];
+            App.applyHistoryFilters();
+          } else {
+            // If not on history page, just reset the history data for next visit
+            App.filteredHistory = [];
           }
           
           // 🔄 Sync with backend after successful add

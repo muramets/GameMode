@@ -1590,7 +1590,6 @@ class Storage {
                                         if (window.App.currentPage === 'history') {
                                             console.log('📄 Refreshing history page after server-first recalculation');
                                             window.App.filteredHistory = []; // Сброс фильтра для обновления
-                                            window.App.historyInitialized = false;
                                             window.App.renderPage('history');
                                         } else if (window.App.currentPage === 'dashboard') {
                                             console.log('📄 Refreshing dashboard after server-first recalculation');

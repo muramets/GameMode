@@ -172,7 +172,6 @@ function initMainApp() {
         skillsPerPage: 30,
         filteredSkills: [],
         filteredHistory: [],
-        historyInitialized: false,
         states: [],
         historyFilters: {
             time: 'all',
@@ -226,7 +225,6 @@ function initMainApp() {
                     if (confirm('Are you sure you want to clear all history? This cannot be undone.')) {
                         window.Storage.clearAllCheckins();
                         this.filteredHistory = [];
-                        this.historyInitialized = false;
                         
                         // Clear search input
                         const historySearchInput = document.getElementById('history-search');
@@ -483,12 +481,10 @@ function initMainApp() {
                 if (this.currentPage === 'history') {
                     // Reset history filter to refresh data and re-apply current filters
                     this.filteredHistory = [];
-                    this.historyInitialized = false;
                     this.applyHistoryFilters();
                 } else {
                     // If not on history page, just reset the history data for next visit
                     this.filteredHistory = [];
-                    this.historyInitialized = false;
                 }
                 
                 // If we're not on skills page, but skills were affected, update skills data
@@ -544,7 +540,6 @@ function initMainApp() {
                 
                 // Reset history filter to show all items
                 this.filteredHistory = [];
-                this.historyInitialized = false;
                 UI.renderHistory();
                 
                 // Update user stats if on dashboard
