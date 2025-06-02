@@ -1595,6 +1595,57 @@ function initMainApp() {
                     changes: checkin.changes
                 });
             });
+        },
+
+        // Inspect protocol history in detail
+        inspectProtocolHistory(protocolId) {
+            console.log('🔍 INSPECTING PROTOCOL HISTORY for protocol:', protocolId);
+            
+            const protocol = window.Storage.getProtocolById(protocolId);
+            if (!protocol) {
+                console.error('❌ Protocol not found:', protocolId);
+                return;
+            }
+            
+            console.log('📋 Protocol details:', {
+                id: protocol.id,
+                name: protocol.name,
+                icon: protocol.icon,
+                weight: protocol.weight,
+                targets: protocol.targets
+            });
+            
+            const checkins = window.Storage.getCheckins();
+            const protocolCheckins = checkins.filter(c => c.type === 'protocol' && c.protocolId === protocolId);
+            
+            console.log(`📊 ALL CHECKINS for protocol ${protocolId} (${protocolCheckins.length} total):`);
+            protocolCheckins.forEach((checkin, index) => {
+                console.log(`${index + 1}. Checkin ${checkin.id}:`, {
+                    timestamp: new Date(checkin.timestamp).toLocaleString(),
+                    action: checkin.action,
+                    changes: checkin.changes,
+                    hasTargetEffects: Object.keys(checkin.changes || {}).length > 0,
+                    affectedSkills: Object.keys(checkin.changes || {}),
+                    raw: checkin
+                });
+            });
+            
+            // Check if protocol targets are properly applied in recent checkins
+            const recentCheckins = protocolCheckins.slice(-5); // Last 5 checkins
+            console.log('🔍 Recent checkins analysis:');
+            recentCheckins.forEach((checkin, index) => {
+                const expectedTargets = protocol.targets || [];
+                const actualTargets = Object.keys(checkin.changes || {}).map(id => parseInt(id));
+                const hasCorrectTargets = expectedTargets.every(target => actualTargets.includes(target)) &&
+                                         actualTargets.every(target => expectedTargets.includes(target));
+                
+                console.log(`${index + 1}. Checkin ${checkin.id}:`, {
+                    expectedTargets,
+                    actualTargets,
+                    hasCorrectTargets,
+                    status: hasCorrectTargets ? '✅ Correct' : '❌ Incorrect'
+                });
+            });
         }
     };
 
@@ -1890,6 +1941,7 @@ console.log('🐛 DEBUG: Sync debugging functions available:');
 console.log('  - debugSync.sync() - Manual sync trigger');
 console.log('  - debugSync.forceUpload() - Force upload local data to server');
 console.log('  - debugSync.testRecalculation(protocolId) - Test protocol history recalculation');
+console.log('  - debugSync.inspectProtocolHistory(protocolId) - Detailed protocol history analysis');
 console.log('  - debugSync.compare() - Compare local vs server data');
 console.log('  - debugSync.status() - Check sync status');  
 console.log('  - debugSync.testBackend() - Test backend connectivity');

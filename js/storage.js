@@ -1426,54 +1426,83 @@ class Storage {
                             const localTargets = localItem.targets || [];
                             const serverTargets = serverItem.targets || [];
                             const targetsChanged = !this.arraysEqual(localTargets, serverTargets);
-                            const weightChanged = localItem.weight !== serverItem.weight;
-                            const nameChanged = localItem.name !== serverItem.name;
-                            const iconChanged = localItem.icon !== serverItem.icon;
-                            const hoverChanged = localItem.hover !== serverItem.hover;
+                            const localWeight = localItem.weight || 0;
+                            const serverWeight = serverItem.weight || 0;
+                            const weightChanged = Math.abs(localWeight - serverWeight) > 0.001;
                             
-                            const hasChanges = targetsChanged || weightChanged || nameChanged || iconChanged || hoverChanged;
-                            
-                            // 🔍 DETAILED COMPARISON DEBUG
                             console.log(`🔍 PROTOCOL ${serverItem.id} COMPARISON DEBUG:`, {
                                 localTargets,
                                 serverTargets,
                                 targetsChanged,
-                                localWeight: localItem.weight,
-                                serverWeight: serverItem.weight,
+                                localWeight,
+                                serverWeight,
                                 weightChanged,
-                                localName: localItem.name,
-                                serverName: serverItem.name,
-                                nameChanged,
-                                localIcon: localItem.icon,
-                                serverIcon: serverItem.icon,
-                                iconChanged,
-                                localHover: localItem.hover,
-                                serverHover: serverItem.hover,
-                                hoverChanged,
-                                hasChanges
+                                contentChanged: targetsChanged || weightChanged
                             });
                             
-                            if (hasChanges) {
-                                console.log(`📋 Protocols item ${serverItem.id} updated from server:`, {
-                                    targetsChanged,
-                                    weightChanged,
-                                    nameChanged,
-                                    iconChanged,
-                                    hoverChanged
-                                });
-                                // Заменяем локальную версию серверной
+                            if (targetsChanged || weightChanged) {
+                                console.log(`🔄 Protocol ${serverItem.id} content changed on server, updating local and triggering recalculation`);
+                                
+                                // Сохраняем старые значения для пересчета
+                                const oldTargets = [...localTargets];
+                                const newTargets = [...serverTargets];
+                                
+                                // Заменяем локальный элемент серверным
                                 const index = mergedData.findIndex(m => m.id === serverItem.id);
-                                if (index !== -1) {
-                                    mergedData[index] = serverItem;
-                                    hasUpdates = true;
-                                }
+                                mergedData[index] = serverItem;
+                                hasUpdates = true;
+                                
+                                // 🔄 КРИТИЧНО: Запускаем пересчет истории для этого протокола
+                                console.log(`🔄 TRIGGERING PROTOCOL RECALCULATION for protocol ${serverItem.id} due to sync changes`);
+                                console.log(`📊 RECALCULATION DETAILS:`, {
+                                    protocolId: serverItem.id,
+                                    protocolName: serverItem.name,
+                                    oldTargets,
+                                    newTargets,
+                                    triggeredBy: 'sync_content_change',
+                                    timestamp: new Date().toISOString()
+                                });
+                                
+                                setTimeout(() => {
+                                    console.log(`⏰ EXECUTING DELAYED RECALCULATION for protocol ${serverItem.id}`);
+                                    const recalcResult = this.recalculateProtocolHistory(serverItem.id, oldTargets, newTargets);
+                                    console.log(`📊 RECALCULATION RESULT for protocol ${serverItem.id}:`, {
+                                        wasRecalculated: recalcResult,
+                                        protocolName: serverItem.name,
+                                        oldTargets,
+                                        newTargets
+                                    });
+                                    
+                                    // 🎯 КРИТИЧНО: Обновляем UI после пересчета
+                                    if (recalcResult && window.App) {
+                                        console.log(`🔄 UPDATING UI after protocol ${serverItem.id} recalculation`);
+                                        
+                                        // Показываем уведомление
+                                        window.App.showToast(`Protocol "${serverItem.name}" values recalculated retroactively`, 'info');
+                                        
+                                        // Обновляем текущую страницу
+                                        if (window.App.currentPage === 'history') {
+                                            console.log('📄 Refreshing history page after recalculation');
+                                            window.App.filteredHistory = []; // Сброс фильтра для обновления
+                                            window.App.historyInitialized = false;
+                                            window.App.renderPage('history');
+                                        } else if (window.App.currentPage === 'dashboard') {
+                                            console.log('📄 Refreshing dashboard after recalculation');
+                                            window.App.renderPage('dashboard');
+                                            if (window.UI && window.UI.updateUserStats) {
+                                                window.UI.updateUserStats();
+                                            }
+                                        }
+                                    }
+                                }, 100); // Небольшая задержка чтобы данные сначала сохранились
                             } else {
                                 console.log(`📋 Protocols item ${serverItem.id} exists in both, keeping local version (no changes)`);
                             }
                         } else {
-                            console.log(`📋 Protocols item ${serverItem.id} found only on server, adding to local`);
+                            // Новый элемент с сервера
                             mergedData.push(serverItem);
                             hasUpdates = true;
+                            console.log(`📋 Protocols item ${serverItem.id} added from server`);
                         }
                     }
                     
@@ -1567,7 +1596,8 @@ class Storage {
                 localItems: localArray.length,
                 serverItems: serverArray.length,
                 mergedItems: mergedData.length,
-                action: mergeAction
+                strategy: dataType === 'history' ? 'server-first' : 'local-first',
+                netGain: mergedData.length - localArray.length
               });
               
               // Save merged data
