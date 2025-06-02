@@ -1423,13 +1423,35 @@ class Storage {
                         const localItem = mergedData.find(m => m.id === serverItem.id);
                         if (localItem) {
                             // Элемент существует - сравниваем содержимое
-                            const targetsChanged = !this.arraysEqual(localItem.targets || [], serverItem.targets || []);
+                            const localTargets = localItem.targets || [];
+                            const serverTargets = serverItem.targets || [];
+                            const targetsChanged = !this.arraysEqual(localTargets, serverTargets);
                             const weightChanged = localItem.weight !== serverItem.weight;
                             const nameChanged = localItem.name !== serverItem.name;
                             const iconChanged = localItem.icon !== serverItem.icon;
                             const hoverChanged = localItem.hover !== serverItem.hover;
                             
                             const hasChanges = targetsChanged || weightChanged || nameChanged || iconChanged || hoverChanged;
+                            
+                            // 🔍 DETAILED COMPARISON DEBUG
+                            console.log(`🔍 PROTOCOL ${serverItem.id} COMPARISON DEBUG:`, {
+                                localTargets,
+                                serverTargets,
+                                targetsChanged,
+                                localWeight: localItem.weight,
+                                serverWeight: serverItem.weight,
+                                weightChanged,
+                                localName: localItem.name,
+                                serverName: serverItem.name,
+                                nameChanged,
+                                localIcon: localItem.icon,
+                                serverIcon: serverItem.icon,
+                                iconChanged,
+                                localHover: localItem.hover,
+                                serverHover: serverItem.hover,
+                                hoverChanged,
+                                hasChanges
+                            });
                             
                             if (hasChanges) {
                                 console.log(`📋 Protocols item ${serverItem.id} updated from server:`, {
