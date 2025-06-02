@@ -1734,6 +1734,79 @@ function initMainApp() {
             } else {
                 console.log('ℹ️ No changes were needed');
             }
+        },
+
+        // Check raw server data to see what was actually uploaded
+        async checkServerData() {
+            console.log('🔍 CHECKING RAW SERVER DATA...');
+            
+            if (!window.Storage.currentUser) {
+                console.error('❌ No authenticated user');
+                return;
+            }
+            
+            try {
+                const token = await window.Storage.currentUser.getIdToken();
+                const response = await fetch(`${window.BACKEND_URL}/api/user/data`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    }
+                });
+                
+                if (response.ok) {
+                    const serverResponse = await response.json();
+                    const serverData = serverResponse.data || {};
+                    
+                    console.log('🗄️ RAW SERVER DATA:', serverData);
+                    
+                    // Focus on protocols
+                    if (serverData.protocols) {
+                        console.log('\n📋 SERVER PROTOCOLS DETAILS:');
+                        serverData.protocols.forEach(protocol => {
+                            console.log(`  Protocol ${protocol.id}: ${protocol.name}`, {
+                                targets: protocol.targets || [],
+                                weight: protocol.weight,
+                                icon: protocol.icon,
+                                updatedAt: protocol.updatedAt || 'no timestamp'
+                            });
+                        });
+                    }
+                    
+                    // Focus on skills  
+                    if (serverData.skills) {
+                        console.log('\n🎯 SERVER SKILLS DETAILS:');
+                        serverData.skills.forEach(skill => {
+                            console.log(`  Skill ${skill.id}: ${skill.name}`, {
+                                value: skill.value,
+                                icon: skill.icon,
+                                updatedAt: skill.updatedAt || 'no timestamp'
+                            });
+                        });
+                    }
+                    
+                    // Show sync metadata
+                    console.log('\n⏰ SERVER SYNC INFO:');
+                    console.log('  Last Updated:', serverResponse.lastUpdated);
+                    console.log('  Data Keys:', Object.keys(serverData));
+                    console.log('  Data Counts:', {
+                        protocols: (serverData.protocols || []).length,
+                        skills: (serverData.skills || []).length,
+                        states: (serverData.states || []).length,
+                        history: (serverData.history || []).length,
+                        quickActions: (serverData.quickActions || []).length
+                    });
+                    
+                    return serverData;
+                    
+                } else {
+                    console.error('❌ Failed to fetch server data:', response.status, response.statusText);
+                }
+            } catch (error) {
+                console.error('❌ Server data check failed:', error);
+            }
         }
     };
 
@@ -2161,6 +2234,79 @@ window.debugSync = {
     } else {
       console.log('ℹ️ No changes were needed');
     }
+  },
+
+  // Check raw server data to see what was actually uploaded
+  async checkServerData() {
+    console.log('🔍 CHECKING RAW SERVER DATA...');
+    
+    if (!window.Storage.currentUser) {
+      console.error('❌ No authenticated user');
+      return;
+    }
+    
+    try {
+      const token = await window.Storage.currentUser.getIdToken();
+      const response = await fetch(`${window.BACKEND_URL}/api/user/data`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+      
+      if (response.ok) {
+        const serverResponse = await response.json();
+        const serverData = serverResponse.data || {};
+        
+        console.log('🗄️ RAW SERVER DATA:', serverData);
+        
+        // Focus on protocols
+        if (serverData.protocols) {
+          console.log('\n📋 SERVER PROTOCOLS DETAILS:');
+          serverData.protocols.forEach(protocol => {
+            console.log(`  Protocol ${protocol.id}: ${protocol.name}`, {
+              targets: protocol.targets || [],
+              weight: protocol.weight,
+              icon: protocol.icon,
+              updatedAt: protocol.updatedAt || 'no timestamp'
+            });
+          });
+        }
+        
+        // Focus on skills  
+        if (serverData.skills) {
+          console.log('\n🎯 SERVER SKILLS DETAILS:');
+          serverData.skills.forEach(skill => {
+            console.log(`  Skill ${skill.id}: ${skill.name}`, {
+              value: skill.value,
+              icon: skill.icon,
+              updatedAt: skill.updatedAt || 'no timestamp'
+            });
+          });
+        }
+        
+        // Show sync metadata
+        console.log('\n⏰ SERVER SYNC INFO:');
+        console.log('  Last Updated:', serverResponse.lastUpdated);
+        console.log('  Data Keys:', Object.keys(serverData));
+        console.log('  Data Counts:', {
+          protocols: (serverData.protocols || []).length,
+          skills: (serverData.skills || []).length,
+          states: (serverData.states || []).length,
+          history: (serverData.history || []).length,
+          quickActions: (serverData.quickActions || []).length
+        });
+        
+        return serverData;
+        
+      } else {
+        console.error('❌ Failed to fetch server data:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('❌ Server data check failed:', error);
+    }
   }
 };
 
@@ -2171,6 +2317,7 @@ console.log('  - debugSync.testRecalculation(protocolId) - Test protocol history
 console.log('  - debugSync.inspectProtocolHistory(protocolId) - Detailed protocol history analysis');
 console.log('  - debugSync.debugProtocolTargets(protocolId) - Debug specific protocol target issues');
 console.log('  - debugSync.fixProtocolHistory(protocolId) - Fix protocol history by recalculation');
+console.log('  - debugSync.checkServerData() - Check raw server data to see what was uploaded');
 console.log('  - debugSync.compare() - Compare local vs server data');
 console.log('  - debugSync.status() - Check sync status');  
 console.log('  - debugSync.testBackend() - Test backend connectivity');
