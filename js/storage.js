@@ -1351,21 +1351,24 @@ class Storage {
                     console.log('🔄 USING SERVER-FIRST STRATEGY FOR HISTORY');
                     
                     // История - сервер имеет пересчитанные значения, доверяем ему больше
-                    for (const item of localArray) {
-                        if (!mergedData.find(m => m.id === item.id)) {
-                            mergedData.push(item);
-                        }
-                    }
+                    // ИСПРАВЛЕНИЕ: Начинаем с серверных данных как основы
+                    console.log(`📊 HISTORY SYNC DEBUG:`, {
+                        localCount: localArray.length,
+                        serverCount: serverArray.length,
+                        localIds: localArray.map(item => item.id),
+                        serverIds: serverArray.map(item => item.id)
+                    });
                     
-                    // Добавляем серверные элементы (они могут перезаписать локальные)
-                    for (const item of serverArray) {
-                        const existingIndex = mergedData.findIndex(m => m.id === item.id);
-                        if (existingIndex !== -1) {
-                            console.log(`📋 History item ${item.id} exists in both, keeping server version (more recent)`);
-                            mergedData[existingIndex] = item; // Заменяем на серверную версию
-                        } else {
-                            console.log(`📋 History item ${item.id} found only on server, adding`);
+                    mergedData = [...serverArray];
+                    
+                    // Добавляем локальные элементы, которых нет на сервере
+                    for (const item of localArray) {
+                        const existsOnServer = mergedData.find(m => m.id === item.id);
+                        if (!existsOnServer) {
+                            console.log(`📋 History item ${item.id} found only locally, adding to server data`);
                             mergedData.push(item);
+                        } else {
+                            console.log(`📋 History item ${item.id} exists in both, keeping server version (more recent)`);
                         }
                     }
                     
