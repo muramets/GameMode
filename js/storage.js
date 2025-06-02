@@ -1263,7 +1263,11 @@ class Storage {
         skills: this.get(this.KEYS.SKILLS),
         states: this.get(this.KEYS.STATES),
         history: this.get(this.KEYS.HISTORY),
-        quickActions: this.get(this.KEYS.QUICK_ACTIONS)
+        quickActions: this.get(this.KEYS.QUICK_ACTIONS),
+        quickActionOrder: this.get(this.KEYS.QUICK_ACTION_ORDER),
+        protocolOrder: this.get(this.KEYS.PROTOCOL_ORDER),
+        skillOrder: this.get(this.KEYS.SKILL_ORDER),
+        stateOrder: this.get(this.KEYS.STATE_ORDER)
       };
       
       console.log('📤 SYNC DATA TO SEND:', {
@@ -1382,6 +1386,39 @@ class Storage {
                     }
                     
                     console.log('🔄 HISTORY MERGE STRATEGY: Server-first merge, added', localArray.filter(l => !serverArray.find(s => s.id === l.id)).length, 'local-only items');
+                    
+                } else if (key === 'skills') {
+                    console.log('🔄 USING SMART MERGE STRATEGY FOR SKILLS');
+                    
+                    // Для skills - сравниваем по содержимому, не только по ID
+                    // Начинаем с локальных данных как базы
+                    mergedData = [...localArray];
+                    
+                    // Проверяем серверные элементы
+                    for (const serverItem of serverArray) {
+                        const localItem = mergedData.find(m => m.id === serverItem.id);
+                        if (localItem) {
+                            // Элемент существует - сравниваем содержимое
+                            const hasChanges = localItem.name !== serverItem.name || 
+                                              localItem.icon !== serverItem.icon ||
+                                              localItem.hover !== serverItem.hover ||
+                                              localItem.initialScore !== serverItem.initialScore;
+                            
+                            if (hasChanges) {
+                                console.log(`📋 Skills item ${serverItem.id} updated from server (content changed)`);
+                                // Заменяем локальную версию серверной
+                                const index = mergedData.findIndex(m => m.id === serverItem.id);
+                                if (index !== -1) {
+                                    mergedData[index] = serverItem;
+                                }
+                            } else {
+                                console.log(`📋 Skills item ${serverItem.id} exists in both, keeping local version (no changes)`);
+                            }
+                        } else {
+                            console.log(`📋 Skills item ${serverItem.id} found only on server, adding to local`);
+                            mergedData.push(serverItem);
+                        }
+                    }
                     
                 } else {
                     console.log('🔄 USING SMART MERGE STRATEGY FOR DATA');
@@ -1534,7 +1571,11 @@ class Storage {
               skills: [],
               states: [],
               history: [],
-              quickActions: []
+              quickActions: [],
+              quickActionOrder: [],
+              protocolOrder: [],
+              skillOrder: [],
+              stateOrder: []
             };
             
             const retryResponse = await fetch(`${BACKEND_URL}/api/sync`, {
@@ -1601,7 +1642,11 @@ class Storage {
         skills: this.get(this.KEYS.SKILLS) || [],
         states: this.get(this.KEYS.STATES) || [],
         history: this.get(this.KEYS.HISTORY) || [],
-        quickActions: this.get(this.KEYS.QUICK_ACTIONS) || []
+        quickActions: this.get(this.KEYS.QUICK_ACTIONS) || [],
+        quickActionOrder: this.get(this.KEYS.QUICK_ACTION_ORDER) || [],
+        protocolOrder: this.get(this.KEYS.PROTOCOL_ORDER) || [],
+        skillOrder: this.get(this.KEYS.SKILL_ORDER) || [],
+        stateOrder: this.get(this.KEYS.STATE_ORDER) || []
       };
       
       console.log('📤 FORCE UPLOAD DATA:', {
@@ -1609,7 +1654,11 @@ class Storage {
         skills: localData.skills.length,
         states: localData.states.length,
         history: localData.history.length,
-        quickActions: localData.quickActions.length
+        quickActions: localData.quickActions.length,
+        quickActionOrder: localData.quickActionOrder.length,
+        protocolOrder: localData.protocolOrder.length,
+        skillOrder: localData.skillOrder.length,
+        stateOrder: localData.stateOrder.length
       });
       
       const token = await this.currentUser.getIdToken();
