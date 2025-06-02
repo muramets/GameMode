@@ -1441,6 +1441,10 @@ class Storage {
               const serverArray = serverData.data[key];
               const localArray = currentData || [];
               
+              // Declare cleaned arrays at the beginning for all strategies
+              let cleanedLocalArray = localArray;
+              let cleanedServerArray = serverArray;
+              
               const hasLocalData = Array.isArray(localArray) && localArray.length > 0;
               const hasServerData = Array.isArray(serverArray) && serverArray.length > 0;
               
@@ -1650,8 +1654,6 @@ class Storage {
                     // 2. Серверные элементы добавляются (если их нет локально)
                     
                     // 🧹 ОЧИСТКА: Для order массивов удаляем undefined значения
-                    let cleanedLocalArray = localArray;
-                    let cleanedServerArray = serverArray;
                     if (key.includes('Order')) {
                       console.log(`🧹 Cleaning order arrays for ${key}...`);
                       cleanedLocalArray = this.cleanOrderArray(localArray, key);
