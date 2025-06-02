@@ -1127,7 +1127,14 @@ function initMainApp() {
                 return true;
             });
             
+            // 🔧 ИСПРАВЛЕНИЕ: Всегда сортируем от новых к старым по timestamp
+            this.filteredHistory.sort((a, b) => {
+                return new Date(b.timestamp) - new Date(a.timestamp);
+            });
+            
+            // Re-render history with new filters
             UI.renderHistory();
+            this.updateFilterIcon();
         },
 
         // Get all skill IDs that affect a state (including from dependent states)
