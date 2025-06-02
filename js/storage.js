@@ -1287,7 +1287,10 @@ class Storage {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token.substring(0, 20)}...`
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         }
       });
       
@@ -1295,7 +1298,10 @@ class Storage {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         },
         body: JSON.stringify(userData)
       });
@@ -1356,7 +1362,10 @@ class Storage {
                         localCount: localArray.length,
                         serverCount: serverArray.length,
                         localIds: localArray.map(item => item.id),
-                        serverIds: serverArray.map(item => item.id)
+                        serverIds: serverArray.map(item => item.id),
+                        missingFromLocal: serverArray.filter(s => !localArray.find(l => l.id === s.id)).map(item => item.id),
+                        missingFromServer: localArray.filter(l => !serverArray.find(s => s.id === l.id)).map(item => item.id),
+                        timestamp: new Date().toISOString()
                     });
                     
                     mergedData = [...serverArray];
@@ -1527,7 +1536,10 @@ class Storage {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${token}`,
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
               },
               body: JSON.stringify(minimalData)
             });
@@ -1600,7 +1612,10 @@ class Storage {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         },
         body: JSON.stringify(localData)
       });

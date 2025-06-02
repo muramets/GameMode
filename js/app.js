@@ -1465,6 +1465,54 @@ function initMainApp() {
                     navSkillsGroup.classList.remove('expanded', 'hover-expanded');
                 }
             };
+        },
+
+        // Force reset user data on server and resync
+        async forceResetAndSync() {
+            console.log('🗑️ Force resetting user data on server and resyncing...');
+            
+            if (!window.Storage.currentUser) {
+                console.error('❌ No authenticated user');
+                return;
+            }
+            
+            try {
+                // Step 1: Clear user data on server
+                const token = await window.Storage.currentUser.getIdToken();
+                const response = await fetch(`${window.BACKEND_URL}/api/user/force-reset`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ Server data cleared:', result);
+                    
+                    // Step 2: Clear local data
+                    window.Storage.set(window.Storage.KEYS.HISTORY, []);
+                    console.log('🧹 Local history cleared');
+                    
+                    // Step 3: Force sync to rebuild data on server
+                    await window.Storage.syncWithBackend();
+                    console.log('✅ Force reset and sync completed');
+                    
+                    // Step 4: Refresh current page
+                    if (window.App && window.App.renderPage) {
+                        window.App.renderPage(window.App.currentPage);
+                        console.log('🔄 Page refreshed after force reset');
+                    }
+                } else {
+                    const errorText = await response.text();
+                    console.error('❌ Server reset failed:', response.status, errorText);
+                }
+            } catch (error) {
+                console.error('❌ Force reset and sync failed:', error);
+            }
         }
     };
 
@@ -1623,6 +1671,54 @@ window.debugSync = {
     } catch (error) {
       console.error('❌ Backend connectivity test failed:', error);
     }
+  },
+  
+  // Force reset user data on server and resync
+  async forceResetAndSync() {
+    console.log('🗑️ Force resetting user data on server and resyncing...');
+    
+    if (!window.Storage.currentUser) {
+      console.error('❌ No authenticated user');
+      return;
+    }
+    
+    try {
+      // Step 1: Clear user data on server
+      const token = await window.Storage.currentUser.getIdToken();
+      const response = await fetch(`${window.BACKEND_URL}/api/user/force-reset`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Server data cleared:', result);
+        
+        // Step 2: Clear local data
+        window.Storage.set(window.Storage.KEYS.HISTORY, []);
+        console.log('🧹 Local history cleared');
+        
+        // Step 3: Force sync to rebuild data on server
+        await window.Storage.syncWithBackend();
+        console.log('✅ Force reset and sync completed');
+        
+        // Step 4: Refresh current page
+        if (window.App && window.App.renderPage) {
+          window.App.renderPage(window.App.currentPage);
+          console.log('🔄 Page refreshed after force reset');
+        }
+      } else {
+        const errorText = await response.text();
+        console.error('❌ Server reset failed:', response.status, errorText);
+      }
+    } catch (error) {
+      console.error('❌ Force reset and sync failed:', error);
+    }
   }
 };
 
@@ -1632,3 +1728,4 @@ console.log('  - debugSync.forceUpload() - Force upload local data to server');
 console.log('  - debugSync.compare() - Compare local vs server data');
 console.log('  - debugSync.status() - Check sync status');  
 console.log('  - debugSync.testBackend() - Test backend connectivity');
+console.log('  - debugSync.forceResetAndSync() - Force reset user data on server and resync');
