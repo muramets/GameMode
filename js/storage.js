@@ -1309,16 +1309,19 @@ class Storage {
         tokenStart: token?.substring(0, 20) + '...'
       });
       
-      const syncUrl = `${BACKEND_URL}/api/sync`;
+      // Add aggressive cache busting with timestamp
+      const timestamp = Date.now();
+      const syncUrl = `${BACKEND_URL}/api/sync?_t=${timestamp}&_cb=${Math.random()}`;
       console.log('🌐 SYNC REQUEST:', {
         url: syncUrl,
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
           'Pragma': 'no-cache',
-          'Expires': '0'
+          'Expires': '0',
+          'If-Modified-Since': 'Thu, 01 Jan 1970 00:00:00 GMT'
         }
       });
       
@@ -1327,9 +1330,10 @@ class Storage {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
           'Pragma': 'no-cache',
-          'Expires': '0'
+          'Expires': '0',
+          'If-Modified-Since': 'Thu, 01 Jan 1970 00:00:00 GMT'
         },
         body: JSON.stringify(userData)
       });
@@ -2076,13 +2080,16 @@ class Storage {
       const localSkills = this.getSkills();
       
       // Get fresh server data via /api/user/data (direct endpoint, not /api/sync)
+      // Add timestamp for aggressive cache busting
+      const timestamp = Date.now();
       const token = await this.currentUser.getIdToken();
-      const response = await fetch(`${BACKEND_URL}/api/user/data`, {
+      const response = await fetch(`${BACKEND_URL}/api/user/data?_t=${timestamp}&_cb=${Math.random()}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
           'Pragma': 'no-cache',
-          'Expires': '0'
+          'Expires': '0',
+          'If-Modified-Since': 'Thu, 01 Jan 1970 00:00:00 GMT'
         }
       });
       
@@ -2096,12 +2103,43 @@ class Storage {
       const serverProtocols = serverData.protocols || [];
       const serverSkills = serverData.skills || [];
       
+      console.log('🔍 INTEGRITY CHECK: Server data comparison:', {
+        localProtocolsCount: localProtocols.length,
+        serverProtocolsCount: serverProtocols.length,
+        localSkillsCount: localSkills.length,
+        serverSkillsCount: serverSkills.length
+      });
+      
       // Check for discrepancies
       let hasDiscrepancies = false;
       let fixedProtocols = [];
       let fixedSkills = [];
+      let addedProtocols = [];
       
-      // Check protocols
+      // Check for missing protocols from server
+      const localProtocolIds = new Set(localProtocols.map(p => p.id));
+      const missingProtocols = serverProtocols.filter(p => !localProtocolIds.has(p.id));
+      
+      if (missingProtocols.length > 0) {
+        console.log(`🚨 INTEGRITY CHECK: Found ${missingProtocols.length} missing protocols:`, 
+          missingProtocols.map(p => ({ id: p.id, name: p.name }))
+        );
+        
+        hasDiscrepancies = true;
+        addedProtocols = missingProtocols;
+        
+        // Add missing protocols to local storage
+        const updatedProtocols = [...localProtocols, ...missingProtocols];
+        this.set(this.KEYS.PROTOCOLS, updatedProtocols);
+        
+        // Update protocol order if needed
+        const currentProtocolOrder = this.getProtocolOrder();
+        const newProtocolIds = missingProtocols.map(p => p.id);
+        const updatedProtocolOrder = [...currentProtocolOrder, ...newProtocolIds];
+        this.setProtocolOrder(updatedProtocolOrder);
+      }
+      
+      // Check protocols for target mismatches
       for (const localProtocol of localProtocols) {
         const serverProtocol = serverProtocols.find(p => p.id === localProtocol.id);
         
@@ -2126,7 +2164,7 @@ class Storage {
             
             // Fix local protocol with server data
             const updatedProtocol = { ...localProtocol, targets: serverTargets };
-            const allProtocols = localProtocols.map(p => 
+            const allProtocols = this.getProtocols().map(p => 
               p.id === localProtocol.id ? updatedProtocol : p
             );
             this.set(this.KEYS.PROTOCOLS, allProtocols);
@@ -2166,17 +2204,22 @@ class Storage {
       // Log results and update UI if changes were made
       if (hasDiscrepancies) {
         console.log('✅ INTEGRITY CHECK: Fixed data discrepancies:', {
+          addedProtocols: addedProtocols.length,
           fixedProtocols: fixedProtocols.length,
           addedSkills: fixedSkills.length,
           details: {
-            protocols: fixedProtocols,
-            skills: fixedSkills
+            addedProtocols,
+            fixedProtocols,
+            addedSkills: fixedSkills
           }
         });
         
         // Show user notification
         if (window.App && window.App.showToast) {
           const messages = [];
+          if (addedProtocols.length > 0) {
+            messages.push(`${addedProtocols.length} protocol(s) synced`);
+          }
           if (fixedProtocols.length > 0) {
             messages.push(`${fixedProtocols.length} protocol(s) updated`);
           }
@@ -2189,6 +2232,10 @@ class Storage {
         
         // Refresh UI
         if (window.App && window.App.renderPage) {
+          // Update filtered protocols in App to include new protocols
+          window.App.filteredProtocols = this.getProtocolsInOrder();
+          window.App.filteredSkills = this.getSkillsInOrder();
+          
           window.App.renderPage(window.App.currentPage);
           console.log('🖥️ UI refreshed after integrity check fixes');
         }
