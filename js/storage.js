@@ -1844,7 +1844,11 @@ class Storage {
           const orderArraysToProcess = Object.keys(serverData.data).filter(key => key.includes('Order'));
           orderArraysToProcess.forEach(key => {
             const serverArray = serverData.data[key];
-            const localArray = userData[key] || [];
+            
+            // 🔧 ИСПРАВЛЕНИЕ: Получаем АКТУАЛЬНЫЕ локальные данные из localStorage
+            // а не используем userData который может содержать устаревшие данные
+            const localStorageKey = this.getKeyConstant(key);
+            const localArray = localStorageKey ? (this.get(localStorageKey) || []) : [];
             
             console.log(`🔧 VALIDATING ORDER ARRAY: ${key}`);
             
@@ -1937,9 +1941,9 @@ class Storage {
             });
             
             // Сохраняем обновленный order массив
-            const localStorageKey = this.getKeyConstant(key);
-            if (localStorageKey) {
-              this.set(localStorageKey, orderMergedData);
+            const orderStorageKey = this.getKeyConstant(key);
+            if (orderStorageKey) {
+              this.set(orderStorageKey, orderMergedData);
             } else {
               console.error(`🚨 Failed to save ${key}: invalid key mapping`);
             }
