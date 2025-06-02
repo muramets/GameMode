@@ -1162,6 +1162,11 @@ class Storage {
       this.set(this.KEYS.HISTORY, checkins);
     }
     
+    // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ ДОБАВЛЕНИЯ В QUICK ACTIONS
+    this.syncWithBackend().catch(error => {
+      console.warn('⚠️ Background sync after quick action addition failed:', error);
+    });
+    
     return true;
   }
 
@@ -1197,6 +1202,11 @@ class Storage {
       checkins.push(checkin);
       this.set(this.KEYS.HISTORY, checkins);
     }
+    
+    // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ УДАЛЕНИЯ ИЗ QUICK ACTIONS
+    this.syncWithBackend().catch(error => {
+      console.warn('⚠️ Background sync after quick action removal failed:', error);
+    });
     
     return true;
   }
@@ -1540,6 +1550,24 @@ class Storage {
                         }
                     }
                     
+                } else if (key === 'quickActions' || key === 'quickActionOrder') {
+                    console.log(`🔄 USING SERVER-FIRST STRATEGY FOR ${key.toUpperCase()}`);
+                    
+                    // 🔄 КРИТИЧНО: Используем server-first стратегию для quickActions
+                    // чтобы изменения Quick Actions синхронизировались между устройствами
+                    mergedData = [...serverArray];
+                    
+                    // Проверяем локальные изменения
+                    const hasLocalChanges = !this.arraysEqual(localArray, serverArray);
+                    if (hasLocalChanges && localArray.length > 0) {
+                        console.log(`📋 ${key} has local changes, but using server version (server-first)`);
+                        console.log(`📋 Local ${key}:`, localArray);
+                        console.log(`📋 Server ${key}:`, serverArray);
+                        hasUpdates = true;
+                    } else {
+                        console.log(`📋 ${key} matches or local empty, keeping server version (server-first)`);
+                    }
+                    
                 } else {
                     console.log('🔄 USING SMART MERGE STRATEGY FOR DATA');
                     
@@ -1582,17 +1610,29 @@ class Storage {
               // If merged data differs from server, mark for sync
               // 🚨 КРИТИЧНО: НЕ отправляем данные при server-first стратегии
               // если мы просто получили больше данных с сервера
-              if (key === 'protocols' || key === 'skills') {
+              if (key === 'protocols' || key === 'skills' || key === 'quickActions' || key === 'quickActionOrder') {
                 // Для server-first стратегии отправляем данные ТОЛЬКО если есть 
                 // новые локальные элементы которых нет на сервере
-                const hasNewLocalItems = localArray.some(localItem => 
-                  !serverArray.find(serverItem => serverItem.id === localItem.id)
-                );
-                if (hasNewLocalItems) {
-                  console.log(`🚀 SERVER-FIRST: Found new local ${key}, marking for sync`);
-                  this.markForSync();
+                if (key === 'quickActions' || key === 'quickActionOrder') {
+                  // Для quickActions используем специальную логику - сравниваем массивы
+                  const hasLocalChanges = !this.arraysEqual(localArray, serverArray);
+                  if (hasLocalChanges && localArray.length > 0) {
+                    console.log(`🚀 SERVER-FIRST: Found local changes in ${key}, marking for sync`);
+                    this.markForSync();
+                  } else {
+                    console.log(`📥 SERVER-FIRST: No new local ${key} changes, NOT marking for sync (preventing server data overwrite)`);
+                  }
                 } else {
-                  console.log(`📥 SERVER-FIRST: No new local ${key}, NOT marking for sync (preventing server data overwrite)`);
+                  // Для protocols и skills проверяем новые элементы по ID
+                  const hasNewLocalItems = localArray.some(localItem => 
+                    !serverArray.find(serverItem => serverItem.id === localItem.id)
+                  );
+                  if (hasNewLocalItems) {
+                    console.log(`🚀 SERVER-FIRST: Found new local ${key}, marking for sync`);
+                    this.markForSync();
+                  } else {
+                    console.log(`📥 SERVER-FIRST: No new local ${key}, NOT marking for sync (preventing server data overwrite)`);
+                  }
                 }
               } else {
                 // Для остальных типов данных используем старую логику
