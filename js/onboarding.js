@@ -198,6 +198,7 @@ class Onboarding {
                 window.UI.renderDashboard();
                 window.UI.renderProtocols();
                 window.UI.renderSkills();
+                window.UI.renderStates();
             }
         }
     }
@@ -224,6 +225,7 @@ class Onboarding {
                 window.UI.renderDashboard();
                 window.UI.renderProtocols();
                 window.UI.renderSkills();
+                window.UI.renderStates();
             }
         }
     }

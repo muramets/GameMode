@@ -1270,13 +1270,31 @@ class Storage {
     const customOrder = this.getQuickActionOrder();
     const protocols = this.getProtocols();
     
+    console.log('🔍 getQuickActionsInOrder DEBUG:', {
+      quickActionIds,
+      customOrder,
+      protocols: protocols.length,
+      quickActionKey: this.KEYS.QUICK_ACTIONS,
+      quickActionOrderKey: this.KEYS.QUICK_ACTION_ORDER
+    });
+    
     // Use custom order if available, otherwise use stored quick actions order
     const orderToUse = customOrder.length > 0 ? customOrder : quickActionIds;
     
     // Return protocols that are in quick actions, in the correct order
-    return orderToUse.map(id => {
-      return protocols.find(p => p.id === id);
+    const result = orderToUse.map(id => {
+      const protocol = protocols.find(p => p.id === id);
+      console.log(`🔍 Looking for protocol ${id}:`, protocol ? `Found: ${protocol.name}` : 'NOT FOUND');
+      return protocol;
     }).filter(Boolean);
+    
+    console.log('🔍 getQuickActionsInOrder RESULT:', {
+      orderToUse,
+      foundProtocols: result.length,
+      result
+    });
+    
+    return result;
   }
 
   // Sync with Firebase backend
@@ -1555,50 +1573,10 @@ class Storage {
                     
                     // 🔄 КРИТИЧНО: Используем server-first стратегию для quickActions
                     // чтобы изменения Quick Actions синхронизировались между устройствами
-                    
-                    // 🚨 ДЕБАГ: Подробное логирование ПЕРЕД мержем
-                    console.log(`🔍 PRE-MERGE DEBUG for ${key}:`, {
-                        localArray: localArray,
-                        serverArray: serverArray,
-                        localLength: localArray.length,
-                        serverLength: serverArray.length,
-                        localType: Array.isArray(localArray) ? 'array' : typeof localArray,
-                        serverType: Array.isArray(serverArray) ? 'array' : typeof serverArray
-                    });
-                    
                     mergedData = [...serverArray];
                     
-                    // 🚨 ДЕБАГ: Логирование ПОСЛЕ мержа
-                    console.log(`🔍 POST-MERGE DEBUG for ${key}:`, {
-                        mergedData: mergedData,
-                        mergedLength: mergedData.length,
-                        mergedType: Array.isArray(mergedData) ? 'array' : typeof mergedData,
-                        mergedContents: JSON.stringify(mergedData)
-                    });
-                    
-                    // 🚨 ДЕБАГ: Логирование ПЕРЕД сохранением
-                    const keyToSave = this.KEYS[key.toUpperCase()];
-                    console.log(`🔍 PRE-SAVE DEBUG for ${key}:`, {
-                        keyToSave: keyToSave,
-                        dataToSave: mergedData,
-                        dataToSaveString: JSON.stringify(mergedData)
-                    });
-                    
-                    // Сохраняем данные
-                    this.set(keyToSave, mergedData);
-                    
-                    // 🚨 ДЕБАГ: Верификация ПОСЛЕ сохранения
-                    const verifyAfterSave = this.get(keyToSave);
-                    console.log(`🔍 POST-SAVE VERIFICATION for ${key}:`, {
-                        savedData: verifyAfterSave,
-                        savedLength: verifyAfterSave ? verifyAfterSave.length : 'null/undefined',
-                        savedType: Array.isArray(verifyAfterSave) ? 'array' : typeof verifyAfterSave,
-                        savedContents: JSON.stringify(verifyAfterSave),
-                        saveSuccess: verifyAfterSave && JSON.stringify(verifyAfterSave) === JSON.stringify(mergedData)
-                    });
-                    
                     // 🚨 ДОПОЛНИТЕЛЬНОЕ ЛОГИРОВАНИЕ ДЛЯ ДЕБАГА
-                    console.log(`🚨 QUICK ACTIONS MERGE DEBUG for ${key}:`, {
+                    console.log(`🔍 QUICK ACTIONS MERGE DEBUG for ${key}:`, {
                         localArray: localArray,
                         serverArray: serverArray,
                         mergedData: mergedData,
@@ -1617,6 +1595,7 @@ class Storage {
                     } else {
                         console.log(`📋 ${key} matches or local empty, keeping server version (server-first)`);
                     }
+                    
                 } else {
                     console.log('🔄 USING SMART MERGE STRATEGY FOR DATA');
                     
@@ -1861,6 +1840,19 @@ class Storage {
           if (window.UI && window.UI.renderQuickProtocols) {
             console.log('⚡ Updating Quick Actions panel after sync...');
             window.UI.renderQuickProtocols();
+            
+            // Verify the update worked
+            console.log('⚡ Quick Actions panel update completed, verifying data...');
+            console.log('⚡ Current quickActions from localStorage:', this.get(this.KEYS.QUICK_ACTIONS));
+            console.log('⚡ Current quickActionOrder from localStorage:', this.get(this.KEYS.QUICK_ACTION_ORDER));
+            
+            // Check if container has content
+            const container = document.querySelector('.quick-protocols');
+            if (container) {
+              console.log('⚡ Quick Actions container content:', container.innerHTML.length > 0 ? 'HAS CONTENT' : 'EMPTY');
+            } else {
+              console.log('⚡ Quick Actions container: NOT FOUND');
+            }
           }
           
           // Use the correct renderPage method to refresh current view
