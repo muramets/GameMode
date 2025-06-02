@@ -1607,7 +1607,10 @@ class Storage {
   mergeDataArrays(localArray, serverArray, dataType) {
     console.log(`🔀 MERGING ${dataType}:`, {
       local: localArray.length,
-      server: serverArray.length
+      server: serverArray.length,
+      dataTypeCheck: dataType === 'history',
+      dataTypeValue: dataType,
+      dataTypeType: typeof dataType
     });
     
     // Create a map to track unique items by ID
@@ -1615,6 +1618,7 @@ class Storage {
     
     // For history, we need special handling since items might be updated (recalculated)
     if (dataType === 'history') {
+      console.log('🔄 USING SERVER-FIRST STRATEGY FOR HISTORY');
       // Add all server items first for history (server has latest recalculated data)
       serverArray.forEach(item => {
         if (item && item.id !== undefined) {
@@ -1638,6 +1642,7 @@ class Storage {
       
       console.log(`🔄 HISTORY MERGE STRATEGY: Server-first merge, added ${addedFromLocal} local-only items`);
     } else {
+      console.log('🔄 USING LOCAL-FIRST STRATEGY FOR NON-HISTORY DATA');
       // For other data types, use the original local-first strategy
       // Add all local items first (preserving local version in case of conflicts)
       localArray.forEach(item => {
