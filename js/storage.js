@@ -1770,12 +1770,13 @@ class Storage {
           // 🔄 КРИТИЧНО: Обработка Order массивов ПОСЛЕ обновления всех данных
           console.log('🔧 PROCESSING DEFERRED ORDER ARRAYS...');
           
-          const orderArraysToProcess = Object.keys(mergedData).filter(key => key.includes('Order'));
+          const orderArraysToProcess = Object.keys(serverData.data).filter(key => key.includes('Order'));
           orderArraysToProcess.forEach(key => {
-            const serverArray = mergedData[key];
-            const localArray = localData[key] || [];
+            const serverArray = serverData.data[key];
+            const localArray = userData[key] || [];
             
             console.log(`🔧 VALIDATING ORDER ARRAY: ${key}`);
+            
             
             // Получаем актуальные данные для валидации (ПОСЛЕ обновления)
             let validIds = [];
