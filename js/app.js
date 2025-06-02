@@ -1424,3 +1424,54 @@ window.addEventListener('resize', () => {
         window.UI.setupQuickProtocolTooltips();
     }
 });
+
+// Global debugging functions for console use
+window.debugSync = {
+  // Manual sync trigger
+  async sync() {
+    console.log('🔄 Manual sync triggered from console...');
+    try {
+      await window.Storage.syncWithBackend();
+      console.log('✅ Manual sync completed successfully');
+    } catch (error) {
+      console.error('❌ Manual sync failed:', error);
+    }
+  },
+  
+  // Check sync status
+  status() {
+    console.log('📊 SYNC STATUS:', {
+      isOnline: navigator.onLine,
+      hasUser: !!window.Storage.currentUser,
+      userEmail: window.Storage.currentUser?.email,
+      backendUrl: window.BACKEND_URL,
+      lastSyncTime: window.Storage.lastSyncTime,
+      pendingSync: window.Storage.pendingSync?.size || 0
+    });
+  },
+  
+  // Test backend connectivity
+  async testBackend() {
+    console.log('🌐 Testing backend connectivity...');
+    try {
+      const response = await fetch(`${window.BACKEND_URL}/health`);
+      console.log('📡 Backend health check:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+      
+      if (response.ok) {
+        const data = await response.text();
+        console.log('📥 Backend response:', data);
+      }
+    } catch (error) {
+      console.error('❌ Backend connectivity test failed:', error);
+    }
+  }
+};
+
+console.log('🐛 DEBUG: Sync debugging functions available:');
+console.log('  - debugSync.sync() - Manual sync trigger');
+console.log('  - debugSync.status() - Check sync status');  
+console.log('  - debugSync.testBackend() - Test backend connectivity');
