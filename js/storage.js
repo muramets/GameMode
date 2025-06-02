@@ -1239,18 +1239,8 @@ class Storage {
         
         this.lastSyncTime = new Date().toISOString();
         
-        // Check if this is the original user who should have cloud data
-        const isOriginalUser = this.currentUser && 
-                               this.currentUser.email === 'dev.muramets@gmail.com';
-        
-        console.log('👤 USER CHECK:', {
-          isOriginalUser,
-          userEmail: this.currentUser.email,
-          hasServerData: !!serverData.data
-        });
-        
-        // Update local data with server data ONLY for original user AND only if local data is empty
-        if (serverData.data && isOriginalUser) {
+        // Update local data with server data for ALL users if they have server data
+        if (serverData.data) {
           Object.keys(serverData.data).forEach(key => {
             if (serverData.data[key]) {
               const currentData = this.get(this.KEYS[key.toUpperCase()]);
@@ -1263,14 +1253,13 @@ class Storage {
                 localDataLength: Array.isArray(currentData) ? currentData.length : 'not-array'
               });
               
-              // Only load server data if local is empty or null
-              if (!hasLocalData) {
+              // Load server data if local is empty OR if server has more recent data
+              if (!hasLocalData || (Array.isArray(serverData.data[key]) && serverData.data[key].length > 0)) {
                 console.log(`📥 Loading server data for ${key}`);
                 this.set(this.KEYS[key.toUpperCase()], serverData.data[key]);
               } else {
                 console.log(`💾 Keeping local data for ${key}`);
               }
-              // If user has custom data (length > 0), preserve it
             }
           });
         }
