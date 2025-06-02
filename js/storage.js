@@ -839,6 +839,12 @@ class Storage {
     };
     
     this.set(this.KEYS.SKILLS, skills);
+    
+    // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ ОБНОВЛЕНИЯ НАВЫКА
+    this.syncWithBackend().catch(error => {
+      console.warn('⚠️ Background sync after skill update failed:', error);
+    });
+    
     return skills[index];
   }
 
@@ -936,8 +942,9 @@ class Storage {
     const targetsChanged = !this.arraysEqual(oldTargets, newTargets);
     const weightChanged = oldProtocol.weight !== protocolData.weight;
     
+    let wasRecalculated = false;
     if (targetsChanged || weightChanged) {
-      const wasRecalculated = this.recalculateProtocolHistory(protocolId, oldTargets, newTargets);
+      wasRecalculated = this.recalculateProtocolHistory(protocolId, oldTargets, newTargets);
       if (wasRecalculated && window.App) {
         if (targetsChanged && weightChanged) {
           window.App.showToast('Protocol targets and weight updated retroactively', 'info');
@@ -948,6 +955,12 @@ class Storage {
         }
       }
     }
+
+    // 🚀 КРИТИЧНО: АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ ОБНОВЛЕНИЯ ПРОТОКОЛА
+    // Особенно важно когда произошел пересчет истории!
+    this.syncWithBackend().catch(error => {
+      console.warn('⚠️ Background sync after protocol update failed:', error);
+    });
     
     return protocols[index];
   }
@@ -1039,6 +1052,12 @@ class Storage {
     };
     
     this.set(this.KEYS.STATES, states);
+    
+    // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ ОБНОВЛЕНИЯ СОСТОЯНИЯ
+    this.syncWithBackend().catch(error => {
+      console.warn('⚠️ Background sync after state update failed:', error);
+    });
+    
     return states[index];
   }
 
@@ -1388,6 +1407,12 @@ class Storage {
         if (window.App && window.App.renderPage) {
           console.log('🖥️ Refreshing UI after sync...');
           
+          // Force update user stats first (important for dashboard)
+          if (window.UI && window.UI.updateUserStats) {
+            console.log('📊 Updating user stats after sync...');
+            window.UI.updateUserStats();
+          }
+          
           // Use the correct renderPage method to refresh current view
           const currentPage = window.App.currentPage;
           console.log('Current page:', currentPage);
@@ -1395,6 +1420,14 @@ class Storage {
           if (currentPage) {
             window.App.renderPage(currentPage);
             console.log(`📄 ${currentPage} page refreshed via renderPage`);
+            
+            // Additional update for dashboard page to ensure stats are current
+            if (currentPage === 'dashboard' && window.UI && window.UI.updateUserStats) {
+              setTimeout(() => {
+                window.UI.updateUserStats();
+                console.log('📊 Dashboard stats double-checked after sync');
+              }, 100);
+            }
           } else {
             // Fallback to dashboard if no current page
             window.App.renderPage('dashboard');
