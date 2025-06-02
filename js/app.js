@@ -102,6 +102,15 @@ async function syncUserData() {
         console.log('📡 Starting automatic sync after user authentication...');
         await window.Storage.syncWithBackend();
         console.log('✅ Automatic sync completed successfully');
+        
+        // 🔍 Дополнительная проверка целостности при старте приложения
+        console.log('🔍 Running startup data integrity check...');
+        const hasIssues = await window.Storage.performDataIntegrityCheck();
+        if (hasIssues) {
+            console.log('✅ Startup integrity check fixed data issues');
+        } else {
+            console.log('✅ Startup integrity check: all data consistent');
+        }
     } catch (error) {
         console.error('❌ Automatic sync failed:', error);
     }
@@ -117,13 +126,30 @@ function setupPeriodicSync() {
         clearInterval(syncIntervalId);
     }
     
+    let periodicSyncCount = 0; // Счетчик для ограничения проверки целостности
+    
     // Синхронизация каждые 2 минуты (120000 ms)
-    syncIntervalId = setInterval(() => {
+    syncIntervalId = setInterval(async () => {
         if (window.firebaseAuth?.currentUser && window.Storage) {
             console.log('⏰ Periodic sync starting...');
-            window.Storage.syncWithBackend().catch(error => {
+            
+            try {
+                await window.Storage.syncWithBackend();
+                
+                // Проверка целостности только каждый 4-й раз (каждые 8 минут)
+                periodicSyncCount++;
+                if (periodicSyncCount % 4 === 0) {
+                    console.log('🔍 Running periodic data integrity check...');
+                    const hasIssues = await window.Storage.performDataIntegrityCheck();
+                    if (hasIssues) {
+                        console.log('✅ Periodic integrity check fixed data issues');
+                    } else {
+                        console.log('✅ Periodic integrity check: all data consistent');
+                    }
+                }
+            } catch (error) {
                 console.warn('⚠️ Periodic sync failed:', error);
-            });
+            }
         }
     }, 120000); // 2 минуты вместо 30 секунд
 }
