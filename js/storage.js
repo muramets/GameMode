@@ -1596,8 +1596,7 @@ class Storage {
                 localItems: localArray.length,
                 serverItems: serverArray.length,
                 mergedItems: mergedData.length,
-                strategy: dataType === 'history' ? 'server-first' : 'local-first',
-                netGain: mergedData.length - localArray.length
+                action: mergeAction
               });
               
               // Save merged data
