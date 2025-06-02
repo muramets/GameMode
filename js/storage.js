@@ -376,11 +376,22 @@ class Storage {
 
   // Recalculate protocol history when targets change
   recalculateProtocolHistory(protocolId, oldTargets, newTargets) {
+    console.log('🔄 RECALCULATING PROTOCOL HISTORY:', {
+      protocolId,
+      oldTargets: oldTargets || [],
+      newTargets: newTargets || [],
+      timestamp: new Date().toISOString()
+    });
+    
     const checkins = this.getCheckins();
     const protocol = this.getProtocolById(protocolId);
-    if (!protocol) return false;
+    if (!protocol) {
+      console.warn('❌ Protocol not found for recalculation:', protocolId);
+      return false;
+    }
 
     let hasChanges = false;
+    let affectedCheckins = 0;
 
     checkins.forEach(checkin => {
       if (checkin.type === 'protocol' && checkin.protocolId === protocolId) {
@@ -399,12 +410,16 @@ class Storage {
         // Get the current weight for this protocol
         const changeValue = originalAction === '+' ? protocol.weight : -protocol.weight;
         
+        let checkinChanged = false;
+        
         // Remove old target effects
         if (oldTargets && oldTargets.length > 0) {
           oldTargets.forEach(skillId => {
             if (checkin.changes[skillId] !== undefined) {
+              console.log(`📋 Removing old target effect for skill ${skillId} from checkin ${checkin.id}`);
               delete checkin.changes[skillId];
               hasChanges = true;
+              checkinChanged = true;
             }
           });
         }
@@ -412,15 +427,24 @@ class Storage {
         // Add new target effects with the current protocol weight
         if (newTargets && newTargets.length > 0) {
           newTargets.forEach(skillId => {
+            console.log(`📋 Adding new target effect for skill ${skillId} to checkin ${checkin.id}: ${changeValue}`);
             checkin.changes[skillId] = changeValue;
             hasChanges = true;
+            checkinChanged = true;
           });
+        }
+        
+        if (checkinChanged) {
+          affectedCheckins++;
         }
       }
     });
 
     if (hasChanges) {
       this.set(this.KEYS.HISTORY, checkins);
+      console.log(`✅ RECALCULATION COMPLETE: Updated ${affectedCheckins} checkins for protocol ${protocolId}`);
+    } else {
+      console.log(`ℹ️ RECALCULATION SKIPPED: No changes needed for protocol ${protocolId}`);
     }
 
     return hasChanges;
@@ -1387,6 +1411,50 @@ class Storage {
                     
                     console.log('🔄 HISTORY MERGE STRATEGY: Server-first merge, added', localArray.filter(l => !serverArray.find(s => s.id === l.id)).length, 'local-only items');
                     
+                } else if (key === 'protocols') {
+                    console.log('🔄 USING SMART MERGE STRATEGY FOR PROTOCOLS');
+                    
+                    // Для protocols - сравниваем по содержимому (targets, weight), не только по ID
+                    // Начинаем с локальных данных как базы
+                    mergedData = [...localArray];
+                    
+                    // Проверяем серверные элементы
+                    for (const serverItem of serverArray) {
+                        const localItem = mergedData.find(m => m.id === serverItem.id);
+                        if (localItem) {
+                            // Элемент существует - сравниваем содержимое
+                            const targetsChanged = !this.arraysEqual(localItem.targets || [], serverItem.targets || []);
+                            const weightChanged = localItem.weight !== serverItem.weight;
+                            const nameChanged = localItem.name !== serverItem.name;
+                            const iconChanged = localItem.icon !== serverItem.icon;
+                            const hoverChanged = localItem.hover !== serverItem.hover;
+                            
+                            const hasChanges = targetsChanged || weightChanged || nameChanged || iconChanged || hoverChanged;
+                            
+                            if (hasChanges) {
+                                console.log(`📋 Protocols item ${serverItem.id} updated from server:`, {
+                                    targetsChanged,
+                                    weightChanged,
+                                    nameChanged,
+                                    iconChanged,
+                                    hoverChanged
+                                });
+                                // Заменяем локальную версию серверной
+                                const index = mergedData.findIndex(m => m.id === serverItem.id);
+                                if (index !== -1) {
+                                    mergedData[index] = serverItem;
+                                    hasUpdates = true;
+                                }
+                            } else {
+                                console.log(`📋 Protocols item ${serverItem.id} exists in both, keeping local version (no changes)`);
+                            }
+                        } else {
+                            console.log(`📋 Protocols item ${serverItem.id} found only on server, adding to local`);
+                            mergedData.push(serverItem);
+                            hasUpdates = true;
+                        }
+                    }
+                    
                 } else if (key === 'skills') {
                     console.log('🔄 USING SMART MERGE STRATEGY FOR SKILLS');
                     
@@ -1410,6 +1478,7 @@ class Storage {
                                 const index = mergedData.findIndex(m => m.id === serverItem.id);
                                 if (index !== -1) {
                                     mergedData[index] = serverItem;
+                                    hasUpdates = true;
                                 }
                             } else {
                                 console.log(`📋 Skills item ${serverItem.id} exists in both, keeping local version (no changes)`);
@@ -1417,6 +1486,7 @@ class Storage {
                         } else {
                             console.log(`📋 Skills item ${serverItem.id} found only on server, adding to local`);
                             mergedData.push(serverItem);
+                            hasUpdates = true;
                         }
                     }
                     
@@ -1438,29 +1508,30 @@ class Storage {
                         } else {
                             console.log(`📋 ${key} item ${item.id} found only on server, adding to local`);
                             mergedData.push(item);
+                            hasUpdates = true;
                         }
                     }
                 }
-                
-                // Определяем действие мержа для статистики
-                const originalLocalCount = localArray.length;
-                const originalServerCount = serverArray.length;
-                const mergedCount = mergedData.length;
-                
-                if (mergedCount > originalLocalCount) {
-                  mergeAction = `merged_gained_${mergedCount - originalLocalCount}_items`;
-                  hasUpdates = true;
-                } else if (mergedCount === originalLocalCount) {
-                  mergeAction = 'no_new_items_found';
-                } else {
-                  mergeAction = `merged_deduplicated_${originalLocalCount - mergedCount}_items`;
-                  hasUpdates = true;
-                }
-                
-                // If merged data differs from server, mark for sync
-                if (!this.arraysEqual(mergedData, serverArray)) {
-                  this.markForSync();
-                }
+              }
+              
+              // Определяем действие мержа для статистики
+              const originalLocalCount = localArray.length;
+              const originalServerCount = serverArray.length;
+              const mergedCount = mergedData.length;
+              
+              if (mergedCount > originalLocalCount) {
+                mergeAction = `merged_gained_${mergedCount - originalLocalCount}_items`;
+                hasUpdates = true;
+              } else if (mergedCount === originalLocalCount) {
+                mergeAction = 'no_new_items_found';
+              } else {
+                mergeAction = `merged_deduplicated_${originalLocalCount - mergedCount}_items`;
+                hasUpdates = true;
+              }
+              
+              // If merged data differs from server, mark for sync
+              if (!this.arraysEqual(mergedData, serverArray)) {
+                this.markForSync();
               }
               
               mergeResults[key] = { 
