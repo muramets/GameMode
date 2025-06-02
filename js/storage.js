@@ -1442,6 +1442,11 @@ class Storage {
               
               // Save merged data
               this.set(this.KEYS[key.toUpperCase()], mergedData);
+              
+              // 🚀 КРИТИЧНО: Пересчет истории для обновленных протоколов
+              if (key === 'protocols' && hasUpdates) {
+                this.checkAndRecalculateProtocolHistory(localArray, mergedData);
+              }
             }
           });
           
@@ -1754,6 +1759,49 @@ class Storage {
     });
     
     return mergedArray;
+  }
+
+  // Check and recalculate protocol history after merging
+  checkAndRecalculateProtocolHistory(localArray, mergedData) {
+    console.log('🔄 Checking protocols for history recalculation after sync...');
+    
+    // Create maps for easier lookup
+    const localProtocolsMap = new Map(localArray.map(p => [p.id, p]));
+    const mergedProtocolsMap = new Map(mergedData.map(p => [p.id, p]));
+    
+    let totalRecalculated = 0;
+    
+    // Check each merged protocol to see if targets changed
+    mergedData.forEach(mergedProtocol => {
+      const localProtocol = localProtocolsMap.get(mergedProtocol.id);
+      
+      // If this is a new protocol from server, or targets/weight changed
+      if (!localProtocol || 
+          !this.arraysEqual(localProtocol.targets || [], mergedProtocol.targets || []) ||
+          localProtocol.weight !== mergedProtocol.weight) {
+        
+        const oldTargets = localProtocol ? (localProtocol.targets || []) : [];
+        const newTargets = mergedProtocol.targets || [];
+        
+        console.log(`🔄 Recalculating history for protocol ${mergedProtocol.id}:`, {
+          oldTargets,
+          newTargets,
+          reason: !localProtocol ? 'new_from_server' : 'targets_or_weight_changed'
+        });
+        
+        const wasRecalculated = this.recalculateProtocolHistory(mergedProtocol.id, oldTargets, newTargets);
+        if (wasRecalculated) {
+          totalRecalculated++;
+        }
+      }
+    });
+    
+    if (totalRecalculated > 0) {
+      console.log(`✅ Recalculated history for ${totalRecalculated} protocols after sync`);
+      if (window.App) {
+        window.App.showToast(`Updated ${totalRecalculated} protocol(s) retroactively`, 'info');
+      }
+    }
   }
 }
 
