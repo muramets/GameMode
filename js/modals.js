@@ -134,6 +134,13 @@ const Modals = {
             App.setupTooltips();
           }
           
+          // 🔄 Sync with backend after successful update
+          console.log('🔄 Triggering sync after skill update...');
+          window.Storage.syncWithBackend().catch(error => {
+            console.error('❌ Sync failed after skill update:', error);
+            App.showToast('⚠️ Skill saved locally but sync failed', 'warning');
+          });
+          
           closeModal();
         } else {
           App.showToast('Failed to update skill', 'error');
@@ -151,6 +158,13 @@ const Modals = {
             DragDrop.setupSkills();
             App.setupTooltips();
           }
+          
+          // 🔄 Sync with backend after successful add
+          console.log('🔄 Triggering sync after skill add...');
+          window.Storage.syncWithBackend().catch(error => {
+            console.error('❌ Sync failed after skill add:', error);
+            App.showToast('⚠️ Skill saved locally but sync failed', 'warning');
+          });
           
           closeModal();
         } else {
@@ -384,6 +398,13 @@ const Modals = {
             App.historyInitialized = false;
           }
           
+          // 🔄 Sync with backend after successful update
+          console.log('🔄 Triggering sync after protocol update...');
+          window.Storage.syncWithBackend().catch(error => {
+            console.error('❌ Sync failed after protocol update:', error);
+            App.showToast('⚠️ Protocol saved locally but sync failed', 'warning');
+          });
+          
           closeModal();
         } else {
           App.showToast('Failed to update protocol', 'error');
@@ -401,6 +422,13 @@ const Modals = {
             DragDrop.setupProtocols();
             App.setupTooltips();
           }
+          
+          // 🔄 Sync with backend after successful add
+          console.log('🔄 Triggering sync after protocol add...');
+          window.Storage.syncWithBackend().catch(error => {
+            console.error('❌ Sync failed after protocol add:', error);
+            App.showToast('⚠️ Protocol saved locally but sync failed', 'warning');
+          });
           
           closeModal();
         } else {

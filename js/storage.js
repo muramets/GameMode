@@ -1168,7 +1168,20 @@ class Storage {
 
   // Sync with Firebase backend
   async syncWithBackend() {
-    if (!this.isOnline || !this.currentUser) return;
+    if (!this.isOnline || !this.currentUser) {
+      console.log('🚫 SYNC SKIPPED:', {
+        isOnline: this.isOnline,
+        hasUser: !!this.currentUser,
+        userEmail: this.currentUser?.email
+      });
+      return;
+    }
+    
+    console.log('🔄 SYNC STARTED:', {
+      user: this.currentUser.email,
+      userId: this.currentUser.uid,
+      backendUrl: BACKEND_URL
+    });
     
     try {
       const userData = {
@@ -1179,42 +1192,107 @@ class Storage {
         quickActions: this.get(this.KEYS.QUICK_ACTIONS)
       };
       
-      const response = await fetch(`${BACKEND_URL}/api/sync`, {
+      console.log('📤 SYNC DATA TO SEND:', {
+        protocolsCount: userData.protocols?.length || 0,
+        skillsCount: userData.skills?.length || 0,
+        statesCount: userData.states?.length || 0,
+        historyCount: userData.history?.length || 0,
+        quickActionsCount: userData.quickActions?.length || 0,
+        userData: userData
+      });
+      
+      const token = await this.currentUser.getIdToken();
+      console.log('🔑 AUTH TOKEN OBTAINED:', {
+        tokenLength: token?.length || 0,
+        tokenStart: token?.substring(0, 20) + '...'
+      });
+      
+      const syncUrl = `${BACKEND_URL}/api/sync`;
+      console.log('🌐 SYNC REQUEST:', {
+        url: syncUrl,
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await this.currentUser.getIdToken()}`
+          'Authorization': `Bearer ${token.substring(0, 20)}...`
+        }
+      });
+      
+      const response = await fetch(syncUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(userData)
       });
       
+      console.log('📡 SYNC RESPONSE:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+      
       if (response.ok) {
         const serverData = await response.json();
+        console.log('📥 SYNC RESPONSE DATA:', serverData);
+        
         this.lastSyncTime = new Date().toISOString();
         
         // Check if this is the original user who should have cloud data
         const isOriginalUser = this.currentUser && 
                                this.currentUser.email === 'dev.muramets@gmail.com';
         
+        console.log('👤 USER CHECK:', {
+          isOriginalUser,
+          userEmail: this.currentUser.email,
+          hasServerData: !!serverData.data
+        });
+        
         // Update local data with server data ONLY for original user AND only if local data is empty
         if (serverData.data && isOriginalUser) {
           Object.keys(serverData.data).forEach(key => {
             if (serverData.data[key]) {
               const currentData = this.get(this.KEYS[key.toUpperCase()]);
+              const hasLocalData = currentData && Array.isArray(currentData) && currentData.length > 0;
+              
+              console.log(`🔄 SYNC KEY ${key}:`, {
+                hasServerData: !!serverData.data[key],
+                serverDataLength: Array.isArray(serverData.data[key]) ? serverData.data[key].length : 'not-array',
+                hasLocalData,
+                localDataLength: Array.isArray(currentData) ? currentData.length : 'not-array'
+              });
+              
               // Only load server data if local is empty or null
-              if (!currentData || (Array.isArray(currentData) && currentData.length === 0)) {
+              if (!hasLocalData) {
+                console.log(`📥 Loading server data for ${key}`);
                 this.set(this.KEYS[key.toUpperCase()], serverData.data[key]);
+              } else {
+                console.log(`💾 Keeping local data for ${key}`);
               }
               // If user has custom data (length > 0), preserve it
             }
           });
         }
         
-        console.log('✅ Data synced successfully');
+        console.log('✅ SYNC COMPLETED SUCCESSFULLY');
+      } else {
+        const errorText = await response.text();
+        console.error('❌ SYNC FAILED - Server Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorText
+        });
+        throw new Error(`Server responded with ${response.status}: ${errorText}`);
       }
     } catch (error) {
-      console.error('Sync failed:', error);
+      console.error('❌ SYNC FAILED - Network/Code Error:', {
+        error: error.message,
+        stack: error.stack,
+        name: error.name
+      });
       this.markForSync();
+      throw error;
     }
   }
 
