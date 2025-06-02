@@ -271,19 +271,25 @@ const DragDrop = {
   },
 
   reorderStates(draggedId, targetId) {
-    // Get fresh states data
+    // Get fresh states data from storage
     const states = window.Storage.getStatesInOrder();
     
     this.reorderItems(
       states,
       draggedId,
       targetId,
-      (order) => window.Storage.setStateOrder(order),
-      () => {
+      (order) => {
+        // Save the new state order first
+        window.Storage.setStateOrder(order);
+        // Also update App.states immediately to prevent conflicts
         App.states = window.Storage.getStatesInOrder();
+      },
+      () => {
+        // Update display by re-rendering only the states section of dashboard
+        // This prevents full dashboard re-render which might conflict with drag & drop
         UI.renderDashboard();
-        // Re-setup drag and drop after rendering
-        setTimeout(() => DragDrop.setupStates(), 0);
+        // Re-setup drag and drop after a brief delay to ensure DOM is updated
+        setTimeout(() => DragDrop.setupStates(), 100);
       },
       'state',
       'States order updated'

@@ -1228,6 +1228,11 @@ class Storage {
 
   setStateOrder(stateOrder) {
     this.set(this.KEYS.STATE_ORDER, stateOrder);
+    
+    // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ ИЗМЕНЕНИЯ ПОРЯДКА СОСТОЯНИЙ
+    this.syncWithBackend().catch(error => {
+      console.warn('⚠️ Background sync after state reorder failed:', error);
+    });
   }
 
   getStatesInOrder() {
