@@ -1266,17 +1266,47 @@ class Storage {
   }
 
   getQuickActionsInOrder() {
-    const quickActionIds = this.get(this.KEYS.QUICK_ACTIONS) || [];
+    const quickActionIds = this.getQuickActions();
     const customOrder = this.getQuickActionOrder();
     const protocols = this.getProtocols();
     
-    // Use custom order if available, otherwise use stored quick actions order
-    const orderToUse = customOrder.length > 0 ? customOrder : quickActionIds;
+    console.log('🔍 getQuickActionsInOrder DEBUG:', {
+      quickActionIds,
+      customOrder,
+      protocols: protocols.length,
+      quickActionKey: 'quickActions',
+      quickActionOrderKey: 'quickActionOrder',
+      // 🔧 ДОПОЛНИТЕЛЬНАЯ ОТЛАДКА для проблемы с пустыми Quick Actions
+      rawQuickActions: this.get(this.KEYS.QUICK_ACTIONS),
+      rawQuickActionOrder: this.get(this.KEYS.QUICK_ACTION_ORDER)
+    });
     
-    // Return protocols that are in quick actions, in the correct order
-    return orderToUse.map(id => {
-      return protocols.find(p => p.id === id);
-    }).filter(Boolean);
+    // If no quick actions, return empty
+    if (!quickActionIds || quickActionIds.length === 0) {
+      console.log('🚨 getQuickActionsInOrder: No quickActionIds found');
+      return [];
+    }
+    
+    // Use custom order if available, otherwise use the quickActionIds order
+    const orderToUse = customOrder && customOrder.length > 0 ? customOrder : quickActionIds;
+    
+    const result = [];
+    for (const protocolId of orderToUse) {
+      const protocol = protocols.find(p => p.id == protocolId);
+      console.log(`🔍 Looking for protocol ${protocolId}: ${protocol ? 'Found: ' + protocol.name : 'Not found'}`);
+      
+      if (protocol) {
+        result.push(protocol);
+      }
+    }
+    
+    console.log('🔍 getQuickActionsInOrder RESULT:', {
+      orderToUse,
+      foundProtocols: result.length,
+      result: result.map(p => ({id: p.id, name: p.name}))
+    });
+    
+    return result;
   }
 
   // Sync with Firebase backend
@@ -1571,61 +1601,12 @@ class Storage {
                 } else {
                     console.log('🔄 USING SMART MERGE STRATEGY FOR DATA');
                     
-                    // 🔧 СПЕЦИАЛЬНАЯ ВАЛИДАЦИЯ для Order массивов
+                    // 🔧 СПЕЦИАЛЬНАЯ ВАЛИДАЦИЯ для Order массивов - ОТЛОЖЕНА ПОСЛЕ ОБНОВЛЕНИЯ ДАННЫХ
                     if (key.includes('Order')) {
-                        console.log(`🔧 VALIDATING ORDER ARRAY: ${key}`);
+                        console.log(`🔄 DEFERRING ORDER ARRAY VALIDATION: ${key} (will process after data update)`);
                         
-                        // Получаем соответствующие данные для валидации
-                        let validIds = [];
-                        if (key === 'stateOrder') {
-                            const currentStates = this.getStates();
-                            validIds = currentStates.map(s => s.id);
-                        } else if (key === 'protocolOrder') {
-                            const currentProtocols = this.getProtocols();
-                            validIds = currentProtocols.map(p => p.id);
-                        } else if (key === 'skillOrder') {
-                            const currentSkills = this.getSkills();
-                            validIds = currentSkills.map(s => s.id);
-                        } else if (key === 'quickActionOrder') {
-                            const currentQuickActions = this.getQuickActions();
-                            validIds = currentQuickActions;
-                        }
-                        
-                        console.log(`🔍 VALIDATION ${key}:`, {
-                            validIds,
-                            localOrder: localArray,
-                            serverOrder: serverArray
-                        });
-                        
-                        // Фильтруем только валидные ID'шники из локального и серверного массива
-                        const validLocalIds = localArray.filter(id => validIds.includes(id));
-                        const validServerIds = serverArray.filter(id => validIds.includes(id));
-                        
-                        console.log(`🔍 FILTERED ${key}:`, {
-                            validLocal: validLocalIds,
-                            validServer: validServerIds,
-                            invalidLocalCount: localArray.length - validLocalIds.length,
-                            invalidServerCount: serverArray.length - validServerIds.length
-                        });
-                        
-                        // Сначала добавляем все валидные локальные ID'шники
-                        mergedData = [...validLocalIds];
-                        
-                        // Затем добавляем валидные серверные ID'шники, которых нет локально
-                        for (const serverId of validServerIds) {
-                            if (!mergedData.includes(serverId)) {
-                                console.log(`📋 ${key} ID ${serverId} found only on server, adding to local`);
-                                mergedData.push(serverId);
-                                hasUpdates = true;
-                            } else {
-                                console.log(`📋 ${key} ID ${serverId} exists in both local and server, keeping local position`);
-                            }
-                        }
-                        
-                        console.log(`✅ ${key} VALIDATION COMPLETE:`, {
-                            finalOrder: mergedData,
-                            allValidIds: mergedData.every(id => validIds.includes(id))
-                        });
+                        // Временно сохраняем локальные данные, обработаем после обновления всех данных
+                        mergedData = [...localArray];
                         
                     } else {
                         // Для всех остальных данных - умная стратегия:
