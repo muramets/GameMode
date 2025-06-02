@@ -1285,13 +1285,28 @@ class Storage {
         console.log('✅ SYNC COMPLETED SUCCESSFULLY');
         
         // Update UI after successful sync
-        console.log('🖥️ Refreshing UI after sync...');
-        
-        // Simple page reload to refresh all data
-        console.log('🔄 Reloading page to show synced data...');
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000); // Small delay to ensure data is saved
+        if (window.App && window.App.renderPage) {
+          console.log('🖥️ Refreshing UI after sync...');
+          
+          // Use the correct renderPage method to refresh current view
+          const currentPage = window.App.currentPage;
+          console.log('Current page:', currentPage);
+          
+          if (currentPage) {
+            window.App.renderPage(currentPage);
+            console.log(`📄 ${currentPage} page refreshed via renderPage`);
+          } else {
+            // Fallback to dashboard if no current page
+            window.App.renderPage('dashboard');
+            console.log('📄 Dashboard page rendered as fallback');
+          }
+        } else {
+          // Last resort fallback
+          console.log('🔄 App.renderPage not available, reloading page...');
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        }
       } else {
         const errorText = await response.text();
         console.error('❌ SYNC FAILED - Server Error:', {
