@@ -1548,6 +1548,53 @@ function initMainApp() {
             } catch (error) {
                 console.error('❌ Smart sync failed:', error);
             }
+        },
+
+        // Test protocol recalculation
+        testRecalculation(protocolId) {
+            console.log('🧪 Testing protocol recalculation for protocol:', protocolId);
+            
+            const protocol = window.Storage.getProtocolById(protocolId);
+            if (!protocol) {
+                console.error('❌ Protocol not found:', protocolId);
+                return;
+            }
+            
+            console.log('📋 Current protocol data:', protocol);
+            
+            // Get history for this protocol
+            const checkins = window.Storage.getCheckins();
+            const protocolCheckins = checkins.filter(c => c.type === 'protocol' && c.protocolId === protocolId);
+            
+            console.log(`📊 Found ${protocolCheckins.length} checkins for this protocol:`);
+            protocolCheckins.forEach(checkin => {
+                console.log(`  - Checkin ${checkin.id}:`, {
+                    timestamp: checkin.timestamp,
+                    action: checkin.action,
+                    changes: checkin.changes
+                });
+            });
+            
+            // Test recalculation with current targets
+            const currentTargets = protocol.targets || [];
+            console.log('🔄 Testing recalculation with current targets:', currentTargets);
+            
+            // Simulate different old targets to trigger recalculation
+            const simulatedOldTargets = [];
+            const wasRecalculated = window.Storage.recalculateProtocolHistory(protocolId, simulatedOldTargets, currentTargets);
+            
+            console.log('✅ Recalculation test result:', wasRecalculated);
+            
+            // Show updated checkins
+            const updatedCheckins = window.Storage.getCheckins().filter(c => c.type === 'protocol' && c.protocolId === protocolId);
+            console.log('📊 Updated checkins:');
+            updatedCheckins.forEach(checkin => {
+                console.log(`  - Checkin ${checkin.id}:`, {
+                    timestamp: checkin.timestamp,
+                    action: checkin.action,
+                    changes: checkin.changes
+                });
+            });
         }
     };
 
@@ -1605,6 +1652,53 @@ window.debugSync = {
     }
   },
   
+  // Test protocol recalculation
+  testRecalculation(protocolId) {
+    console.log('🧪 Testing protocol recalculation for protocol:', protocolId);
+    
+    const protocol = window.Storage.getProtocolById(protocolId);
+    if (!protocol) {
+      console.error('❌ Protocol not found:', protocolId);
+      return;
+    }
+    
+    console.log('📋 Current protocol data:', protocol);
+    
+    // Get history for this protocol
+    const checkins = window.Storage.getCheckins();
+    const protocolCheckins = checkins.filter(c => c.type === 'protocol' && c.protocolId === protocolId);
+    
+    console.log(`📊 Found ${protocolCheckins.length} checkins for this protocol:`);
+    protocolCheckins.forEach(checkin => {
+      console.log(`  - Checkin ${checkin.id}:`, {
+        timestamp: checkin.timestamp,
+        action: checkin.action,
+        changes: checkin.changes
+      });
+    });
+    
+    // Test recalculation with current targets
+    const currentTargets = protocol.targets || [];
+    console.log('🔄 Testing recalculation with current targets:', currentTargets);
+    
+    // Simulate different old targets to trigger recalculation
+    const simulatedOldTargets = [];
+    const wasRecalculated = window.Storage.recalculateProtocolHistory(protocolId, simulatedOldTargets, currentTargets);
+    
+    console.log('✅ Recalculation test result:', wasRecalculated);
+    
+    // Show updated checkins
+    const updatedCheckins = window.Storage.getCheckins().filter(c => c.type === 'protocol' && c.protocolId === protocolId);
+    console.log('📊 Updated checkins:');
+    updatedCheckins.forEach(checkin => {
+      console.log(`  - Checkin ${checkin.id}:`, {
+        timestamp: checkin.timestamp,
+        action: checkin.action,
+        changes: checkin.changes
+      });
+    });
+  },
+
   // Compare local vs server data
   async compare() {
     console.log('🔍 Comparing local vs server data...');
@@ -1795,6 +1889,7 @@ window.debugSync = {
 console.log('🐛 DEBUG: Sync debugging functions available:');
 console.log('  - debugSync.sync() - Manual sync trigger');
 console.log('  - debugSync.forceUpload() - Force upload local data to server');
+console.log('  - debugSync.testRecalculation(protocolId) - Test protocol history recalculation');
 console.log('  - debugSync.compare() - Compare local vs server data');
 console.log('  - debugSync.status() - Check sync status');  
 console.log('  - debugSync.testBackend() - Test backend connectivity');
