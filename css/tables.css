@@ -40,7 +40,6 @@
   font-weight: 500;
   text-transform: lowercase;
   border-bottom: 1px solid var(--bg-color);
-  min-height: 50px;
 }
 
 #protocols .protocols-header .protocol-cell {
@@ -64,7 +63,6 @@
   border-bottom: 1px solid var(--bg-color);
   transition: all 0.125s;
   cursor: grab;
-  min-height: 50px;
   align-items: center;
 }
 
@@ -149,7 +147,6 @@
   gap: 0.25rem;
   align-items: flex-start;
   overflow: hidden;
-  min-height: 1.5rem;
   line-height: 1.2;
 }
 
