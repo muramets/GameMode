@@ -1265,6 +1265,41 @@ class Storage {
         }
         
         console.log('✅ SYNC COMPLETED SUCCESSFULLY');
+        
+        // Update UI after successful sync
+        if (window.App) {
+          console.log('🖥️ Refreshing UI after sync...');
+          
+          // Update current page if it's dashboard
+          if (window.App.currentPage === 'dashboard') {
+            window.App.loadDashboard();
+            console.log('🏠 Dashboard refreshed');
+          }
+          
+          // Update skills page if it's active
+          if (window.App.currentPage === 'skills') {
+            window.App.loadPage('skills');
+            console.log('🧠 Skills page refreshed');
+          }
+          
+          // Update states page if it's active
+          if (window.App.currentPage === 'states') {
+            window.App.loadPage('states');
+            console.log('📊 States page refreshed');
+          }
+          
+          // Update protocols page if it's active
+          if (window.App.currentPage === 'protocols') {
+            window.App.loadPage('protocols');
+            console.log('📋 Protocols page refreshed');
+          }
+          
+          // Update history page if it's active
+          if (window.App.currentPage === 'history') {
+            window.App.loadPage('history');
+            console.log('📜 History page refreshed');
+          }
+        }
       } else {
         const errorText = await response.text();
         console.error('❌ SYNC FAILED - Server Error:', {
