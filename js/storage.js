@@ -146,22 +146,21 @@ class Storage {
 
   // Initialize app data
   init() {
-    // First check if we have any legacy data to migrate
+    console.log('🔧 STORAGE INIT:', {
+      user: this.currentUser?.email,
+      userId: this.currentUser?.uid
+    });
+    
     if (this.currentUser) {
       this.checkAndMigrateLegacyData();
     }
     
-    // Check if this is the original user who should have default data
-    const isOriginalUser = this.currentUser && 
-                           this.currentUser.email === 'dev.muramets@gmail.com';
-    
     // Initialize each key separately if it doesn't exist
     if (!this.get(this.KEYS.PROTOCOLS)) {
-      // For original user: load INITIAL_DATA only if no existing data
-      // For other users: always empty array
-      this.set(this.KEYS.PROTOCOLS, isOriginalUser ? INITIAL_DATA.protocols : []);
-    } else if (isOriginalUser) {
-      // For original user: check if existing data is just empty or default
+      // Load default data for all users if no existing data
+      this.set(this.KEYS.PROTOCOLS, INITIAL_DATA.protocols);
+    } else {
+      // Check if existing data is just empty
       const existingProtocols = this.get(this.KEYS.PROTOCOLS);
       if (Array.isArray(existingProtocols) && existingProtocols.length === 0) {
         // User has empty data, can safely load defaults
@@ -171,8 +170,8 @@ class Storage {
     }
     
     if (!this.get(this.KEYS.SKILLS)) {
-      this.set(this.KEYS.SKILLS, isOriginalUser ? INITIAL_DATA.skills : []);
-    } else if (isOriginalUser) {
+      this.set(this.KEYS.SKILLS, INITIAL_DATA.skills);
+    } else {
       const existingSkills = this.get(this.KEYS.SKILLS);
       if (Array.isArray(existingSkills) && existingSkills.length === 0) {
         this.set(this.KEYS.SKILLS, INITIAL_DATA.skills);
@@ -180,8 +179,8 @@ class Storage {
     }
     
     if (!this.get(this.KEYS.STATES)) {
-      this.set(this.KEYS.STATES, isOriginalUser ? INITIAL_DATA.states : []);
-    } else if (isOriginalUser) {
+      this.set(this.KEYS.STATES, INITIAL_DATA.states);
+    } else {
       const existingStates = this.get(this.KEYS.STATES);
       if (Array.isArray(existingStates) && existingStates.length === 0) {
         this.set(this.KEYS.STATES, INITIAL_DATA.states);
