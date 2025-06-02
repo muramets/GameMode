@@ -1615,7 +1615,9 @@ class Storage {
               }
 
               // 🔄 КРИТИЧНО: После синхронизации протоколов проверяем, нужна ли дополнительная проверка истории
-              if (key === 'protocols') {
+              // СТАРАЯ ЛОГИКА ЗАКОММЕНТИРОВАНА - теперь проверка выполняется ПОСЛЕ всех данных
+              // чтобы избежать бесконечного цикла с server-first merge для истории
+              if (false && key === 'protocols') {
                 console.log('🔍 POST-SYNC PROTOCOL HISTORY VALIDATION starting...');
                 const protocolsToCheck = mergedData.filter(protocol => protocol.targets && protocol.targets.length > 0);
                 
@@ -1670,6 +1672,57 @@ class Storage {
           // Log merge summary
           console.log('📊 MERGE RESULTS:', mergeResults);
           
+          // 🔄 КРИТИЧНО: Перенесенная проверка истории ПОСЛЕ всех данных
+          // Это предотвращает перезапись пересчитанных данных server-first merge
+          console.log('🔍 POST-SYNC PROTOCOL HISTORY VALIDATION starting (after all data synced)...');
+          const protocolsData = mergeResults.protocols?.mergedData || this.getProtocols();
+          const protocolsToCheck = protocolsData.filter(protocol => protocol.targets && protocol.targets.length > 0);
+          
+          for (const protocol of protocolsToCheck) {
+            const protocolCheckins = this.getCheckins().filter(c => c.type === 'protocol' && c.protocolId === protocol.id);
+            const missingEffectsCheckins = protocolCheckins.filter(checkin => {
+              if (!checkin.changes) return true; // No changes at all
+              
+              // Check if all targets are present in changes
+              const hasAllTargets = protocol.targets.every(targetId => 
+                checkin.changes.hasOwnProperty(targetId)
+              );
+              return !hasAllTargets;
+            });
+            
+            if (missingEffectsCheckins.length > 0) {
+              console.log(`🚨 FOUND ${missingEffectsCheckins.length} CHECKINS MISSING TARGET EFFECTS for protocol ${protocol.id}`);
+              console.log(`📊 Protocol targets:`, protocol.targets);
+              console.log(`📋 Checkins to fix:`, missingEffectsCheckins.map(c => c.id));
+              
+              // Запускаем пересчет истории
+              const recalculated = this.recalculateProtocolHistory(protocol.id, [], protocol.targets);
+              if (recalculated) {
+                console.log(`✅ POST-SYNC RECALCULATION completed for protocol ${protocol.id}`);
+                
+                // 🔄 ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ UI после пересчета
+                console.log('🖥️ Triggering UI refresh after post-sync recalculation...');
+                if (window.App && window.App.renderPage) {
+                  window.App.renderPage(window.App.currentPage);
+                  console.log('📄 UI refreshed after post-sync recalculation');
+                }
+                
+                // Показываем уведомление
+                if (window.App && window.App.showToast && !this._hasShownRecalcToast) {
+                  window.App.showToast('История ретроспективно пересчиталась', 'success');
+                  this._hasShownRecalcToast = true;
+                  // Сбрасываем флаг через 30 секунд
+                  setTimeout(() => {
+                    this._hasShownRecalcToast = false;
+                  }, 30000);
+                }
+              }
+            } else {
+              console.log(`✅ Protocol ${protocol.id} history is consistent`);
+            }
+          }
+          console.log('🏁 POST-SYNC PROTOCOL HISTORY VALIDATION completed');
+
           // Show user-friendly notification about merge results
           if (hasUpdates && window.App) {
             const updates = Object.entries(mergeResults)

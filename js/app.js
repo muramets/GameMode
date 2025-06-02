@@ -1646,6 +1646,94 @@ function initMainApp() {
                     status: hasCorrectTargets ? '✅ Correct' : '❌ Incorrect'
                 });
             });
+        },
+        
+        // Debug function to test specific protocol issues
+        debugProtocolTargets(protocolId) {
+            console.log('🐛 DEBUGGING PROTOCOL TARGETS for protocol:', protocolId);
+            
+            const protocol = window.Storage.getProtocolById(protocolId);
+            if (!protocol) {
+                console.error('❌ Protocol not found:', protocolId);
+                return;
+            }
+            
+            console.log('📋 Current protocol targets:', protocol.targets || []);
+            
+            // Find all checkins for this protocol
+            const checkins = window.Storage.getCheckins();
+            const protocolCheckins = checkins.filter(c => c.type === 'protocol' && c.protocolId === protocolId);
+            
+            console.log(`📊 Found ${protocolCheckins.length} checkins for this protocol`);
+            
+            // Find checkins missing target effects
+            const missingEffectsCheckins = protocolCheckins.filter(checkin => {
+                if (!checkin.changes) return true; // No changes at all
+                
+                // Check if all targets are present in changes
+                const hasAllTargets = (protocol.targets || []).every(targetId => 
+                    checkin.changes.hasOwnProperty(targetId)
+                );
+                return !hasAllTargets;
+            });
+            
+            if (missingEffectsCheckins.length > 0) {
+                console.log(`🚨 FOUND ${missingEffectsCheckins.length} CHECKINS MISSING TARGET EFFECTS:`);
+                missingEffectsCheckins.forEach(checkin => {
+                    const missingTargets = (protocol.targets || []).filter(targetId => 
+                        !checkin.changes || !checkin.changes.hasOwnProperty(targetId)
+                    );
+                    console.log(`  - Checkin ${checkin.id} (${new Date(checkin.timestamp).toLocaleString()}):`, {
+                        action: checkin.action,
+                        currentChanges: checkin.changes || {},
+                        missingTargets,
+                        expectedTargets: protocol.targets || []
+                    });
+                });
+                
+                // Offer to fix them
+                console.log('🔧 Run debugSync.fixProtocolHistory(' + protocolId + ') to fix these checkins');
+            } else {
+                console.log('✅ All checkins have proper target effects');
+            }
+        },
+        
+        // Fix protocol history by running recalculation
+        fixProtocolHistory(protocolId) {
+            console.log('🔧 FIXING PROTOCOL HISTORY for protocol:', protocolId);
+            
+            const protocol = window.Storage.getProtocolById(protocolId);
+            if (!protocol) {
+                console.error('❌ Protocol not found:', protocolId);
+                return;
+            }
+            
+            const oldTargets = [];
+            const newTargets = protocol.targets || [];
+            
+            console.log('📊 Attempting recalculation with:', {
+                protocolId,
+                protocolName: protocol.name,
+                oldTargets,
+                newTargets
+            });
+            
+            const result = window.Storage.recalculateProtocolHistory(protocolId, oldTargets, newTargets);
+            
+            if (result) {
+                console.log('✅ Recalculation completed successfully');
+                
+                // Refresh UI
+                if (window.App && window.App.renderPage) {
+                    window.App.renderPage(window.App.currentPage);
+                    console.log('🔄 UI refreshed');
+                }
+                
+                // Show updated state
+                this.debugProtocolTargets(protocolId);
+            } else {
+                console.log('ℹ️ No changes were needed');
+            }
         }
     };
 
@@ -1942,6 +2030,8 @@ console.log('  - debugSync.sync() - Manual sync trigger');
 console.log('  - debugSync.forceUpload() - Force upload local data to server');
 console.log('  - debugSync.testRecalculation(protocolId) - Test protocol history recalculation');
 console.log('  - debugSync.inspectProtocolHistory(protocolId) - Detailed protocol history analysis');
+console.log('  - debugSync.debugProtocolTargets(protocolId) - Debug specific protocol target issues');
+console.log('  - debugSync.fixProtocolHistory(protocolId) - Fix protocol history by recalculation');
 console.log('  - debugSync.compare() - Compare local vs server data');
 console.log('  - debugSync.status() - Check sync status');  
 console.log('  - debugSync.testBackend() - Test backend connectivity');
