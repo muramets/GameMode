@@ -1257,29 +1257,92 @@ class Storage {
         
         this.lastSyncTime = new Date().toISOString();
         
-        // Update local data with server data for ALL users if they have server data
+        // Update local data with server data using true merge strategy
         if (serverData.data) {
+          let mergeResults = {};
+          let hasUpdates = false;
+          
           Object.keys(serverData.data).forEach(key => {
             if (serverData.data[key]) {
               const currentData = this.get(this.KEYS[key.toUpperCase()]);
-              const hasLocalData = currentData && Array.isArray(currentData) && currentData.length > 0;
+              const serverArray = serverData.data[key];
+              const localArray = currentData || [];
               
-              console.log(`🔄 SYNC KEY ${key}:`, {
-                hasServerData: !!serverData.data[key],
-                serverDataLength: Array.isArray(serverData.data[key]) ? serverData.data[key].length : 'not-array',
-                hasLocalData,
-                localDataLength: Array.isArray(currentData) ? currentData.length : 'not-array'
+              const hasLocalData = Array.isArray(localArray) && localArray.length > 0;
+              const hasServerData = Array.isArray(serverArray) && serverArray.length > 0;
+              
+              let mergedData = [];
+              let mergeAction = '';
+              
+              // True merge strategy: combine all unique items
+              if (!hasLocalData && !hasServerData) {
+                mergedData = [];
+                mergeAction = 'both_empty';
+              } else if (!hasLocalData && hasServerData) {
+                mergedData = [...serverArray];
+                mergeAction = 'loaded_from_server';
+                hasUpdates = true;
+              } else if (hasLocalData && !hasServerData) {
+                mergedData = [...localArray];
+                mergeAction = 'keeping_local_will_upload';
+                // Mark for upload since server doesn't have our data
+                this.markForSync();
+              } else {
+                // Both have data - perform intelligent merge
+                mergedData = this.mergeDataArrays(localArray, serverArray, key);
+                
+                const originalLocalCount = localArray.length;
+                const originalServerCount = serverArray.length;
+                const mergedCount = mergedData.length;
+                
+                if (mergedCount > originalLocalCount) {
+                  mergeAction = `merged_gained_${mergedCount - originalLocalCount}_items`;
+                  hasUpdates = true;
+                } else if (mergedCount === originalLocalCount) {
+                  mergeAction = 'no_new_items_found';
+                } else {
+                  mergeAction = `merged_deduplicated_${originalLocalCount - mergedCount}_items`;
+                  hasUpdates = true;
+                }
+                
+                // If merged data differs from server, mark for sync
+                if (!this.arraysEqual(mergedData, serverArray)) {
+                  this.markForSync();
+                }
+              }
+              
+              mergeResults[key] = { 
+                action: mergeAction, 
+                localCount: localArray.length, 
+                serverCount: serverArray.length,
+                mergedCount: mergedData.length
+              };
+              
+              console.log(`🔄 SYNC MERGE ${key}:`, {
+                localItems: localArray.length,
+                serverItems: serverArray.length,
+                mergedItems: mergedData.length,
+                action: mergeAction
               });
               
-              // Load server data if local is empty OR if server has more recent data
-              if (!hasLocalData || (Array.isArray(serverData.data[key]) && serverData.data[key].length > 0)) {
-                console.log(`📥 Loading server data for ${key}`);
-                this.set(this.KEYS[key.toUpperCase()], serverData.data[key]);
-              } else {
-                console.log(`💾 Keeping local data for ${key}`);
-              }
+              // Save merged data
+              this.set(this.KEYS[key.toUpperCase()], mergedData);
             }
           });
+          
+          // Log merge summary
+          console.log('📊 MERGE RESULTS:', mergeResults);
+          
+          // Show user-friendly notification about merge results
+          if (hasUpdates && window.App) {
+            const updates = Object.entries(mergeResults)
+              .filter(([key, result]) => result.action.includes('gained') || result.action.includes('loaded'))
+              .map(([key, result]) => `${key}: +${result.mergedCount - Math.min(result.localCount, result.serverCount)} items`);
+            
+            if (updates.length > 0) {
+              window.App.showToast(`Sync: ${updates.join(', ')}`, 'success');
+            }
+          }
         }
         
         console.log('✅ SYNC COMPLETED SUCCESSFULLY');
@@ -1309,12 +1372,66 @@ class Storage {
         }
       } else {
         const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText };
+        }
+        
         console.error('❌ SYNC FAILED - Server Error:', {
           status: response.status,
           statusText: response.statusText,
-          errorText
+          errorData,
+          user: this.currentUser?.email,
+          isNewUser: !this.lastSyncTime
         });
-        throw new Error(`Server responded with ${response.status}: ${errorText}`);
+        
+        // Special handling for 500 errors with new users
+        if (response.status === 500 && !this.lastSyncTime) {
+          console.log('🆕 This might be a new user - server may need to initialize user data');
+          console.log('📝 Server error details:', errorData);
+          console.log('🔄 Trying to send minimal initial data...');
+          
+          // Try sending minimal data for new user initialization
+          try {
+            const minimalData = {
+              protocols: [],
+              skills: [],
+              states: [],
+              history: [],
+              quickActions: []
+            };
+            
+            const retryResponse = await fetch(`${BACKEND_URL}/api/sync`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify(minimalData)
+            });
+            
+            if (retryResponse.ok) {
+              const retryData = await retryResponse.json();
+              console.log('✅ Minimal data initialization successful:', retryData);
+              return retryData;
+            } else {
+              const retryErrorText = await retryResponse.text();
+              let retryErrorData;
+              try {
+                retryErrorData = JSON.parse(retryErrorText);
+              } catch {
+                retryErrorData = { error: retryErrorText };
+              }
+              console.log('❌ Failed to initialize new user:', retryErrorData);
+            }
+          } catch (initError) {
+            console.error('❌ Error during new user initialization:', initError);
+          }
+        }
+        
+        throw new Error(`Server responded with ${response.status}: ${JSON.stringify(errorData)}`);
       }
     } catch (error) {
       console.error('❌ SYNC FAILED - Network/Code Error:', {
@@ -1332,11 +1449,68 @@ class Storage {
     this.pendingSync.add(Date.now());
   }
 
+  // Force upload local data to server (used when local data is more complete)
+  async forceUploadToServer() {
+    if (!this.isOnline || !this.currentUser) {
+      console.log('🚫 FORCE UPLOAD SKIPPED: offline or no user');
+      return false;
+    }
+    
+    console.log('🚀 FORCE UPLOAD: Sending local data to server...');
+    
+    try {
+      const localData = {
+        protocols: this.get(this.KEYS.PROTOCOLS) || [],
+        skills: this.get(this.KEYS.SKILLS) || [],
+        states: this.get(this.KEYS.STATES) || [],
+        history: this.get(this.KEYS.HISTORY) || [],
+        quickActions: this.get(this.KEYS.QUICK_ACTIONS) || []
+      };
+      
+      console.log('📤 FORCE UPLOAD DATA:', {
+        protocols: localData.protocols.length,
+        skills: localData.skills.length,
+        states: localData.states.length,
+        history: localData.history.length,
+        quickActions: localData.quickActions.length
+      });
+      
+      const token = await this.currentUser.getIdToken();
+      const response = await fetch(`${BACKEND_URL}/api/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(localData)
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ FORCE UPLOAD SUCCESSFUL:', result);
+        return true;
+      } else {
+        const errorText = await response.text();
+        console.error('❌ FORCE UPLOAD FAILED:', response.status, response.statusText, errorText);
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ FORCE UPLOAD ERROR:', error);
+      return false;
+    }
+  }
+
   // Sync pending changes when coming online
   async syncPendingChanges() {
     if (this.pendingSync.size > 0) {
-      await this.syncWithBackend();
-      this.pendingSync.clear();
+      // Try to upload local data first if we have pending changes
+      const uploadSuccess = await this.forceUploadToServer();
+      if (uploadSuccess) {
+        this.pendingSync.clear();
+        console.log('✅ Pending changes uploaded to server');
+      } else {
+        console.warn('⚠️ Failed to upload pending changes, will retry later');
+      }
     }
   }
 
@@ -1357,6 +1531,64 @@ class Storage {
     if (!Array.isArray(states)) return false;
     return states.length === INITIAL_DATA.states.length && 
            states.every((s, i) => s.id === INITIAL_DATA.states[i].id);
+  }
+
+  // Intelligently merge two data arrays, combining unique items from both sources
+  mergeDataArrays(localArray, serverArray, dataType) {
+    console.log(`🔀 MERGING ${dataType}:`, {
+      local: localArray.length,
+      server: serverArray.length
+    });
+    
+    // Create a map to track unique items by ID
+    const mergedMap = new Map();
+    
+    // Add all local items first (preserving local version in case of conflicts)
+    localArray.forEach(item => {
+      if (item && item.id !== undefined) {
+        mergedMap.set(item.id, { ...item, source: 'local' });
+      }
+    });
+    
+    // Add server items, but only if they don't exist locally
+    let addedFromServer = 0;
+    let duplicatesSkipped = 0;
+    
+    serverArray.forEach(item => {
+      if (item && item.id !== undefined) {
+        if (!mergedMap.has(item.id)) {
+          mergedMap.set(item.id, { ...item, source: 'server' });
+          addedFromServer++;
+        } else {
+          duplicatesSkipped++;
+          // Item exists in both - could potentially merge properties here
+          // For now, we keep the local version
+          console.log(`📋 ${dataType} item ${item.id} exists in both local and server, keeping local version`);
+        }
+      }
+    });
+    
+    // Convert map back to array and remove source tracking
+    const mergedArray = Array.from(mergedMap.values()).map(item => {
+      const { source, ...itemWithoutSource } = item;
+      return itemWithoutSource;
+    });
+    
+    // Sort by ID for consistency (if items have numeric IDs)
+    if (mergedArray.length > 0 && typeof mergedArray[0].id === 'number') {
+      mergedArray.sort((a, b) => a.id - b.id);
+    }
+    
+    console.log(`✅ MERGE ${dataType} COMPLETE:`, {
+      localItems: localArray.length,
+      serverItems: serverArray.length,
+      mergedItems: mergedArray.length,
+      addedFromServer,
+      duplicatesSkipped,
+      netGain: mergedArray.length - localArray.length
+    });
+    
+    return mergedArray;
   }
 }
 

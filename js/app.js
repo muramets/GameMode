@@ -18,14 +18,30 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initializeApp() {
-    // Initialize Storage
-    window.Storage.init();
+    let isInitializing = false; // Prevent multiple simultaneous initializations
     
     // Initialize Firebase Auth state listener
     window.firebaseAuth.onAuthStateChanged((user) => {
+        if (isInitializing) {
+            console.log('🔄 Already initializing, skipping...');
+            return;
+        }
+        
         if (user) {
             // User is signed in
+            console.log('🔥 User authenticated:', user.email);
+            isInitializing = true;
+            
+            // Set user first
             window.Storage.setUser(user);
+            
+            // Initialize storage with user context
+            window.Storage.init();
+            
+            // Start non-blocking sync in background
+            syncUserData().finally(() => {
+                isInitializing = false;
+            });
             
             // Update username immediately when user object changes
             const appContainer = document.getElementById('appContainer');
@@ -34,10 +50,10 @@ function initializeApp() {
             } else {
                 showApp(user);
             }
-            
-            syncUserData();
         } else {
             // User is signed out
+            console.log('🚪 User signed out');
+            isInitializing = false;
             window.Storage.setUser(null);
             showAuth();
         }
@@ -72,10 +88,11 @@ function showAuth() {
 
 async function syncUserData() {
     try {
-        // Backend sync will be implemented when deployed
-        console.log('📡 Sync ready - backend deployed to Railway');
+        console.log('📡 Starting automatic sync after user authentication...');
+        await window.Storage.syncWithBackend();
+        console.log('✅ Automatic sync completed successfully');
     } catch (error) {
-        console.error('❌ Sync failed:', error);
+        console.error('❌ Automatic sync failed:', error);
     }
 }
 
@@ -1438,6 +1455,92 @@ window.debugSync = {
     }
   },
   
+  // Force upload local data to server
+  async forceUpload() {
+    console.log('🚀 Force upload triggered from console...');
+    try {
+      const success = await window.Storage.forceUploadToServer();
+      if (success) {
+        console.log('✅ Force upload completed successfully');
+      } else {
+        console.log('❌ Force upload failed');
+      }
+    } catch (error) {
+      console.error('❌ Force upload error:', error);
+    }
+  },
+  
+  // Compare local vs server data
+  async compare() {
+    console.log('🔍 Comparing local vs server data...');
+    
+    if (!window.Storage.currentUser) {
+      console.error('❌ No authenticated user');
+      return;
+    }
+    
+    try {
+      const localData = {
+        protocols: window.Storage.get(window.Storage.KEYS.PROTOCOLS) || [],
+        skills: window.Storage.get(window.Storage.KEYS.SKILLS) || [],
+        states: window.Storage.get(window.Storage.KEYS.STATES) || [],
+        history: window.Storage.get(window.Storage.KEYS.HISTORY) || [],
+        quickActions: window.Storage.get(window.Storage.KEYS.QUICK_ACTIONS) || []
+      };
+      
+      const token = await window.Storage.currentUser.getIdToken();
+      const response = await fetch(`${window.BACKEND_URL}/api/user/data`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const serverResponse = await response.json();
+        const serverData = serverResponse.data || {};
+        
+        console.log('📊 DATA COMPARISON:');
+        Object.keys(localData).forEach(key => {
+          const local = localData[key] || [];
+          const server = serverData[key] || [];
+          
+          console.log(`\n📋 ${key.toUpperCase()}:`);
+          console.log(`  Local: ${local.length} items`);
+          console.log(`  Server: ${server.length} items`);
+          
+          if (local.length > 0) {
+            console.log(`  Local IDs:`, local.map(item => item.id));
+          }
+          if (server.length > 0) {
+            console.log(`  Server IDs:`, server.map(item => item.id));
+          }
+          
+          // Find unique items
+          const localIds = new Set(local.map(item => item.id));
+          const serverIds = new Set(server.map(item => item.id));
+          
+          const onlyLocal = [...localIds].filter(id => !serverIds.has(id));
+          const onlyServer = [...serverIds].filter(id => !localIds.has(id));
+          
+          if (onlyLocal.length > 0) {
+            console.log(`  📱 Only in local:`, onlyLocal);
+          }
+          if (onlyServer.length > 0) {
+            console.log(`  ☁️ Only on server:`, onlyServer);
+          }
+          if (onlyLocal.length === 0 && onlyServer.length === 0) {
+            console.log(`  ✅ Perfect sync`);
+          }
+        });
+        
+      } else {
+        console.error('❌ Failed to fetch server data:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('❌ Compare failed:', error);
+    }
+  },
+  
   // Check sync status
   status() {
     console.log('📊 SYNC STATUS:', {
@@ -1473,5 +1576,7 @@ window.debugSync = {
 
 console.log('🐛 DEBUG: Sync debugging functions available:');
 console.log('  - debugSync.sync() - Manual sync trigger');
+console.log('  - debugSync.forceUpload() - Force upload local data to server');
+console.log('  - debugSync.compare() - Compare local vs server data');
 console.log('  - debugSync.status() - Check sync status');  
 console.log('  - debugSync.testBackend() - Test backend connectivity');
