@@ -87,11 +87,38 @@ const Modals = {
         initialScore: parseFloat(formData.get('skill-initial-score'))
       };
       
+      // 🐛 DEBUG: Detailed logging for production debugging
+      console.log('🐛 SKILL FORM SUBMISSION DEBUG:');
+      console.log('📋 Raw form data:', {
+        'skill-name': formData.get('skill-name'),
+        'skill-description': formData.get('skill-description'), 
+        'skill-emoji': formData.get('skill-emoji'),
+        'skill-hover': formData.get('skill-hover'),
+        'skill-initial-score': formData.get('skill-initial-score')
+      });
+      console.log('📊 Processed skill data:', skillData);
+      console.log('🔍 Validation checks:');
+      console.log('  - name:', skillData.name, '(truthy:', !!skillData.name, ')');
+      console.log('  - icon:', skillData.icon, '(truthy:', !!skillData.icon, ')');
+      console.log('  - initialScore:', skillData.initialScore, '(type:', typeof skillData.initialScore, ')');
+      console.log('  - initialScore >= 0:', skillData.initialScore >= 0);
+      console.log('  - initialScore <= 10:', skillData.initialScore <= 10);
+      console.log('  - isNaN(initialScore):', isNaN(skillData.initialScore));
+      
       // Validate data
       if (!skillData.name || !skillData.icon || skillData.initialScore < 0 || skillData.initialScore > 10) {
+        console.log('❌ VALIDATION FAILED - reasons:');
+        if (!skillData.name) console.log('  - Missing name');
+        if (!skillData.icon) console.log('  - Missing icon');
+        if (skillData.initialScore < 0) console.log('  - Score too low:', skillData.initialScore);
+        if (skillData.initialScore > 10) console.log('  - Score too high:', skillData.initialScore);
+        if (isNaN(skillData.initialScore)) console.log('  - Score is NaN');
+        
         App.showToast('Please fill all required fields and ensure score is between 0-10', 'error');
         return;
       }
+      
+      console.log('✅ VALIDATION PASSED - proceeding with submission');
       
       if (this.currentSkillId) {
         // Edit mode
@@ -297,11 +324,39 @@ const Modals = {
         targets: this.selectedTargets.filter(target => target !== null).map(target => target.id)
       };
       
+      // 🐛 DEBUG: Detailed logging for production debugging
+      console.log('🐛 PROTOCOL FORM SUBMISSION DEBUG:');
+      console.log('📋 Raw form data:', {
+        'protocol-name': formData.get('protocol-name'),
+        'protocol-description': formData.get('protocol-description'), 
+        'protocol-emoji': formData.get('protocol-emoji'),
+        'protocol-hover': formData.get('protocol-hover'),
+        'protocol-weight': formData.get('protocol-weight')
+      });
+      console.log('📊 Processed protocol data:', protocolData);
+      console.log('🔍 Validation checks:');
+      console.log('  - name:', protocolData.name, '(truthy:', !!protocolData.name, ')');
+      console.log('  - icon:', protocolData.icon, '(truthy:', !!protocolData.icon, ')');
+      console.log('  - weight:', protocolData.weight, '(type:', typeof protocolData.weight, ')');
+      console.log('  - weight >= 0:', protocolData.weight >= 0);
+      console.log('  - weight <= 1:', protocolData.weight <= 1);
+      console.log('  - isNaN(weight):', isNaN(protocolData.weight));
+      console.log('  - selectedTargets:', this.selectedTargets);
+      
       // Validate data
       if (!protocolData.name || !protocolData.icon || protocolData.weight < 0 || protocolData.weight > 1) {
+        console.log('❌ PROTOCOL VALIDATION FAILED - reasons:');
+        if (!protocolData.name) console.log('  - Missing name');
+        if (!protocolData.icon) console.log('  - Missing icon');
+        if (protocolData.weight < 0) console.log('  - Weight too low:', protocolData.weight);
+        if (protocolData.weight > 1) console.log('  - Weight too high:', protocolData.weight);
+        if (isNaN(protocolData.weight)) console.log('  - Weight is NaN');
+        
         App.showToast('Please fill all required fields and ensure weight is between 0-1', 'error');
         return;
       }
+      
+      console.log('✅ PROTOCOL VALIDATION PASSED - proceeding with submission');
       
       if (this.currentProtocolId) {
         // Edit mode
