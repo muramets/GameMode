@@ -2096,22 +2096,39 @@ class Storage {
       const localProtocols = this.getProtocols();
       const localSkills = this.getSkills();
       
-      // Get fresh server data via /api/user/data (direct endpoint, not /api/sync)
-      // Add timestamp for aggressive cache busting
+      // 🔧 FIX: Use /api/sync instead of /api/user/data to get consistent server data
+      // The /api/user/data endpoint was returning stale data while /api/sync has fresh data
       const timestamp = Date.now();
       const token = await this.currentUser.getIdToken();
-      const response = await fetch(`${BACKEND_URL}/api/user/data?_t=${timestamp}&_cb=${Math.random()}`, {
+      
+      // Create minimal sync request to get server data without uploading anything
+      const minimalLocalData = {
+        protocols: [],
+        skills: [],
+        states: [],
+        history: [],
+        quickActions: [],
+        quickActionOrder: [],
+        protocolOrder: [],
+        skillOrder: [],
+        stateOrder: []
+      };
+      
+      const response = await fetch(`${BACKEND_URL}/api/sync?_t=${timestamp}&_cb=${Math.random()}`, {
+        method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
           'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
           'Pragma': 'no-cache',
           'Expires': '0',
           'If-Modified-Since': 'Thu, 01 Jan 1970 00:00:00 GMT'
-        }
+        },
+        body: JSON.stringify(minimalLocalData)
       });
       
       if (!response.ok) {
-        console.warn('⚠️ INTEGRITY CHECK: Could not fetch server data:', response.status);
+        console.error('❌ INTEGRITY CHECK: Server request failed:', response.status, response.statusText);
         return false;
       }
       
@@ -2127,134 +2144,92 @@ class Storage {
         serverSkillsCount: serverSkills.length
       });
       
-      // Check for discrepancies
       let hasDiscrepancies = false;
-      let fixedProtocols = [];
-      let fixedSkills = [];
-      let addedProtocols = [];
+      let updatesNeeded = [];
       
-      // Check for missing protocols from server
+      // Check for missing protocols on local device
       const localProtocolIds = new Set(localProtocols.map(p => p.id));
-      const missingProtocols = serverProtocols.filter(p => !localProtocolIds.has(p.id));
+      const missingProtocols = serverProtocols.filter(serverProtocol => 
+        !localProtocolIds.has(serverProtocol.id)
+      );
       
       if (missingProtocols.length > 0) {
-        console.log(`🚨 INTEGRITY CHECK: Found ${missingProtocols.length} missing protocols:`, 
-          missingProtocols.map(p => ({ id: p.id, name: p.name }))
-        );
-        
-        hasDiscrepancies = true;
-        addedProtocols = missingProtocols;
+        console.log('🚨 INTEGRITY CHECK: Found missing protocols on local device:', 
+          missingProtocols.map(p => ({id: p.id, name: p.name})));
         
         // Add missing protocols to local storage
-        const updatedProtocols = [...localProtocols, ...missingProtocols];
+        const existingProtocols = this.getProtocols();
+        const updatedProtocols = [...existingProtocols, ...missingProtocols];
         this.set(this.KEYS.PROTOCOLS, updatedProtocols);
         
-        // Update protocol order if needed
-        const currentProtocolOrder = this.getProtocolOrder();
-        const newProtocolIds = missingProtocols.map(p => p.id);
-        const updatedProtocolOrder = [...currentProtocolOrder, ...newProtocolIds];
-        this.setProtocolOrder(updatedProtocolOrder);
+        updatesNeeded.push(`+${missingProtocols.length} protocols`);
+        hasDiscrepancies = true;
       }
       
-      // Check protocols for target mismatches
-      for (const localProtocol of localProtocols) {
-        const serverProtocol = serverProtocols.find(p => p.id === localProtocol.id);
-        
-        if (serverProtocol) {
-          const localTargets = localProtocol.targets || [];
-          const serverTargets = serverProtocol.targets || [];
-          
-          // Check if targets differ
-          if (!this.arraysEqual(localTargets, serverTargets)) {
-            console.log(`🚨 INTEGRITY CHECK: Protocol ${localProtocol.id} targets mismatch:`, {
-              local: localTargets,
-              server: serverTargets
-            });
-            
-            hasDiscrepancies = true;
-            fixedProtocols.push({
-              id: localProtocol.id,
-              name: localProtocol.name,
-              oldTargets: localTargets,
-              newTargets: serverTargets
-            });
-            
-            // Fix local protocol with server data
-            const updatedProtocol = { ...localProtocol, targets: serverTargets };
-            const allProtocols = this.getProtocols().map(p => 
-              p.id === localProtocol.id ? updatedProtocol : p
-            );
-            this.set(this.KEYS.PROTOCOLS, allProtocols);
-            
-            // Recalculate history for this protocol
-            this.recalculateProtocolHistory(localProtocol.id, localTargets, serverTargets);
-          }
-        }
-      }
-      
-      // Check skills
+      // Check for missing skills on local device
       const localSkillIds = new Set(localSkills.map(s => s.id));
-      const serverSkillIds = new Set(serverSkills.map(s => s.id));
-      
-      // Find missing skills
-      const missingSkills = serverSkills.filter(s => !localSkillIds.has(s.id));
+      const missingSkills = serverSkills.filter(serverSkill => 
+        !localSkillIds.has(serverSkill.id)
+      );
       
       if (missingSkills.length > 0) {
-        console.log(`🚨 INTEGRITY CHECK: Found ${missingSkills.length} missing skills:`, 
-          missingSkills.map(s => ({ id: s.id, name: s.name }))
-        );
-        
-        hasDiscrepancies = true;
-        fixedSkills = missingSkills;
+        console.log('🚨 INTEGRITY CHECK: Found missing skills on local device:', 
+          missingSkills.map(s => ({id: s.id, name: s.name})));
         
         // Add missing skills to local storage
-        const updatedSkills = [...localSkills, ...missingSkills];
+        const existingSkills = this.getSkills();
+        const updatedSkills = [...existingSkills, ...missingSkills];
         this.set(this.KEYS.SKILLS, updatedSkills);
         
-        // Update skill order if needed
-        const currentSkillOrder = this.getSkillOrder();
-        const newSkillIds = missingSkills.map(s => s.id);
-        const updatedSkillOrder = [...currentSkillOrder, ...newSkillIds];
-        this.setSkillOrder(updatedSkillOrder);
+        updatesNeeded.push(`+${missingSkills.length} skills`);
+        hasDiscrepancies = true;
       }
       
-      // Log results and update UI if changes were made
-      if (hasDiscrepancies) {
-        console.log('✅ INTEGRITY CHECK: Fixed data discrepancies:', {
-          addedProtocols: addedProtocols.length,
-          fixedProtocols: fixedProtocols.length,
-          addedSkills: fixedSkills.length,
-          details: {
-            addedProtocols,
-            fixedProtocols,
-            addedSkills: fixedSkills
+      // Check for target inconsistencies in protocols
+      let protocolTargetIssues = 0;
+      const serverProtocolsMap = new Map(serverProtocols.map(p => [p.id, p]));
+      
+      localProtocols.forEach(localProtocol => {
+        const serverProtocol = serverProtocolsMap.get(localProtocol.id);
+        if (serverProtocol) {
+          const localTargets = (localProtocol.targets || []).sort();
+          const serverTargets = (serverProtocol.targets || []).sort();
+          
+          if (!this.arraysEqual(localTargets, serverTargets)) {
+            console.log(`🔧 INTEGRITY CHECK: Updating protocol ${localProtocol.id} targets:`, {
+              from: localTargets,
+              to: serverTargets
+            });
+            
+            // Update local protocol with server targets
+            const protocols = this.getProtocols();
+            const protocolIndex = protocols.findIndex(p => p.id === localProtocol.id);
+            if (protocolIndex !== -1) {
+              protocols[protocolIndex] = { ...protocols[protocolIndex], ...serverProtocol };
+              this.set(this.KEYS.PROTOCOLS, protocols);
+              protocolTargetIssues++;
+            }
           }
-        });
+        }
+      });
+      
+      if (protocolTargetIssues > 0) {
+        updatesNeeded.push(`${protocolTargetIssues} protocol targets`);
+        hasDiscrepancies = true;
+      }
+      
+      if (hasDiscrepancies) {
+        console.log('🔧 INTEGRITY CHECK: Fixed data discrepancies:', updatesNeeded);
+        
+        // Update UI to reflect changes
+        if (window.App && window.App.renderPage) {
+          window.App.renderPage(window.App.currentPage);
+          console.log('🖥️ UI refreshed after integrity check fixes');
+        }
         
         // Show user notification
         if (window.App && window.App.showToast) {
-          const messages = [];
-          if (addedProtocols.length > 0) {
-            messages.push(`${addedProtocols.length} protocol(s) synced`);
-          }
-          if (fixedProtocols.length > 0) {
-            messages.push(`${fixedProtocols.length} protocol(s) updated`);
-          }
-          if (fixedSkills.length > 0) {
-            messages.push(`${fixedSkills.length} skill(s) added`);
-          }
-          
-          window.App.showToast(`Данные синхронизированы: ${messages.join(', ')}`, 'success');
-        }
-        
-        // Refresh UI
-        if (window.App && window.App.renderPage) {
-          // Update filtered protocols in App to include new protocols
-          window.App.filteredProtocols = this.getProtocolsInOrder();
-          window.App.filteredSkills = this.getSkillsInOrder();
-          
-          window.App.renderPage(window.App.currentPage);
-          console.log('🖥️ UI refreshed after integrity check fixes');
+          window.App.showToast(`Data synced: ${updatesNeeded.join(', ')}`, 'success');
         }
         
         return true;
@@ -2262,7 +2237,6 @@ class Storage {
         console.log('✅ INTEGRITY CHECK: All data is consistent');
         return false;
       }
-      
     } catch (error) {
       console.error('❌ INTEGRITY CHECK FAILED:', error);
       return false;
