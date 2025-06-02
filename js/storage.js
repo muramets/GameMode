@@ -1627,12 +1627,20 @@ class Storage {
                   if (missingEffectsCheckins.length > 0) {
                     console.log(`🚨 FOUND ${missingEffectsCheckins.length} CHECKINS MISSING TARGET EFFECTS for protocol ${protocol.id}`);
                     console.log(`📊 Protocol targets:`, protocol.targets);
-                    console.log(`�� Checkins to fix:`, missingEffectsCheckins.map(c => c.id));
+                    console.log(`📋 Checkins to fix:`, missingEffectsCheckins.map(c => c.id));
                     
                     // Запускаем пересчет истории
                     const recalculated = this.recalculateProtocolHistory(protocol.id, [], protocol.targets);
                     if (recalculated) {
                       console.log(`✅ POST-SYNC RECALCULATION completed for protocol ${protocol.id}`);
+                      
+                      // 🚀 НЕМЕДЛЕННАЯ СИНХРОНИЗАЦИЯ: отправляем обновленную историю на сервер
+                      console.log('📤 Immediately syncing recalculated history to server...');
+                      this.syncWithBackend().then(() => {
+                        console.log('✅ Recalculated history synced to server successfully');
+                      }).catch((syncError) => {
+                        console.warn('⚠️ Failed to sync recalculated history to server:', syncError);
+                      });
                       
                       // 🔄 ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ UI после пересчета
                       console.log('🖥️ Triggering UI refresh after post-sync recalculation...');
