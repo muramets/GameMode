@@ -777,13 +777,14 @@ const UI = {
       
       levelProgressFill.style.width = percent + '%';
       levelProgressFill.style.backgroundColor = color;
-      levelPercentage.textContent = Math.round(percent) + '%';
       
-      // Update progress digit (first digit of percentage)
+      // 🔧 ИСПРАВЛЕНИЕ: Показываем реальный уровень, а не процент
+      levelPercentage.textContent = currentLevel.toFixed(2);
+      
+      // Update progress digit (first digit of level)
       if (progressDigit) {
-        const roundedPercent = Math.round(percent);
-        const firstDigit = roundedPercent.toString().charAt(0);
-        progressDigit.textContent = firstDigit;
+        const levelFirstDigit = Math.floor(currentLevel).toString();
+        progressDigit.textContent = levelFirstDigit;
       }
     }
     
