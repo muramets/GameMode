@@ -197,18 +197,39 @@ const DragDrop = {
    * @param {string} successMessage - Success toast message
    */
   reorderItems(items, draggedId, targetId, saveOrderFn, updateDisplayFn, itemType, successMessage) {
+    console.log(`🔄 REORDER ITEMS DEBUG for ${itemType}:`, {
+      itemsCount: items.length,
+      draggedId,
+      targetId,
+      draggedIdType: typeof draggedId,
+      targetIdType: typeof targetId,
+      itemsStructure: items.map(item => ({ id: item.id, idType: typeof item.id, name: item.name }))
+    });
+    
     const currentOrder = items.map(item => item.id);
+    console.log(`🔄 Current order for ${itemType}:`, currentOrder);
+    
     const oldOrder = [...currentOrder];
     const draggedIndex = currentOrder.indexOf(draggedId);
     const targetIndex = currentOrder.indexOf(targetId);
+    
+    console.log(`🔄 Index lookup for ${itemType}:`, {
+      draggedIndex,
+      targetIndex,
+      draggedIdInOrder: currentOrder.includes(draggedId),
+      targetIdInOrder: currentOrder.includes(targetId)
+    });
     
     if (draggedIndex !== -1 && targetIndex !== -1) {
       // Reorder items
       currentOrder.splice(draggedIndex, 1);
       currentOrder.splice(targetIndex, 0, draggedId);
       
+      console.log(`🔄 New order for ${itemType}:`, currentOrder);
+      
       // Get item info for logging (use loose equality to handle type differences)
       const draggedItem = items.find(item => item.id == draggedId);
+      console.log(`🔄 Found dragged item for ${itemType}:`, draggedItem);
       
       // Save new order
       saveOrderFn(currentOrder);
@@ -229,6 +250,14 @@ const DragDrop = {
       updateDisplayFn();
       
       App.showToast(successMessage, 'success');
+    } else {
+      console.error(`🚨 REORDER FAILED for ${itemType}:`, {
+        draggedId,
+        targetId,
+        draggedIndex,
+        targetIndex,
+        currentOrder
+      });
     }
   },
 
@@ -271,25 +300,54 @@ const DragDrop = {
   },
 
   reorderStates(draggedId, targetId) {
+    console.log('🔄 DRAG & DROP DEBUG for states:', {
+      draggedId,
+      targetId,
+      draggedIdType: typeof draggedId,
+      targetIdType: typeof targetId
+    });
+    
     // Get fresh states data from storage
     const states = window.Storage.getStatesInOrder();
+    console.log('🔄 States data from storage:', {
+      statesCount: states.length,
+      statesData: states,
+      stateIds: states.map(s => ({ id: s.id, type: typeof s.id }))
+    });
+    
+    // Check if state IDs need conversion
+    const draggedIdConverted = typeof draggedId === 'string' ? draggedId : draggedId.toString();
+    const targetIdConverted = typeof targetId === 'string' ? targetId : targetId.toString();
+    
+    console.log('🔄 Converted IDs:', {
+      originalDraggedId: draggedId,
+      convertedDraggedId: draggedIdConverted,
+      originalTargetId: targetId,
+      convertedTargetId: targetIdConverted
+    });
     
     this.reorderItems(
       states,
-      draggedId,
-      targetId,
+      draggedIdConverted,
+      targetIdConverted,
       (order) => {
+        console.log('🔄 Saving new state order:', order);
         // Save the new state order first
         window.Storage.setStateOrder(order);
         // Also update App.states immediately to prevent conflicts
         App.states = window.Storage.getStatesInOrder();
+        console.log('🔄 Updated App.states:', App.states.length);
       },
       () => {
+        console.log('🔄 Updating display after state reorder...');
         // Update display by re-rendering only the states section of dashboard
         // This prevents full dashboard re-render which might conflict with drag & drop
         UI.renderDashboard();
         // Re-setup drag and drop after a brief delay to ensure DOM is updated
-        setTimeout(() => DragDrop.setupStates(), 100);
+        setTimeout(() => {
+          console.log('🔄 Re-setting up states drag & drop...');
+          DragDrop.setupStates();
+        }, 100);
       },
       'state',
       'States order updated'
