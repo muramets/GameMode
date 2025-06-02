@@ -1229,10 +1229,12 @@ class Storage {
   setStateOrder(stateOrder) {
     this.set(this.KEYS.STATE_ORDER, stateOrder);
     
-    // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ ИЗМЕНЕНИЯ ПОРЯДКА СОСТОЯНИЙ
-    this.syncWithBackend().catch(error => {
-      console.warn('⚠️ Background sync after state reorder failed:', error);
-    });
+    // 🚀 ВРЕМЕННО ОТКЛЮЧЕНО: Автоматическая синхронизация для исправления drag & drop
+    // this.syncWithBackend().catch(error => {
+    //   console.warn('⚠️ Background sync after state reorder failed:', error);
+    // });
+    
+    console.log('🔄 State order saved without auto-sync:', stateOrder);
   }
 
   getStatesInOrder() {
