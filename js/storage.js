@@ -1881,79 +1881,107 @@ class Storage {
               // Проверяем в самом начале обработки истории - до любых других операций
               if (key === 'history') {
                 // 🔧 ИСПРАВЛЕНИЕ: Умная защита от Clear All с учетом времени
-                // Блокируем только старые элементы, но разрешаем новые (логи Quick Actions, новые check-ins)
+                // НО НЕ применяем защиту для первого входа пользователя
                 const isLocalHistoryEmpty = !hasLocalData;
                 const hasServerHistory = hasServerData;
+                const isFirstTimeUser = this.isFirstTimeLogin === true;
                 
                 if (isLocalHistoryEmpty && hasServerHistory) {
-                  console.log('🚫 CLEAR ALL PROTECTION: Local history is empty, analyzing server items by timestamp');
-                  
-                  // Получаем время последнего локального элемента перед Clear All
-                  // Если истории нет локально, используем время последней синхронизации как границу
-                  const clearAllTimestamp = this.lastSyncTime ? new Date(this.lastSyncTime).getTime() : Date.now() - (24 * 60 * 60 * 1000); // 24 часа назад как fallback
-                  
-                  console.log('📊 Clear All protection: analyzing server items', {
-                    localItems: localArray.length,
-                    serverItems: serverArray.length,
-                    clearAllTimestamp: new Date(clearAllTimestamp).toISOString(),
-                    lastSync: this.lastSyncTime
-                  });
-                  
-                  // Разделяем серверные элементы на старые (до Clear All) и новые (после Clear All)
-                  const newServerItems = [];
-                  const oldServerItems = [];
-                  
-                  serverArray.forEach(item => {
-                    if (item && item.timestamp) {
-                      const itemTimestamp = new Date(item.timestamp).getTime();
-                      if (itemTimestamp > clearAllTimestamp) {
-                        newServerItems.push(item);
-                        console.log(`📋 NEW server item ${item.id}: ${item.type} (${new Date(item.timestamp).toISOString()})`);
+                  if (isFirstTimeUser) {
+                    console.log('🆕 FIRST TIME USER: Loading all server history without Clear All protection');
+                    console.log('📥 First time: accepting all server history items:', serverArray.length);
+                    
+                    // Для первого входа просто принимаем всю серверную историю
+                    this.set(this.getKeyConstant(key), [...serverArray]);
+                    
+                    mergeResults[key] = { 
+                      action: 'first_time_server_load', 
+                      localCount: localArray.length, 
+                      serverCount: serverArray.length,
+                      mergedCount: serverArray.length
+                    };
+                    
+                    console.log(`🔄 SYNC MERGE ${key}:`, {
+                      localItems: localArray.length,
+                      serverItems: serverArray.length,
+                      mergedItems: serverArray.length,
+                      action: 'first_time_server_load'
+                    });
+                    
+                    hasUpdates = serverArray.length > 0;
+                    
+                    // Пропускаем дальнейшую обработку для этого ключа
+                    return;
+                  } else {
+                    console.log('🚫 CLEAR ALL PROTECTION: Local history is empty, analyzing server items by timestamp');
+                    
+                    // Получаем время последнего локального элемента перед Clear All
+                    // Если истории нет локально, используем время последней синхронизации как границу
+                    const clearAllTimestamp = this.lastSyncTime ? new Date(this.lastSyncTime).getTime() : Date.now() - (24 * 60 * 60 * 1000); // 24 часа назад как fallback
+                    
+                    console.log('📊 Clear All protection: analyzing server items', {
+                      localItems: localArray.length,
+                      serverItems: serverArray.length,
+                      clearAllTimestamp: new Date(clearAllTimestamp).toISOString(),
+                      lastSync: this.lastSyncTime
+                    });
+                    
+                    // Разделяем серверные элементы на старые (до Clear All) и новые (после Clear All)
+                    const newServerItems = [];
+                    const oldServerItems = [];
+                    
+                    serverArray.forEach(item => {
+                      if (item && item.timestamp) {
+                        const itemTimestamp = new Date(item.timestamp).getTime();
+                        if (itemTimestamp > clearAllTimestamp) {
+                          newServerItems.push(item);
+                          console.log(`📋 NEW server item ${item.id}: ${item.type} (${new Date(item.timestamp).toISOString()})`);
+                        } else {
+                          oldServerItems.push(item);
+                          console.log(`📋 OLD server item ${item.id}: ${item.type} (${new Date(item.timestamp).toISOString()}) - BLOCKED`);
+                        }
                       } else {
+                        // Элементы без timestamp считаем старыми
                         oldServerItems.push(item);
-                        console.log(`📋 OLD server item ${item.id}: ${item.type} (${new Date(item.timestamp).toISOString()}) - BLOCKED`);
+                        console.log(`📋 OLD server item ${item.id}: no timestamp - BLOCKED`);
                       }
-                    } else {
-                      // Элементы без timestamp считаем старыми
-                      oldServerItems.push(item);
-                      console.log(`📋 OLD server item ${item.id}: no timestamp - BLOCKED`);
+                    });
+                    
+                    // Результат: только новые элементы с сервера
+                    const protectedResult = [...newServerItems];
+                    
+                    // Сохраняем результат
+                    this.set(this.getKeyConstant(key), protectedResult);
+                    
+                    mergeResults[key] = { 
+                      action: 'smart_clear_all_protection', 
+                      localCount: localArray.length, 
+                      serverCount: serverArray.length,
+                      mergedCount: protectedResult.length,
+                      blockedItems: oldServerItems.length,
+                      allowedItems: newServerItems.length
+                    };
+                    
+                    console.log(`🔄 SYNC MERGE ${key}:`, {
+                      localItems: localArray.length,
+                      serverItems: serverArray.length,
+                      mergedItems: protectedResult.length,
+                      action: 'smart_clear_all_protection',
+                      blockedOldItems: oldServerItems.length,
+                      allowedNewItems: newServerItems.length
+                    });
+                    
+                    // Если есть старые элементы на сервере, помечаем для синхронизации чтобы их очистить
+                    if (oldServerItems.length > 0) {
+                      this.markForSync();
+                      console.log('🚀 MARKING FOR SYNC: Will clean old items from server');
                     }
-                  });
-                  
-                  // Результат: только новые элементы с сервера
-                  const protectedResult = [...newServerItems];
-                  
-                  // Сохраняем результат
-                  this.set(this.getKeyConstant(key), protectedResult);
-                  
-                  mergeResults[key] = { 
-                    action: 'smart_clear_all_protection', 
-                    localCount: localArray.length, 
-                    serverCount: serverArray.length,
-                    mergedCount: protectedResult.length,
-                    blockedItems: oldServerItems.length,
-                    allowedItems: newServerItems.length
-                  };
-                  
-                  console.log(`🔄 SYNC MERGE ${key}:`, {
-                    localItems: localArray.length,
-                    serverItems: serverArray.length,
-                    mergedItems: protectedResult.length,
-                    action: 'smart_clear_all_protection',
-                    blockedOldItems: oldServerItems.length,
-                    allowedNewItems: newServerItems.length
-                  });
-                  
-                  // Если есть старые элементы на сервере, помечаем для синхронизации чтобы их очистить
-                  if (oldServerItems.length > 0) {
-                    this.markForSync();
-                    console.log('🚀 MARKING FOR SYNC: Will clean old items from server');
+                    
+                    hasUpdates = newServerItems.length > 0;
+                    
+                    // Пропускаем дальнейшую обработку для этого ключа
+                    return;
                   }
-                  
-                  hasUpdates = newServerItems.length > 0;
-                  
-                  // Пропускаем дальнейшую обработку для этого ключа
-                  return;
                 }
               }
               
