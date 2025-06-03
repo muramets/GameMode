@@ -1901,6 +1901,45 @@ function initMainApp() {
                 firstLoginDate: timestamp ? new Date(parseInt(timestamp)).toLocaleString() : 'Never',
                 currentFlag: window.Storage.isFirstTimeLogin
             });
+        },
+
+        // Simulate completely new device by clearing all user data
+        simulateNewDevice() {
+            if (!window.Storage.currentUser) {
+                console.error('❌ No authenticated user');
+                return;
+            }
+            
+            const userId = window.Storage.currentUser.uid;
+            const userEmail = window.Storage.currentUser.email;
+            
+            console.log('🧹 SIMULATING NEW DEVICE for user:', userEmail);
+            console.log('⚠️ This will clear ALL local data for this user');
+            
+            // Find all user-specific keys
+            const userKeys = Object.keys(localStorage).filter(key => key.startsWith(userId));
+            const firstTimeKey = `first_login_${userId}`;
+            
+            console.log('📋 Keys to be deleted:', userKeys.concat([firstTimeKey]));
+            
+            // Clear all user data
+            userKeys.forEach(key => {
+                localStorage.removeItem(key);
+                console.log(`🗑️ Removed: ${key}`);
+            });
+            
+            // Clear first-time flag
+            localStorage.removeItem(firstTimeKey);
+            console.log(`🗑️ Removed: ${firstTimeKey}`);
+            
+            console.log('✅ All user data cleared');
+            console.log('🔄 Reload page to test first-time login behavior:');
+            console.log('  window.location.reload()');
+            
+            return {
+                clearedKeys: userKeys.length + 1,
+                userEmail
+            };
         }
     };
 
@@ -2543,6 +2582,45 @@ window.debugSync = {
       firstLoginDate: timestamp ? new Date(parseInt(timestamp)).toLocaleString() : 'Never',
       currentFlag: window.Storage.isFirstTimeLogin
     });
+  },
+
+  // Simulate completely new device by clearing all user data
+  simulateNewDevice() {
+    if (!window.Storage.currentUser) {
+      console.error('❌ No authenticated user');
+      return;
+    }
+    
+    const userId = window.Storage.currentUser.uid;
+    const userEmail = window.Storage.currentUser.email;
+    
+    console.log('🧹 SIMULATING NEW DEVICE for user:', userEmail);
+    console.log('⚠️ This will clear ALL local data for this user');
+    
+    // Find all user-specific keys
+    const userKeys = Object.keys(localStorage).filter(key => key.startsWith(userId));
+    const firstTimeKey = `first_login_${userId}`;
+    
+    console.log('📋 Keys to be deleted:', userKeys.concat([firstTimeKey]));
+    
+    // Clear all user data
+    userKeys.forEach(key => {
+      localStorage.removeItem(key);
+      console.log(`🗑️ Removed: ${key}`);
+    });
+    
+    // Clear first-time flag
+    localStorage.removeItem(firstTimeKey);
+    console.log(`🗑️ Removed: ${firstTimeKey}`);
+    
+    console.log('✅ All user data cleared');
+    console.log('🔄 Reload page to test first-time login behavior:');
+    console.log('  window.location.reload()');
+    
+    return {
+      clearedKeys: userKeys.length + 1,
+      userEmail
+    };
   }
 };
 
@@ -2558,6 +2636,7 @@ console.log('  - debugSync.checkServerDataNew() - Check server data via /api/syn
 console.log('  - debugSync.checkQuickActionsServer() - Check Quick Actions data on server');
 console.log('  - debugSync.resetFirstTimeLogin() - Reset first-time login flag to test new device behavior');
 console.log('  - debugSync.checkFirstTimeStatus() - Check first-time login status');
+console.log('  - debugSync.simulateNewDevice() - Clear all user data to simulate completely new device');
 console.log('  - debugSync.compare() - Compare local vs server data');
 console.log('  - debugSync.status() - Check sync status');  
 console.log('  - debugSync.testBackend() - Test backend connectivity');
