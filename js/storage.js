@@ -35,6 +35,23 @@ class Storage {
     this.currentUser = user;
     this.lastSyncTime = null; // Reset sync time when user changes
     
+    // 🔧 НОВОЕ: Более надежное определение первого входа
+    if (user) {
+      const firstTimeKey = `first_login_${user.uid}`;
+      const isFirstTime = !localStorage.getItem(firstTimeKey);
+      
+      if (isFirstTime) {
+        console.log('🆕 FIRST TIME LOGIN DETECTED for user:', user.email);
+        console.log('🔄 Will use SERVER-FIRST strategy for all data');
+        localStorage.setItem(firstTimeKey, Date.now().toString());
+        this.isFirstTimeLogin = true;
+      } else {
+        console.log('🔄 RETURNING USER DETECTED for user:', user.email);
+        console.log('🔄 Will use CLIENT-FIRST strategy for quick actions');
+        this.isFirstTimeLogin = false;
+      }
+    }
+    
     // Check for legacy data on first user set or user change
     if (wasUserChange || !this.hasBeenInitialized()) {
       this.checkAndMigrateLegacyData();
@@ -2047,112 +2064,84 @@ class Storage {
                     }
                     
                 } else if (key === 'quickActions' || key === 'quickActionOrder') {
-                    console.log(`🔄 USING CLIENT-FIRST STRATEGY FOR ${key.toUpperCase()} (respecting deletions)`);
+                    console.log(`🔄 USING RELIABLE FIRST-TIME DETECTION FOR ${key.toUpperCase()}`);
                     
-                    // 🔧 ИСПРАВЛЕНИЕ: Более надежная проверка новой сессии
-                    // Проверяем реально ли это свежая сессия (инкогнито, новое устройство)
-                    const hasAnyLocalStorageData = localStorage.length > 0;
-                    const userStorageKeys = Object.keys(localStorage).filter(key => key.startsWith(this.currentUser.uid + '_'));
-                    const hasUserData = userStorageKeys.length > 0;
-                    const isReallyNewSession = !hasUserData && !this.lastSyncTime;
+                    // 🔧 НАДЕЖНОЕ ОПРЕДЕЛЕНИЕ: Используем простой флаг первого входа
+                    const isFirstTime = this.isFirstTimeLogin === true;
                     
-                    // 🔧 СТАРАЯ ЛОГИКА (может быть неточной для инкогнито)
-                    const isNewSession = localArray.length === 0 && !this.lastSyncTime;
-                    const hasRealLocalChanges = localArray.length > 0 || this.lastSyncTime;
-                    
-                    // 🔧 КРИТИЧНОЕ ИСПРАВЛЕНИЕ: Умная обработка пустого сервера
-                    // Если сервер пустой, а локально есть данные - это может быть удаление на другом устройстве
-                    const serverIsEmpty = !hasServerData || serverArray.length === 0;
-                    const localHasData = hasLocalData && localArray.length > 0;
-                    const possibleServerDeletion = serverIsEmpty && localHasData && this.lastSyncTime;
-                    
-                    // 🐞 DEBUG: Подробные логи для отладки Quick Actions синхронизации
+                    // 🐞 DEBUG: Подробные логи для отладки
                     console.log(`🐞 DEBUG ${key.toUpperCase()} SYNC:`, {
-                      isNewSession,
-                      isReallyNewSession,
-                      hasRealLocalChanges,
+                      isFirstTime,
+                      isFirstTimeLogin: this.isFirstTimeLogin,
                       localArrayLength: localArray.length,
                       serverArrayLength: serverArray.length,
                       lastSyncTime: this.lastSyncTime,
                       userEmail: this.currentUser?.email,
-                      serverIsEmpty,
-                      localHasData,
-                      possibleServerDeletion,
-                      decision: possibleServerDeletion ? 'SERVER_DELETION_DETECTED' : 
-                               isReallyNewSession ? 'NEW_SESSION_LOAD_SERVER' : 'CLIENT_FIRST_EXISTING_SESSION',
-                      storageInfo: {
-                        hasAnyLocalStorageData,
-                        userStorageKeysCount: userStorageKeys.length,
-                        hasUserData,
-                        userStorageKeys: userStorageKeys.slice(0, 3) // первые 3 ключа для отладки
-                      },
-                      sessionInfo: {
-                        isIncognito: !this.lastSyncTime && localArray.length === 0,
-                        isMainBrowser: !!this.lastSyncTime || localArray.length > 0,
-                        isDetectedAsNew: isReallyNewSession
-                      },
+                      strategy: isFirstTime ? 'SERVER_FIRST' : 'CLIENT_FIRST',
                       localData: localArray,
                       serverData: serverArray
                     });
                     
-                    // 🔧 НОВАЯ ЛОГИКА: Учитываем возможность удаления на сервере
-                    if (possibleServerDeletion) {
-                        console.log(`🗑️ SERVER DELETION DETECTED for ${key}: Server is empty but local has data`);
-                        console.log(`🗑️ This likely means items were deleted on another device`);
-                        console.log(`🔄 Applying server state (empty) to respect deletions`);
-                        
-                        // Применяем серверное состояние (пустой массив)
-                        mergedData = [];
-                        
-                        // Это изменение - нужна синхронизация чтобы убедиться что локальные изменения не потеряны
-                        hasUpdates = true;
-                        
-                        console.log(`✅ ${key} cleared to match server deletion`);
-                        
-                    } else if (isReallyNewSession) {
-                        console.log(`🆕 REALLY NEW SESSION DETECTED for ${key}: Using server-first approach for initial load`);
+                    if (isFirstTime) {
+                        console.log(`🆕 FIRST TIME LOGIN for ${key}: Using server-first approach`);
                         console.log(`🐞 DEBUG: Server has ${serverArray.length} items:`, serverArray);
-                        // Для новых сессий используем server-first подход
+                        
+                        // Для первого входа используем server-first подход
                         mergedData = [...serverArray];
                         
-                        // Не помечаем для синхронизации - это обычная загрузка данных
-                        console.log(`📥 NEW SESSION: Loading ${serverArray.length} ${key} items from server`);
-                        console.log(`🐞 DEBUG: Final merged data for new session:`, mergedData);
+                        console.log(`📥 FIRST TIME: Loading ${serverArray.length} ${key} items from server`);
+                        console.log(`🐞 DEBUG: Final merged data for first time:`, mergedData);
+                        
+                        // Если получили данные с сервера, это обновление
+                        if (serverArray.length > 0) {
+                            hasUpdates = true;
+                        }
+                        
                     } else {
-                        console.log(`🔄 EXISTING SESSION for ${key}: Using client-first approach (respecting local changes)`);
+                        console.log(`🔄 RETURNING USER for ${key}: Using client-first approach (respecting local changes)`);
                         console.log(`🐞 DEBUG: Local has ${localArray.length} items:`, localArray);
                         console.log(`🐞 DEBUG: Server has ${serverArray.length} items:`, serverArray);
                         
-                        // 🚨 КРИТИЧНОЕ ИСПРАВЛЕНИЕ: Используем client-first стратегию для Quick Actions
-                        // чтобы удаления Quick Actions правильно синхронизировались между устройствами
-                        mergedData = [...localArray];
+                        // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Умная обработка пустого сервера
+                        // Если сервер пустой, а локально есть данные - это может быть удаление на другом устройстве
+                        const serverIsEmpty = !hasServerData || serverArray.length === 0;
+                        const localHasData = hasLocalData && localArray.length > 0;
+                        const possibleServerDeletion = serverIsEmpty && localHasData && this.lastSyncTime;
                         
-                        // Добавляем только новые серверные элементы которых нет локально
-                        for (const serverItem of serverArray) {
-                          if (!mergedData.includes(serverItem)) {
-                            console.log(`📋 ${key} item ${serverItem} found only on server, adding to local`);
-                            mergedData.push(serverItem);
+                        if (possibleServerDeletion) {
+                            console.log(`🗑️ SERVER DELETION DETECTED for ${key}: Server is empty but local has data`);
+                            console.log(`🗑️ This likely means items were deleted on another device`);
+                            console.log(`🔄 Applying server state (empty) to respect deletions`);
+                            
+                            // Применяем серверное состояние (пустой массив)
+                            mergedData = [];
                             hasUpdates = true;
-                          }
-                        }
-                        
-                        console.log(`🐞 DEBUG: Final merged data for existing session:`, mergedData);
-                        
-                        // Проверяем нужно ли синхронизировать локальные изменения (включая удаления)
-                        const hasLocalChanges = !this.arraysEqual(localArray, serverArray);
-                        console.log(`🐞 DEBUG: Arrays equal check:`, {
-                          localArray,
-                          serverArray,
-                          arraysEqual: this.arraysEqual(localArray, serverArray),
-                          hasLocalChanges
-                        });
-                        
-                        if (hasLocalChanges) {
-                          console.log(`🚀 CLIENT-FIRST: Found local changes in ${key}, marking for sync`);
-                          console.log(`🐞 DEBUG: Will sync local changes to server:`, localArray);
-                          this.markForSync();
+                            
+                            console.log(`✅ ${key} cleared to match server deletion`);
                         } else {
-                          console.log(`📥 CLIENT-FIRST: No local ${key} changes, NOT marking for sync`);
+                            // Обычная client-first стратегия для returning users
+                            mergedData = [...localArray];
+                            
+                            // Добавляем только новые серверные элементы которых нет локально
+                            for (const serverItem of serverArray) {
+                              if (!mergedData.includes(serverItem)) {
+                                console.log(`📋 ${key} item ${serverItem} found only on server, adding to local`);
+                                mergedData.push(serverItem);
+                                hasUpdates = true;
+                              }
+                            }
+                            
+                            console.log(`🐞 DEBUG: Final merged data for returning user:`, mergedData);
+                            
+                            // Проверяем нужно ли синхронизировать локальные изменения
+                            const hasLocalChanges = !this.arraysEqual(localArray, serverArray);
+                            
+                            if (hasLocalChanges) {
+                              console.log(`🚀 CLIENT-FIRST: Found local changes in ${key}, marking for sync`);
+                              this.markForSync();
+                            } else {
+                              console.log(`📥 CLIENT-FIRST: No local ${key} changes, NOT marking for sync`);
+                            }
                         }
                     }
                 } else {
