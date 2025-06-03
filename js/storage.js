@@ -2337,14 +2337,36 @@ class Storage {
                         console.log(`🆕 FIRST TIME LOGIN for ${key}: Using server-first approach`);
                         console.log(`🐞 DEBUG: Server has ${serverArray.length} items:`, serverArray);
                         
-                        // Для первого входа используем server-first подход
-                        mergedData = [...serverArray];
+                        // 🔧 ИСПРАВЛЕНИЕ: Для states учитываем deletedStates даже при first-time login
+                        if (key === 'states') {
+                            const deletedStates = this.get('deletedStates') || [];
+                            console.log(`🔍 CHECKING DELETED STATES for first-time user:`, deletedStates);
+                            
+                            if (deletedStates.length > 0) {
+                                // Фильтруем удаленные states даже для первого входа
+                                const filteredServerStates = serverArray.filter(serverState => 
+                                    !deletedStates.includes(serverState.id)
+                                );
+                                
+                                console.log(`🗑️ FIRST TIME STATE FILTERING: Filtered out ${serverArray.length - filteredServerStates.length} deleted states`);
+                                console.log(`📥 FIRST TIME: Loading ${filteredServerStates.length} states from server (${deletedStates.length} filtered out)`);
+                                
+                                mergedData = [...filteredServerStates];
+                            } else {
+                                // Нет удаленных states, загружаем все
+                                mergedData = [...serverArray];
+                                console.log(`📥 FIRST TIME: Loading ${serverArray.length} states from server (no deletions)`);
+                            }
+                        } else {
+                            // Для других типов данных - стандартное поведение
+                            mergedData = [...serverArray];
+                            console.log(`📥 FIRST TIME: Loading ${serverArray.length} ${key} items from server`);
+                        }
                         
-                        console.log(`📥 FIRST TIME: Loading ${serverArray.length} ${key} items from server`);
                         console.log(`🐞 DEBUG: Final merged data for first time:`, mergedData);
                         
                         // Если получили данные с сервера, это обновление
-                        if (serverArray.length > 0) {
+                        if (mergedData.length > 0) {
                             hasUpdates = true;
                         }
                         
