@@ -2121,7 +2121,7 @@ class Storage {
                 if (key === 'quickActions' || key === 'quickActionOrder') {
                   // Для quickActions используем специальную логику - сравниваем массивы
                   const hasLocalChanges = !this.arraysEqual(localArray, serverArray);
-                  if (hasLocalChanges && localArray.length > 0) {
+                  if (hasLocalChanges) {
                     console.log(`🚀 SERVER-FIRST: Found local changes in ${key}, marking for sync`);
                     this.markForSync();
                   } else {
