@@ -1455,6 +1455,17 @@ class Storage {
     // Get protocol info for logging before removal
     const protocol = this.getProtocolById(protocolId);
     
+    // 🐞 DEBUG: Логируем состояние до удаления
+    console.log('🐞 DEBUG REMOVING QUICK ACTION:', {
+      protocolId,
+      protocolName: protocol?.name,
+      beforeRemoval: {
+        quickActionsCount: quickActions.length,
+        quickActionsData: quickActions
+      },
+      userEmail: this.currentUser?.email
+    });
+    
     // 🔧 УПРОЩЕНИЕ: Просто удаляем из Quick Actions без отслеживания deletedQuickActions
     console.log('🚫 REMOVING FROM QUICK ACTIONS:', {
       protocolId,
@@ -1471,6 +1482,21 @@ class Storage {
     
     // Save updated quick actions
     this.set(this.KEYS.QUICK_ACTIONS, updatedQuickActions);
+    
+    // 🐞 DEBUG: Логируем состояние после удаления
+    console.log('🐞 DEBUG AFTER QUICK ACTION REMOVAL:', {
+      protocolId,
+      afterRemoval: {
+        quickActionsCount: updatedQuickActions.length,
+        quickActionsData: updatedQuickActions,
+        quickActionOrderCount: updatedOrder.length,
+        quickActionOrderData: updatedOrder
+      },
+      changesMade: {
+        removedFromQuickActions: quickActions.length - updatedQuickActions.length,
+        removedFromOrder: quickActionOrder.length - updatedOrder.length
+      }
+    });
     
     // Add to history log
     if (protocol) {
@@ -1688,6 +1714,17 @@ class Storage {
         deletedCheckins: this.get('deletedCheckins') || []
       };
       
+      // 🐞 DEBUG: Логируем отправляемые данные Quick Actions
+      console.log('🐞 DEBUG SENDING TO SERVER:', {
+        quickActionsCount: userData.quickActions?.length || 0,
+        quickActionsData: userData.quickActions,
+        quickActionOrderCount: userData.quickActionOrder?.length || 0,
+        quickActionOrderData: userData.quickActionOrder,
+        historyCount: userData.history?.length || 0,
+        userEmail: this.currentUser?.email,
+        lastSyncTime: this.lastSyncTime
+      });
+      
       // 🔇 ЛОГИ ОТКЛЮЧЕНЫ - слишком шумные (повторяются при каждой синхронизации)
       // console.log('📤 SYNC DATA TO SEND:', {
       //   protocolsCount: userData.protocols?.length || 0,
@@ -1745,6 +1782,18 @@ class Storage {
       if (response.ok) {
         const serverData = await response.json();
         console.log('📥 SYNC RESPONSE DATA:', serverData);
+        
+        // 🐞 DEBUG: Подробные логи для получаемых с сервера данных
+        console.log('🐞 DEBUG RECEIVED FROM SERVER:', {
+          quickActionsCount: serverData.data?.quickActions?.length || 0,
+          quickActionsData: serverData.data?.quickActions,
+          quickActionOrderCount: serverData.data?.quickActionOrder?.length || 0,
+          quickActionOrderData: serverData.data?.quickActionOrder,
+          historyCount: serverData.data?.history?.length || 0,
+          protocolsCount: serverData.data?.protocols?.length || 0,
+          userEmail: this.currentUser?.email,
+          serverResponse: serverData
+        });
         
         this.lastSyncTime = new Date().toISOString();
         
@@ -2005,15 +2054,36 @@ class Storage {
                     const isNewSession = localArray.length === 0 && !this.lastSyncTime;
                     const hasRealLocalChanges = localArray.length > 0 || this.lastSyncTime;
                     
+                    // 🐞 DEBUG: Подробные логи для отладки Quick Actions синхронизации
+                    console.log(`🐞 DEBUG ${key.toUpperCase()} SYNC:`, {
+                      isNewSession,
+                      hasRealLocalChanges,
+                      localArrayLength: localArray.length,
+                      serverArrayLength: serverArray.length,
+                      lastSyncTime: this.lastSyncTime,
+                      userEmail: this.currentUser?.email,
+                      sessionInfo: {
+                        isIncognito: !this.lastSyncTime && localArray.length === 0,
+                        isMainBrowser: !!this.lastSyncTime || localArray.length > 0
+                      },
+                      localData: localArray,
+                      serverData: serverArray
+                    });
+                    
                     if (isNewSession) {
                         console.log(`🆕 NEW SESSION DETECTED for ${key}: Using server-first approach for initial load`);
+                        console.log(`🐞 DEBUG: Server has ${serverArray.length} items:`, serverArray);
                         // Для новых сессий используем server-first подход
                         mergedData = [...serverArray];
                         
                         // Не помечаем для синхронизации - это обычная загрузка данных
                         console.log(`📥 NEW SESSION: Loading ${serverArray.length} ${key} items from server`);
+                        console.log(`🐞 DEBUG: Final merged data for new session:`, mergedData);
                     } else {
                         console.log(`🔄 EXISTING SESSION for ${key}: Using client-first approach (respecting local changes)`);
+                        console.log(`🐞 DEBUG: Local has ${localArray.length} items:`, localArray);
+                        console.log(`🐞 DEBUG: Server has ${serverArray.length} items:`, serverArray);
+                        
                         // 🚨 КРИТИЧНОЕ ИСПРАВЛЕНИЕ: Используем client-first стратегию для Quick Actions
                         // чтобы удаления Quick Actions правильно синхронизировались между устройствами
                         mergedData = [...localArray];
@@ -2027,10 +2097,20 @@ class Storage {
                           }
                         }
                         
+                        console.log(`🐞 DEBUG: Final merged data for existing session:`, mergedData);
+                        
                         // Проверяем нужно ли синхронизировать локальные изменения (включая удаления)
                         const hasLocalChanges = !this.arraysEqual(localArray, serverArray);
+                        console.log(`🐞 DEBUG: Arrays equal check:`, {
+                          localArray,
+                          serverArray,
+                          arraysEqual: this.arraysEqual(localArray, serverArray),
+                          hasLocalChanges
+                        });
+                        
                         if (hasLocalChanges) {
                           console.log(`🚀 CLIENT-FIRST: Found local changes in ${key}, marking for sync`);
+                          console.log(`🐞 DEBUG: Will sync local changes to server:`, localArray);
                           this.markForSync();
                         } else {
                           console.log(`📥 CLIENT-FIRST: No local ${key} changes, NOT marking for sync`);
