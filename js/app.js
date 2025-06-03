@@ -1495,56 +1495,78 @@ function initMainApp() {
 
         // Force reset user data on server and resync
         async forceResetAndSync() {
-            console.log('🗑️ Force resetting user data on server and resyncing...');
-            console.warn('⚠️ WARNING: This will DELETE ALL server data and upload only local data from THIS device!');
-            console.warn('⚠️ Data from other devices will be LOST permanently!');
-            console.warn('⚠️ Use debugSync.smartSync() for safer sync debugging.');
-            
-            if (!window.Storage.currentUser) {
-                console.error('❌ No authenticated user');
-                return;
-            }
-            
+            console.log('💥 FORCE RESET: Resetting all user data on server and resyncing...');
             try {
-                // Step 1: Clear user data on server
-                const token = await window.Storage.currentUser.getIdToken();
-                const response = await fetch(`${window.BACKEND_URL}/api/user/force-reset`, {
+                const token = await firebase.auth().currentUser.getIdToken();
+                const response = await fetch(`${BACKEND_URL}/api/user/force-reset`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${token}`,
-                        'Cache-Control': 'no-cache, no-store, must-revalidate',
-                        'Pragma': 'no-cache',
-                        'Expires': '0'
+                        'Content-Type': 'application/json'
                     }
                 });
                 
                 if (response.ok) {
                     const result = await response.json();
-                    console.log('✅ Server data cleared:', result);
+                    console.log('✅ Force reset successful:', result);
                     
-                    // Step 2: Clear local data
-                    window.Storage.set(window.Storage.KEYS.HISTORY, []);
-                    console.log('🧹 Local history cleared');
-                    
-                    // Step 3: Force sync to rebuild data on server
+                    // Now sync current local data to server
                     await window.Storage.syncWithBackend();
-                    console.log('✅ Force reset and sync completed');
+                    console.log('✅ Resync completed successfully');
                     
-                    // Step 4: Refresh current page
-                    if (window.App && window.App.renderPage) {
-                        window.App.renderPage(window.App.currentPage);
-                        console.log('🔄 Page refreshed after force reset');
-                    }
+                    // Refresh the page to ensure clean state
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
                 } else {
                     const errorText = await response.text();
-                    console.error('❌ Server reset failed:', response.status, errorText);
+                    console.error('❌ Force reset failed:', response.status, response.statusText, errorText);
                 }
             } catch (error) {
-                console.error('❌ Force reset and sync failed:', error);
+                console.error('❌ Force reset error:', error);
             }
         },
         
-        // Safer sync debugging - tries to preserve data
+        // Emergency cleanup of duplicate protocols and skills on server
+        async cleanDuplicates() {
+            console.log('🧹 EMERGENCY CLEANUP: Removing duplicate protocols and skills from server...');
+            try {
+                const token = await firebase.auth().currentUser.getIdToken();
+                const response = await fetch(`${BACKEND_URL}/api/emergency/clean-duplicates`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ Emergency cleanup successful:', result);
+                    
+                    // Sync again to get clean data
+                    await window.Storage.syncWithBackend();
+                    console.log('✅ Post-cleanup sync completed');
+                    
+                    // Show results
+                    console.log('🧹 CLEANUP RESULTS:', {
+                        protocolsRemoved: result.cleaned.protocols.removed,
+                        skillsRemoved: result.cleaned.skills.removed,
+                        finalProtocolsCount: result.cleaned.protocols.after,
+                        finalSkillsCount: result.cleaned.skills.after
+                    });
+                    
+                    return result;
+                } else {
+                    const errorText = await response.text();
+                    console.error('❌ Emergency cleanup failed:', response.status, response.statusText, errorText);
+                }
+            } catch (error) {
+                console.error('❌ Emergency cleanup error:', error);
+            }
+        },
+
+        // Safer sync debugging
         async smartSync() {
             console.log('🧠 Smart sync debugging - preserving data from all devices...');
             
@@ -2621,6 +2643,77 @@ window.debugSync = {
       clearedKeys: userKeys.length + 1,
       userEmail
     };
+  },
+
+  // Emergency cleanup of duplicate protocols and skills on server
+  async cleanDuplicates() {
+    console.log('🧹 EMERGENCY CLEANUP: Removing duplicate protocols and skills from server...');
+    try {
+      const token = await firebase.auth().currentUser.getIdToken();
+      const response = await fetch(`${BACKEND_URL}/api/emergency/clean-duplicates`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Emergency cleanup successful:', result);
+        
+        // Sync again to get clean data
+        await window.Storage.syncWithBackend();
+        console.log('✅ Post-cleanup sync completed');
+        
+        // Show results
+        console.log('🧹 CLEANUP RESULTS:', {
+          protocolsRemoved: result.cleaned.protocols.removed,
+          skillsRemoved: result.cleaned.skills.removed,
+          finalProtocolsCount: result.cleaned.protocols.after,
+          finalSkillsCount: result.cleaned.skills.after
+        });
+        
+        return result;
+      } else {
+        const errorText = await response.text();
+        console.error('❌ Emergency cleanup failed:', response.status, response.statusText, errorText);
+      }
+    } catch (error) {
+      console.error('❌ Emergency cleanup error:', error);
+    }
+  },
+
+  // Safer sync debugging
+  async smartSync() {
+    console.log('🧠 Smart sync debugging - preserving data from all devices...');
+    
+    if (!window.Storage.currentUser) {
+      console.error('❌ No authenticated user');
+      return;
+    }
+    
+    try {
+      // Step 1: Force multiple sync cycles to resolve conflicts
+      console.log('🔄 Running multiple sync cycles...');
+      
+      for (let i = 1; i <= 3; i++) {
+        console.log(`🔄 Sync cycle ${i}/3...`);
+        await window.Storage.syncWithBackend();
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second between syncs
+      }
+      
+      console.log('✅ Smart sync completed - data should be consistent now');
+      
+      // Step 2: Refresh current page
+      if (window.App && window.App.renderPage) {
+        window.App.renderPage(window.App.currentPage);
+        console.log('🔄 Page refreshed after smart sync');
+      }
+      
+    } catch (error) {
+      console.error('❌ Smart sync failed:', error);
+    }
   }
 };
 
@@ -2641,4 +2734,5 @@ console.log('  - debugSync.compare() - Compare local vs server data');
 console.log('  - debugSync.status() - Check sync status');  
 console.log('  - debugSync.testBackend() - Test backend connectivity');
 console.log('  - debugSync.forceResetAndSync() - Force reset user data on server and resync');
+console.log('  - debugSync.cleanDuplicates() - Emergency cleanup of duplicate protocols/skills on server');
 console.log('  - debugSync.smartSync() - Safer sync debugging');
