@@ -3321,176 +3321,119 @@ class Storage {
 
   // Perform data integrity check
   async performDataIntegrityCheck() {
-    if (!this.isOnline || !this.currentUser) {
-      console.log('🚫 INTEGRITY CHECK SKIPPED: offline or no user');
-      return false;
-    }
-
     try {
       console.log('🔍 INTEGRITY CHECK: Starting automatic data integrity verification...');
       
-      // Get current local data
-      const localProtocols = this.getProtocols();
-      const localSkills = this.getSkills();
+      if (!this.currentUser) {
+        console.log('🔍 INTEGRITY CHECK: No authenticated user, skipping');
+        return false;
+      }
       
-      // 🔧 НОВОЕ: Получаем списки удаленных элементов для проверки
-      const deletedProtocols = this.get('deletedProtocols') || [];
-      const deletedSkills = this.get('deletedSkills') || [];
+      let hasIssues = false;
       
-      // 🔧 FIX: Use /api/sync instead of /api/user/data to get consistent server data
-      // The /api/user/data endpoint was returning stale data while /api/sync has fresh data
-      const timestamp = Date.now();
+      // Get server data for comparison
       const token = await this.currentUser.getIdToken();
-      
-      // Create minimal sync request to get server data without uploading anything
-      const minimalLocalData = {
-        protocols: [],
-        skills: [],
-        states: [],
-        history: [],
-        quickActions: [],
-        quickActionOrder: [],
-        protocolOrder: [],
-        skillOrder: [],
-        stateOrder: [],
-        deletedCheckins: [],
-        deletedProtocols: [],
-        deletedSkills: []
-      };
-      
-      const response = await fetch(`${BACKEND_URL}/api/sync?_t=${timestamp}&_cb=${Math.random()}`, {
+      const response = await fetch(`${BACKEND_URL}/api/sync?_integrity_check=true&_t=${Date.now()}`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
-          'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-          'Pragma': 'no-cache',
-          'Expires': '0',
-          'If-Modified-Since': 'Thu, 01 Jan 1970 00:00:00 GMT'
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(minimalLocalData)
+        body: JSON.stringify({
+          protocols: [],
+          skills: [],
+          states: [],
+          history: [],
+          quickActions: [],
+          quickActionOrder: [],
+          protocolOrder: [],
+          skillOrder: [],
+          stateOrder: [],
+          deletedCheckins: [],
+          deletedProtocols: [],
+          deletedSkills: []
+        })
       });
       
       if (!response.ok) {
-        console.error('❌ INTEGRITY CHECK: Server request failed:', response.status, response.statusText);
+        console.warn('🔍 INTEGRITY CHECK: Failed to fetch server data for comparison');
         return false;
       }
       
       const serverResponse = await response.json();
       const serverData = serverResponse.data || {};
-      const serverProtocols = serverData.protocols || [];
-      const serverSkills = serverData.skills || [];
+      
+      // Get current local data
+      const localProtocols = this.getProtocols();
+      const localSkills = this.getSkills();
+      const deletedProtocols = this.get('deletedProtocols') || [];
+      const deletedSkills = this.get('deletedSkills') || [];
       
       console.log('🔍 INTEGRITY CHECK: Server data comparison:', {
         localProtocolsCount: localProtocols.length,
-        serverProtocolsCount: serverProtocols.length,
+        serverProtocolsCount: (serverData.protocols || []).length,
         localSkillsCount: localSkills.length,
-        serverSkillsCount: serverSkills.length,
+        serverSkillsCount: (serverData.skills || []).length,
         deletedProtocolsCount: deletedProtocols.length,
         deletedSkillsCount: deletedSkills.length
       });
       
-      let hasDiscrepancies = false;
-      let updatesNeeded = [];
-      
-      // 🔧 ИСПРАВЛЕНИЕ: Check for missing protocols on local device (respecting deletions)
+      // Check for missing protocols (not in deleted list)
       const localProtocolIds = new Set(localProtocols.map(p => p.id));
-      const missingProtocols = serverProtocols.filter(serverProtocol => 
+      const missingProtocols = (serverData.protocols || []).filter(serverProtocol => 
         !localProtocolIds.has(serverProtocol.id) && 
-        !deletedProtocols.includes(serverProtocol.id) // 🔧 КРИТИЧНО: Не восстанавливаем удаленные протоколы
+        !deletedProtocols.includes(serverProtocol.id)
       );
       
       if (missingProtocols.length > 0) {
-        console.log('🚨 INTEGRITY CHECK: Found missing protocols on local device (respecting deletions):', 
-          missingProtocols.map(p => ({id: p.id, name: p.name})));
+        console.log('🚨 INTEGRITY CHECK: Found missing protocols on local device (respecting deletions):', missingProtocols.map(p => p.id));
         
-        // Add missing protocols to local storage
-        const existingProtocols = this.getProtocols();
-        const updatedProtocols = [...existingProtocols, ...missingProtocols];
+        // 🔧 FIX: Add missing protocols to existing array, not replace
+        const updatedProtocols = [...localProtocols, ...missingProtocols];
         this.set(this.KEYS.PROTOCOLS, updatedProtocols);
-        
-        updatesNeeded.push(`+${missingProtocols.length} protocols`);
-        hasDiscrepancies = true;
+        hasIssues = true;
       }
       
-      // 🔧 ИСПРАВЛЕНИЕ: Check for missing skills on local device (respecting deletions)
+      // Check for missing skills (not in deleted list)
       const localSkillIds = new Set(localSkills.map(s => s.id));
-      const missingSkills = serverSkills.filter(serverSkill => 
+      const missingSkills = (serverData.skills || []).filter(serverSkill => 
         !localSkillIds.has(serverSkill.id) && 
-        !deletedSkills.includes(serverSkill.id) // 🔧 КРИТИЧНО: Не восстанавливаем удаленные навыки
+        !deletedSkills.includes(serverSkill.id)
       );
       
       if (missingSkills.length > 0) {
-        console.log('🚨 INTEGRITY CHECK: Found missing skills on local device (respecting deletions):', 
-          missingSkills.map(s => ({id: s.id, name: s.name})));
+        console.log('🚨 INTEGRITY CHECK: Found missing skills on local device (respecting deletions):', missingSkills.map(s => s.id));
         
-        // Add missing skills to local storage
-        const existingSkills = this.getSkills();
-        const updatedSkills = [...existingSkills, ...missingSkills];
+        // 🔧 FIX: Add missing skills to existing array, not replace
+        const updatedSkills = [...localSkills, ...missingSkills];
         this.set(this.KEYS.SKILLS, updatedSkills);
-        
-        updatesNeeded.push(`+${missingSkills.length} skills`);
-        hasDiscrepancies = true;
+        hasIssues = true;
       }
       
-      // Check for target inconsistencies in protocols
-      let protocolTargetIssues = 0;
-      const serverProtocolsMap = new Map(serverProtocols.map(p => [p.id, p]));
-      
-      localProtocols.forEach(localProtocol => {
-        const serverProtocol = serverProtocolsMap.get(localProtocol.id);
-        if (serverProtocol) {
-          const localTargets = (localProtocol.targets || []).sort();
-          const serverTargets = (serverProtocol.targets || []).sort();
+      if (hasIssues) {
+        console.log('🔧 INTEGRITY CHECK: Fixed data discrepancies (respecting user deletions):', [
+          `protocols: +${missingProtocols.length}`,
+          `skills: +${missingSkills.length}`
+        ]);
+        
+        // Refresh UI
+        if (typeof UI !== 'undefined' && UI.renderPage) {
+          const currentPage = window.App?.currentPage || 'dashboard';
+          UI.renderPage(currentPage);
+          console.log('🖥️ UI refreshed after integrity check fixes');
           
-          if (!this.arraysEqual(localTargets, serverTargets)) {
-            console.log(`🔧 INTEGRITY CHECK: Updating protocol ${localProtocol.id} targets:`, {
-              from: localTargets,
-              to: serverTargets
-            });
-            
-            // Update local protocol with server targets
-            const protocols = this.getProtocols();
-            const protocolIndex = protocols.findIndex(p => p.id === localProtocol.id);
-            if (protocolIndex !== -1) {
-              protocols[protocolIndex] = { ...protocols[protocolIndex], ...serverProtocol };
-              this.set(this.KEYS.PROTOCOLS, protocols);
-              protocolTargetIssues++;
-            }
+          // Update Quick Actions panel if affected
+          if (typeof UI.updateQuickActionsPanel === 'function') {
+            UI.updateQuickActionsPanel();
+            console.log('⚡ Updating Quick Actions panel after integrity check...');
           }
         }
-      });
-      
-      if (protocolTargetIssues > 0) {
-        updatesNeeded.push(`${protocolTargetIssues} protocol targets`);
-        hasDiscrepancies = true;
-      }
-      
-      if (hasDiscrepancies) {
-        console.log('🔧 INTEGRITY CHECK: Fixed data discrepancies (respecting user deletions):', updatesNeeded);
-        
-        // Update UI to reflect changes
-        if (window.App && window.App.renderPage) {
-          window.App.renderPage(window.App.currentPage);
-          console.log('🖥️ UI refreshed after integrity check fixes');
-        }
-        
-        // 🚀 ВАЖНО: Обновляем Quick Actions панель после integrity check
-        if (window.UI && window.UI.renderQuickProtocols) {
-          console.log('⚡ Updating Quick Actions panel after integrity check...');
-          window.UI.renderQuickProtocols();
-        }
-        
-        // Show user notification
-        if (window.App && window.App.showToast) {
-          window.App.showToast(`Data synced: ${updatesNeeded.join(', ')}`, 'success');
-        }
-        
-        return true;
       } else {
         console.log('✅ INTEGRITY CHECK: All data is consistent (deletions respected)');
-        return false;
       }
+      
+      return hasIssues;
+      
     } catch (error) {
       console.error('❌ INTEGRITY CHECK FAILED:', error);
       return false;
@@ -3501,6 +3444,40 @@ class Storage {
   clearDeletedSkills() {
     this.set('deletedSkills', []);
     console.log('🗑️ Deleted skills list cleared');
+  }
+
+  // Debug function to clear undefined elements from deletedCheckins
+  clearDeletedCheckins() {
+    console.log('🧹 CLEANING DELETED CHECKINS: Removing undefined elements...');
+    
+    const currentDeleted = this.get('deletedCheckins') || [];
+    const before = currentDeleted.length;
+    
+    // Filter out undefined, null, and empty string elements
+    const cleaned = currentDeleted.filter(item => 
+      item !== undefined && 
+      item !== null && 
+      item !== '' && 
+      typeof item !== 'undefined'
+    );
+    
+    const after = cleaned.length;
+    const removed = before - after;
+    
+    this.set('deletedCheckins', cleaned);
+    
+    console.log('🧹 DELETED CHECKINS CLEANUP COMPLETE:', {
+      before,
+      after,
+      removed,
+      sample: cleaned.slice(0, 5)
+    });
+    
+    return {
+      before,
+      after,
+      removed
+    };
   }
 }
 

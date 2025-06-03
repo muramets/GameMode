@@ -1962,6 +1962,16 @@ function initMainApp() {
                 clearedKeys: userKeys.length + 1,
                 userEmail
             };
+        },
+
+        // Clean undefined elements from deletedCheckins
+        clearDeletedCheckins() {
+            if (!window.Storage) {
+                console.error('❌ Storage not available');
+                return;
+            }
+            
+            return window.Storage.clearDeletedCheckins();
         }
     };
 
@@ -2684,6 +2694,16 @@ window.debugSync = {
     }
   },
 
+  // Clean undefined elements from deletedCheckins
+  clearDeletedCheckins() {
+    if (!window.Storage) {
+      console.error('❌ Storage not available');
+      return;
+    }
+    
+    return window.Storage.clearDeletedCheckins();
+  },
+
   // Safer sync debugging
   async smartSync() {
     console.log('🧠 Smart sync debugging - preserving data from all devices...');
@@ -2735,4 +2755,5 @@ console.log('  - debugSync.status() - Check sync status');
 console.log('  - debugSync.testBackend() - Test backend connectivity');
 console.log('  - debugSync.forceResetAndSync() - Force reset user data on server and resync');
 console.log('  - debugSync.cleanDuplicates() - Emergency cleanup of duplicate protocols/skills on server');
+console.log('  - debugSync.clearDeletedCheckins() - Clean undefined elements from deletedCheckins array');
 console.log('  - debugSync.smartSync() - Safer sync debugging');
