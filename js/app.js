@@ -542,10 +542,17 @@ function initMainApp() {
                     this.showToast('Check-in deleted', 'success');
                 }
                 
-                // Reset history filter to show all items
+                // 🔧 FIX: Properly refresh history by reapplying filters instead of just resetting
                 this.filteredHistory = [];
                 this.historyInitialized = false;
-                UI.renderHistory();
+                
+                // Apply current filters to properly reload and filter history
+                if (this.currentPage === 'history') {
+                    this.applyHistoryFilters();
+                } else {
+                    // If not on history page, just reset for next visit
+                    UI.renderHistory();
+                }
                 
                 // Update user stats if on dashboard
                 if (this.currentPage === 'dashboard') {
