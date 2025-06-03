@@ -38,54 +38,61 @@ class Storage {
     // 🔧 НОВОЕ: Более надежное определение первого входа
     if (user) {
       const firstTimeKey = `first_login_${user.uid}`;
-      const isFirstTimeByFlag = !localStorage.getItem(firstTimeKey);
       
-      // 🔧 КРИТИЧНО: Дополнительная проверка - есть ли у пользователя РЕАЛЬНЫЕ данные
-      // Проверяем ключевые пользовательские данные (не default)
-      const userDataKeys = [
-        'history', 'protocolOrder', 'skillOrder', 'stateOrder', 'quickActionOrder'
-      ];
-      
-      let hasRealUserData = false;
-      userDataKeys.forEach(key => {
-        const userKey = `${user.uid}_${key}`;
-        const data = localStorage.getItem(userKey);
-        if (data && data !== 'null' && data !== '[]') {
-          try {
-            const parsed = JSON.parse(data);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              hasRealUserData = true;
+      // 🔧 ИСПРАВЛЕНИЕ: Проверяем флаг только один раз и сохраняем результат
+      if (this.isFirstTimeLogin === undefined) {
+        const isFirstTimeByFlag = !localStorage.getItem(firstTimeKey);
+        
+        // 🔧 КРИТИЧНО: Дополнительная проверка - есть ли у пользователя РЕАЛЬНЫЕ данные
+        // Проверяем ключевые пользовательские данные (не default)
+        const userDataKeys = [
+          'history', 'protocolOrder', 'skillOrder', 'stateOrder', 'quickActionOrder'
+        ];
+        
+        let hasRealUserData = false;
+        userDataKeys.forEach(key => {
+          const userKey = `${user.uid}_${key}`;
+          const data = localStorage.getItem(userKey);
+          if (data && data !== 'null' && data !== '[]') {
+            try {
+              const parsed = JSON.parse(data);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                hasRealUserData = true;
+              }
+            } catch (e) {
+              // Ignore parse errors
             }
-          } catch (e) {
-            // Ignore parse errors
           }
+        });
+        
+        // 🔧 ИСПРАВЛЕНИЕ: Пользователь считается новым если:
+        // 1. Нет флага первого входа И
+        // 2. Нет реальных пользовательских данных
+        const isReallyFirstTime = isFirstTimeByFlag && !hasRealUserData;
+        
+        if (isReallyFirstTime) {
+          console.log('🆕 FIRST TIME LOGIN DETECTED for user:', user.email);
+          console.log('🔄 Will use SERVER-FIRST strategy for all data');
+          console.log('🔍 Detection details:', {
+            flagExists: !isFirstTimeByFlag,
+            hasUserData: hasRealUserData,
+            decision: 'FIRST_TIME'
+          });
+          localStorage.setItem(firstTimeKey, Date.now().toString());
+          this.isFirstTimeLogin = true;
+        } else {
+          console.log('🔄 RETURNING USER DETECTED for user:', user.email);
+          console.log('🔄 Will use CLIENT-FIRST strategy for quick actions');
+          console.log('🔍 Detection details:', {
+            flagExists: !isFirstTimeByFlag,
+            hasUserData: hasRealUserData,
+            decision: 'RETURNING_USER'
+          });
+          this.isFirstTimeLogin = false;
         }
-      });
-      
-      // 🔧 ИСПРАВЛЕНИЕ: Пользователь считается новым если:
-      // 1. Нет флага первого входа И
-      // 2. Нет реальных пользовательских данных
-      const isReallyFirstTime = isFirstTimeByFlag && !hasRealUserData;
-      
-      if (isReallyFirstTime) {
-        console.log('🆕 FIRST TIME LOGIN DETECTED for user:', user.email);
-        console.log('🔄 Will use SERVER-FIRST strategy for all data');
-        console.log('🔍 Detection details:', {
-          flagExists: !isFirstTimeByFlag,
-          hasUserData: hasRealUserData,
-          decision: 'FIRST_TIME'
-        });
-        localStorage.setItem(firstTimeKey, Date.now().toString());
-        this.isFirstTimeLogin = true;
       } else {
-        console.log('🔄 RETURNING USER DETECTED for user:', user.email);
-        console.log('🔄 Will use CLIENT-FIRST strategy for quick actions');
-        console.log('🔍 Detection details:', {
-          flagExists: !isFirstTimeByFlag,
-          hasUserData: hasRealUserData,
-          decision: 'RETURNING_USER'
-        });
-        this.isFirstTimeLogin = false;
+        // Уже определили статус пользователя, не меняем его
+        console.log('🔄 USER STATUS ALREADY DETERMINED:', this.isFirstTimeLogin ? 'FIRST_TIME' : 'RETURNING_USER');
       }
     }
     
@@ -296,18 +303,18 @@ class Storage {
         this.set(this.KEYS.QUICK_ACTIONS, []);
         this.set(this.KEYS.QUICK_ACTION_ORDER, []);
       } else {
-        // Set default quick actions only if user has existing protocols
-        const existingProtocols = this.get(this.KEYS.PROTOCOLS);
-        if (existingProtocols && existingProtocols.length > 0) {
-          // Use first 5 available protocol IDs as defaults
-          const defaultQuickActions = existingProtocols.slice(0, 5).map(p => p.id);
+      // Set default quick actions only if user has existing protocols
+      const existingProtocols = this.get(this.KEYS.PROTOCOLS);
+      if (existingProtocols && existingProtocols.length > 0) {
+        // Use first 5 available protocol IDs as defaults
+        const defaultQuickActions = existingProtocols.slice(0, 5).map(p => p.id);
           console.log('🔄 Returning user: Creating default Quick Actions:', defaultQuickActions);
-          this.set(this.KEYS.QUICK_ACTIONS, defaultQuickActions);
-          this.set(this.KEYS.QUICK_ACTION_ORDER, defaultQuickActions);
-        } else {
-          // For users without protocols, set empty quick actions
-          this.set(this.KEYS.QUICK_ACTIONS, []);
-          this.set(this.KEYS.QUICK_ACTION_ORDER, []);
+        this.set(this.KEYS.QUICK_ACTIONS, defaultQuickActions);
+        this.set(this.KEYS.QUICK_ACTION_ORDER, defaultQuickActions);
+      } else {
+        // For users without protocols, set empty quick actions
+        this.set(this.KEYS.QUICK_ACTIONS, []);
+        this.set(this.KEYS.QUICK_ACTION_ORDER, []);
         }
       }
     }
@@ -1915,74 +1922,112 @@ class Storage {
                     // Пропускаем дальнейшую обработку для этого ключа
                     return;
                   } else {
-                    console.log('🚫 CLEAR ALL PROTECTION: Local history is empty, analyzing server items by timestamp');
+                    // 🔧 КРИТИЧНО: Дополнительная проверка - применяем Clear All Protection только если есть признаки РЕАЛЬНОГО Clear All
+                    const deletedCheckins = this.get('deletedCheckins') || [];
+                    const hasDeletedFlags = deletedCheckins.length > 0;
+                    const hasRecentClearAll = this.lastSyncTime && (Date.now() - new Date(this.lastSyncTime).getTime()) < (10 * 60 * 1000); // 10 минут
                     
-                    // Получаем время последнего локального элемента перед Clear All
-                    // Если истории нет локально, используем время последней синхронизации как границу
-                    const clearAllTimestamp = this.lastSyncTime ? new Date(this.lastSyncTime).getTime() : Date.now() - (24 * 60 * 60 * 1000); // 24 часа назад как fallback
-                    
-                    console.log('📊 Clear All protection: analyzing server items', {
-                      localItems: localArray.length,
-                      serverItems: serverArray.length,
-                      clearAllTimestamp: new Date(clearAllTimestamp).toISOString(),
-                      lastSync: this.lastSyncTime
-                    });
-                    
-                    // Разделяем серверные элементы на старые (до Clear All) и новые (после Clear All)
-                    const newServerItems = [];
-                    const oldServerItems = [];
-                    
-                    serverArray.forEach(item => {
-                      if (item && item.timestamp) {
-                        const itemTimestamp = new Date(item.timestamp).getTime();
-                        if (itemTimestamp > clearAllTimestamp) {
-                          newServerItems.push(item);
-                          console.log(`📋 NEW server item ${item.id}: ${item.type} (${new Date(item.timestamp).toISOString()})`);
+                    // Применяем защиту только если есть флаги удаления ИЛИ недавняя синхронизация
+                    if (hasDeletedFlags || hasRecentClearAll) {
+                      console.log('🚫 CLEAR ALL PROTECTION: Detected real Clear All operation', {
+                        hasDeletedFlags,
+                        hasRecentClearAll,
+                        deletedCount: deletedCheckins.length,
+                        lastSync: this.lastSyncTime
+                      });
+                      
+                      // Получаем время последнего локального элемента перед Clear All
+                      // Если истории нет локально, используем время последней синхронизации как границу
+                      const clearAllTimestamp = this.lastSyncTime ? new Date(this.lastSyncTime).getTime() : Date.now() - (24 * 60 * 60 * 1000); // 24 часа назад как fallback
+                      
+                      console.log('📊 Clear All protection: analyzing server items', {
+                        localItems: localArray.length,
+                        serverItems: serverArray.length,
+                        clearAllTimestamp: new Date(clearAllTimestamp).toISOString(),
+                        lastSync: this.lastSyncTime
+                      });
+                      
+                      // Разделяем серверные элементы на старые (до Clear All) и новые (после Clear All)
+                      const newServerItems = [];
+                      const oldServerItems = [];
+                      
+                      serverArray.forEach(item => {
+                        if (item && item.timestamp) {
+                          const itemTimestamp = new Date(item.timestamp).getTime();
+                          if (itemTimestamp > clearAllTimestamp) {
+                            newServerItems.push(item);
+                            console.log(`📋 NEW server item ${item.id}: ${item.type} (${new Date(item.timestamp).toISOString()})`);
+                          } else {
+                            oldServerItems.push(item);
+                            console.log(`📋 OLD server item ${item.id}: ${item.type} (${new Date(item.timestamp).toISOString()}) - BLOCKED`);
+                          }
                         } else {
+                          // Элементы без timestamp считаем старыми
                           oldServerItems.push(item);
-                          console.log(`📋 OLD server item ${item.id}: ${item.type} (${new Date(item.timestamp).toISOString()}) - BLOCKED`);
+                          console.log(`📋 OLD server item ${item.id}: no timestamp - BLOCKED`);
                         }
-                      } else {
-                        // Элементы без timestamp считаем старыми
-                        oldServerItems.push(item);
-                        console.log(`📋 OLD server item ${item.id}: no timestamp - BLOCKED`);
+                      });
+                      
+                      // Результат: только новые элементы с сервера
+                      const protectedResult = [...newServerItems];
+                      
+                      // Сохраняем результат
+                      this.set(this.getKeyConstant(key), protectedResult);
+                      
+                      mergeResults[key] = { 
+                        action: 'smart_clear_all_protection', 
+                        localCount: localArray.length, 
+                        serverCount: serverArray.length,
+                        mergedCount: protectedResult.length,
+                        blockedItems: oldServerItems.length,
+                        allowedItems: newServerItems.length
+                      };
+                      
+                      console.log(`🔄 SYNC MERGE ${key}:`, {
+                        localItems: localArray.length,
+                        serverItems: serverArray.length,
+                        mergedItems: protectedResult.length,
+                        action: 'smart_clear_all_protection',
+                        blockedOldItems: oldServerItems.length,
+                        allowedNewItems: newServerItems.length
+                      });
+                      
+                      // Если есть старые элементы на сервере, помечаем для синхронизации чтобы их очистить
+                      if (oldServerItems.length > 0) {
+                        this.markForSync();
+                        console.log('🚀 MARKING FOR SYNC: Will clean old items from server');
                       }
-                    });
-                    
-                    // Результат: только новые элементы с сервера
-                    const protectedResult = [...newServerItems];
-                    
-                    // Сохраняем результат
-                    this.set(this.getKeyConstant(key), protectedResult);
-                    
-                    mergeResults[key] = { 
-                      action: 'smart_clear_all_protection', 
-                      localCount: localArray.length, 
-                      serverCount: serverArray.length,
-                      mergedCount: protectedResult.length,
-                      blockedItems: oldServerItems.length,
-                      allowedItems: newServerItems.length
-                    };
-                    
-                    console.log(`🔄 SYNC MERGE ${key}:`, {
-                      localItems: localArray.length,
-                      serverItems: serverArray.length,
-                      mergedItems: protectedResult.length,
-                      action: 'smart_clear_all_protection',
-                      blockedOldItems: oldServerItems.length,
-                      allowedNewItems: newServerItems.length
-                    });
-                    
-                    // Если есть старые элементы на сервере, помечаем для синхронизации чтобы их очистить
-                    if (oldServerItems.length > 0) {
-                      this.markForSync();
-                      console.log('🚀 MARKING FOR SYNC: Will clean old items from server');
+                      
+                      hasUpdates = newServerItems.length > 0;
+                      
+                      // Пропускаем дальнейшую обработку для этого ключа
+                      return;
+                    } else {
+                      console.log('🆕 NO CLEAR ALL DETECTED: Treating as new session, loading all server history');
+                      console.log('📥 New session: accepting all server history items:', serverArray.length);
+                      
+                      // Для новых сессий без признаков Clear All просто принимаем всю серверную историю
+                      this.set(this.getKeyConstant(key), [...serverArray]);
+                      
+                      mergeResults[key] = { 
+                        action: 'new_session_server_load', 
+                        localCount: localArray.length, 
+                        serverCount: serverArray.length,
+                        mergedCount: serverArray.length
+                      };
+                      
+                      console.log(`🔄 SYNC MERGE ${key}:`, {
+                        localItems: localArray.length,
+                        serverItems: serverArray.length,
+                        mergedItems: serverArray.length,
+                        action: 'new_session_server_load'
+                      });
+                      
+                      hasUpdates = serverArray.length > 0;
+                      
+                      // Пропускаем дальнейшую обработку для этого ключа
+                      return;
                     }
-                    
-                    hasUpdates = newServerItems.length > 0;
-                    
-                    // Пропускаем дальнейшую обработку для этого ключа
-                    return;
                   }
                 }
               }
@@ -2215,14 +2260,15 @@ class Storage {
                             
                             console.log(`🐞 DEBUG: Final merged data for returning user:`, mergedData);
                             
-                            // Проверяем нужно ли синхронизировать локальные изменения
+                            // 🔧 ИСПРАВЛЕНИЕ: Для returning users НЕ отмечаем для синхронизации если данные совпадают
+                            // Это предотвращает перезапись серверных данных локальными
                             const hasLocalChanges = !this.arraysEqual(localArray, serverArray);
                             
-                            if (hasLocalChanges) {
+                            if (hasLocalChanges && !possibleServerDeletion) {
                               console.log(`🚀 CLIENT-FIRST: Found local changes in ${key}, marking for sync`);
                               this.markForSync();
                             } else {
-                              console.log(`📥 CLIENT-FIRST: No local ${key} changes, NOT marking for sync`);
+                              console.log(`📥 CLIENT-FIRST: No local ${key} changes or server deletion handled, NOT marking for sync`);
                             }
                         }
                     }
