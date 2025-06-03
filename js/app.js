@@ -82,14 +82,33 @@ function showApp(user) {
     // 🔑 ВАЖНО: Обновляем имя пользователя сразу при показе приложения
     updateUsername(user);
     
+    // 🔧 ПОЛНОЕ ИСПРАВЛЕНИЕ: Принудительная очистка всех UI данных при смене пользователя
+    if (window.App) {
+        // Очищаем все кешированные данные
+        window.App.filteredHistory = [];
+        window.App.filteredProtocols = [];
+        window.App.filteredSkills = [];
+        window.App.states = [];
+        
+        // Сбрасываем фильтры истории
+        window.App.historyFilters = {
+            time: 'all',
+            type: 'all', 
+            protocol: 'all',
+            state: 'all',
+            effect: 'all',
+            skill: 'all',
+            customDateFrom: '',
+            customDateTo: ''
+        };
+        
+        // Принудительно переходим на dashboard при смене пользователя
+        window.App.currentPage = 'dashboard';
+        console.log('🔄 Complete UI reset and forced navigation to dashboard for user change');
+    }
+    
     // Initialize app
     initMainApp();
-    
-    // 🔧 ИСПРАВЛЕНИЕ: Сбрасываем данные истории при смене пользователя
-    if (window.App) {
-        window.App.filteredHistory = [];
-        console.log('🔄 History data reset for user change');
-    }
     
     // 🚀 ЕДИНСТВЕННАЯ начальная синхронизация + периодическая 
     syncUserData();
@@ -109,6 +128,29 @@ window.updateUsername = updateUsername;
 function showAuth() {
     document.getElementById('authContainer').style.display = 'flex';
     document.getElementById('appContainer').style.display = 'none';
+    
+    // 🔧 БЕЗОПАСНОСТЬ: Полная очистка всех кешированных данных при показе формы авторизации
+    if (window.App) {
+        window.App.filteredHistory = [];
+        window.App.filteredProtocols = [];
+        window.App.filteredSkills = [];
+        window.App.states = [];
+        window.App.currentPage = 'dashboard'; // Reset to default page
+        
+        // Очистка всех поисковых полей
+        setTimeout(() => {
+            const searchInputs = [
+                document.getElementById('protocol-search'),
+                document.getElementById('skill-search'),
+                document.getElementById('history-search')
+            ];
+            searchInputs.forEach(input => {
+                if (input) input.value = '';
+            });
+        }, 100);
+        
+        console.log('🔐 Complete UI cleanup on auth screen');
+    }
 }
 
 async function syncUserData() {
@@ -463,8 +505,16 @@ function initMainApp() {
                     this.setupTooltips();
                     break;
                 case 'history':
-                    // 🔧 ИСПРАВЛЕНИЕ: Всегда сбрасываем и перезагружаем историю для актуальных данных
+                    // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Всегда принудительно очищаем и перезагружаем историю
                     this.filteredHistory = [];
+                    
+                    // Очищаем поисковое поле
+                    const historySearchInput = document.getElementById('history-search');
+                    if (historySearchInput) {
+                        historySearchInput.value = '';
+                    }
+                    
+                    // Принудительно применяем фильтры для загрузки свежих данных
                     this.applyHistoryFilters(); // This ensures proper newest-to-oldest sorting with fresh data
                     
                     UI.renderHistory();
@@ -472,6 +522,14 @@ function initMainApp() {
                     // Setup filters after rendering
                     setTimeout(() => {
                         this.setupHistoryFilters();
+                        
+                        // Дополнительная проверка: если данные все еще пусты, перезагружаем
+                        if (this.filteredHistory.length === 0) {
+                            console.log('🔄 History is empty, forcing reload...');
+                            this.filteredHistory = [];
+                            this.applyHistoryFilters();
+                            UI.renderHistory();
+                        }
                     }, 0);
                     
                     break;
