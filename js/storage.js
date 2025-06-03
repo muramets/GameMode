@@ -1995,26 +1995,41 @@ class Storage {
                 } else if (key === 'quickActions' || key === 'quickActionOrder') {
                     console.log(`🔄 USING CLIENT-FIRST STRATEGY FOR ${key.toUpperCase()} (respecting deletions)`);
                     
-                    // 🚨 КРИТИЧНОЕ ИСПРАВЛЕНИЕ: Используем client-first стратегию для Quick Actions
-                    // чтобы удаления Quick Actions правильно синхронизировались между устройствами
-                    mergedData = [...localArray];
+                    // 🔧 КРИТИЧНОЕ ИСПРАВЛЕНИЕ: Проверяем является ли это новой сессией
+                    // Если локальные данные пустые НО сессия новая - используем серверные данные
+                    const isNewSession = localArray.length === 0 && !this.lastSyncTime;
+                    const hasRealLocalChanges = localArray.length > 0 || this.lastSyncTime;
                     
-                    // Добавляем только новые серверные элементы которых нет локально
-                    for (const serverItem of serverArray) {
-                      if (!mergedData.includes(serverItem)) {
-                        console.log(`📋 ${key} item ${serverItem} found only on server, adding to local`);
-                        mergedData.push(serverItem);
-                        hasUpdates = true;
-                      }
-                    }
-                    
-                    // Проверяем нужно ли синхронизировать локальные изменения (включая удаления)
-                    const hasLocalChanges = !this.arraysEqual(localArray, serverArray);
-                    if (hasLocalChanges) {
-                      console.log(`🚀 CLIENT-FIRST: Found local changes in ${key}, marking for sync`);
-                      this.markForSync();
+                    if (isNewSession) {
+                        console.log(`🆕 NEW SESSION DETECTED for ${key}: Using server-first approach for initial load`);
+                        // Для новых сессий используем server-first подход
+                        mergedData = [...serverArray];
+                        
+                        // Не помечаем для синхронизации - это обычная загрузка данных
+                        console.log(`📥 NEW SESSION: Loading ${serverArray.length} ${key} items from server`);
                     } else {
-                      console.log(`📥 CLIENT-FIRST: No local ${key} changes, NOT marking for sync`);
+                        console.log(`🔄 EXISTING SESSION for ${key}: Using client-first approach (respecting local changes)`);
+                        // 🚨 КРИТИЧНОЕ ИСПРАВЛЕНИЕ: Используем client-first стратегию для Quick Actions
+                        // чтобы удаления Quick Actions правильно синхронизировались между устройствами
+                        mergedData = [...localArray];
+                        
+                        // Добавляем только новые серверные элементы которых нет локально
+                        for (const serverItem of serverArray) {
+                          if (!mergedData.includes(serverItem)) {
+                            console.log(`📋 ${key} item ${serverItem} found only on server, adding to local`);
+                            mergedData.push(serverItem);
+                            hasUpdates = true;
+                          }
+                        }
+                        
+                        // Проверяем нужно ли синхронизировать локальные изменения (включая удаления)
+                        const hasLocalChanges = !this.arraysEqual(localArray, serverArray);
+                        if (hasLocalChanges) {
+                          console.log(`🚀 CLIENT-FIRST: Found local changes in ${key}, marking for sync`);
+                          this.markForSync();
+                        } else {
+                          console.log(`📥 CLIENT-FIRST: No local ${key} changes, NOT marking for sync`);
+                        }
                     }
                 } else {
                     console.log('🔄 USING SMART MERGE STRATEGY FOR DATA');
