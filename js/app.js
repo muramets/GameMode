@@ -2368,6 +2368,115 @@ window.debugSync = {
     } catch (error) {
       console.error('❌ Server data check failed:', error);
     }
+  },
+
+  // Check raw server data via /api/sync endpoint (more accurate)
+  async checkServerDataNew() {
+    console.log('🔍 CHECKING RAW SERVER DATA (via /api/sync)...');
+    
+    if (!window.Storage.currentUser) {
+      console.error('❌ No authenticated user');
+      return;
+    }
+    
+    try {
+      const token = await window.Storage.currentUser.getIdToken();
+      
+      // Use /api/sync with empty data to get current server state
+      const response = await fetch(`${window.BACKEND_URL}/api/sync?_debug=true&_t=${Date.now()}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        },
+        body: JSON.stringify({
+          protocols: [],
+          skills: [],
+          states: [],
+          history: [],
+          quickActions: [],
+          quickActionOrder: [],
+          protocolOrder: [],
+          skillOrder: [],
+          stateOrder: [],
+          deletedCheckins: []
+        })
+      });
+      
+      if (response.ok) {
+        const serverResponse = await response.json();
+        const serverData = serverResponse.data || {};
+        
+        console.log('🗄️ RAW SERVER DATA (via /api/sync):', serverData);
+        
+        // Focus on Quick Actions specifically
+        console.log('\n⚡ SERVER QUICK ACTIONS DETAILS:');
+        console.log('  quickActions:', {
+          count: (serverData.quickActions || []).length,
+          data: serverData.quickActions,
+          type: typeof serverData.quickActions
+        });
+        console.log('  quickActionOrder:', {
+          count: (serverData.quickActionOrder || []).length,
+          data: serverData.quickActionOrder,
+          type: typeof serverData.quickActionOrder
+        });
+        
+        // Focus on protocols
+        if (serverData.protocols) {
+          console.log('\n📋 SERVER PROTOCOLS DETAILS:');
+          serverData.protocols.forEach(protocol => {
+            console.log(`  Protocol ${protocol.id}: ${protocol.name}`, {
+              targets: protocol.targets || [],
+              weight: protocol.weight,
+              icon: protocol.icon,
+              updatedAt: protocol.updatedAt || 'no timestamp'
+            });
+          });
+        }
+        
+        // Show sync metadata
+        console.log('\n⏰ SERVER SYNC INFO:');
+        console.log('  Last Updated:', serverResponse.lastUpdated);
+        console.log('  Data Keys:', Object.keys(serverData));
+        console.log('  Data Counts:', {
+          protocols: (serverData.protocols || []).length,
+          skills: (serverData.skills || []).length,
+          states: (serverData.states || []).length,
+          history: (serverData.history || []).length,
+          quickActions: (serverData.quickActions || []).length,
+          quickActionOrder: (serverData.quickActionOrder || []).length
+        });
+        
+        return serverData;
+        
+      } else {
+        console.error('❌ Failed to fetch server data via /api/sync:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('❌ Server data check failed:', error);
+    }
+  },
+
+  // Check what Quick Actions data is on server
+  async checkQuickActionsServer() {
+    console.log('🔍 CHECKING SERVER QUICK ACTIONS DATA...');
+    try {
+      const serverData = await this.checkServerDataNew();
+      console.log('🐞 SERVER QUICK ACTIONS DEBUG:', {
+        quickActionsCount: serverData?.quickActions?.length || 0,
+        quickActionsData: serverData?.quickActions,
+        quickActionOrderCount: serverData?.quickActionOrder?.length || 0,
+        quickActionOrderData: serverData?.quickActionOrder,
+        fullServerResponse: serverData
+      });
+      return serverData;
+    } catch (error) {
+      console.error('❌ Error checking server Quick Actions:', error);
+    }
   }
 };
 
@@ -2379,6 +2488,8 @@ console.log('  - debugSync.inspectProtocolHistory(protocolId) - Detailed protoco
 console.log('  - debugSync.debugProtocolTargets(protocolId) - Debug specific protocol target issues');
 console.log('  - debugSync.fixProtocolHistory(protocolId) - Fix protocol history by recalculation');
 console.log('  - debugSync.checkServerData() - Check raw server data to see what was uploaded');
+console.log('  - debugSync.checkServerDataNew() - Check server data via /api/sync endpoint (more accurate)');
+console.log('  - debugSync.checkQuickActionsServer() - Check Quick Actions data on server');
 console.log('  - debugSync.compare() - Compare local vs server data');
 console.log('  - debugSync.status() - Check sync status');  
 console.log('  - debugSync.testBackend() - Test backend connectivity');
