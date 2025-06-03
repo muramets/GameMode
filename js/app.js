@@ -38,6 +38,14 @@ function initializeApp() {
             // Initialize storage with user context
             window.Storage.init();
             
+            // 🔧 ИСПРАВЛЕНИЕ: Сбрасываем кешированные данные при смене пользователя
+            if (window.App) {
+                window.App.filteredHistory = [];
+                window.App.filteredProtocols = [];
+                window.App.filteredSkills = [];
+                console.log('🔄 App data reset for user change');
+            }
+            
             // Start non-blocking sync in background
             syncUserData().finally(() => {
                 isInitializing = false;
@@ -76,6 +84,12 @@ function showApp(user) {
     
     // Initialize app
     initMainApp();
+    
+    // 🔧 ИСПРАВЛЕНИЕ: Сбрасываем данные истории при смене пользователя
+    if (window.App) {
+        window.App.filteredHistory = [];
+        console.log('🔄 History data reset for user change');
+    }
     
     // 🚀 ЕДИНСТВЕННАЯ начальная синхронизация + периодическая 
     syncUserData();
@@ -449,10 +463,9 @@ function initMainApp() {
                     this.setupTooltips();
                     break;
                 case 'history':
-                    // Initialize filtered history if not already set and apply proper sorting
-                    if (this.filteredHistory.length === 0) {
-                        this.applyHistoryFilters(); // This ensures proper newest-to-oldest sorting
-                    }
+                    // 🔧 ИСПРАВЛЕНИЕ: Всегда сбрасываем и перезагружаем историю для актуальных данных
+                    this.filteredHistory = [];
+                    this.applyHistoryFilters(); // This ensures proper newest-to-oldest sorting with fresh data
                     
                     UI.renderHistory();
                     
