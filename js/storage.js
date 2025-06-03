@@ -1678,7 +1678,8 @@ class Storage {
         quickActionOrder: this.get(this.KEYS.QUICK_ACTION_ORDER),
         protocolOrder: this.get(this.KEYS.PROTOCOL_ORDER),
         skillOrder: this.get(this.KEYS.SKILL_ORDER),
-        stateOrder: this.get(this.KEYS.STATE_ORDER)
+        stateOrder: this.get(this.KEYS.STATE_ORDER),
+        deletedCheckins: this.get('deletedCheckins') || []
       };
       
       // 🔇 ЛОГИ ОТКЛЮЧЕНЫ - слишком шумные (повторяются при каждой синхронизации)
