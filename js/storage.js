@@ -536,22 +536,36 @@ class Storage {
       return false;
     }
     
-    // Дополнительная проверка на случай если флаг clearAllInProgress уже сброшен
-    // но мы все еще в состоянии после Clear All (пустая история + много флагов удаления)
+    // 🔧 УМНАЯ ПРОВЕРКА: Блокируем только если это РЕАЛЬНО последствие Clear All
+    // НЕ блокируем легитимные обновления протоколов
     const deletedCheckins = this.get('deletedCheckins') || [];
     const currentHistory = this.getCheckins();
-    const hasEmptyLocalHistory = currentHistory.length === 0 && deletedCheckins.length > 0;
-    const hasMassiveDeletion = deletedCheckins.length > 0 && deletedCheckins.length >= currentHistory.length;
     
-    if (hasEmptyLocalHistory || hasMassiveDeletion) {
-      console.log('🚫 PROTOCOL RECALCULATION BLOCKED: Clear All aftermath detected', {
+    // Проверяем на РЕАЛЬНЫЙ Clear All: пустая история И недавние флаги удаления
+    const hasEmptyHistory = currentHistory.length === 0;
+    const hasRecentClearAll = this.lastSyncTime && (Date.now() - new Date(this.lastSyncTime).getTime()) < (5 * 60 * 1000); // 5 минут
+    
+    const isRealClearAllAftermath = hasEmptyHistory && deletedCheckins.length > 0 && hasRecentClearAll;
+    
+    if (isRealClearAllAftermath) {
+      console.log('🚫 PROTOCOL RECALCULATION BLOCKED: Real Clear All aftermath detected', {
         protocolId,
         historyLength: currentHistory.length,
         deletedFlagsCount: deletedCheckins.length,
-        reason: hasEmptyLocalHistory ? 'Empty history + deletion flags' : 'Massive deletion detected'
+        lastSyncTime: this.lastSyncTime,
+        reason: 'Empty history + recent deletion flags'
       });
       console.log('🚫 Preventing protocol recalculation after Clear All to avoid sync loops');
       return false;
+    }
+    
+    // ✅ НЕ блокируем если есть история (легитимное обновление протокола)
+    if (currentHistory.length > 0) {
+      console.log('✅ PROTOCOL RECALCULATION ALLOWED: History exists, this is a legitimate protocol update', {
+        protocolId,
+        historyLength: currentHistory.length,
+        deletedFlagsCount: deletedCheckins.length
+      });
     }
     
     const checkins = this.getCheckins();
@@ -617,7 +631,7 @@ class Storage {
       
       // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ ПЕРЕСЧЕТА ИСТОРИИ
       // 🔧 НО ТОЛЬКО ЕСЛИ НЕ ВЫПОЛНЯЕТСЯ Clear All
-      if (!this.clearAllInProgress && !hasEmptyLocalHistory && !hasMassiveDeletion) {
+      if (!this.clearAllInProgress && !isRealClearAllAftermath) {
         // 🔧 НОВОЕ: Проверяем не идет ли уже синхронизация
         if (!this.syncInProgress) {
           console.log('🚀 SCHEDULING BACKGROUND SYNC: Protocol history recalculation completed');
@@ -3263,21 +3277,35 @@ class Storage {
       return;
     }
     
-    // Дополнительная проверка на случай если флаг clearAllInProgress уже сброшен
-    // но мы все еще в состоянии после Clear All (пустая история + много флагов удаления)
+    // 🔧 УМНАЯ ПРОВЕРКА: Блокируем только если это РЕАЛЬНО последствие Clear All
+    // НЕ блокируем легитимные обновления протоколов
     const deletedCheckins = this.get('deletedCheckins') || [];
     const currentHistory = this.getCheckins();
-    const hasEmptyLocalHistory = currentHistory.length === 0 && deletedCheckins.length > 0;
-    const hasMassiveDeletion = deletedCheckins.length > 0 && deletedCheckins.length >= currentHistory.length;
     
-    if (hasEmptyLocalHistory || hasMassiveDeletion) {
-      console.log('🚫 PROTOCOL RECALCULATION BLOCKED: Clear All aftermath detected', {
+    // Проверяем на РЕАЛЬНЫЙ Clear All: пустая история И недавние флаги удаления
+    const hasEmptyHistory = currentHistory.length === 0;
+    const hasRecentClearAll = this.lastSyncTime && (Date.now() - new Date(this.lastSyncTime).getTime()) < (5 * 60 * 1000); // 5 минут
+    
+    const isRealClearAllAftermath = hasEmptyHistory && deletedCheckins.length > 0 && hasRecentClearAll;
+    
+    if (isRealClearAllAftermath) {
+      console.log('🚫 PROTOCOL BATCH RECALCULATION BLOCKED: Real Clear All aftermath detected', {
         historyLength: currentHistory.length,
         deletedFlagsCount: deletedCheckins.length,
-        reason: hasEmptyLocalHistory ? 'Empty history + deletion flags' : 'Massive deletion detected'
+        lastSyncTime: this.lastSyncTime,
+        reason: 'Empty history + recent deletion flags'
       });
-      console.log('🚫 Preventing protocol recalculation after Clear All to avoid sync loops');
+      console.log('🚫 Preventing batch protocol recalculation after Clear All to avoid sync loops');
       return;
+    }
+    
+    // ✅ НЕ блокируем если есть история (легитимные обновления протоколов)
+    if (currentHistory.length > 0) {
+      console.log('✅ PROTOCOL BATCH RECALCULATION ALLOWED: History exists, these are legitimate protocol updates', {
+        historyLength: currentHistory.length,
+        deletedFlagsCount: deletedCheckins.length,
+        protocolsToCheck: mergedData.length
+      });
     }
     
     // Create maps for easier lookup
