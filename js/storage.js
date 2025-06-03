@@ -1768,107 +1768,81 @@ class Storage {
               // 🔧 КРИТИЧНО: РАННЯЯ ЗАЩИТА ОТ CLEAR ALL для истории
               // Проверяем в самом начале обработки истории - до любых других операций
               if (key === 'history') {
-                // 🔧 ИСПРАВЛЕНИЕ: Проверяем была ли недавно выполнена операция Clear All
-                // Если история пустая локально, НЕ восстанавливаем элементы с сервера
+                // 🔧 ИСПРАВЛЕНИЕ: Умная защита от Clear All с учетом времени
+                // Блокируем только старые элементы, но разрешаем новые (логи Quick Actions, новые check-ins)
                 const isLocalHistoryEmpty = !hasLocalData;
                 const hasServerHistory = hasServerData;
                 
                 if (isLocalHistoryEmpty && hasServerHistory) {
-                  console.log('🚫 CLEAR ALL PROTECTION: Local history is empty, blocking server restoration');
-                  console.log('📊 Clear All protection: preventing server history restoration', {
+                  console.log('🚫 CLEAR ALL PROTECTION: Local history is empty, analyzing server items by timestamp');
+                  
+                  // Получаем время последнего локального элемента перед Clear All
+                  // Если истории нет локально, используем время последней синхронизации как границу
+                  const clearAllTimestamp = this.lastSyncTime ? new Date(this.lastSyncTime).getTime() : Date.now() - (24 * 60 * 60 * 1000); // 24 часа назад как fallback
+                  
+                  console.log('📊 Clear All protection: analyzing server items', {
                     localItems: localArray.length,
                     serverItems: serverArray.length,
-                    action: 'blocked_restoration'
+                    clearAllTimestamp: new Date(clearAllTimestamp).toISOString(),
+                    lastSync: this.lastSyncTime
                   });
                   
-                  // Оставляем историю пустой - не добавляем серверные элементы
-                  const protectedResult = [];
+                  // Разделяем серверные элементы на старые (до Clear All) и новые (после Clear All)
+                  const newServerItems = [];
+                  const oldServerItems = [];
                   
-                  // Сохраняем пустой результат
+                  serverArray.forEach(item => {
+                    if (item && item.timestamp) {
+                      const itemTimestamp = new Date(item.timestamp).getTime();
+                      if (itemTimestamp > clearAllTimestamp) {
+                        newServerItems.push(item);
+                        console.log(`📋 NEW server item ${item.id}: ${item.type} (${new Date(item.timestamp).toISOString()})`);
+                      } else {
+                        oldServerItems.push(item);
+                        console.log(`📋 OLD server item ${item.id}: ${item.type} (${new Date(item.timestamp).toISOString()}) - BLOCKED`);
+                      }
+                    } else {
+                      // Элементы без timestamp считаем старыми
+                      oldServerItems.push(item);
+                      console.log(`📋 OLD server item ${item.id}: no timestamp - BLOCKED`);
+                    }
+                  });
+                  
+                  // Результат: только новые элементы с сервера
+                  const protectedResult = [...newServerItems];
+                  
+                  // Сохраняем результат
                   this.set(this.getKeyConstant(key), protectedResult);
                   
                   mergeResults[key] = { 
-                    action: 'clear_all_protection', 
+                    action: 'smart_clear_all_protection', 
                     localCount: localArray.length, 
                     serverCount: serverArray.length,
                     mergedCount: protectedResult.length,
-                    blockedItems: serverArray.length
+                    blockedItems: oldServerItems.length,
+                    allowedItems: newServerItems.length
                   };
                   
                   console.log(`🔄 SYNC MERGE ${key}:`, {
                     localItems: localArray.length,
                     serverItems: serverArray.length,
                     mergedItems: protectedResult.length,
-                    action: 'clear_all_protection',
-                    blockedRestoration: true
+                    action: 'smart_clear_all_protection',
+                    blockedOldItems: oldServerItems.length,
+                    allowedNewItems: newServerItems.length
                   });
                   
-                  // Помечаем для синхронизации чтобы сервер тоже очистился
-                  this.markForSync();
-                  console.log('🚀 MARKING FOR SYNC: Will send empty history to server');
+                  // Если есть старые элементы на сервере, помечаем для синхронизации чтобы их очистить
+                  if (oldServerItems.length > 0) {
+                    this.markForSync();
+                    console.log('🚀 MARKING FOR SYNC: Will clean old items from server');
+                  }
+                  
+                  hasUpdates = newServerItems.length > 0;
                   
                   // Пропускаем дальнейшую обработку для этого ключа
                   return;
                 }
-                
-                // 🔧 УПРОЩЕНИЕ: Убираем всю сложную логику Clear All Protection
-                // Теперь простое правило: что хранится локально - то и отображается
-                console.log('🔄 USING SIMPLE MERGE STRATEGY FOR HISTORY');
-                console.log('📊 Simple merge: local items preserved, server items added if new');
-                
-                // Простой merge: локальные остаются, серверные добавляются если их нет локально
-                const mergedMap = new Map();
-                
-                // Сначала добавляем все локальные элементы
-                localArray.forEach(item => {
-                  if (item && item.id !== undefined) {
-                    mergedMap.set(item.id, { ...item, source: 'local' });
-                  }
-                });
-                
-                // Затем добавляем серверные элементы которых нет локально
-                let addedFromServer = 0;
-                serverArray.forEach(item => {
-                  if (item && item.id !== undefined && !mergedMap.has(item.id)) {
-                    mergedMap.set(item.id, { ...item, source: 'server' });
-                    addedFromServer++;
-                  }
-                });
-                
-                const protectedResult = Array.from(mergedMap.values()).map(item => {
-                  const { source, ...itemWithoutSource } = item;
-                  return itemWithoutSource;
-                });
-                
-                console.log('✅ SIMPLE MERGE RESULT:', {
-                  localItems: localArray.length,
-                  serverItems: serverArray.length,
-                  mergedItems: protectedResult.length,
-                  addedFromServer: addedFromServer
-                });
-                
-                // Сохраняем результат и пропускаем обычный мерж
-                this.set(this.getKeyConstant(key), protectedResult);
-                
-                mergeResults[key] = { 
-                  action: 'simple_merge', 
-                  localCount: localArray.length, 
-                  serverCount: serverArray.length,
-                  mergedCount: protectedResult.length,
-                  addedFromServer: addedFromServer
-                };
-                
-                console.log(`🔄 SYNC MERGE ${key}:`, {
-                  localItems: localArray.length,
-                  serverItems: serverArray.length,
-                  mergedItems: protectedResult.length,
-                  action: 'simple_merge'
-                });
-                
-                hasUpdates = addedFromServer > 0;
-                
-                // Пропускаем дальнейшую обработку для этого ключа
-                return;
               }
               
               // Определяем стратегию мержа в зависимости от типа данных
@@ -1889,10 +1863,9 @@ class Storage {
               } else {
                 // Оба массива содержат данные - выполняем умную стратегию
                 if (isHistory) {
-                    console.log('🔄 USING SMART MERGE STRATEGY FOR HISTORY (preserving maximum effects)');
+                    console.log('🔄 USING SIMPLE MERGE STRATEGY FOR HISTORY (local + new server)');
                     
-                    // 🔧 УПРОЩЕНИЕ: Убираем сложную логику deletedCheckins
-                    // Простой merge с выбором версии с максимальными эффектами
+                    // Простой merge: локальные остаются, серверные добавляются если их нет локально
                     const mergedMap = new Map();
                     
                     // Добавляем локальные элементы
@@ -1903,28 +1876,11 @@ class Storage {
                         }
                     });
                     
-                    // Сравниваем с серверными элементами и выбираем версию с большими эффектами
+                    // Добавляем серверные элементы которых нет локально
                     serverArray.forEach(item => {
-                        if (item && item.id !== undefined) {
-                            const localItem = mergedMap.get(item.id);
-                            if (localItem) {
-                                // Сравниваем какая версия имеет больше эффектов
-                                const localEffectsCount = Object.keys(localItem.changes || {}).length;
-                                const serverEffectsCount = Object.keys(item.changes || {}).length;
-                                
-                                if (serverEffectsCount > localEffectsCount) {
-                                    console.log(`📋 History item ${item.id}: choosing server version (${serverEffectsCount} effects vs ${localEffectsCount})`);
-                                    mergedMap.set(item.id, { ...item, source: 'server' });
-                                } else if (localEffectsCount > serverEffectsCount) {
-                                    console.log(`📋 History item ${item.id}: keeping local version (${localEffectsCount} effects vs ${serverEffectsCount})`);
-                        } else {
-                                    console.log(`📋 History item ${item.id}: same effects count (${localEffectsCount}), keeping local version`);
-                                }
-                            } else {
-                                // Серверный элемент которого нет локально - добавляем
-                                console.log(`📋 History item ${item.id}: server-only item, adding`);
-                                mergedMap.set(item.id, { ...item, source: 'server' });
-                    }
+                        if (item && item.id !== undefined && !mergedMap.has(item.id)) {
+                            console.log(`📋 History item ${item.id}: server-only item, adding`);
+                            mergedMap.set(item.id, { ...item, source: 'server' });
                         }
                     });
                     
