@@ -724,8 +724,61 @@ class Storage {
     this.clearAllInProgress = false;
     console.log('✅ SYNC LOCK RELEASED: Re-enabling synchronization');
     
+    // 🔧 КРИТИЧНО: ПРИНУДИТЕЛЬНАЯ ОТПРАВКА ПУСТОЙ ИСТОРИИ НА СЕРВЕР
+    // Это гарантирует что все устройства получат очищенную историю
+    console.log('🚀 FORCE CLEARING SERVER HISTORY: Uploading empty history to overwrite server data');
+    try {
+      const forceUploadData = {
+        protocols: this.get(this.KEYS.PROTOCOLS) || [],
+        skills: this.get(this.KEYS.SKILLS) || [],
+        states: this.get(this.KEYS.STATES) || [],
+        history: [], // 🚨 ПРИНУДИТЕЛЬНО ПУСТАЯ ИСТОРИЯ
+        quickActions: this.get(this.KEYS.QUICK_ACTIONS) || [],
+        quickActionOrder: this.get(this.KEYS.QUICK_ACTION_ORDER) || [],
+        protocolOrder: this.get(this.KEYS.PROTOCOL_ORDER) || [],
+        skillOrder: this.get(this.KEYS.SKILL_ORDER) || [],
+        stateOrder: this.get(this.KEYS.STATE_ORDER) || [],
+        deletedCheckins: combinedDeleted // Отправляем флаги удаления на сервер
+      };
+      
+      const token = await this.currentUser.getIdToken();
+      const timestamp = Date.now();
+      const clearServerUrl = `${BACKEND_URL}/api/sync?_clear_all=true&_t=${timestamp}&_cb=${Math.random()}`;
+      
+      console.log('🌐 FORCE CLEAR SERVER REQUEST:', {
+        url: clearServerUrl,
+        emptyHistoryLength: forceUploadData.history.length,
+        deletedCheckinsCount: forceUploadData.deletedCheckins.length
+      });
+      
+      const serverClearResponse = await fetch(clearServerUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        },
+        body: JSON.stringify(forceUploadData)
+      });
+      
+      if (serverClearResponse.ok) {
+        const clearResult = await serverClearResponse.json();
+        console.log('✅ SERVER HISTORY CLEARED SUCCESSFULLY:', clearResult);
+        console.log('🎯 All devices will now receive empty history instead of old data');
+      } else {
+        const errorText = await serverClearResponse.text();
+        console.error('❌ FAILED TO CLEAR SERVER HISTORY:', serverClearResponse.status, errorText);
+        console.log('⚠️ Server history may still contain old data - other devices might restore it');
+      }
+    } catch (error) {
+      console.error('❌ ERROR CLEARING SERVER HISTORY:', error);
+      console.log('⚠️ Server history clearing failed - other devices might restore old data');
+    }
+    
     // 🔧 ОТЛОЖЕННАЯ СИНХРОНИЗАЦИЯ: Ждем немного чтобы избежать бесконечного цикла
-    console.log('⏰ DELAYING SYNC: Waiting 2 seconds to prevent infinite loop...');
+    console.log('⏰ DELAYING ADDITIONAL SYNC: Waiting 2 seconds for additional safety sync...');
     setTimeout(async () => {
       try {
         console.log('🔄 EXECUTING DELAYED CLEAR ALL SYNC...');
@@ -2360,8 +2413,16 @@ class Storage {
                 if (key === 'quickActions' && result.action.includes('gained') && result.mergedCount - Math.min(result.localCount, result.serverCount) === 0) return false;
                 if (key === 'quickActions' && result.action === 'no_new_items_found') return false;
 
-                // 🛡️  Suppress history toast when Clear All deletion is active to avoid confusing user
+                // 🛡️ Suppress history toast when Clear All deletion is active to avoid confusing user
                 if (key === 'history' && deletedCheckinsCountForToast > 0) return false;
+
+                // 🛡️ NEW: Suppress misleading history restoration toasts on fresh devices/incognito
+                // When a user logs in from a fresh device, they shouldn't see "restored X items" 
+                // if they intentionally cleared history on another device
+                if (key === 'history' && (result.action.includes('gained') || result.action.includes('loaded'))) {
+                  console.log('🚫 SUPPRESSING HISTORY RESTORATION TOAST: Preventing misleading notification about restored history');
+                  return false;
+                }
 
                 return result.action.includes('gained') || result.action.includes('loaded');
               })
