@@ -668,14 +668,8 @@ class Storage {
       userEmail,
       timestamp: new Date().toISOString()
     });
-    
-    if (checkins.length === 0) {
-      console.log('ℹ️ No checkins to clear');
-      this.clearAllInProgress = false;
-      return;
-    }
-    
-    // Mark all current checkins as deleted
+
+    // Mark all current checkins as deleted (even if empty)
     const existingDeleted = this.get('deletedCheckins') || [];
     const allCheckinIds = checkins.map(c => c.id);
     const newDeleted = allCheckinIds.filter(id => !existingDeleted.includes(id));
@@ -718,15 +712,10 @@ class Storage {
     }
     console.log('📊 Stats updated after clear');
     
-    console.log('🔄 TRIGGERING SERVER SYNC after clear all...');
-    
-    // 🔧 РАЗБЛОКИРОВКА СИНХРОНИЗАЦИИ после завершения очистки
-    this.clearAllInProgress = false;
-    console.log('✅ SYNC LOCK RELEASED: Re-enabling synchronization');
-    
     // 🔧 КРИТИЧНО: ПРИНУДИТЕЛЬНАЯ ОТПРАВКА ПУСТОЙ ИСТОРИИ НА СЕРВЕР
-    // Это гарантирует что все устройства получат очищенную историю
+    // Это ВСЕГДА выполняется для перезаписи серверных данных
     console.log('🚀 FORCE CLEARING SERVER HISTORY: Uploading empty history to overwrite server data');
+    console.log('🎯 SERVER CLEAR: This will ensure all devices get empty history instead of restoring old data');
     try {
       const forceUploadData = {
         protocols: this.get(this.KEYS.PROTOCOLS) || [],
@@ -748,7 +737,8 @@ class Storage {
       console.log('🌐 FORCE CLEAR SERVER REQUEST:', {
         url: clearServerUrl,
         emptyHistoryLength: forceUploadData.history.length,
-        deletedCheckinsCount: forceUploadData.deletedCheckins.length
+        deletedCheckinsCount: forceUploadData.deletedCheckins.length,
+        serverHistoryBeforeClear: 'unknown (will be overwritten)'
       });
       
       const serverClearResponse = await fetch(clearServerUrl, {
@@ -767,6 +757,7 @@ class Storage {
         const clearResult = await serverClearResponse.json();
         console.log('✅ SERVER HISTORY CLEARED SUCCESSFULLY:', clearResult);
         console.log('🎯 All devices will now receive empty history instead of old data');
+        console.log('🔄 Incognito/new devices will no longer restore old history');
       } else {
         const errorText = await serverClearResponse.text();
         console.error('❌ FAILED TO CLEAR SERVER HISTORY:', serverClearResponse.status, errorText);
@@ -776,6 +767,12 @@ class Storage {
       console.error('❌ ERROR CLEARING SERVER HISTORY:', error);
       console.log('⚠️ Server history clearing failed - other devices might restore old data');
     }
+    
+    console.log('🔄 TRIGGERING SERVER SYNC after clear all...');
+    
+    // 🔧 РАЗБЛОКИРОВКА СИНХРОНИЗАЦИИ после завершения очистки и отправки на сервер
+    this.clearAllInProgress = false;
+    console.log('✅ SYNC LOCK RELEASED: Re-enabling synchronization');
     
     // 🔧 ОТЛОЖЕННАЯ СИНХРОНИЗАЦИЯ: Ждем немного чтобы избежать бесконечного цикла
     console.log('⏰ DELAYING ADDITIONAL SYNC: Waiting 2 seconds for additional safety sync...');
@@ -789,7 +786,7 @@ class Storage {
       }
     }, 2000);
     
-    console.log('🎯 CLEAR ALL COMPLETE: All history cleared and marked for delayed server sync');
+    console.log('🎯 CLEAR ALL COMPLETE: All history cleared and server data overwritten');
     
     // Update UI one more time to ensure clean state
     if (window.App) {
