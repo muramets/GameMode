@@ -517,7 +517,7 @@ const UI = {
     // 🔧 FIX: Initialize filteredHistory if empty but historyInitialized is false
     if (App.filteredHistory.length === 0 && !App.historyInitialized) {
       console.log('🔄 INITIALIZING HISTORY: filteredHistory empty, reloading from storage');
-      App.filteredHistory = window.Storage.getCheckins().reverse();
+      App.filteredHistory = window.Storage.getCheckins();
       App.historyInitialized = true;
     }
     

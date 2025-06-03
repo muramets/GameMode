@@ -456,7 +456,14 @@ class Storage {
   getCheckins() {
     try {
       const checkins = this.get(this.KEYS.HISTORY);
-      return Array.isArray(checkins) ? checkins : [];
+      const checkinsArray = Array.isArray(checkins) ? checkins : [];
+      
+      // 🔧 CONSISTENT SORTING: Always return newest-first (by timestamp descending)
+      return checkinsArray.sort((a, b) => {
+        const timestampA = new Date(a.timestamp).getTime();
+        const timestampB = new Date(b.timestamp).getTime();
+        return timestampB - timestampA; // Newest first (descending order)
+      });
     } catch (error) {
       console.warn('Error getting checkins:', error);
       return [];

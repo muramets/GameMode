@@ -453,7 +453,7 @@ function initMainApp() {
                 case 'history':
                     // Initialize filtered history if not already set
                     if (this.filteredHistory.length === 0) {
-                        this.filteredHistory = window.Storage.getCheckins().reverse();
+                        this.filteredHistory = window.Storage.getCheckins();
                     }
                     
                     UI.renderHistory();
@@ -931,8 +931,8 @@ function initMainApp() {
             const searchInput = document.getElementById('history-search');
             const searchQuery = searchInput ? searchInput.value : '';
             
-            // Start with all history
-            const allHistory = window.Storage.getCheckins().reverse();
+            // Start with all history (already sorted newest-first by getCheckins)
+            const allHistory = window.Storage.getCheckins();
             const skills = window.Storage.getSkills();
             
             this.filteredHistory = allHistory.filter(checkin => {
