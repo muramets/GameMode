@@ -1993,28 +1993,28 @@ class Storage {
                     }
                     
                 } else if (key === 'quickActions' || key === 'quickActionOrder') {
-                    console.log(`🔄 USING SERVER-FIRST STRATEGY FOR ${key.toUpperCase()}`);
+                    console.log(`🔄 USING CLIENT-FIRST STRATEGY FOR ${key.toUpperCase()} (respecting deletions)`);
                     
-                    // 🔧 УПРОЩЕНИЕ: Простая server-first стратегия
-                    // Что есть на сервере - то и используем (server-first)
-                    mergedData = [...serverArray];
+                    // 🚨 КРИТИЧНОЕ ИСПРАВЛЕНИЕ: Используем client-first стратегию для Quick Actions
+                    // чтобы удаления Quick Actions правильно синхронизировались между устройствами
+                    mergedData = [...localArray];
                     
-                    // Добавляем локальные элементы которых нет на сервере
-                    for (const localItem of localArray) {
-                      if (!mergedData.includes(localItem)) {
-                        console.log(`📋 ${key} item ${localItem} found only locally, adding`);
-                        mergedData.push(localItem);
+                    // Добавляем только новые серверные элементы которых нет локально
+                    for (const serverItem of serverArray) {
+                      if (!mergedData.includes(serverItem)) {
+                        console.log(`📋 ${key} item ${serverItem} found only on server, adding to local`);
+                        mergedData.push(serverItem);
                         hasUpdates = true;
                       }
                     }
                     
-                    // Проверяем локальные изменения для отправки на сервер
+                    // Проверяем нужно ли синхронизировать локальные изменения (включая удаления)
                     const hasLocalChanges = !this.arraysEqual(localArray, serverArray);
-                    if (hasLocalChanges && localArray.length > 0) {
-                      console.log(`🚀 SERVER-FIRST: Found local changes in ${key}, marking for sync`);
+                    if (hasLocalChanges) {
+                      console.log(`🚀 CLIENT-FIRST: Found local changes in ${key}, marking for sync`);
                       this.markForSync();
                     } else {
-                      console.log(`📥 SERVER-FIRST: No new local ${key} changes, NOT marking for sync`);
+                      console.log(`📥 CLIENT-FIRST: No local ${key} changes, NOT marking for sync`);
                     }
                 } else {
                     console.log('🔄 USING SMART MERGE STRATEGY FOR DATA');
@@ -2104,7 +2104,7 @@ class Storage {
                     console.log(`🚀 SERVER-FIRST: Found local changes in ${key}, marking for sync`);
                     this.markForSync();
                   } else {
-                    console.log(`📥 SERVER-FIRST: No new local ${key} changes, NOT marking for sync (preventing server data overwrite)`);
+                    console.log(`📥 SERVER-FIRST: No new local ${key} changes, NOT marking for sync`);
                   }
                 } else if (key === 'states') {
                   // Для states используем специальную логику - sync уже вызван внутри блока обработки states
