@@ -1600,7 +1600,16 @@ class Storage {
       userEmail: this.currentUser?.email
     });
     
-    // 🔧 УПРОЩЕНИЕ: Просто удаляем из Quick Actions без отслеживания deletedQuickActions
+    // 🔧 НОВОЕ: Добавляем отслеживание удаления Quick Actions (аналогично deletedProtocols/deletedSkills)
+    const deletedQuickActions = this.get("deletedQuickActions") || [];
+    if (!deletedQuickActions.includes(protocolId)) {
+      deletedQuickActions.push(protocolId);
+      this.set("deletedQuickActions", deletedQuickActions);
+      console.log(`🗑️ QUICK ACTION DELETION TRACKED: Added protocol ${protocolId} to deletedQuickActions list`, {
+        protocolId: protocolId,
+        deletedQuickActionsCount: deletedQuickActions.length
+      });
+    }
     console.log('🚫 REMOVING FROM QUICK ACTIONS:', {
       protocolId,
       reason: 'user_removal'
