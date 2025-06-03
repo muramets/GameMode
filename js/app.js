@@ -1868,6 +1868,39 @@ function initMainApp() {
             } catch (error) {
                 console.error('❌ Error checking server Quick Actions:', error);
             }
+        },
+
+        // Reset first-time login flag to test new device behavior
+        resetFirstTimeLogin() {
+            if (!window.Storage.currentUser) {
+                console.error('❌ No authenticated user');
+                return;
+            }
+            
+            const firstTimeKey = `first_login_${window.Storage.currentUser.uid}`;
+            localStorage.removeItem(firstTimeKey);
+            console.log('🆕 First-time login flag reset for user:', window.Storage.currentUser.email);
+            console.log('🔄 Next page reload will behave as first-time login (server-first)');
+            console.log('🔄 Run window.location.reload() to test');
+        },
+
+        // Check first-time login status
+        checkFirstTimeStatus() {
+            if (!window.Storage.currentUser) {
+                console.error('❌ No authenticated user');
+                return;
+            }
+            
+            const firstTimeKey = `first_login_${window.Storage.currentUser.uid}`;
+            const timestamp = localStorage.getItem(firstTimeKey);
+            
+            console.log('🔍 FIRST-TIME LOGIN STATUS:', {
+                user: window.Storage.currentUser.email,
+                isFirstTime: !timestamp,
+                firstLoginTimestamp: timestamp,
+                firstLoginDate: timestamp ? new Date(parseInt(timestamp)).toLocaleString() : 'Never',
+                currentFlag: window.Storage.isFirstTimeLogin
+            });
         }
     };
 
@@ -2477,6 +2510,39 @@ window.debugSync = {
     } catch (error) {
       console.error('❌ Error checking server Quick Actions:', error);
     }
+  },
+
+  // Reset first-time login flag to test new device behavior
+  resetFirstTimeLogin() {
+    if (!window.Storage.currentUser) {
+      console.error('❌ No authenticated user');
+      return;
+    }
+    
+    const firstTimeKey = `first_login_${window.Storage.currentUser.uid}`;
+    localStorage.removeItem(firstTimeKey);
+    console.log('🆕 First-time login flag reset for user:', window.Storage.currentUser.email);
+    console.log('🔄 Next page reload will behave as first-time login (server-first)');
+    console.log('🔄 Run window.location.reload() to test');
+  },
+
+  // Check first-time login status
+  checkFirstTimeStatus() {
+    if (!window.Storage.currentUser) {
+      console.error('❌ No authenticated user');
+      return;
+    }
+    
+    const firstTimeKey = `first_login_${window.Storage.currentUser.uid}`;
+    const timestamp = localStorage.getItem(firstTimeKey);
+    
+    console.log('🔍 FIRST-TIME LOGIN STATUS:', {
+      user: window.Storage.currentUser.email,
+      isFirstTime: !timestamp,
+      firstLoginTimestamp: timestamp,
+      firstLoginDate: timestamp ? new Date(parseInt(timestamp)).toLocaleString() : 'Never',
+      currentFlag: window.Storage.isFirstTimeLogin
+    });
   }
 };
 
@@ -2490,6 +2556,8 @@ console.log('  - debugSync.fixProtocolHistory(protocolId) - Fix protocol history
 console.log('  - debugSync.checkServerData() - Check raw server data to see what was uploaded');
 console.log('  - debugSync.checkServerDataNew() - Check server data via /api/sync endpoint (more accurate)');
 console.log('  - debugSync.checkQuickActionsServer() - Check Quick Actions data on server');
+console.log('  - debugSync.resetFirstTimeLogin() - Reset first-time login flag to test new device behavior');
+console.log('  - debugSync.checkFirstTimeStatus() - Check first-time login status');
 console.log('  - debugSync.compare() - Compare local vs server data');
 console.log('  - debugSync.status() - Check sync status');  
 console.log('  - debugSync.testBackend() - Test backend connectivity');
