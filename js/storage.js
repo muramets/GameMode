@@ -1214,6 +1214,17 @@ class Storage {
       return false; // Skill not found
     }
     
+    // 🔧 НОВОЕ: Отслеживаем удаленные навыки аналогично deletedProtocols
+    const deletedSkills = this.get('deletedSkills') || [];
+    if (!deletedSkills.includes(skillId)) {
+      deletedSkills.push(skillId);
+      this.set('deletedSkills', deletedSkills);
+      console.log(`🗑️ SKILL DELETION TRACKED: Added skill ${skillId} to deletedSkills list`, {
+        skillId,
+        deletedSkillsCount: deletedSkills.length
+      });
+    }
+    
     // Remove from skills
     this.set(this.KEYS.SKILLS, filteredSkills);
     
@@ -1739,13 +1750,14 @@ class Storage {
       'states': 'STATES',
       'history': 'HISTORY',
       'deletedCheckins': 'deletedCheckins', // Special case - not in KEYS object
-      'deletedProtocols': 'deletedProtocols' // Special case - not in KEYS object
+      'deletedProtocols': 'deletedProtocols', // Special case - not in KEYS object
+      'deletedSkills': 'deletedSkills' // Special case - not in KEYS object
     };
     
     const mappedKey = keyMap[serverKey];
     if (mappedKey) {
-      // For deletedCheckins and deletedProtocols, return the key directly (not through KEYS)
-      if (serverKey === 'deletedCheckins' || serverKey === 'deletedProtocols') {
+      // For deletedCheckins, deletedProtocols, and deletedSkills, return the key directly (not through KEYS)
+      if (serverKey === 'deletedCheckins' || serverKey === 'deletedProtocols' || serverKey === 'deletedSkills') {
         return serverKey;
       }
       // For other keys, use KEYS object
@@ -1800,7 +1812,8 @@ class Storage {
         skillOrder: this.get(this.KEYS.SKILL_ORDER),
         stateOrder: this.get(this.KEYS.STATE_ORDER),
         deletedCheckins: this.get('deletedCheckins') || [],
-        deletedProtocols: this.get('deletedProtocols') || []
+        deletedProtocols: this.get('deletedProtocols') || [],
+        deletedSkills: this.get('deletedSkills') || []
       };
       
       // 🐞 DEBUG: Логируем отправляемые данные Quick Actions
@@ -2117,9 +2130,19 @@ class Storage {
                     
                     console.log(`🔄 STARTING WITH ${localArray.length} LOCAL PROTOCOLS (user's current selection)`);
                     
-                    // Добавляем ТОЛЬКО новые протоколы с сервера (которых нет локально)
+                    // 🔧 КРИТИЧНО: Предотвращаем бесконечный цикл с помощью Set для отслеживания обработанных протоколов
+                    const processedProtocolIds = new Set();
                     let addedFromServer = 0;
+                    
+                    // Добавляем ТОЛЬКО новые протоколы с сервера (которых нет локально)
                     for (const serverItem of serverArray) {
+                        // 🔧 КРИТИЧНО: Пропускаем уже обработанные протоколы
+                        if (processedProtocolIds.has(serverItem.id)) {
+                            console.log(`🔄 Protocol ${serverItem.id} already processed, skipping duplicate`);
+                            continue;
+                        }
+                        processedProtocolIds.add(serverItem.id);
+                        
                         const localItem = mergedData.find(m => m.id === serverItem.id);
                         if (!localItem) {
                             // 🔧 НОВОЕ: Проверяем не был ли этот протокол удален пользователем
@@ -2193,36 +2216,65 @@ class Storage {
                         this.markForSync();
                     }
                 } else if (key === 'skills') {
-                    console.log('🔄 USING SERVER-FIRST STRATEGY FOR SKILLS');
+                    console.log('🔄 USING SMART CLIENT-FIRST FOR SKILLS (respecting deletions + adding new server items)');
                     
-                    // 🔄 КРИТИЧНО: Используем server-first стратегию для skills
-                    // чтобы новые скиллы с других устройств не терялись
-                    mergedData = [...serverArray];
+                    // 🔧 ИСПРАВЛЕНИЕ: Используем client-first с добавлением новых серверных элементов
+                    // Это уважает локальные удаления пользователя, но добавляет новые навыки с сервера
                     
-                    // 🔧 ИСПРАВЛЕНИЕ: Дедупликация серверных данных
+                    // Начинаем с локальных навыков (уважаем удаления пользователя)
+                    mergedData = [...localArray];
+                    
+                    // 🔧 ДЕДУПЛИКАЦИЯ локальных данных
                     mergedData = mergedData.filter((item, index, self) => 
-                        item && index === self.findIndex(t => t && t.id === item.id)
+                        index === self.findIndex(t => t.id === item.id)
                     );
                     
-                    // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проходим по СЕРВЕРНЫМ skills, не локальным
-                    console.log(`🔄 PROCESSING ${serverArray.length} SERVER SKILLS for comparison/restoration`);
+                    console.log(`🔄 STARTING WITH ${localArray.length} LOCAL SKILLS (user's current selection)`);
+                    
+                    // 🔧 КРИТИЧНО: Предотвращаем бесконечный цикл с помощью Set для отслеживания обработанных навыков
+                    const processedSkillIds = new Set();
+                    let addedFromServer = 0;
                     
                     for (const serverItem of serverArray) {
-                        const localItem = localArray.find(m => m.id === serverItem.id);
+                        // 🔧 КРИТИЧНО: Пропускаем уже обработанные навыки
+                        if (processedSkillIds.has(serverItem.id)) {
+                            console.log(`🔄 Skill ${serverItem.id} already processed, skipping duplicate`);
+                            continue;
+                        }
+                        processedSkillIds.add(serverItem.id);
+                        
+                        const localItem = mergedData.find(m => m.id === serverItem.id);
                         if (!localItem) {
-                            console.log(`📋 Skill ${serverItem.id} found only on server, restored from server (server-first)`);
-                            // Серверный skill уже в mergedData
+                            // 🔧 НОВОЕ: Проверяем не был ли этот навык удален пользователем
+                            const deletedSkills = this.get('deletedSkills') || [];
+                            if (deletedSkills.includes(serverItem.id)) {
+                                console.log(`🗑️ Skill ${serverItem.id} was deleted by user, not restoring from server`);
+                                continue; // Пропускаем удаленный навык
+                            }
+                            
+                            console.log(`📋 Skill ${serverItem.id} found only on server, adding as new skill`);
+                            mergedData.push(serverItem);
                             hasUpdates = true;
+                            addedFromServer++;
                         } else {
-                            // Элемент существует локально - используем серверную версию
-                            console.log(`📋 Skill ${serverItem.id} exists in both local and server, keeping server version (server-first)`);
+                            // Навык существует локально - используем локальную версию (client-first для изменений)
+                            console.log(`📋 Skill ${serverItem.id} exists in both, keeping local version (client-first)`);
                         }
                     }
                     
+                    console.log(`✅ SKILL MERGE COMPLETE: ${localArray.length} local + ${addedFromServer} new from server = ${mergedData.length} total`);
+                    
                     // 🔧 ФИНАЛЬНАЯ ДЕДУПЛИКАЦИЯ
                     mergedData = mergedData.filter((item, index, self) => 
-                        item && index === self.findIndex(t => t && t.id === item.id)
+                        index === self.findIndex(t => t.id === item.id)
                     );
+                    
+                    // 🚀 ВАЖНО: Если у нас меньше навыков чем на сервере, отправляем наши данные
+                    // Это информирует сервер об удалениях пользователя
+                    if (mergedData.length < serverArray.length) {
+                        console.log(`🚀 USER SKILL DELETIONS DETECTED: Local has ${mergedData.length}, server has ${serverArray.length}. Marking for sync to inform server of deletions.`);
+                        this.markForSync();
+                    }
                 } else if (key === 'quickActions' || key === 'quickActionOrder') {
                     console.log(`🔄 USING RELIABLE FIRST-TIME DETECTION FOR ${key.toUpperCase()}`);
                     
@@ -2391,6 +2443,16 @@ class Storage {
                         });
                     }
                     
+                    // 🔧 НОВОЕ: Фильтрация undefined элементов для deletedSkills
+                    if (key === 'deletedSkills') {
+                        mergedData = mergedData.filter(item => item !== undefined && item !== null);
+                        console.log(`🔧 FILTERED undefined items from local ${key}:`, {
+                            before: localArray.length,
+                            after: mergedData.length,
+                            filtered: localArray.length - mergedData.length
+                        });
+                    }
+                    
                     // Затем добавляем серверные элементы, которых нет локально
                     for (const item of serverArray) {
                         // 🔧 ИСПРАВЛЕНИЕ: Пропускаем undefined элементы
@@ -2413,6 +2475,8 @@ class Storage {
                         if (key === 'deletedCheckins') {
                             mergedData = mergedData.filter(item => item !== undefined && item !== null);
                         } else if (key === 'deletedProtocols') {
+                            mergedData = mergedData.filter(item => item !== undefined && item !== null);
+                        } else if (key === 'deletedSkills') {
                             mergedData = mergedData.filter(item => item !== undefined && item !== null);
                         } else if (mergedData.length > 0 && mergedData[0] && typeof mergedData[0] === 'object' && mergedData[0].id) {
                             // Дедупликация для объектов с ID
@@ -3269,6 +3333,10 @@ class Storage {
       const localProtocols = this.getProtocols();
       const localSkills = this.getSkills();
       
+      // 🔧 НОВОЕ: Получаем списки удаленных элементов для проверки
+      const deletedProtocols = this.get('deletedProtocols') || [];
+      const deletedSkills = this.get('deletedSkills') || [];
+      
       // 🔧 FIX: Use /api/sync instead of /api/user/data to get consistent server data
       // The /api/user/data endpoint was returning stale data while /api/sync has fresh data
       const timestamp = Date.now();
@@ -3284,7 +3352,10 @@ class Storage {
         quickActionOrder: [],
         protocolOrder: [],
         skillOrder: [],
-        stateOrder: []
+        stateOrder: [],
+        deletedCheckins: [],
+        deletedProtocols: [],
+        deletedSkills: []
       };
       
       const response = await fetch(`${BACKEND_URL}/api/sync?_t=${timestamp}&_cb=${Math.random()}`, {
@@ -3314,20 +3385,23 @@ class Storage {
         localProtocolsCount: localProtocols.length,
         serverProtocolsCount: serverProtocols.length,
         localSkillsCount: localSkills.length,
-        serverSkillsCount: serverSkills.length
+        serverSkillsCount: serverSkills.length,
+        deletedProtocolsCount: deletedProtocols.length,
+        deletedSkillsCount: deletedSkills.length
       });
       
       let hasDiscrepancies = false;
       let updatesNeeded = [];
       
-      // Check for missing protocols on local device
+      // 🔧 ИСПРАВЛЕНИЕ: Check for missing protocols on local device (respecting deletions)
       const localProtocolIds = new Set(localProtocols.map(p => p.id));
       const missingProtocols = serverProtocols.filter(serverProtocol => 
-        !localProtocolIds.has(serverProtocol.id)
+        !localProtocolIds.has(serverProtocol.id) && 
+        !deletedProtocols.includes(serverProtocol.id) // 🔧 КРИТИЧНО: Не восстанавливаем удаленные протоколы
       );
       
       if (missingProtocols.length > 0) {
-        console.log('🚨 INTEGRITY CHECK: Found missing protocols on local device:', 
+        console.log('🚨 INTEGRITY CHECK: Found missing protocols on local device (respecting deletions):', 
           missingProtocols.map(p => ({id: p.id, name: p.name})));
         
         // Add missing protocols to local storage
@@ -3339,14 +3413,15 @@ class Storage {
         hasDiscrepancies = true;
       }
       
-      // Check for missing skills on local device
+      // 🔧 ИСПРАВЛЕНИЕ: Check for missing skills on local device (respecting deletions)
       const localSkillIds = new Set(localSkills.map(s => s.id));
       const missingSkills = serverSkills.filter(serverSkill => 
-        !localSkillIds.has(serverSkill.id)
+        !localSkillIds.has(serverSkill.id) && 
+        !deletedSkills.includes(serverSkill.id) // 🔧 КРИТИЧНО: Не восстанавливаем удаленные навыки
       );
       
       if (missingSkills.length > 0) {
-        console.log('🚨 INTEGRITY CHECK: Found missing skills on local device:', 
+        console.log('🚨 INTEGRITY CHECK: Found missing skills on local device (respecting deletions):', 
           missingSkills.map(s => ({id: s.id, name: s.name})));
         
         // Add missing skills to local storage
@@ -3392,7 +3467,7 @@ class Storage {
       }
       
       if (hasDiscrepancies) {
-        console.log('🔧 INTEGRITY CHECK: Fixed data discrepancies:', updatesNeeded);
+        console.log('🔧 INTEGRITY CHECK: Fixed data discrepancies (respecting user deletions):', updatesNeeded);
         
         // Update UI to reflect changes
         if (window.App && window.App.renderPage) {
@@ -3413,13 +3488,19 @@ class Storage {
         
         return true;
       } else {
-        console.log('✅ INTEGRITY CHECK: All data is consistent');
+        console.log('✅ INTEGRITY CHECK: All data is consistent (deletions respected)');
         return false;
       }
     } catch (error) {
       console.error('❌ INTEGRITY CHECK FAILED:', error);
       return false;
     }
+  }
+
+  // Clear the list of deleted skills (for debugging)
+  clearDeletedSkills() {
+    this.set('deletedSkills', []);
+    console.log('🗑️ Deleted skills list cleared');
   }
 }
 
