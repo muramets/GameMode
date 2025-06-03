@@ -38,14 +38,6 @@ function initializeApp() {
             // Initialize storage with user context
             window.Storage.init();
             
-            // 🔧 ИСПРАВЛЕНИЕ: Сбрасываем кешированные данные при смене пользователя
-            if (window.App) {
-                window.App.filteredHistory = [];
-                window.App.filteredProtocols = [];
-                window.App.filteredSkills = [];
-                console.log('🔄 App data reset for user change');
-            }
-            
             // Start non-blocking sync in background
             syncUserData().finally(() => {
                 isInitializing = false;
@@ -82,31 +74,6 @@ function showApp(user) {
     // 🔑 ВАЖНО: Обновляем имя пользователя сразу при показе приложения
     updateUsername(user);
     
-    // 🔧 ПОЛНОЕ ИСПРАВЛЕНИЕ: Принудительная очистка всех UI данных при смене пользователя
-    if (window.App) {
-        // Очищаем все кешированные данные
-        window.App.filteredHistory = [];
-        window.App.filteredProtocols = [];
-        window.App.filteredSkills = [];
-        window.App.states = [];
-        
-        // Сбрасываем фильтры истории
-        window.App.historyFilters = {
-            time: 'all',
-            type: 'all', 
-            protocol: 'all',
-            state: 'all',
-            effect: 'all',
-            skill: 'all',
-            customDateFrom: '',
-            customDateTo: ''
-        };
-        
-        // Принудительно переходим на dashboard при смене пользователя
-        window.App.currentPage = 'dashboard';
-        console.log('🔄 Complete UI reset and forced navigation to dashboard for user change');
-    }
-    
     // Initialize app
     initMainApp();
     
@@ -128,29 +95,6 @@ window.updateUsername = updateUsername;
 function showAuth() {
     document.getElementById('authContainer').style.display = 'flex';
     document.getElementById('appContainer').style.display = 'none';
-    
-    // 🔧 БЕЗОПАСНОСТЬ: Полная очистка всех кешированных данных при показе формы авторизации
-    if (window.App) {
-        window.App.filteredHistory = [];
-        window.App.filteredProtocols = [];
-        window.App.filteredSkills = [];
-        window.App.states = [];
-        window.App.currentPage = 'dashboard'; // Reset to default page
-        
-        // Очистка всех поисковых полей
-        setTimeout(() => {
-            const searchInputs = [
-                document.getElementById('protocol-search'),
-                document.getElementById('skill-search'),
-                document.getElementById('history-search')
-            ];
-            searchInputs.forEach(input => {
-                if (input) input.value = '';
-            });
-        }, 100);
-        
-        console.log('🔐 Complete UI cleanup on auth screen');
-    }
 }
 
 async function syncUserData() {
@@ -228,6 +172,7 @@ function initMainApp() {
         skillsPerPage: 30,
         filteredSkills: [],
         filteredHistory: [],
+        historyInitialized: false,
         states: [],
         historyFilters: {
             time: 'all',
@@ -279,33 +224,18 @@ function initMainApp() {
             if (clearBtn) {
                 clearBtn.addEventListener('click', () => {
                     if (confirm('Are you sure you want to clear all history? This cannot be undone.')) {
-                        console.log('🗑️ USER CONFIRMED: Clear All History');
+                        window.Storage.clearAllCheckins();
+                        this.filteredHistory = [];
+                        this.historyInitialized = false;
                         
-                        // Show immediate feedback
-                        this.showToast('Clearing history...', 'info');
-                        
-                        // Clear history and get result
-                        const result = window.Storage.clearAllCheckins();
-                        
-                        if (result) {
-                            this.filteredHistory = [];
-                            
-                            // Clear search input
-                            const historySearchInput = document.getElementById('history-search');
-                            if (historySearchInput) {
-                                historySearchInput.value = '';
-                            }
-                            
-                            // Show success message with sync info
-                            this.showToast('History cleared and syncing to server...', 'success');
-                            
-                            // Re-render the page to show empty history
-                            this.renderPage('history');
-                            
-                            console.log('✅ UI UPDATED: History page refreshed, showing cleared state');
-                        } else {
-                            this.showToast('Failed to clear history', 'error');
+                        // Clear search input
+                        const historySearchInput = document.getElementById('history-search');
+                        if (historySearchInput) {
+                            historySearchInput.value = '';
                         }
+                        
+                        this.showToast('History cleared', 'success');
+                        this.renderPage('history');
                     }
                 });
             }
@@ -521,46 +451,16 @@ function initMainApp() {
                     this.setupTooltips();
                     break;
                 case 'history':
-                    // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Всегда принудительно очищаем и перезагружаем историю
-                    this.filteredHistory = [];
-                    
-                    // 🔧 ЭКСТРЕННАЯ ЗАЩИТА: Дополнительная очистка кеша истории
-                    console.log('🔧 Emergency history cache clearing...');
-                    
-                    // Принудительно удаляем все возможные остатки кеша
-                    if (window.Storage && window.Storage.currentUser) {
-                        const currentUserId = window.Storage.currentUser.uid;
-                        console.log(`🔧 Clearing history cache for user: ${currentUserId}`);
-                        
-                        // Перезагружаем данные из localStorage для текущего пользователя
-                        const freshHistory = window.Storage.get('history');
-                        this.filteredHistory = freshHistory ? [...freshHistory] : [];
-                        
-                        console.log(`✅ Fresh history loaded: ${this.filteredHistory.length} items`);
+                    // Initialize filtered history if not already set
+                    if (this.filteredHistory.length === 0) {
+                        this.filteredHistory = window.Storage.getCheckins().reverse();
                     }
-                    
-                    // Очищаем поисковое поле
-                    const historySearchInput = document.getElementById('history-search');
-                    if (historySearchInput) {
-                        historySearchInput.value = '';
-                    }
-                    
-                    // Принудительно применяем фильтры для загрузки свежих данных
-                    this.applyHistoryFilters(); // This ensures proper newest-to-oldest sorting with fresh data
                     
                     UI.renderHistory();
                     
                     // Setup filters after rendering
                     setTimeout(() => {
                         this.setupHistoryFilters();
-                        
-                        // Дополнительная проверка: если данные все еще пусты, перезагружаем
-                        if (this.filteredHistory.length === 0) {
-                            console.log('🔄 History is empty, forcing reload...');
-                            this.filteredHistory = [];
-                            this.applyHistoryFilters();
-                            UI.renderHistory();
-                        }
                     }, 0);
                     
                     break;
@@ -583,10 +483,12 @@ function initMainApp() {
                 if (this.currentPage === 'history') {
                     // Reset history filter to refresh data and re-apply current filters
                     this.filteredHistory = [];
+                    this.historyInitialized = false;
                     this.applyHistoryFilters();
                 } else {
                     // If not on history page, just reset the history data for next visit
                     this.filteredHistory = [];
+                    this.historyInitialized = false;
                 }
                 
                 // If we're not on skills page, but skills were affected, update skills data
@@ -642,6 +544,7 @@ function initMainApp() {
                 
                 // Reset history filter to show all items
                 this.filteredHistory = [];
+                this.historyInitialized = false;
                 UI.renderHistory();
                 
                 // Update user stats if on dashboard
@@ -1224,14 +1127,7 @@ function initMainApp() {
                 return true;
             });
             
-            // 🔧 ИСПРАВЛЕНИЕ: Всегда сортируем от новых к старым по timestamp
-            this.filteredHistory.sort((a, b) => {
-                return new Date(b.timestamp) - new Date(a.timestamp);
-            });
-            
-            // Re-render history with new filters
             UI.renderHistory();
-            this.updateFilterIcon();
         },
 
         // Get all skill IDs that affect a state (including from dependent states)
@@ -1866,9 +1762,9 @@ function initMainApp() {
             }
         },
 
-        // Check raw server data to see what was actually uploaded
-        async checkServerData() {
-            console.log('🔍 CHECKING RAW SERVER DATA...');
+        // Check raw server data to see what was actually uploaded (FIXED VERSION)
+        async checkServerDataNew() {
+            console.log('🔍 CHECKING RAW SERVER DATA (via /api/sync)...');
             
             if (!window.Storage.currentUser) {
                 console.error('❌ No authenticated user');
@@ -1877,20 +1773,37 @@ function initMainApp() {
             
             try {
                 const token = await window.Storage.currentUser.getIdToken();
-                const response = await fetch(`${window.BACKEND_URL}/api/user/data`, {
+                
+                // 🔧 FIX: Use /api/sync with empty data to get current server state
+                // This ensures we get the ACTUAL data that sync operations work with
+                const response = await fetch(`${window.BACKEND_URL}/api/sync?_debug=true&_t=${Date.now()}`, {
+                    method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
                         'Cache-Control': 'no-cache, no-store, must-revalidate',
                         'Pragma': 'no-cache',
                         'Expires': '0'
-                    }
+                    },
+                    body: JSON.stringify({
+                        protocols: [],
+                        skills: [],
+                        states: [],
+                        history: [],
+                        quickActions: [],
+                        quickActionOrder: [],
+                        protocolOrder: [],
+                        skillOrder: [],
+                        stateOrder: [],
+                        deletedCheckins: []
+                    })
                 });
                 
                 if (response.ok) {
                     const serverResponse = await response.json();
                     const serverData = serverResponse.data || {};
                     
-                    console.log('🗄️ RAW SERVER DATA:', serverData);
+                    console.log('🗄️ RAW SERVER DATA (via /api/sync):', serverData);
                     
                     // Focus on protocols
                     if (serverData.protocols) {
@@ -1932,7 +1845,7 @@ function initMainApp() {
                     return serverData;
                     
                 } else {
-                    console.error('❌ Failed to fetch server data:', response.status, response.statusText);
+                    console.error('❌ Failed to fetch server data via /api/sync:', response.status, response.statusText);
                 }
             } catch (error) {
                 console.error('❌ Server data check failed:', error);
@@ -2453,35 +2366,3 @@ console.log('  - debugSync.status() - Check sync status');
 console.log('  - debugSync.testBackend() - Test backend connectivity');
 console.log('  - debugSync.forceResetAndSync() - Force reset user data on server and resync');
 console.log('  - debugSync.smartSync() - Safer sync debugging');
-
-// 🔧 ЭКСТРЕННАЯ ЗАЩИТА: Очистка кеша при каждой загрузке страницы
-window.addEventListener('load', function() {
-    console.log('🔧 Emergency cache clearing on page load...');
-    
-    // Очищаем все UI кеши при загрузке страницы
-    if (window.App) {
-        window.App.filteredHistory = [];
-        window.App.filteredProtocols = [];
-        window.App.filteredSkills = [];
-        window.App.states = [];
-        
-        console.log('✅ UI caches cleared on page load');
-    }
-    
-    // Очищаем поисковые поля при загрузке
-    setTimeout(() => {
-        const searchInputs = [
-            document.getElementById('protocol-search'),
-            document.getElementById('skill-search'), 
-            document.getElementById('history-search')
-        ];
-        
-        searchInputs.forEach(input => {
-            if (input) {
-                input.value = '';
-            }
-        });
-        
-        console.log('✅ Search inputs cleared on page load');
-    }, 100);
-});
