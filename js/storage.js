@@ -1768,6 +1768,49 @@ class Storage {
               // 🔧 КРИТИЧНО: РАННЯЯ ЗАЩИТА ОТ CLEAR ALL для истории
               // Проверяем в самом начале обработки истории - до любых других операций
               if (key === 'history') {
+                // 🔧 ИСПРАВЛЕНИЕ: Проверяем была ли недавно выполнена операция Clear All
+                // Если история пустая локально, НЕ восстанавливаем элементы с сервера
+                const isLocalHistoryEmpty = !hasLocalData;
+                const hasServerHistory = hasServerData;
+                
+                if (isLocalHistoryEmpty && hasServerHistory) {
+                  console.log('🚫 CLEAR ALL PROTECTION: Local history is empty, blocking server restoration');
+                  console.log('📊 Clear All protection: preventing server history restoration', {
+                    localItems: localArray.length,
+                    serverItems: serverArray.length,
+                    action: 'blocked_restoration'
+                  });
+                  
+                  // Оставляем историю пустой - не добавляем серверные элементы
+                  const protectedResult = [];
+                  
+                  // Сохраняем пустой результат
+                  this.set(this.getKeyConstant(key), protectedResult);
+                  
+                  mergeResults[key] = { 
+                    action: 'clear_all_protection', 
+                    localCount: localArray.length, 
+                    serverCount: serverArray.length,
+                    mergedCount: protectedResult.length,
+                    blockedItems: serverArray.length
+                  };
+                  
+                  console.log(`🔄 SYNC MERGE ${key}:`, {
+                    localItems: localArray.length,
+                    serverItems: serverArray.length,
+                    mergedItems: protectedResult.length,
+                    action: 'clear_all_protection',
+                    blockedRestoration: true
+                  });
+                  
+                  // Помечаем для синхронизации чтобы сервер тоже очистился
+                  this.markForSync();
+                  console.log('🚀 MARKING FOR SYNC: Will send empty history to server');
+                  
+                  // Пропускаем дальнейшую обработку для этого ключа
+                  return;
+                }
+                
                 // 🔧 УПРОЩЕНИЕ: Убираем всю сложную логику Clear All Protection
                 // Теперь простое правило: что хранится локально - то и отображается
                 console.log('🔄 USING SIMPLE MERGE STRATEGY FOR HISTORY');
