@@ -669,6 +669,9 @@ class Storage {
       timestamp: new Date().toISOString()
     });
 
+    // 🔧 УБРАНО: Удалил раннее завершение при пустой локальной истории
+    // Теперь ВСЕГДА выполняем принудительную очистку сервера
+    
     // Mark all current checkins as deleted (even if empty)
     const existingDeleted = this.get('deletedCheckins') || [];
     const allCheckinIds = checkins.map(c => c.id);
@@ -713,7 +716,8 @@ class Storage {
     console.log('📊 Stats updated after clear');
     
     // 🔧 КРИТИЧНО: ПРИНУДИТЕЛЬНАЯ ОТПРАВКА ПУСТОЙ ИСТОРИИ НА СЕРВЕР
-    // Это ВСЕГДА выполняется для перезаписи серверных данных
+    // 🚨 ИСПРАВЛЕНИЕ: Это ВСЕГДА выполняется независимо от состояния локальной истории
+    // Это исправляет проблему когда инкогнито/новые устройства восстанавливают историю
     console.log('🚀 FORCE CLEARING SERVER HISTORY: Uploading empty history to overwrite server data');
     console.log('🎯 SERVER CLEAR: This will ensure all devices get empty history instead of restoring old data');
     try {
@@ -758,10 +762,17 @@ class Storage {
         console.log('✅ SERVER HISTORY CLEARED SUCCESSFULLY:', clearResult);
         console.log('🎯 All devices will now receive empty history instead of old data');
         console.log('🔄 Incognito/new devices will no longer restore old history');
+        
+        // 🔧 КРИТИЧНО: Очищаем флаги удаления после успешной очистки сервера
+        // Это предотвратит постоянное срабатывание Clear All Protection при новых чекинах
+        this.set('deletedCheckins', []);
+        console.log('🧹 CLEARED DELETION FLAGS: Removed all deletion flags after successful server clear');
+        console.log('🎯 New checkins will now be saved normally without Clear All interference');
       } else {
         const errorText = await serverClearResponse.text();
         console.error('❌ FAILED TO CLEAR SERVER HISTORY:', serverClearResponse.status, errorText);
         console.log('⚠️ Server history may still contain old data - other devices might restore it');
+        console.log('⚠️ Keeping deletion flags since server clear failed');
       }
     } catch (error) {
       console.error('❌ ERROR CLEARING SERVER HISTORY:', error);
@@ -1732,10 +1743,23 @@ class Storage {
                            'Massive deletion detected'
                   });
                   
-                  // Полностью блокируем восстановление истории
-                  mergedData = [];
-                  mergeAction = 'clear_all_early_protection';
-                  hasUpdates = false;
+                  // 🔧 ИСПРАВЛЕНИЕ: Не блокируем все элементы, а фильтруем новые чекины
+                  // Сохраняем новые чекины (ID которых НЕТ в deletedCheckins)
+                  const newCheckins = localArray.filter(item => 
+                    item && item.id !== undefined && !deletedCheckins.includes(item.id)
+                  );
+                  
+                  console.log('🔧 CLEAR ALL PROTECTION: Preserving new checkins while blocking server restoration', {
+                    totalLocalItems: localArray.length,
+                    newCheckinsToKeep: newCheckins.length,
+                    deletedItemsBlocked: localArray.length - newCheckins.length,
+                    serverItemsBlocked: serverArray.length
+                  });
+                  
+                  // Сохраняем только новые чекины, блокируем восстановление с сервера
+                  mergedData = newCheckins;
+                  mergeAction = newCheckins.length > 0 ? 'clear_all_protection_with_new_checkins' : 'clear_all_early_protection';
+                  hasUpdates = newCheckins.length > 0; // Обновляем если есть новые чекины
                   
                   // Сразу переходим к сохранению результата, минуя всю логику мержа
                   mergeResults[key] = { 
@@ -1752,7 +1776,7 @@ class Storage {
                     action: mergeAction
                   });
                   
-                  // Сохраняем пустую историю
+                  // Сохраняем обновленную историю (с новыми чекинами)
                   this.set(this.getKeyConstant(key), mergedData);
                   
                   // Пропускаем дальнейшую обработку для этого ключа - переходим к следующей итерации
@@ -1829,9 +1853,19 @@ class Storage {
                         // Create a map to track items by ID and choose version with maximum effects
                         const mergedMap = new Map();
                         
-                        // Add all local items first
+                        // 🔧 ИСПРАВЛЕНИЕ: Сначала добавляем локальные элементы, но проверяем deletedCheckins
+                        // Это позволяет сохранить НОВЫЕ чекины (созданные после Clear All)
+                        // но блокирует восстановление СТАРЫХ удаленных чекинов
                         localArray.forEach(item => {
                             if (item && item.id !== undefined) {
+                                // 🔧 КРИТИЧНО: Проверяем был ли этот чекин удален в Clear All
+                                if (deletedCheckins.includes(item.id)) {
+                                    console.log(`📋 History item ${item.id}: was deleted in Clear All, removing local version`);
+                                    return; // Пропускаем удаленные чекины
+                                }
+                                
+                                // Это новый чекин (создан после Clear All) - сохраняем его
+                                console.log(`📋 History item ${item.id}: new checkin created after Clear All, keeping local version`);
                                 mergedMap.set(item.id, { ...item, source: 'local' });
                             }
                         });
@@ -2462,10 +2496,19 @@ class Storage {
             console.log(`📄 ${currentPage} page refreshed via renderPage`);
             
             // Additional update for dashboard page to ensure stats are current
-            if (currentPage === 'dashboard' && window.UI && window.UI.updateUserStats) {
+            if (currentPage === 'history') {
               setTimeout(() => {
-                window.UI.updateUserStats();
-                console.log('📊 Dashboard stats double-checked after sync');
+                window.App.renderPage('history');
+                console.log('📄 History page refreshed via renderPage');
+              }, 100);
+            } else if (currentPage === 'dashboard') {
+              setTimeout(() => {
+                window.App.renderPage('dashboard');
+                console.log('📄 Dashboard page refreshed via renderPage');
+                if (window.UI && window.UI.updateUserStats) {
+                  window.UI.updateUserStats();
+                  console.log('📊 Dashboard stats double-checked after sync');
+                }
               }, 100);
             }
           } else {
