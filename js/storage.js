@@ -1788,13 +1788,14 @@ class Storage {
       'deletedCheckins': 'deletedCheckins', // Special case - not in KEYS object
       'deletedProtocols': 'deletedProtocols', // Special case - not in KEYS object
       'deletedSkills': 'deletedSkills', // Special case - not in KEYS object
-      'deletedStates': 'deletedStates' // Special case - not in KEYS object
+      'deletedStates': 'deletedStates', // Special case - not in KEYS object
+      'deletedQuickActions': 'deletedQuickActions' // Special case - not in KEYS object
     };
     
     const mappedKey = keyMap[serverKey];
     if (mappedKey) {
-      // For deletedCheckins, deletedProtocols, deletedSkills, and deletedStates, return the key directly (not through KEYS)
-      if (serverKey === 'deletedCheckins' || serverKey === 'deletedProtocols' || serverKey === 'deletedSkills' || serverKey === 'deletedStates') {
+      // For deletedCheckins, deletedProtocols, deletedSkills, deletedStates, and deletedQuickActions, return the key directly (not through KEYS)
+      if (serverKey === 'deletedCheckins' || serverKey === 'deletedProtocols' || serverKey === 'deletedSkills' || serverKey === 'deletedStates' || serverKey === 'deletedQuickActions') {
         return serverKey;
       }
       // For other keys, use KEYS object
@@ -1852,7 +1853,8 @@ class Storage {
         deletedCheckins: this.get('deletedCheckins') || [],
         deletedProtocols: this.get('deletedProtocols') || [],
         deletedSkills: this.get('deletedSkills') || [],
-        deletedStates: this.get('deletedStates') || []
+        deletedStates: this.get('deletedStates') || [],
+        deletedQuickActions: this.get('deletedQuickActions') || []
       };
       
       // 🐞 DEBUG: Логируем отправляемые данные Quick Actions
@@ -2627,7 +2629,7 @@ class Storage {
                                 item && index === self.findIndex(t => t && t.id === item.id)
                             );
                         }
-                    }
+                        }
                     }
                 }
                 

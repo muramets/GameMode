@@ -551,7 +551,7 @@ function initMainApp() {
                     this.applyHistoryFilters();
                 } else {
                     // If not on history page, just reset for next visit
-                    UI.renderHistory();
+                UI.renderHistory();
                 }
                 
                 // Update user stats if on dashboard
@@ -2127,7 +2127,7 @@ window.debugSync = {
       });
     });
   },
-
+  
   // Compare local vs server data
   async compare() {
     console.log('🔍 Comparing local vs server data...');
