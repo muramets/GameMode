@@ -1662,6 +1662,54 @@ class Storage {
               let mergedData = [];
               let mergeAction = '';
               
+              // 🔧 КРИТИЧНО: РАННЯЯ ЗАЩИТА ОТ CLEAR ALL для истории
+              // Проверяем в самом начале обработки истории - до любых других операций
+              if (key === 'history') {
+                const deletedCheckins = this.get('deletedCheckins') || [];
+                const isClearAllInProgress = this.clearAllInProgress;
+                const hasEmptyLocalHistory = localArray.length === 0 && deletedCheckins.length > 0;
+                const hasMassiveDeletion = deletedCheckins.length > 0 && deletedCheckins.length >= localArray.length;
+                const needsClearAllProtection = isClearAllInProgress || hasEmptyLocalHistory || hasMassiveDeletion;
+                
+                if (needsClearAllProtection) {
+                  console.log('🚫 EARLY CLEAR ALL PROTECTION: Preventing any history restoration', {
+                    clearAllInProgress: isClearAllInProgress,
+                    localHistoryLength: localArray.length,
+                    deletedFlagsCount: deletedCheckins.length,
+                    serverItemsIgnored: serverArray.length,
+                    reason: isClearAllInProgress ? 'Clear All in progress' : 
+                           hasEmptyLocalHistory ? 'Empty local + deletion flags' : 
+                           'Massive deletion detected'
+                  });
+                  
+                  // Полностью блокируем восстановление истории
+                  mergedData = [];
+                  mergeAction = 'clear_all_early_protection';
+                  hasUpdates = false;
+                  
+                  // Сразу переходим к сохранению результата, минуя всю логику мержа
+                  mergeResults[key] = { 
+                    action: mergeAction, 
+                    localCount: localArray.length, 
+                    serverCount: serverArray.length,
+                    mergedCount: mergedData.length
+                  };
+                  
+                  console.log(`🔄 SYNC MERGE ${key}:`, {
+                    localItems: localArray.length,
+                    serverItems: serverArray.length,
+                    mergedItems: mergedData.length,
+                    action: mergeAction
+                  });
+                  
+                  // Сохраняем пустую историю
+                  this.set(this.getKeyConstant(key), mergedData);
+                  
+                  // Пропускаем дальнейшую обработку для этого ключа - переходим к следующей итерации
+                  return; // Это завершит текущую итерацию forEach
+                }
+              }
+              
               // Определяем стратегию мержа в зависимости от типа данных
               const isHistory = key === 'history';
               
