@@ -38,16 +38,53 @@ class Storage {
     // 🔧 НОВОЕ: Более надежное определение первого входа
     if (user) {
       const firstTimeKey = `first_login_${user.uid}`;
-      const isFirstTime = !localStorage.getItem(firstTimeKey);
+      const isFirstTimeByFlag = !localStorage.getItem(firstTimeKey);
       
-      if (isFirstTime) {
+      // 🔧 КРИТИЧНО: Дополнительная проверка - есть ли у пользователя РЕАЛЬНЫЕ данные
+      // Проверяем ключевые пользовательские данные (не default)
+      const userDataKeys = [
+        'history', 'protocolOrder', 'skillOrder', 'stateOrder', 'quickActionOrder'
+      ];
+      
+      let hasRealUserData = false;
+      userDataKeys.forEach(key => {
+        const userKey = `${user.uid}_${key}`;
+        const data = localStorage.getItem(userKey);
+        if (data && data !== 'null' && data !== '[]') {
+          try {
+            const parsed = JSON.parse(data);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              hasRealUserData = true;
+            }
+          } catch (e) {
+            // Ignore parse errors
+          }
+        }
+      });
+      
+      // 🔧 ИСПРАВЛЕНИЕ: Пользователь считается новым если:
+      // 1. Нет флага первого входа И
+      // 2. Нет реальных пользовательских данных
+      const isReallyFirstTime = isFirstTimeByFlag && !hasRealUserData;
+      
+      if (isReallyFirstTime) {
         console.log('🆕 FIRST TIME LOGIN DETECTED for user:', user.email);
         console.log('🔄 Will use SERVER-FIRST strategy for all data');
+        console.log('🔍 Detection details:', {
+          flagExists: !isFirstTimeByFlag,
+          hasUserData: hasRealUserData,
+          decision: 'FIRST_TIME'
+        });
         localStorage.setItem(firstTimeKey, Date.now().toString());
         this.isFirstTimeLogin = true;
       } else {
         console.log('🔄 RETURNING USER DETECTED for user:', user.email);
         console.log('🔄 Will use CLIENT-FIRST strategy for quick actions');
+        console.log('🔍 Detection details:', {
+          flagExists: !isFirstTimeByFlag,
+          hasUserData: hasRealUserData,
+          decision: 'RETURNING_USER'
+        });
         this.isFirstTimeLogin = false;
       }
     }
@@ -252,17 +289,26 @@ class Storage {
     }
     
     if (!this.get(this.KEYS.QUICK_ACTIONS)) {
-      // Set default quick actions only if user has existing protocols
-      const existingProtocols = this.get(this.KEYS.PROTOCOLS);
-      if (existingProtocols && existingProtocols.length > 0) {
-        // Use first 5 available protocol IDs as defaults
-        const defaultQuickActions = existingProtocols.slice(0, 5).map(p => p.id);
-        this.set(this.KEYS.QUICK_ACTIONS, defaultQuickActions);
-        this.set(this.KEYS.QUICK_ACTION_ORDER, defaultQuickActions);
-      } else {
-        // For users without protocols, set empty quick actions
+      // 🔧 ИСПРАВЛЕНИЕ: Не создаем default Quick Actions для новых пользователей
+      // Пусть сначала загрузятся данные с сервера
+      if (this.isFirstTimeLogin === true) {
+        console.log('🆕 First time user: Skipping default Quick Actions creation, will load from server');
         this.set(this.KEYS.QUICK_ACTIONS, []);
         this.set(this.KEYS.QUICK_ACTION_ORDER, []);
+      } else {
+        // Set default quick actions only if user has existing protocols
+        const existingProtocols = this.get(this.KEYS.PROTOCOLS);
+        if (existingProtocols && existingProtocols.length > 0) {
+          // Use first 5 available protocol IDs as defaults
+          const defaultQuickActions = existingProtocols.slice(0, 5).map(p => p.id);
+          console.log('🔄 Returning user: Creating default Quick Actions:', defaultQuickActions);
+          this.set(this.KEYS.QUICK_ACTIONS, defaultQuickActions);
+          this.set(this.KEYS.QUICK_ACTION_ORDER, defaultQuickActions);
+        } else {
+          // For users without protocols, set empty quick actions
+          this.set(this.KEYS.QUICK_ACTIONS, []);
+          this.set(this.KEYS.QUICK_ACTION_ORDER, []);
+        }
       }
     }
     
