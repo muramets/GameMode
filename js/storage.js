@@ -763,11 +763,10 @@ class Storage {
         console.log('🎯 All devices will now receive empty history instead of old data');
         console.log('🔄 Incognito/new devices will no longer restore old history');
         
-        // 🔧 КРИТИЧНО: Очищаем флаги удаления после успешной очистки сервера
-        // Это предотвратит постоянное срабатывание Clear All Protection при новых чекинах
-        this.set('deletedCheckins', []);
-        console.log('🧹 CLEARED DELETION FLAGS: Removed all deletion flags after successful server clear');
-        console.log('🎯 New checkins will now be saved normally without Clear All interference');
+        // 🔧 КРИТИЧНО: НЕ очищаем флаги удаления сразу
+        // Оставляем их до тех пор пока синхронизация не подтвердит что сервер пуст
+        console.log('⏰ KEEPING DELETION FLAGS: Will clear them only after sync confirms server is empty');
+        console.log('🛡️ This protects against server caching/delay issues');
       } else {
         const errorText = await serverClearResponse.text();
         console.error('❌ FAILED TO CLEAR SERVER HISTORY:', serverClearResponse.status, errorText);
@@ -1743,44 +1742,57 @@ class Storage {
                            'Massive deletion detected'
                   });
                   
-                  // 🔧 ИСПРАВЛЕНИЕ: Не блокируем все элементы, а фильтруем новые чекины
+                  // 🔧 УСИЛЕННАЯ ЛОГИКА: Фильтруем новые чекины от старых удаленных
                   // Сохраняем новые чекины (ID которых НЕТ в deletedCheckins)
-                  const newCheckins = localArray.filter(item => 
+                  // Блокируем только старые чекины (которые есть в deletedCheckins)
+                  const newLocalCheckins = localArray.filter(item => 
                     item && item.id !== undefined && !deletedCheckins.includes(item.id)
                   );
                   
-                  console.log('🔧 CLEAR ALL PROTECTION: Preserving new checkins while blocking server restoration', {
+                  const blockedServerCheckins = serverArray.filter(item => 
+                    item && item.id !== undefined && deletedCheckins.includes(item.id)
+                  );
+                  
+                  console.log('🔧 SMART CLEAR ALL PROTECTION:', {
                     totalLocalItems: localArray.length,
-                    newCheckinsToKeep: newCheckins.length,
-                    deletedItemsBlocked: localArray.length - newCheckins.length,
-                    serverItemsBlocked: serverArray.length
+                    newCheckinsToKeep: newLocalCheckins.length,
+                    totalServerItems: serverArray.length,
+                    blockedServerItems: blockedServerCheckins.length,
+                    allowedServerItems: serverArray.length - blockedServerCheckins.length
                   });
                   
-                  // Сохраняем только новые чекины, блокируем восстановление с сервера
-                  mergedData = newCheckins;
-                  mergeAction = newCheckins.length > 0 ? 'clear_all_protection_with_new_checkins' : 'clear_all_early_protection';
-                  hasUpdates = newCheckins.length > 0; // Обновляем если есть новые чекины
+                  // Результат: только новые локальные чекины + разрешенные серверные
+                  const allowedServerCheckins = serverArray.filter(item => 
+                    item && item.id !== undefined && !deletedCheckins.includes(item.id)
+                  );
                   
-                  // Сразу переходим к сохранению результата, минуя всю логику мержа
+                  const protectedResult = [...newLocalCheckins, ...allowedServerCheckins];
+                  console.log('✅ PROTECTION RESULT: Keeping', protectedResult.length, 'items (', newLocalCheckins.length, 'new local +', allowedServerCheckins.length, 'allowed server)');
+                  
+                  // Сохраняем результат и пропускаем обычный мерж
+                  this.set(this.getKeyConstant(key), protectedResult);
+                  
                   mergeResults[key] = { 
-                    action: mergeAction, 
+                    action: 'clear_all_smart_protection', 
                     localCount: localArray.length, 
                     serverCount: serverArray.length,
-                    mergedCount: mergedData.length
+                    mergedCount: protectedResult.length,
+                    newLocalKept: newLocalCheckins.length,
+                    serverBlocked: blockedServerCheckins.length
                   };
                   
                   console.log(`🔄 SYNC MERGE ${key}:`, {
                     localItems: localArray.length,
                     serverItems: serverArray.length,
-                    mergedItems: mergedData.length,
-                    action: mergeAction
+                    mergedItems: protectedResult.length,
+                    action: 'clear_all_smart_protection',
+                    details: `kept ${newLocalCheckins.length} new + blocked ${blockedServerCheckins.length} old`
                   });
                   
-                  // Сохраняем обновленную историю (с новыми чекинами)
-                  this.set(this.getKeyConstant(key), mergedData);
+                  hasUpdates = newLocalCheckins.length > 0 || allowedServerCheckins.length > 0;
                   
-                  // Пропускаем дальнейшую обработку для этого ключа - переходим к следующей итерации
-                  return; // Это завершит текущую итерацию forEach
+                  // Пропускаем дальнейшую обработку для этого ключа
+                  return;
                 }
               }
               
@@ -2247,6 +2259,20 @@ class Storage {
           
           // Log merge summary
           console.log('📊 MERGE RESULTS:', mergeResults);
+          
+          // 🔧 КРИТИЧНО: Очищаем флаги удаления только если сервер подтвердил пустую историю
+          const deletedCheckins = this.get('deletedCheckins') || [];
+          const serverHistory = serverData.history || [];
+          if (deletedCheckins.length > 0 && serverHistory.length === 0) {
+            console.log('🧹 SERVER CONFIRMED EMPTY: Clearing deletion flags as server history is now empty');
+            console.log('📊 Clearing', deletedCheckins.length, 'deletion flags after server confirmation');
+            this.set('deletedCheckins', []);
+            console.log('✅ DELETION FLAGS CLEARED: New checkins will now work normally');
+            console.log('🎯 Clear All operation is now fully complete');
+          } else if (deletedCheckins.length > 0 && serverHistory.length > 0) {
+            console.log('⚠️ SERVER STILL HAS HISTORY: Keeping deletion flags as server returned', serverHistory.length, 'items');
+            console.log('🛡️ Protection remains active until server is truly empty');
+          }
           
           // 🔄 КРИТИЧНО: Обработка Order массивов ПОСЛЕ обновления всех данных
           console.log('🔧 PROCESSING DEFERRED ORDER ARRAYS...');
