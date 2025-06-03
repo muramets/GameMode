@@ -1624,11 +1624,17 @@ class Storage {
       'protocols': 'PROTOCOLS',
       'skills': 'SKILLS',
       'states': 'STATES',
-      'history': 'HISTORY'
+      'history': 'HISTORY',
+      'deletedCheckins': 'deletedCheckins' // Special case - not in KEYS object
     };
     
     const mappedKey = keyMap[serverKey];
-    if (mappedKey && this.KEYS[mappedKey]) {
+    if (mappedKey) {
+      // For deletedCheckins, return the key directly (not through KEYS)
+      if (serverKey === 'deletedCheckins') {
+        return 'deletedCheckins';
+      }
+      // For other keys, use KEYS object
       return this.KEYS[mappedKey];
     }
     
