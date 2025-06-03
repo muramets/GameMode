@@ -2304,12 +2304,17 @@ class Storage {
           
           // Show user-friendly notification about merge results
           if (hasUpdates && window.App) {
+            const deletedCheckinsCountForToast = (this.get('deletedCheckins') || []).length;
             const updates = Object.entries(mergeResults)
               .filter(([key, result]) => {
                 // Exclude technical order arrays and empty gains from notifications
                 if (key.includes('Order')) return false;
                 if (key === 'quickActions' && result.action.includes('gained') && result.mergedCount - Math.min(result.localCount, result.serverCount) === 0) return false;
                 if (key === 'quickActions' && result.action === 'no_new_items_found') return false;
+
+                // 🛡️  Suppress history toast when Clear All deletion is active to avoid confusing user
+                if (key === 'history' && deletedCheckinsCountForToast > 0) return false;
+
                 return result.action.includes('gained') || result.action.includes('loaded');
               })
               .map(([key, result]) => `${key}: +${result.mergedCount - Math.min(result.localCount, result.serverCount)} items`);
