@@ -1766,7 +1766,7 @@ class Storage {
                                     // Server-only item - only add if not deleted locally
                                     console.log(`📋 History item ${item.id}: server-only item, adding`);
                                     mergedMap.set(item.id, { ...item, source: 'server' });
-                                }
+                        }
                             }
                         });
                         
@@ -2015,12 +2015,17 @@ class Storage {
                     (deletedCheckins.length > 0 && deletedCheckins.length >= localArray.length);
                   
                   if (needsClearAllProtection) {
-                    console.log('🚫 SKIPPING SYNC MARKING: Clear All protection is active, not marking history for sync');
+                    if (serverArray.length > 0) {
+                      console.log('🚀 CLEAR ALL SYNC: Server still has history items (', serverArray.length, '), marking for sync to enforce deletion');
+                      this.markForSync();
+                    } else {
+                      console.log('✅ CLEAR ALL SYNC: Server history already empty, no additional sync marking needed');
+                    }
                   } else {
                     // Стандартная проверка изменений для истории
-                    if (!this.arraysEqual(mergedData, serverArray)) {
+                if (!this.arraysEqual(mergedData, serverArray)) {
                       console.log('📤 MARKING HISTORY FOR SYNC: Normal changes detected');
-                      this.markForSync();
+                  this.markForSync();
                     }
                   }
                 } else {
