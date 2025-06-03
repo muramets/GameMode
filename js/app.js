@@ -1850,6 +1850,24 @@ function initMainApp() {
             } catch (error) {
                 console.error('❌ Server data check failed:', error);
             }
+        },
+
+        // 🔧 NEW: Check what Quick Actions data is on server
+        async checkQuickActionsServer() {
+            console.log('🔍 CHECKING SERVER QUICK ACTIONS DATA...');
+            try {
+                const serverData = await this.checkServerDataNew();
+                console.log('🐞 SERVER QUICK ACTIONS DEBUG:', {
+                    quickActionsCount: serverData?.quickActions?.length || 0,
+                    quickActionsData: serverData?.quickActions,
+                    quickActionOrderCount: serverData?.quickActionOrder?.length || 0,
+                    quickActionOrderData: serverData?.quickActionOrder,
+                    fullServerResponse: serverData
+                });
+                return serverData;
+            } catch (error) {
+                console.error('❌ Error checking server Quick Actions:', error);
+            }
         }
     };
 

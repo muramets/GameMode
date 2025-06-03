@@ -2049,29 +2049,44 @@ class Storage {
                 } else if (key === 'quickActions' || key === 'quickActionOrder') {
                     console.log(`🔄 USING CLIENT-FIRST STRATEGY FOR ${key.toUpperCase()} (respecting deletions)`);
                     
-                    // 🔧 КРИТИЧНОЕ ИСПРАВЛЕНИЕ: Проверяем является ли это новой сессией
-                    // Если локальные данные пустые НО сессия новая - используем серверные данные
+                    // 🔧 ИСПРАВЛЕНИЕ: Более надежная проверка новой сессии
+                    // Проверяем реально ли это свежая сессия (инкогнито, новое устройство)
+                    const hasAnyLocalStorageData = localStorage.length > 0;
+                    const userStorageKeys = Object.keys(localStorage).filter(key => key.startsWith(this.currentUser.uid + '_'));
+                    const hasUserData = userStorageKeys.length > 0;
+                    const isReallyNewSession = !hasUserData && !this.lastSyncTime;
+                    
+                    // 🔧 СТАРАЯ ЛОГИКА (может быть неточной для инкогнито)
                     const isNewSession = localArray.length === 0 && !this.lastSyncTime;
                     const hasRealLocalChanges = localArray.length > 0 || this.lastSyncTime;
                     
                     // 🐞 DEBUG: Подробные логи для отладки Quick Actions синхронизации
                     console.log(`🐞 DEBUG ${key.toUpperCase()} SYNC:`, {
                       isNewSession,
+                      isReallyNewSession,
                       hasRealLocalChanges,
                       localArrayLength: localArray.length,
                       serverArrayLength: serverArray.length,
                       lastSyncTime: this.lastSyncTime,
                       userEmail: this.currentUser?.email,
+                      storageInfo: {
+                        hasAnyLocalStorageData,
+                        userStorageKeysCount: userStorageKeys.length,
+                        hasUserData,
+                        userStorageKeys: userStorageKeys.slice(0, 3) // первые 3 ключа для отладки
+                      },
                       sessionInfo: {
                         isIncognito: !this.lastSyncTime && localArray.length === 0,
-                        isMainBrowser: !!this.lastSyncTime || localArray.length > 0
+                        isMainBrowser: !!this.lastSyncTime || localArray.length > 0,
+                        isDetectedAsNew: isReallyNewSession
                       },
                       localData: localArray,
                       serverData: serverArray
                     });
                     
-                    if (isNewSession) {
-                        console.log(`🆕 NEW SESSION DETECTED for ${key}: Using server-first approach for initial load`);
+                    // 🔧 ИСПОЛЬЗУЕМ УЛУЧШЕННУЮ ЛОГИКУ
+                    if (isReallyNewSession) {
+                        console.log(`🆕 REALLY NEW SESSION DETECTED for ${key}: Using server-first approach for initial load`);
                         console.log(`🐞 DEBUG: Server has ${serverArray.length} items:`, serverArray);
                         // Для новых сессий используем server-first подход
                         mergedData = [...serverArray];
