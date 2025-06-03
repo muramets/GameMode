@@ -2263,15 +2263,30 @@ class Storage {
           // 🔧 КРИТИЧНО: Очищаем флаги удаления только если сервер подтвердил пустую историю
           const deletedCheckins = this.get('deletedCheckins') || [];
           const serverHistory = serverData.history || [];
-          if (deletedCheckins.length > 0 && serverHistory.length === 0) {
-            console.log('🧹 SERVER CONFIRMED EMPTY: Clearing deletion flags as server history is now empty');
-            console.log('📊 Clearing', deletedCheckins.length, 'deletion flags after server confirmation');
-            this.set('deletedCheckins', []);
-            console.log('✅ DELETION FLAGS CLEARED: New checkins will now work normally');
-            console.log('🎯 Clear All operation is now fully complete');
-          } else if (deletedCheckins.length > 0 && serverHistory.length > 0) {
-            console.log('⚠️ SERVER STILL HAS HISTORY: Keeping deletion flags as server returned', serverHistory.length, 'items');
-            console.log('🛡️ Protection remains active until server is truly empty');
+          
+          // 🔧 ИСПРАВЛЕНИЕ: Проверяем РЕАЛЬНЫЕ серверные данные, а не результат мержа
+          // Если был активен Clear All Protection, то результат мержа может быть пуст
+          // но сервер все еще содержит данные которые были заблокированы защитой
+          const wasProtectionActive = Object.values(mergeResults).some(result => 
+            result.action === 'clear_all_smart_protection' || 
+            result.action === 'clear_all_protection_active'
+          );
+          
+          if (deletedCheckins.length > 0) {
+            if (serverHistory.length === 0 && !wasProtectionActive) {
+              console.log('🧹 SERVER CONFIRMED EMPTY: Clearing deletion flags as server history is now empty');
+              console.log('📊 Clearing', deletedCheckins.length, 'deletion flags after server confirmation');
+              this.set('deletedCheckins', []);
+              console.log('✅ DELETION FLAGS CLEARED: New checkins will now work normally');
+              console.log('🎯 Clear All operation is now fully complete');
+            } else if (serverHistory.length > 0) {
+              console.log('⚠️ SERVER STILL HAS HISTORY: Keeping deletion flags as server returned', serverHistory.length, 'items');
+              console.log('🛡️ Protection remains active until server is truly empty');
+            } else if (wasProtectionActive) {
+              console.log('🛡️ KEEPING DELETION FLAGS: Clear All Protection was active - server may still contain blocked items');
+              console.log('📊 Server items were blocked by protection:', serverHistory.length, 'items');
+              console.log('🛡️ Will clear flags only when server is ACTUALLY empty without protection intervention');
+            }
           }
           
           // 🔄 КРИТИЧНО: Обработка Order массивов ПОСЛЕ обновления всех данных
