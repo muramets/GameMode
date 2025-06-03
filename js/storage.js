@@ -887,6 +887,12 @@ class Storage {
     console.log('🗑️ Deleted checkins list cleared');
   }
 
+  // Clear the list of deleted protocols (for debugging)
+  clearDeletedProtocols() {
+    this.set('deletedProtocols', []);
+    console.log('🗑️ Deleted protocols list cleared');
+  }
+
   // Calculate current skill score
   calculateCurrentScore(skillId) {
     const skill = this.getSkillById(skillId);
@@ -1331,6 +1337,17 @@ class Storage {
       return false; // Protocol not found
     }
     
+    // 🔧 НОВОЕ: Отслеживаем удаленные протоколы аналогично deletedCheckins
+    const deletedProtocols = this.get('deletedProtocols') || [];
+    if (!deletedProtocols.includes(protocolId)) {
+      deletedProtocols.push(protocolId);
+      this.set('deletedProtocols', deletedProtocols);
+      console.log(`🗑️ PROTOCOL DELETION TRACKED: Added protocol ${protocolId} to deletedProtocols list`, {
+        protocolId,
+        deletedProtocolsCount: deletedProtocols.length
+      });
+    }
+    
     // Remove from protocols
     this.set(this.KEYS.PROTOCOLS, filteredProtocols);
     
@@ -1721,14 +1738,15 @@ class Storage {
       'skills': 'SKILLS',
       'states': 'STATES',
       'history': 'HISTORY',
-      'deletedCheckins': 'deletedCheckins' // Special case - not in KEYS object
+      'deletedCheckins': 'deletedCheckins', // Special case - not in KEYS object
+      'deletedProtocols': 'deletedProtocols' // Special case - not in KEYS object
     };
     
     const mappedKey = keyMap[serverKey];
     if (mappedKey) {
-      // For deletedCheckins, return the key directly (not through KEYS)
-      if (serverKey === 'deletedCheckins') {
-        return 'deletedCheckins';
+      // For deletedCheckins and deletedProtocols, return the key directly (not through KEYS)
+      if (serverKey === 'deletedCheckins' || serverKey === 'deletedProtocols') {
+        return serverKey;
       }
       // For other keys, use KEYS object
       return this.KEYS[mappedKey];
@@ -1781,7 +1799,8 @@ class Storage {
         protocolOrder: this.get(this.KEYS.PROTOCOL_ORDER),
         skillOrder: this.get(this.KEYS.SKILL_ORDER),
         stateOrder: this.get(this.KEYS.STATE_ORDER),
-        deletedCheckins: this.get('deletedCheckins') || []
+        deletedCheckins: this.get('deletedCheckins') || [],
+        deletedProtocols: this.get('deletedProtocols') || []
       };
       
       // 🐞 DEBUG: Логируем отправляемые данные Quick Actions
@@ -2103,6 +2122,13 @@ class Storage {
                     for (const serverItem of serverArray) {
                         const localItem = mergedData.find(m => m.id === serverItem.id);
                         if (!localItem) {
+                            // 🔧 НОВОЕ: Проверяем не был ли этот протокол удален пользователем
+                            const deletedProtocols = this.get('deletedProtocols') || [];
+                            if (deletedProtocols.includes(serverItem.id)) {
+                                console.log(`🗑️ Protocol ${serverItem.id} was deleted by user, not restoring from server`);
+                                continue; // Пропускаем удаленный протокол
+                            }
+                            
                             console.log(`📋 Protocol ${serverItem.id} found only on server, adding as new protocol`);
                             mergedData.push(serverItem);
                             hasUpdates = true;
@@ -2355,6 +2381,16 @@ class Storage {
                         });
                     }
                     
+                    // 🔧 НОВОЕ: Фильтрация undefined элементов для deletedProtocols
+                    if (key === 'deletedProtocols') {
+                        mergedData = mergedData.filter(item => item !== undefined && item !== null);
+                        console.log(`🔧 FILTERED undefined items from local ${key}:`, {
+                            before: localArray.length,
+                            after: mergedData.length,
+                            filtered: localArray.length - mergedData.length
+                        });
+                    }
+                    
                     // Затем добавляем серверные элементы, которых нет локально
                     for (const item of serverArray) {
                         // 🔧 ИСПРАВЛЕНИЕ: Пропускаем undefined элементы
@@ -2375,6 +2411,8 @@ class Storage {
                         
                         // 🔧 ФИНАЛЬНАЯ ДЕДУПЛИКАЦИЯ и фильтрация
                         if (key === 'deletedCheckins') {
+                            mergedData = mergedData.filter(item => item !== undefined && item !== null);
+                        } else if (key === 'deletedProtocols') {
                             mergedData = mergedData.filter(item => item !== undefined && item !== null);
                         } else if (mergedData.length > 0 && mergedData[0] && typeof mergedData[0] === 'object' && mergedData[0].id) {
                             // Дедупликация для объектов с ID
