@@ -126,8 +126,20 @@ class Storage {
   
   // Get user-specific key
   getUserKey(key) {
-    if (!this.currentUser) return key;
-    return `${this.currentUser.uid}_${key}`;
+    if (!this.currentUser) {
+      console.warn('🚨 CRITICAL: getUserKey called without authenticated user for key:', key);
+      console.trace('📍 Stack trace for getUserKey without user:');
+      // Don't fallback to non-user key to prevent data leakage
+      throw new Error(`Cannot access user data before authentication: ${key}`);
+    }
+    const userKey = `${this.currentUser.uid}_${key}`;
+    console.log('🔑 STORAGE KEY:', {
+      originalKey: key,
+      userKey,
+      userId: this.currentUser.uid,
+      userEmail: this.currentUser.email
+    });
+    return userKey;
   }
 
   // Keys
@@ -252,10 +264,24 @@ class Storage {
   // Get data from localStorage
   get(key) {
     try {
-      const data = localStorage.getItem(this.getUserKey(key));
-      return data ? JSON.parse(data) : null;
+      const userKey = this.getUserKey(key);
+      const data = localStorage.getItem(userKey);
+      const parsed = data ? JSON.parse(data) : null;
+      console.log('📥 STORAGE GET:', {
+        key,
+        userKey,
+        hasData: !!data,
+        dataLength: Array.isArray(parsed) ? parsed.length : typeof parsed,
+        userId: this.currentUser?.uid,
+        userEmail: this.currentUser?.email
+      });
+      return parsed;
     } catch (e) {
-      console.error('Error reading from localStorage:', e);
+      console.error('❌ Error reading from localStorage:', {
+        key,
+        error: e.message,
+        userId: this.currentUser?.uid
+      });
       return null;
     }
   }
@@ -263,10 +289,23 @@ class Storage {
   // Set data to localStorage
   set(key, value) {
     try {
-      localStorage.setItem(this.getUserKey(key), JSON.stringify(value));
+      const userKey = this.getUserKey(key);
+      localStorage.setItem(userKey, JSON.stringify(value));
+      console.log('📤 STORAGE SET:', {
+        key,
+        userKey,
+        valueType: typeof value,
+        valueLength: Array.isArray(value) ? value.length : typeof value,
+        userId: this.currentUser?.uid,
+        userEmail: this.currentUser?.email
+      });
       return true;
     } catch (e) {
-      console.error('Error writing to localStorage:', e);
+      console.error('❌ Error writing to localStorage:', {
+        key,
+        error: e.message,
+        userId: this.currentUser?.uid
+      });
       return false;
     }
   }
@@ -1534,7 +1573,7 @@ class Storage {
                                     mergedMap.set(item.id, { ...item, source: 'server' });
                                 } else if (localEffectsCount > serverEffectsCount) {
                                     console.log(`📋 History item ${item.id}: keeping local version (${localEffectsCount} effects vs ${serverEffectsCount})`);
-                                } else {
+                        } else {
                                     console.log(`📋 History item ${item.id}: same effects count (${localEffectsCount}), keeping local version`);
                                 }
                             } else {
@@ -1712,44 +1751,44 @@ class Storage {
                         mergedData = [...localArray];
                         
                     } else {
-                        // Для всех остальных данных - умная стратегия:
-                        // 1. Локальные элементы остаются (если есть конфликт)
-                        // 2. Серверные элементы добавляются (если их нет локально)
-                        
-                        // Сначала добавляем все локальные элементы
-                        mergedData = [...localArray];
-                        
-                        // Затем добавляем серверные элементы, которых нет локально
-                        for (const item of serverArray) {
-                            const existsLocally = mergedData.find(m => m.id === item.id);
-                            if (existsLocally) {
-                                console.log(`📋 ${key} item ${item.id} exists in both local and server, keeping local version`);
-                            } else {
-                                console.log(`📋 ${key} item ${item.id} found only on server, adding to local`);
-                                mergedData.push(item);
+                    // Для всех остальных данных - умная стратегия:
+                    // 1. Локальные элементы остаются (если есть конфликт)
+                    // 2. Серверные элементы добавляются (если их нет локально)
+                    
+                    // Сначала добавляем все локальные элементы
+                    mergedData = [...localArray];
+                    
+                    // Затем добавляем серверные элементы, которых нет локально
+                    for (const item of serverArray) {
+                        const existsLocally = mergedData.find(m => m.id === item.id);
+                        if (existsLocally) {
+                            console.log(`📋 ${key} item ${item.id} exists in both local and server, keeping local version`);
+                        } else {
+                            console.log(`📋 ${key} item ${item.id} found only on server, adding to local`);
+                            mergedData.push(item);
                                 hasUpdates = true;
                             }
                         }
+                        }
                     }
                 }
-              }
-              
-              // Определяем действие мержа для статистики
-              const originalLocalCount = localArray.length;
-              const originalServerCount = serverArray.length;
-              const mergedCount = mergedData.length;
-              
-              if (mergedCount > originalLocalCount) {
-                mergeAction = `merged_gained_${mergedCount - originalLocalCount}_items`;
-                hasUpdates = true;
-              } else if (mergedCount === originalLocalCount) {
-                mergeAction = 'no_new_items_found';
-              } else {
-                mergeAction = `merged_deduplicated_${originalLocalCount - mergedCount}_items`;
-                hasUpdates = true;
-              }
-              
-              // If merged data differs from server, mark for sync
+                
+                // Определяем действие мержа для статистики
+                const originalLocalCount = localArray.length;
+                const originalServerCount = serverArray.length;
+                const mergedCount = mergedData.length;
+                
+                if (mergedCount > originalLocalCount) {
+                  mergeAction = `merged_gained_${mergedCount - originalLocalCount}_items`;
+                  hasUpdates = true;
+                } else if (mergedCount === originalLocalCount) {
+                  mergeAction = 'no_new_items_found';
+                } else {
+                  mergeAction = `merged_deduplicated_${originalLocalCount - mergedCount}_items`;
+                  hasUpdates = true;
+                }
+                
+                // If merged data differs from server, mark for sync
               // 🚨 КРИТИЧНО: НЕ отправляем данные при server-first стратегии
               // если мы просто получили больше данных с сервера
               if (key === 'protocols' || key === 'skills' || key === 'quickActions' || key === 'quickActionOrder' || key === 'states') {
@@ -2051,7 +2090,7 @@ class Storage {
 
           // 🔍 АВТОМАТИЧЕСКАЯ ПРОВЕРКА ЦЕЛОСТНОСТИ ДАННЫХ
           await this.performDataIntegrityCheck();
-
+          
           // Show user-friendly notification about merge results
           if (hasUpdates && window.App) {
             const updates = Object.entries(mergeResults)
