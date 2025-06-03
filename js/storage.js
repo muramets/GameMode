@@ -10,6 +10,9 @@ class Storage {
     // 🔧 ИСПРАВЛЕНИЕ: Флаг блокировки синхронизации во время Clear All
     this.clearAllInProgress = false;
     
+    // 🔧 НОВОЕ: Защита от множественных параллельных синхронизаций
+    this.syncInProgress = false;
+    
     // Listen for online/offline status
     window.addEventListener('online', () => {
       this.isOnline = true;
@@ -523,9 +526,20 @@ class Storage {
       // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ ПЕРЕСЧЕТА ИСТОРИИ
       // 🔧 НО ТОЛЬКО ЕСЛИ НЕ ВЫПОЛНЯЕТСЯ Clear All
       if (!this.clearAllInProgress && !hasEmptyLocalHistory && !hasMassiveDeletion) {
-        this.syncWithBackend().catch(error => {
-          console.warn('⚠️ Background sync after recalculation failed:', error);
-        });
+        // 🔧 НОВОЕ: Проверяем не идет ли уже синхронизация
+        if (!this.syncInProgress) {
+          console.log('🚀 SCHEDULING BACKGROUND SYNC: Protocol history recalculation completed');
+          // Небольшая задержка чтобы избежать конфликтов с другими синхронизациями
+          setTimeout(() => {
+            if (!this.syncInProgress) { // Двойная проверка
+              this.syncWithBackend().catch(error => {
+                console.warn('⚠️ Background sync after recalculation failed:', error);
+              });
+            }
+          }, 500);
+        } else {
+          console.log('🚫 BACKGROUND SYNC SKIPPED: Another sync already in progress');
+        }
       } else {
         console.log('🚫 SYNC BLOCKED: Clear All protection preventing sync after protocol recalculation');
       }
@@ -1429,9 +1443,18 @@ class Storage {
     }
     
     // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ ДОБАВЛЕНИЯ В QUICK ACTIONS
-    this.syncWithBackend().catch(error => {
-      console.warn('⚠️ Background sync after quick action addition failed:', error);
-    });
+    if (!this.syncInProgress) {
+      console.log('🚀 SCHEDULING BACKGROUND SYNC: Quick action added');
+      setTimeout(() => {
+        if (!this.syncInProgress) {
+          this.syncWithBackend().catch(error => {
+            console.warn('⚠️ Background sync after quick action addition failed:', error);
+          });
+        }
+      }, 300);
+    } else {
+      console.log('🚫 BACKGROUND SYNC SKIPPED: Another sync already in progress (quick action add)');
+    }
     
     return true;
   }
@@ -1470,9 +1493,18 @@ class Storage {
     }
     
     // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ УДАЛЕНИЯ ИЗ QUICK ACTIONS
-    this.syncWithBackend().catch(error => {
-      console.warn('⚠️ Background sync after quick action removal failed:', error);
-    });
+    if (!this.syncInProgress) {
+      console.log('🚀 SCHEDULING BACKGROUND SYNC: Quick action removed');
+      setTimeout(() => {
+        if (!this.syncInProgress) {
+          this.syncWithBackend().catch(error => {
+            console.warn('⚠️ Background sync after quick action removal failed:', error);
+          });
+        }
+      }, 300);
+    } else {
+      console.log('🚫 BACKGROUND SYNC SKIPPED: Another sync already in progress (quick action remove)');
+    }
     
     return true;
   }
@@ -1616,6 +1648,12 @@ class Storage {
       return;
     }
     
+    // 🔧 НОВОЕ: Защита от множественных параллельных синхронизаций
+    if (this.syncInProgress) {
+      console.log('🚫 SYNC BLOCKED: Another sync already in progress, skipping duplicate sync');
+      return;
+    }
+    
     if (!this.isOnline || !this.currentUser) {
       console.log('🚫 SYNC SKIPPED:', {
         isOnline: this.isOnline,
@@ -1624,6 +1662,9 @@ class Storage {
       });
       return;
     }
+    
+    // 🔧 УСТАНАВЛИВАЕМ ФЛАГ СИНХРОНИЗАЦИИ
+    this.syncInProgress = true;
     
     console.log('🔄 SYNC STARTED:', {
       user: this.currentUser.email,
@@ -2508,6 +2549,9 @@ class Storage {
         
         console.log('✅ SYNC COMPLETED SUCCESSFULLY');
         
+        // 🔧 СБРАСЫВАЕМ ФЛАГ СИНХРОНИЗАЦИИ
+        this.syncInProgress = false;
+        
         // Do NOT clear deleted checkins list anymore
         // (we need to keep track of deletions permanently until they're processed by server)
         // this.set('deletedCheckins', []);
@@ -2640,6 +2684,10 @@ class Storage {
         stack: error.stack,
         name: error.name
       });
+      
+      // 🔧 СБРАСЫВАЕМ ФЛАГ СИНХРОНИЗАЦИИ при ошибке
+      this.syncInProgress = false;
+      
       this.markForSync();
       throw error;
     }
