@@ -2060,6 +2060,12 @@ class Storage {
                     const isNewSession = localArray.length === 0 && !this.lastSyncTime;
                     const hasRealLocalChanges = localArray.length > 0 || this.lastSyncTime;
                     
+                    // 🔧 КРИТИЧНОЕ ИСПРАВЛЕНИЕ: Умная обработка пустого сервера
+                    // Если сервер пустой, а локально есть данные - это может быть удаление на другом устройстве
+                    const serverIsEmpty = !hasServerData || serverArray.length === 0;
+                    const localHasData = hasLocalData && localArray.length > 0;
+                    const possibleServerDeletion = serverIsEmpty && localHasData && this.lastSyncTime;
+                    
                     // 🐞 DEBUG: Подробные логи для отладки Quick Actions синхронизации
                     console.log(`🐞 DEBUG ${key.toUpperCase()} SYNC:`, {
                       isNewSession,
@@ -2069,6 +2075,11 @@ class Storage {
                       serverArrayLength: serverArray.length,
                       lastSyncTime: this.lastSyncTime,
                       userEmail: this.currentUser?.email,
+                      serverIsEmpty,
+                      localHasData,
+                      possibleServerDeletion,
+                      decision: possibleServerDeletion ? 'SERVER_DELETION_DETECTED' : 
+                               isReallyNewSession ? 'NEW_SESSION_LOAD_SERVER' : 'CLIENT_FIRST_EXISTING_SESSION',
                       storageInfo: {
                         hasAnyLocalStorageData,
                         userStorageKeysCount: userStorageKeys.length,
@@ -2084,8 +2095,21 @@ class Storage {
                       serverData: serverArray
                     });
                     
-                    // 🔧 ИСПОЛЬЗУЕМ УЛУЧШЕННУЮ ЛОГИКУ
-                    if (isReallyNewSession) {
+                    // 🔧 НОВАЯ ЛОГИКА: Учитываем возможность удаления на сервере
+                    if (possibleServerDeletion) {
+                        console.log(`🗑️ SERVER DELETION DETECTED for ${key}: Server is empty but local has data`);
+                        console.log(`🗑️ This likely means items were deleted on another device`);
+                        console.log(`🔄 Applying server state (empty) to respect deletions`);
+                        
+                        // Применяем серверное состояние (пустой массив)
+                        mergedData = [];
+                        
+                        // Это изменение - нужна синхронизация чтобы убедиться что локальные изменения не потеряны
+                        hasUpdates = true;
+                        
+                        console.log(`✅ ${key} cleared to match server deletion`);
+                        
+                    } else if (isReallyNewSession) {
                         console.log(`🆕 REALLY NEW SESSION DETECTED for ${key}: Using server-first approach for initial load`);
                         console.log(`🐞 DEBUG: Server has ${serverArray.length} items:`, serverArray);
                         // Для новых сессий используем server-first подход
