@@ -279,17 +279,33 @@ function initMainApp() {
             if (clearBtn) {
                 clearBtn.addEventListener('click', () => {
                     if (confirm('Are you sure you want to clear all history? This cannot be undone.')) {
-                        window.Storage.clearAllCheckins();
-                        this.filteredHistory = [];
+                        console.log('🗑️ USER CONFIRMED: Clear All History');
                         
-                        // Clear search input
-                        const historySearchInput = document.getElementById('history-search');
-                        if (historySearchInput) {
-                            historySearchInput.value = '';
+                        // Show immediate feedback
+                        this.showToast('Clearing history...', 'info');
+                        
+                        // Clear history and get result
+                        const result = window.Storage.clearAllCheckins();
+                        
+                        if (result) {
+                            this.filteredHistory = [];
+                            
+                            // Clear search input
+                            const historySearchInput = document.getElementById('history-search');
+                            if (historySearchInput) {
+                                historySearchInput.value = '';
+                            }
+                            
+                            // Show success message with sync info
+                            this.showToast('History cleared and syncing to server...', 'success');
+                            
+                            // Re-render the page to show empty history
+                            this.renderPage('history');
+                            
+                            console.log('✅ UI UPDATED: History page refreshed, showing cleared state');
+                        } else {
+                            this.showToast('Failed to clear history', 'error');
                         }
-                        
-                        this.showToast('History cleared', 'success');
-                        this.renderPage('history');
                     }
                 });
             }

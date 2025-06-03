@@ -7,10 +7,18 @@ class Storage {
     this.lastSyncTime = null;
     this.currentUser = null;
     
+    // 🔧 ИСПРАВЛЕНИЕ: Флаг блокировки синхронизации во время Clear All
+    this.clearAllInProgress = false;
+    
     // Listen for online/offline status
     window.addEventListener('online', () => {
       this.isOnline = true;
+      // 🔧 КРИТИЧНО: Не запускаем синхронизацию во время Clear All
+      if (!this.clearAllInProgress) {
       this.syncPendingChanges();
+      } else {
+        console.log('🚫 AUTO-SYNC BLOCKED: Clear All in progress, deferring online sync');
+      }
     });
     
     window.addEventListener('offline', () => {
@@ -133,12 +141,13 @@ class Storage {
       throw new Error(`Cannot access user data before authentication: ${key}`);
     }
     const userKey = `${this.currentUser.uid}_${key}`;
-    console.log('🔑 STORAGE KEY:', {
-      originalKey: key,
-      userKey,
-      userId: this.currentUser.uid,
-      userEmail: this.currentUser.email
-    });
+    // 🔇 ЛОГИ ОТКЛЮЧЕНЫ - слишком шумные
+    // console.log('🔑 STORAGE KEY:', {
+    //   originalKey: key,
+    //   userKey,
+    //   userId: this.currentUser.uid,
+    //   userEmail: this.currentUser.email
+    // });
     return userKey;
   }
 
@@ -267,14 +276,15 @@ class Storage {
       const userKey = this.getUserKey(key);
       const data = localStorage.getItem(userKey);
       const parsed = data ? JSON.parse(data) : null;
-      console.log('📥 STORAGE GET:', {
-        key,
-        userKey,
-        hasData: !!data,
-        dataLength: Array.isArray(parsed) ? parsed.length : typeof parsed,
-        userId: this.currentUser?.uid,
-        userEmail: this.currentUser?.email
-      });
+      // 🔇 ЛОГИ ОТКЛЮЧЕНЫ - слишком шумные
+      // console.log('📥 STORAGE GET:', {
+      //   key,
+      //   userKey,
+      //   hasData: !!data,
+      //   dataLength: Array.isArray(parsed) ? parsed.length : typeof parsed,
+      //   userId: this.currentUser?.uid,
+      //   userEmail: this.currentUser?.email
+      // });
       return parsed;
     } catch (e) {
       console.error('❌ Error reading from localStorage:', {
@@ -291,14 +301,15 @@ class Storage {
     try {
       const userKey = this.getUserKey(key);
       localStorage.setItem(userKey, JSON.stringify(value));
-      console.log('📤 STORAGE SET:', {
-        key,
-        userKey,
-        valueType: typeof value,
-        valueLength: Array.isArray(value) ? value.length : typeof value,
-        userId: this.currentUser?.uid,
-        userEmail: this.currentUser?.email
-      });
+      // 🔇 ЛОГИ ОТКЛЮЧЕНЫ - слишком шумные
+      // console.log('📤 STORAGE SET:', {
+      //   key,
+      //   userKey,
+      //   valueType: typeof value,
+      //   valueLength: Array.isArray(value) ? value.length : typeof value,
+      //   userId: this.currentUser?.uid,
+      //   userEmail: this.currentUser?.email
+      // });
       return true;
     } catch (e) {
       console.error('❌ Error writing to localStorage:', {
@@ -422,6 +433,32 @@ class Storage {
       timestamp: new Date().toISOString()
     });
     
+    // 🔧 КРИТИЧНО: Блокируем пересчет протоколов во время Clear All
+    // Это предотвращает бесконечные циклы синхронизации после Clear All
+    if (this.clearAllInProgress) {
+      console.log('🚫 PROTOCOL RECALCULATION BLOCKED: Clear All operation in progress');
+      console.log('🚫 Preventing protocol recalculation during Clear All to avoid sync loops');
+      return false;
+    }
+    
+    // Дополнительная проверка на случай если флаг clearAllInProgress уже сброшен
+    // но мы все еще в состоянии после Clear All (пустая история + много флагов удаления)
+    const deletedCheckins = this.get('deletedCheckins') || [];
+    const currentHistory = this.getCheckins();
+    const hasEmptyLocalHistory = currentHistory.length === 0 && deletedCheckins.length > 0;
+    const hasMassiveDeletion = deletedCheckins.length > 0 && deletedCheckins.length >= currentHistory.length;
+    
+    if (hasEmptyLocalHistory || hasMassiveDeletion) {
+      console.log('🚫 PROTOCOL RECALCULATION BLOCKED: Clear All aftermath detected', {
+        protocolId,
+        historyLength: currentHistory.length,
+        deletedFlagsCount: deletedCheckins.length,
+        reason: hasEmptyLocalHistory ? 'Empty history + deletion flags' : 'Massive deletion detected'
+      });
+      console.log('🚫 Preventing protocol recalculation after Clear All to avoid sync loops');
+      return false;
+    }
+    
     const checkins = this.getCheckins();
     const protocol = this.getProtocolById(protocolId);
     if (!protocol) {
@@ -484,9 +521,14 @@ class Storage {
       console.log(`✅ RECALCULATION COMPLETE: Updated ${affectedCheckins} checkins for protocol ${protocolId}`);
       
       // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ ПЕРЕСЧЕТА ИСТОРИИ
-      this.syncWithBackend().catch(error => {
-        console.warn('⚠️ Background sync after recalculation failed:', error);
-      });
+      // 🔧 НО ТОЛЬКО ЕСЛИ НЕ ВЫПОЛНЯЕТСЯ Clear All
+      if (!this.clearAllInProgress && !hasEmptyLocalHistory && !hasMassiveDeletion) {
+        this.syncWithBackend().catch(error => {
+          console.warn('⚠️ Background sync after recalculation failed:', error);
+        });
+      } else {
+        console.log('🚫 SYNC BLOCKED: Clear All protection preventing sync after protocol recalculation');
+      }
     } else {
       console.log(`ℹ️ RECALCULATION SKIPPED: No changes needed for protocol ${protocolId}`);
     }
@@ -610,9 +652,99 @@ class Storage {
   }
 
   // Clear all checkins
-  clearAllCheckins() {
+  async clearAllCheckins() {
+    console.log('🗑️ CLEAR ALL CHECKINS: Starting complete history cleanup...');
+    
+    // 🔧 БЛОКИРОВКА СИНХРОНИЗАЦИИ во время Clear All
+    this.clearAllInProgress = true;
+    console.log('🚫 SYNC LOCK: Blocking all synchronization during Clear All');
+    
+    const userEmail = this.currentUser?.email || 'unknown';
+    const checkins = this.getCheckins();
+    
+    console.log('📊 CLEAR ALL STATS:', {
+      totalCheckinsToDelete: checkins.length,
+      checkinIds: checkins.slice(0, 5).map(c => c.id),
+      userEmail,
+      timestamp: new Date().toISOString()
+    });
+    
+    if (checkins.length === 0) {
+      console.log('ℹ️ No checkins to clear');
+      this.clearAllInProgress = false;
+      return;
+    }
+    
+    // Mark all current checkins as deleted
+    const existingDeleted = this.get('deletedCheckins') || [];
+    const allCheckinIds = checkins.map(c => c.id);
+    const newDeleted = allCheckinIds.filter(id => !existingDeleted.includes(id));
+    const combinedDeleted = [...existingDeleted, ...newDeleted];
+    
+    console.log('🚫 DELETED FLAGS:', {
+      previouslyDeleted: existingDeleted.length,
+      newlyDeleted: newDeleted.length,
+      totalDeleted: combinedDeleted.length
+    });
+    
+    // Save deletion flags
+    this.set('deletedCheckins', combinedDeleted);
+    
+    // Clear the history from localStorage
     this.set(this.KEYS.HISTORY, []);
-    console.log('📊 All checkins cleared');
+    console.log('📊 All checkins cleared from localStorage');
+    
+    // 📊 ПРОВЕРКА СОСТОЯНИЯ ПОСЛЕ ОЧИСТКИ
+    const historyAfterClear = this.getCheckins();
+    const deletedAfterClear = this.get('deletedCheckins') || [];
+    console.log('🔍 STATE AFTER CLEAR:', {
+      historyLength: historyAfterClear.length,
+      deletedCheckinsLength: deletedAfterClear.length,
+      clearAllCondition: historyAfterClear.length === 0 && deletedAfterClear.length > 0,
+      timestamp: new Date().toISOString()
+    });
+    
+    console.log('🖥️ UPDATING UI immediately after clear...');
+    
+    // Force clear app history cache and refresh immediately
+    if (window.App) {
+      window.App.filteredHistory = [];
+    }
+    console.log('📄 UI updated immediately after clear');
+    
+    // Update stats
+    if (window.UI && window.UI.updateUserStats) {
+      window.UI.updateUserStats();
+    }
+    console.log('📊 Stats updated after clear');
+    
+    console.log('🔄 TRIGGERING SERVER SYNC after clear all...');
+    
+    // 🔧 РАЗБЛОКИРОВКА СИНХРОНИЗАЦИИ после завершения очистки
+    this.clearAllInProgress = false;
+    console.log('✅ SYNC LOCK RELEASED: Re-enabling synchronization');
+    
+    // 🔧 ОТЛОЖЕННАЯ СИНХРОНИЗАЦИЯ: Ждем немного чтобы избежать бесконечного цикла
+    console.log('⏰ DELAYING SYNC: Waiting 2 seconds to prevent infinite loop...');
+    setTimeout(async () => {
+      try {
+        console.log('🔄 EXECUTING DELAYED CLEAR ALL SYNC...');
+        await this.syncWithBackend();
+        console.log('✅ CLEAR ALL: Delayed server sync completed successfully');
+      } catch (error) {
+        console.error('❌ CLEAR ALL: Delayed server sync failed:', error);
+      }
+    }, 2000);
+    
+    console.log('🎯 CLEAR ALL COMPLETE: All history cleared and marked for delayed server sync');
+    
+    // Update UI one more time to ensure clean state
+    if (window.App) {
+      window.App.filteredHistory = [];
+      if (window.App.currentPage === 'history') {
+        window.App.renderPage('history');
+      }
+    }
   }
 
   // Clear the list of deleted checkins (for debugging)
@@ -1344,27 +1476,28 @@ class Storage {
     const customOrder = this.getQuickActionOrder();
     const protocols = this.getProtocols();
     
-    console.log('🔍 getQuickActionsInOrder DEBUG:', {
-      quickActionIds,
-      customOrder,
-      protocols: protocols.length,
-      quickActionKey: 'quickActions',
-      quickActionOrderKey: 'quickActionOrder',
-      // 🔧 ДОПОЛНИТЕЛЬНАЯ ОТЛАДКА для проблемы с пустыми Quick Actions
-      rawQuickActions: this.get(this.KEYS.QUICK_ACTIONS),
-      rawQuickActionOrder: this.get(this.KEYS.QUICK_ACTION_ORDER),
-      // 🔧 ПОЛНАЯ ОТЛАДКА ключей localStorage
-      keyMappings: {
-        QUICK_ACTIONS: this.KEYS.QUICK_ACTIONS,
-        QUICK_ACTION_ORDER: this.KEYS.QUICK_ACTION_ORDER
-      },
-      getQuickActionsMethod: this.getQuickActions(),
-      getQuickActionOrderMethod: this.getQuickActionOrder()
-    });
+    // 🔇 ЛОГИ ОТКЛЮЧЕНЫ - слишком шумные (повторяются десятки раз)
+    // console.log('🔍 getQuickActionsInOrder DEBUG:', {
+    //   quickActionIds,
+    //   customOrder,
+    //   protocols: protocols.length,
+    //   quickActionKey: 'quickActions',
+    //   quickActionOrderKey: 'quickActionOrder',
+    //   // 🔧 ДОПОЛНИТЕЛЬНАЯ ОТЛАДКА для проблемы с пустыми Quick Actions
+    //   rawQuickActions: this.get(this.KEYS.QUICK_ACTIONS),
+    //   rawQuickActionOrder: this.get(this.KEYS.QUICK_ACTION_ORDER),
+    //   // 🔧 ПОЛНАЯ ОТЛАДКА ключей localStorage
+    //   keyMappings: {
+    //     QUICK_ACTIONS: this.KEYS.QUICK_ACTIONS,
+    //     QUICK_ACTION_ORDER: this.KEYS.QUICK_ACTION_ORDER
+    //   },
+    //   getQuickActionsMethod: this.getQuickActions(),
+    //   getQuickActionOrderMethod: this.getQuickActionOrder()
+    // });
     
     // If no quick actions, return empty
     if (!quickActionIds || quickActionIds.length === 0) {
-      console.log('🚨 getQuickActionsInOrder: No quickActionIds found');
+      // console.log('🚨 getQuickActionsInOrder: No quickActionIds found');
       return [];
     }
     
@@ -1374,18 +1507,20 @@ class Storage {
     const result = [];
     for (const protocolId of orderToUse) {
       const protocol = protocols.find(p => p.id == protocolId);
-      console.log(`🔍 Looking for protocol ${protocolId}: ${protocol ? 'Found: ' + protocol.name : 'Not found'}`);
+      // 🔇 ОТКЛЮЧАЮ ШУМНЫЙ ЛОГ - повторяется 80+ раз
+      // console.log(`🔍 Looking for protocol ${protocolId}: ${protocol ? 'Found: ' + protocol.name : 'Not found'}`);
       
       if (protocol) {
         result.push(protocol);
       }
     }
     
-    console.log('🔍 getQuickActionsInOrder RESULT:', {
-      orderToUse,
-      foundProtocols: result.length,
-      result: result.map(p => ({id: p.id, name: p.name}))
-    });
+    // 🔇 ЛОГИ ОТКЛЮЧЕНЫ - слишком шумные
+    // console.log('🔍 getQuickActionsInOrder RESULT:', {
+    //   orderToUse,
+    //   foundProtocols: result.length,
+    //   result: result.map(p => ({id: p.id, name: p.name}))
+    // });
     
     return result;
   }
@@ -1415,6 +1550,12 @@ class Storage {
 
   // Sync with Firebase backend
   async syncWithBackend() {
+    // 🔧 КРИТИЧНО: Блокируем синхронизацию во время Clear All
+    if (this.clearAllInProgress) {
+      console.log('🚫 SYNC BLOCKED: Clear All operation in progress, skipping sync');
+      return;
+    }
+    
     if (!this.isOnline || !this.currentUser) {
       console.log('🚫 SYNC SKIPPED:', {
         isOnline: this.isOnline,
@@ -1444,21 +1585,23 @@ class Storage {
         deletedCheckins: this.get('deletedCheckins') || []
       };
       
-      console.log('📤 SYNC DATA TO SEND:', {
-        protocolsCount: userData.protocols?.length || 0,
-        skillsCount: userData.skills?.length || 0,
-        statesCount: userData.states?.length || 0,
-        historyCount: userData.history?.length || 0,
-        quickActionsCount: userData.quickActions?.length || 0,
-        deletedCheckinsCount: userData.deletedCheckins?.length || 0,
-        userData: userData
-      });
+      // 🔇 ЛОГИ ОТКЛЮЧЕНЫ - слишком шумные (повторяются при каждой синхронизации)
+      // console.log('📤 SYNC DATA TO SEND:', {
+      //   protocolsCount: userData.protocols?.length || 0,
+      //   skillsCount: userData.skills?.length || 0,
+      //   statesCount: userData.states?.length || 0,
+      //   historyCount: userData.history?.length || 0,
+      //   quickActionsCount: userData.quickActions?.length || 0,
+      //   deletedCheckinsCount: userData.deletedCheckins?.length || 0,
+      //   userData: userData
+      // });
       
       const token = await this.currentUser.getIdToken();
-      console.log('🔑 AUTH TOKEN OBTAINED:', {
-        tokenLength: token?.length || 0,
-        tokenStart: token?.substring(0, 20) + '...'
-      });
+      // 🔇 ОТКЛЮЧАЮ ШУМНЫЙ ЛОГ AUTH TOKEN
+      // console.log('🔑 AUTH TOKEN OBTAINED:', {
+      //   tokenLength: token?.length || 0,
+      //   tokenStart: token?.substring(0, 20) + '...'
+      // });
       
       // Add aggressive cache busting with timestamp
       const timestamp = Date.now();
@@ -1541,51 +1684,96 @@ class Storage {
                     
                     // Get list of deleted checkin IDs to prevent restoration
                     const deletedCheckins = this.get('deletedCheckins') || [];
+                    console.log('🚫 DELETED CHECKINS LIST:', { count: deletedCheckins.length, sample: deletedCheckins.slice(0, 5) });
                     
-                    // Create a map to track items by ID and choose version with maximum effects
-                    const mergedMap = new Map();
+                    // 🔧 УСИЛЕННАЯ ЗАЩИТА ОТ CLEAR ALL
+                    // Проверяем не только пустую историю, но и ситуацию когда флагов удаления больше чем локальных элементов
+                    const isClearAllInProgress = this.clearAllInProgress;
+                    const hasEmptyLocalHistory = localArray.length === 0 && deletedCheckins.length > 0;
+                    const hasMassiveDeletion = deletedCheckins.length > 0 && deletedCheckins.length >= localArray.length;
+                    const needsClearAllProtection = isClearAllInProgress || hasEmptyLocalHistory || hasMassiveDeletion;
                     
-                    // Add all local items first
-                    localArray.forEach(item => {
-                        if (item && item.id !== undefined) {
-                            mergedMap.set(item.id, { ...item, source: 'local' });
-                        }
+                    console.log('🔍 CLEAR ALL DETECTION ANALYSIS:', {
+                        clearAllInProgress: this.clearAllInProgress,
+                        localHistoryLength: localArray.length,
+                        deletedFlagsCount: deletedCheckins.length,
+                        hasEmptyLocalHistory,
+                        hasMassiveDeletion,
+                        needsProtection: needsClearAllProtection
                     });
                     
-                    // Compare with server items and choose version with more effects
-                    // BUT do not restore items that were intentionally deleted
-                    serverArray.forEach(item => {
-                        if (item && item.id !== undefined) {
-                            // Skip if this item was intentionally deleted by user
-                            if (deletedCheckins.includes(item.id)) {
-                                console.log(`📋 History item ${item.id}: was deleted by user, not restoring from server`);
-                                return;
+                    if (needsClearAllProtection) {
+                        console.log('🚫 CLEAR ALL PROTECTION ACTIVATED:', {
+                            clearAllInProgress: this.clearAllInProgress,
+                            localHistoryLength: localArray.length,
+                            deletedFlagsCount: deletedCheckins.length,
+                            serverItemsToIgnore: serverArray.length,
+                            reason: isClearAllInProgress ? 'Clear All in progress' : 
+                                   hasEmptyLocalHistory ? 'Empty local + deletion flags' : 
+                                   'Massive deletion detected'
+                        });
+                        console.log('🚫 BLOCKING ALL SERVER HISTORY RESTORATION during/after Clear All');
+                        console.log(`🚫 Ignoring ${serverArray.length} server items due to Clear All operation`);
+                        
+                        // 🔧 КРИТИЧНО: Полностью блокируем восстановление - оставляем пустую историю
+                        // Это предотвратит бесконечные циклы синхронизации и пересчета протоколов
+                        mergedData = [];
+                        mergeAction = 'clear_all_protection_active';
+                        console.log('✅ CLEAR ALL PROTECTION: History remains empty as intended');
+                        console.log('🚫 SYNC MARKING BLOCKED: Clear All protection prevents protocol recalculation sync loops');
+                        
+                        // Дополнительно помечаем что синхронизацию не нужно делать
+                        hasUpdates = false;
+                    } else {
+                        // Стандартная логика мержа истории
+                        console.log('📊 NORMAL HISTORY MERGE: Local items exist or no Clear All detected');
+                        
+                        // Create a map to track items by ID and choose version with maximum effects
+                        const mergedMap = new Map();
+                        
+                        // Add all local items first
+                        localArray.forEach(item => {
+                            if (item && item.id !== undefined) {
+                                mergedMap.set(item.id, { ...item, source: 'local' });
                             }
-                            
-                            const localItem = mergedMap.get(item.id);
-                            if (localItem) {
-                                // Compare which version has more effects
-                                const localEffectsCount = Object.keys(localItem.changes || {}).length;
-                                const serverEffectsCount = Object.keys(item.changes || {}).length;
-                                
-                                if (serverEffectsCount > localEffectsCount) {
-                                    console.log(`📋 History item ${item.id}: choosing server version (${serverEffectsCount} effects vs ${localEffectsCount})`);
-                                    mergedMap.set(item.id, { ...item, source: 'server' });
-                                } else if (localEffectsCount > serverEffectsCount) {
-                                    console.log(`📋 History item ${item.id}: keeping local version (${localEffectsCount} effects vs ${serverEffectsCount})`);
-                        } else {
-                                    console.log(`📋 History item ${item.id}: same effects count (${localEffectsCount}), keeping local version`);
+                        });
+                        
+                        // Compare with server items and choose version with more effects
+                        // BUT do not restore items that were intentionally deleted
+                        serverArray.forEach(item => {
+                            if (item && item.id !== undefined) {
+                                // Skip if this item was intentionally deleted by user
+                                if (deletedCheckins.includes(item.id)) {
+                                    console.log(`📋 History item ${item.id}: was deleted by user, not restoring from server`);
+                                    return;
                                 }
-                            } else {
-                                // Server-only item - only add if not deleted locally
-                                console.log(`📋 History item ${item.id}: server-only item, adding`);
-                                mergedMap.set(item.id, { ...item, source: 'server' });
+                                
+                                const localItem = mergedMap.get(item.id);
+                                if (localItem) {
+                                    // Compare which version has more effects
+                                    const localEffectsCount = Object.keys(localItem.changes || {}).length;
+                                    const serverEffectsCount = Object.keys(item.changes || {}).length;
+                                    
+                                    if (serverEffectsCount > localEffectsCount) {
+                                        console.log(`📋 History item ${item.id}: choosing server version (${serverEffectsCount} effects vs ${localEffectsCount})`);
+                                        mergedMap.set(item.id, { ...item, source: 'server' });
+                                    } else if (localEffectsCount > serverEffectsCount) {
+                                        console.log(`📋 History item ${item.id}: keeping local version (${localEffectsCount} effects vs ${serverEffectsCount})`);
+                        } else {
+                                        console.log(`📋 History item ${item.id}: same effects count (${localEffectsCount}), keeping local version`);
+                                    }
+                                } else {
+                                    // Server-only item - only add if not deleted locally
+                                    console.log(`📋 History item ${item.id}: server-only item, adding`);
+                                    mergedMap.set(item.id, { ...item, source: 'server' });
+                                }
                             }
-                        }
-                    });
+                        });
+                        
+                        // Convert map to array
+                        mergedData = Array.from(mergedMap.values());
+                    }
                     
-                    // Convert map to array
-                    mergedData = Array.from(mergedMap.values());
                     console.log(`🔄 HISTORY SMART MERGE: Combined ${localArray.length} local + ${serverArray.length} server = ${mergedData.length} items with maximum effects`);
                 } else if (key === 'protocols') {
                     console.log('🔄 USING SERVER-FIRST STRATEGY FOR PROTOCOLS');
@@ -1819,9 +2007,27 @@ class Storage {
                   }
                 }
               } else {
-                // Для остальных типов данных используем старую логику
-                if (!this.arraysEqual(mergedData, serverArray)) {
-                  this.markForSync();
+                // 🔧 КРИТИЧНО: Для истории НЕ помечаем для синхронизации если активна защита от Clear All
+                if (key === 'history') {
+                  const deletedCheckins = this.get('deletedCheckins') || [];
+                  const needsClearAllProtection = this.clearAllInProgress || 
+                    (localArray.length === 0 && deletedCheckins.length > 0) ||
+                    (deletedCheckins.length > 0 && deletedCheckins.length >= localArray.length);
+                  
+                  if (needsClearAllProtection) {
+                    console.log('🚫 SKIPPING SYNC MARKING: Clear All protection is active, not marking history for sync');
+                  } else {
+                    // Стандартная проверка изменений для истории
+                    if (!this.arraysEqual(mergedData, serverArray)) {
+                      console.log('📤 MARKING HISTORY FOR SYNC: Normal changes detected');
+                      this.markForSync();
+                    }
+                  }
+                } else {
+                  // Для остальных типов данных используем старую логику
+                  if (!this.arraysEqual(mergedData, serverArray)) {
+                    this.markForSync();
+                  }
                 }
               }
               
@@ -2355,6 +2561,33 @@ class Storage {
     // For history, we need special handling since items might be updated (recalculated)
     if (dataType === 'history') {
       console.log('🔄 USING LOCAL-FIRST STRATEGY FOR HISTORY (preserving recalculations)');
+      
+      // 🔧 КРИТИЧЕСКАЯ ЗАЩИТА ОТ CLEAR ALL
+      // Проверяем если локальная история пуста но есть флаги удаления - это Clear All
+      const deletedCheckins = this.get('deletedCheckins') || [];
+      console.log('🚫 DELETED CHECKINS LIST:', { count: deletedCheckins.length, sample: deletedCheckins.slice(0, 5) });
+      
+      console.log('🔍 CLEAR ALL DETECTION CHECK:', {
+        localHistoryLength: localArray.length,
+        deletedCheckinsLength: deletedCheckins.length,
+        condition: localArray.length === 0 && deletedCheckins.length > 0,
+        timestamp: new Date().toISOString()
+      });
+      
+      if (localArray.length === 0 && deletedCheckins.length > 0) {
+        console.log('🚫 CLEAR ALL DETECTED: Local history is empty but deletion flags exist');
+        console.log('🚫 BLOCKING ALL SERVER HISTORY RESTORATION after Clear All');
+        console.log(`🚫 Ignoring ${serverArray.length} server items due to Clear All operation`);
+        
+        // Полностью блокируем восстановление - возвращаем структурированный результат
+        console.log('✅ CLEAR ALL PROTECTION: History remains empty as intended. Returning structured empty merge result.');
+        // If server had items, this is an update. If server also was empty, no real update from this merge.
+        const updatesExist = serverArray.length > 0;
+        return { mergedArray: [], hasUpdates: updatesExist, action: 'clear_all_protected_empty_history' };
+      }
+      
+      console.log('📊 NORMAL HISTORY MERGE: Proceeding with regular merge logic');
+      
       // Add all local items first for history (they have latest recalculated data)
       localArray.forEach(item => {
         if (item && item.id !== undefined) {
@@ -2366,6 +2599,12 @@ class Storage {
       let addedFromServer = 0;
       serverArray.forEach(item => {
         if (item && item.id !== undefined) {
+          // Skip if this item was intentionally deleted by user
+          if (deletedCheckins.includes(item.id)) {
+            console.log(`📋 History item ${item.id}: was deleted by user, not restoring from server`);
+            return;
+          }
+          
           if (!mergedMap.has(item.id)) {
             mergedMap.set(item.id, { ...item, source: 'server' });
             addedFromServer++;
@@ -2406,30 +2645,60 @@ class Storage {
     }
     
     // Convert map back to array and remove source tracking
-    const mergedArray = Array.from(mergedMap.values()).map(item => {
+    const mergedArrayResult = Array.from(mergedMap.values()).map(item => { // Renamed to avoid conflict
       const { source, ...itemWithoutSource } = item;
       return itemWithoutSource;
     });
     
     // Sort by ID for consistency (if items have numeric IDs)
-    if (mergedArray.length > 0 && typeof mergedArray[0].id === 'number') {
-      mergedArray.sort((a, b) => a.id - b.id);
+    if (mergedArrayResult.length > 0 && typeof mergedArrayResult[0].id === 'number') { // Use renamed variable
+      mergedArrayResult.sort((a, b) => a.id - b.id); // Use renamed variable
     }
     
     console.log(`✅ MERGE ${dataType} COMPLETE:`, {
       localItems: localArray.length,
       serverItems: serverArray.length,
-      mergedItems: mergedArray.length,
+      mergedItems: mergedArrayResult.length, // Use renamed variable
       strategy: dataType === 'history' ? 'local-first' : 'local-first',
-      netGain: mergedArray.length - localArray.length
+      netGain: mergedArrayResult.length - localArray.length // Use renamed variable
     });
     
-    return mergedArray;
+    // Determine if there were actual updates based on comparison with original localArray
+    // This is a simple check; more sophisticated checks might compare content if needed.
+    const hasUpdates = localArray.length !== mergedArrayResult.length || 
+                       !localArray.every((localItem, index) => mergedArrayResult[index] && localItem.id === mergedArrayResult[index].id); // Basic check
+
+    return { mergedArray: mergedArrayResult, hasUpdates, action: `merged_items_${mergedArrayResult.length}` }; // Return object structure
   }
 
   // Check and recalculate protocol history after merging
   checkAndRecalculateProtocolHistory(localArray, mergedData) {
     console.log('🔄 Checking protocols for history recalculation after sync...');
+    
+    // 🔧 КРИТИЧНО: Блокируем пересчет протоколов во время Clear All
+    // Это предотвращает бесконечные циклы синхронизации после Clear All
+    if (this.clearAllInProgress) {
+      console.log('🚫 PROTOCOL RECALCULATION BLOCKED: Clear All operation in progress');
+      console.log('🚫 Preventing protocol recalculation sync loops during Clear All');
+      return;
+    }
+    
+    // Дополнительная проверка на случай если флаг clearAllInProgress уже сброшен
+    // но мы все еще в состоянии после Clear All (пустая история + много флагов удаления)
+    const deletedCheckins = this.get('deletedCheckins') || [];
+    const currentHistory = this.getCheckins();
+    const hasEmptyLocalHistory = currentHistory.length === 0 && deletedCheckins.length > 0;
+    const hasMassiveDeletion = deletedCheckins.length > 0 && deletedCheckins.length >= currentHistory.length;
+    
+    if (hasEmptyLocalHistory || hasMassiveDeletion) {
+      console.log('🚫 PROTOCOL RECALCULATION BLOCKED: Clear All aftermath detected', {
+        historyLength: currentHistory.length,
+        deletedFlagsCount: deletedCheckins.length,
+        reason: hasEmptyLocalHistory ? 'Empty history + deletion flags' : 'Massive deletion detected'
+      });
+      console.log('🚫 Preventing protocol recalculation after Clear All to avoid sync loops');
+      return;
+    }
     
     // Create maps for easier lookup
     const localProtocolsMap = new Map(localArray.map(p => [p.id, p]));

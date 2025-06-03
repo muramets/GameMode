@@ -190,17 +190,9 @@ const UI = {
     const protocols = window.Storage.getQuickActionsInOrder();
     const container = document.querySelector('.quick-protocols');
     
-    console.log('⚡ renderQuickProtocols DEBUG:', {
-      protocols: protocols.length,
-      protocolData: protocols,
-      containerExists: !!container,
-      containerContent: container?.innerHTML?.length || 0
-    });
-    
     if (!container) return;
     
     if (protocols.length === 0) {
-      console.log('⚡ No quick protocols found, showing empty state');
       container.innerHTML = `
         <div class="quick-protocol empty-state">
           <div class="quick-protocol-icon"><i class="fas fa-zap"></i></div>
@@ -212,8 +204,6 @@ const UI = {
       `;
       return;
     }
-    
-    console.log('⚡ Rendering', protocols.length, 'quick protocols');
     
     container.innerHTML = protocols.map(protocol => {
       const icon = this.renderIcon(protocol.icon);
@@ -733,12 +723,6 @@ const UI = {
       });
       
       currentLevel = validStatesCount > 0 ? totalStateScore / validStatesCount : 0;
-      console.log('📊 Character level calculated from STATES:', {
-        statesCount: states.length,
-        validStatesCount,
-        totalStateScore,
-        averageLevel: currentLevel
-      });
     } else if (skills.length > 0) {
       // Fallback to skills average (если нет states)
       let totalSkillScore = 0;
@@ -753,14 +737,7 @@ const UI = {
       });
       
       currentLevel = validSkillsCount > 0 ? totalSkillScore / validSkillsCount : 0;
-      console.log('📊 Character level calculated from SKILLS:', {
-        skillsCount: skills.length,
-        validSkillsCount,
-        totalSkillScore,
-        averageLevel: currentLevel
-      });
     } else {
-      console.log('📊 Character level: No states or skills found, defaulting to 0');
       currentLevel = 0;
     }
     
