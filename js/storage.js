@@ -2083,29 +2083,32 @@ class Storage {
                         return itemWithoutSource;
                     });
                 } else if (key === 'protocols') {
-                    console.log('🔄 USING SERVER-FIRST STRATEGY FOR PROTOCOLS');
+                    console.log('🔄 USING SMART CLIENT-FIRST FOR PROTOCOLS (respecting deletions + adding new server items)');
                     
-                    // 🔧 КРИТИЧНО: Используем server-first стратегию для protocols
-                    // чтобы новые протоколы с других устройств не терялись
-                    mergedData = [...serverArray];
+                    // 🔧 ИСПРАВЛЕНИЕ: Используем client-first с добавлением новых серверных элементов
+                    // Это уважает локальные удаления пользователя, но добавляет новые протоколы с сервера
                     
-                    // 🔧 ИСПРАВЛЕНИЕ: Дедупликация серверных данных перед обработкой
+                    // Начинаем с локальных протоколов (уважаем удаления пользователя)
+                    mergedData = [...localArray];
+                    
+                    // 🔧 ДЕДУПЛИКАЦИЯ локальных данных
                     mergedData = mergedData.filter((item, index, self) => 
                         index === self.findIndex(t => t.id === item.id)
                     );
                     
-                    // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проходим по СЕРВЕРНЫМ протоколам, не локальным
-                    // Это обеспечивает восстановление удаленных протоколов
-                    console.log(`🔄 PROCESSING ${serverArray.length} SERVER PROTOCOLS for comparison/restoration`);
+                    console.log(`🔄 STARTING WITH ${localArray.length} LOCAL PROTOCOLS (user's current selection)`);
                     
+                    // Добавляем ТОЛЬКО новые протоколы с сервера (которых нет локально)
+                    let addedFromServer = 0;
                     for (const serverItem of serverArray) {
-                        const localItem = localArray.find(m => m.id === serverItem.id);
+                        const localItem = mergedData.find(m => m.id === serverItem.id);
                         if (!localItem) {
-                            console.log(`📋 Protocol ${serverItem.id} found only on server, restored from server (server-first)`);
-                            // Серверный протокол уже в mergedData, просто логируем
+                            console.log(`📋 Protocol ${serverItem.id} found only on server, adding as new protocol`);
+                            mergedData.push(serverItem);
                             hasUpdates = true;
+                            addedFromServer++;
                         } else {
-                            // Элемент существует локально - проверяем изменения
+                            // Протокол существует локально - проверяем изменения (server-first для изменений)
                             const localTargets = localItem.targets || [];
                             const serverTargets = serverItem.targets || [];
                             const targetsChanged = !this.arraysEqual(localTargets, serverTargets);
@@ -2113,75 +2116,56 @@ class Storage {
                             const serverWeight = serverItem.weight || 0;
                             const weightChanged = Math.abs(localWeight - serverWeight) > 0.001;
                             
-                            console.log(`🔍 PROTOCOL ${serverItem.id} SERVER-FIRST COMPARISON:`, {
-                                localTargets,
-                                serverTargets,
-                                targetsChanged,
-                                localWeight,
-                                serverWeight,
-                                weightChanged,
-                                strategy: 'server_first',
-                                action: 'keeping_server_version'
-                            });
-                            
                             if (targetsChanged || weightChanged) {
-                                console.log(`🔄 Protocol ${serverItem.id} differs from local, using server version and triggering recalculation`);
+                                console.log(`🔄 Protocol ${serverItem.id} differs from local, updating with server version:`, {
+                                    localTargets,
+                                    serverTargets,
+                                    targetsChanged,
+                                    localWeight,
+                                    serverWeight,
+                                    weightChanged
+                                });
                                 
-                                // Сохраняем старые значения для пересчета (из ЛОКАЛЬНЫХ данных)
-                                const oldTargets = [...localTargets];
-                                const newTargets = [...serverTargets];
-                                
-                                // Серверная версия уже в mergedData, запускаем пересчет
-                                setTimeout(() => {
-                                    console.log(`⏰ EXECUTING SERVER-FIRST RECALCULATION for protocol ${serverItem.id}`);
-                                    const recalcResult = this.recalculateProtocolHistory(serverItem.id, oldTargets, newTargets);
-                                    console.log(`📊 SERVER-FIRST RECALCULATION RESULT for protocol ${serverItem.id}:`, {
-                                        wasRecalculated: recalcResult,
-                                        protocolName: serverItem.name,
-                                        oldTargets,
-                                        newTargets,
-                                        strategy: 'server_first'
-                                    });
+                                // Обновляем локальную версию серверными данными
+                                const index = mergedData.findIndex(m => m.id === serverItem.id);
+                                if (index !== -1) {
+                                    const oldTargets = [...localTargets];
+                                    const newTargets = [...serverTargets];
+                                    mergedData[index] = { ...serverItem };
                                     
-                                    // 🎯 КРИТИЧНО: Обновляем UI после пересчета
-                                    if (recalcResult && window.App) {
-                                        console.log(`🔄 UPDATING UI after protocol ${serverItem.id} server-first recalculation`);
-                                        
-                                        // Показываем уведомление
-                                        if (window.App && window.App.showToast && !this._hasShownRecalcToast) {
+                                    // Запускаем пересчет истории
+                                    setTimeout(() => {
+                                        console.log(`⏰ EXECUTING SMART RECALCULATION for protocol ${serverItem.id}`);
+                                        const recalcResult = this.recalculateProtocolHistory(serverItem.id, oldTargets, newTargets);
+                                        if (recalcResult && window.App && window.App.showToast && !this._hasShownRecalcToast) {
                                           window.App.showToast('История ретроспективно пересчиталась', 'success');
                                           this._hasShownRecalcToast = true;
-                                          // Сбрасываем флаг через 30 секунд
                                           setTimeout(() => {
                                             this._hasShownRecalcToast = false;
                                           }, 30000);
                                         }
-                                        
-                                        // Обновляем текущую страницу
-                                        if (window.App.currentPage === 'history') {
-                                            console.log('📄 Refreshing history page after server-first recalculation');
-                                            window.App.filteredHistory = []; // Сброс фильтра для обновления
-                                            window.App.renderPage('history');
-                                        } else if (window.App.currentPage === 'dashboard') {
-                                            console.log('📄 Refreshing dashboard after server-first recalculation');
-                                            window.App.renderPage('dashboard');
-                                            if (window.UI && window.UI.updateUserStats) {
-                                                window.UI.updateUserStats();
-                                            }
-                                        }
-                                    }
-                                }, 100);
-                                hasUpdates = true;
+                                    }, 100);
+                                    hasUpdates = true;
+                                }
                             } else {
-                                console.log(`📋 Protocol ${serverItem.id} matches local, keeping server version (server-first)`);
+                                console.log(`📋 Protocol ${serverItem.id} matches local version, keeping as is`);
                             }
                         }
                     }
                     
-                    // 🔧 ФИНАЛЬНАЯ ДЕДУПЛИКАЦИЯ после сравнения 
+                    console.log(`✅ PROTOCOL MERGE COMPLETE: ${localArray.length} local + ${addedFromServer} new from server = ${mergedData.length} total`);
+                    
+                    // 🔧 ФИНАЛЬНАЯ ДЕДУПЛИКАЦИЯ
                     mergedData = mergedData.filter((item, index, self) => 
                         index === self.findIndex(t => t.id === item.id)
                     );
+                    
+                    // 🚀 ВАЖНО: Если у нас меньше протоколов чем на сервере, отправляем наши данные
+                    // Это информирует сервер об удалениях пользователя
+                    if (mergedData.length < serverArray.length) {
+                        console.log(`🚀 USER DELETIONS DETECTED: Local has ${mergedData.length}, server has ${serverArray.length}. Marking for sync to inform server of deletions.`);
+                        this.markForSync();
+                    }
                 } else if (key === 'skills') {
                     console.log('🔄 USING SERVER-FIRST STRATEGY FOR SKILLS');
                     
@@ -2436,22 +2420,28 @@ class Storage {
                   // Для states используем специальную логику - sync уже вызван внутри блока обработки states
                   console.log(`📥 SERVER-FIRST: States sync handling completed above`);
                 } else {
-                  // Для protocols и skills проверяем новые элементы по ID
-                  const hasNewLocalItems = localArray.some(localItem => 
-                    !serverArray.find(serverItem => serverItem.id === localItem.id)
-                  );
-                  
-                  // 🔧 ИСПРАВЛЕНИЕ: Для server-first стратегии НЕ отмечаем для синхронизации
-                  // если сервер содержит больше данных чем локально (это восстановление, не загрузка)
-                  const isRestorationScenario = serverArray.length > localArray.length;
-                  
-                  if (hasNewLocalItems) {
-                    console.log(`🚀 SERVER-FIRST: Found new local ${key}, marking for sync`);
-                    this.markForSync();
-                  } else if (isRestorationScenario) {
-                    console.log(`📥 SERVER-FIRST: Server has more ${key} than local (${serverArray.length} vs ${localArray.length}), NOT marking for sync (server restoration)`);
+                  // Для protocols используем client-first логику - sync уже выполнен в блоке выше
+                  // Для skills проверяем новые элементы по ID
+                  if (key === 'protocols') {
+                    console.log(`📥 CLIENT-FIRST: Protocols sync handling completed above (respects deletions)`);
                   } else {
-                    console.log(`📥 SERVER-FIRST: No new local ${key}, NOT marking for sync (preventing server data overwrite)`);
+                    // Для skills проверяем новые элементы по ID
+                    const hasNewLocalItems = localArray.some(localItem => 
+                      !serverArray.find(serverItem => serverItem.id === localItem.id)
+                    );
+                    
+                    // 🔧 ИСПРАВЛЕНИЕ: Для server-first стратегии НЕ отмечаем для синхронизации
+                    // если сервер содержит больше данных чем локально (это восстановление, не загрузка)
+                    const isRestorationScenario = serverArray.length > localArray.length;
+                    
+                    if (hasNewLocalItems) {
+                      console.log(`🚀 SERVER-FIRST: Found new local ${key}, marking for sync`);
+                      this.markForSync();
+                    } else if (isRestorationScenario) {
+                      console.log(`📥 SERVER-FIRST: Server has more ${key} than local (${serverArray.length} vs ${localArray.length}), NOT marking for sync (server restoration)`);
+                    } else {
+                      console.log(`📥 SERVER-FIRST: No new local ${key}, NOT marking for sync (preventing server data overwrite)`);
+                    }
                   }
                 }
               } else {
