@@ -1463,16 +1463,31 @@ class Storage {
 
   deleteState(stateId) {
     const states = this.getStates();
-    const filtered = states.filter(s => s.id !== stateId);
+    const filteredStates = states.filter(s => s.id !== stateId);
+    
+    if (filteredStates.length === states.length) {
+      return false; // State not found
+    }
+    
+    // 🔧 НОВОЕ: Отслеживаем удаленные states аналогично deletedProtocols и deletedSkills
+    const deletedStates = this.get('deletedStates') || [];
+    if (!deletedStates.includes(stateId)) {
+      deletedStates.push(stateId);
+      this.set('deletedStates', deletedStates);
+      console.log(`🗑️ STATE DELETION TRACKED: Added state ${stateId} to deletedStates list`, {
+        stateId,
+        deletedStatesCount: deletedStates.length
+      });
+    }
     
     // Remove references to this state from other states
-    filtered.forEach(state => {
+    filteredStates.forEach(state => {
       if (state.stateIds && state.stateIds.includes(stateId)) {
         state.stateIds = state.stateIds.filter(id => id !== stateId);
       }
     });
     
-    this.set(this.KEYS.STATES, filtered);
+    this.set(this.KEYS.STATES, filteredStates);
     
     // 🔧 Also remove from state order array
     const stateOrder = this.getStateOrder();
@@ -1481,7 +1496,7 @@ class Storage {
     
     console.log('🗑️ STATE DELETION:', {
       deletedStateId: stateId,
-      remainingStates: filtered.length,
+      remainingStates: filteredStates.length,
       oldStateOrder: stateOrder,
       newStateOrder: updatedStateOrder
     });
@@ -1772,18 +1787,20 @@ class Storage {
       'history': 'HISTORY',
       'deletedCheckins': 'deletedCheckins', // Special case - not in KEYS object
       'deletedProtocols': 'deletedProtocols', // Special case - not in KEYS object
-      'deletedSkills': 'deletedSkills' // Special case - not in KEYS object
+      'deletedSkills': 'deletedSkills', // Special case - not in KEYS object
+      'deletedStates': 'deletedStates' // Special case - not in KEYS object
     };
     
     const mappedKey = keyMap[serverKey];
     if (mappedKey) {
-      // For deletedCheckins, deletedProtocols, and deletedSkills, return the key directly (not through KEYS)
-      if (serverKey === 'deletedCheckins' || serverKey === 'deletedProtocols' || serverKey === 'deletedSkills') {
+      // For deletedCheckins, deletedProtocols, deletedSkills, and deletedStates, return the key directly (not through KEYS)
+      if (serverKey === 'deletedCheckins' || serverKey === 'deletedProtocols' || serverKey === 'deletedSkills' || serverKey === 'deletedStates') {
         return serverKey;
       }
       // For other keys, use KEYS object
       return this.KEYS[mappedKey];
     }
+    
     
     console.error(`🚨 getKeyConstant: No mapping found for server key '${serverKey}'`);
     return null;
@@ -1834,7 +1851,8 @@ class Storage {
         stateOrder: this.get(this.KEYS.STATE_ORDER),
         deletedCheckins: this.get('deletedCheckins') || [],
         deletedProtocols: this.get('deletedProtocols') || [],
-        deletedSkills: this.get('deletedSkills') || []
+        deletedSkills: this.get('deletedSkills') || [],
+        deletedStates: this.get('deletedStates') || []
       };
       
       // 🐞 DEBUG: Логируем отправляемые данные Quick Actions
@@ -2391,44 +2409,114 @@ class Storage {
                 } else {
                     console.log('🔄 USING SMART MERGE STRATEGY FOR DATA');
                     
-                    // 🔧 СПЕЦИАЛЬНАЯ ОБРАБОТКА для STATES - используем server-first с уважением к локальным удалениям
+                    // 🔧 СПЕЦИАЛЬНАЯ ОБРАБОТКА для STATES - используем надежное определение первого входа как у quickActions
                     if (key === 'states') {
-                        console.log('🔄 USING SERVER-FIRST STRATEGY FOR STATES (respecting local deletions)');
+                        console.log(`🔄 USING RELIABLE FIRST-TIME DETECTION FOR ${key.toUpperCase()}`);
                         
-                        // Для states используем локальные данные как приоритетные (уважаем удаления)
-                        mergedData = [...localArray];
+                        // 🔧 НАДЕЖНОЕ ОПРЕДЕЛЕНИЕ: Используем простой флаг первого входа
+                        const isFirstTime = this.isFirstTimeLogin === true;
                         
-                        // 🔧 ИСПРАВЛЕНИЕ: Дедупликация локальных данных
-                        mergedData = mergedData.filter((item, index, self) => 
-                            item && index === self.findIndex(t => t && t.id === item.id)
-                        );
+                        // 🐞 DEBUG: Подробные логи для отладки
+                        console.log(`🐞 DEBUG ${key.toUpperCase()} SYNC:`, {
+                          isFirstTime,
+                          isFirstTimeLogin: this.isFirstTimeLogin,
+                          localArrayLength: localArray.length,
+                          serverArrayLength: serverArray.length,
+                          lastSyncTime: this.lastSyncTime,
+                          userEmail: this.currentUser?.email,
+                          strategy: isFirstTime ? 'SERVER_FIRST' : 'CLIENT_FIRST',
+                          localData: localArray,
+                          serverData: serverArray
+                        });
                         
-                        // Добавляем только новые states с сервера (но НЕ восстанавливаем удаленные)
-                        for (const serverState of serverArray) {
-                            if (!serverState || !serverState.id) continue; // Пропускаем invalid элементы
+                        if (isFirstTime) {
+                            console.log(`🆕 FIRST TIME LOGIN for ${key}: Using server-first approach`);
+                            console.log(`🐞 DEBUG: Server has ${serverArray.length} items:`, serverArray);
                             
-                            const existsLocally = localArray.find(s => s.id === serverState.id);
-                            if (existsLocally) {
-                                console.log(`📋 states item ${serverState.id} exists in both local and server, keeping local version`);
-                            } else {
-                                // Проверяем, что это действительно новый state, а не удаленный локально
-                                // Для простоты сейчас не добавляем серверные states которых нет локально
-                                console.log(`📋 states item ${serverState.id} found only on server, but respecting local deletion (not adding)`);
+                            // Для первого входа используем server-first подход
+                            mergedData = [...serverArray];
+                            
+                            console.log(`📥 FIRST TIME: Loading ${serverArray.length} ${key} items from server`);
+                            console.log(`🐞 DEBUG: Final merged data for first time:`, mergedData);
+                            
+                            // Если получили данные с сервера, это обновление
+                            if (serverArray.length > 0) {
+                                hasUpdates = true;
                             }
-                        }
-                        
-                        // 🔧 ФИНАЛЬНАЯ ДЕДУПЛИКАЦИЯ
-                        mergedData = mergedData.filter((item, index, self) => 
-                            item && index === self.findIndex(t => t && t.id === item.id)
-                        );
-                        
-                        // Проверяем нужно ли синхронизировать локальные изменения
-                        const hasLocalChanges = !this.arraysEqual(localArray, serverArray);
-                        if (hasLocalChanges) {
-                            console.log('🚀 SERVER-FIRST: Found local state changes, marking for sync');
-                            this.markForSync();
+                            
                         } else {
-                            console.log('📥 SERVER-FIRST: No state changes, NOT marking for sync');
+                            console.log(`🔄 RETURNING USER for ${key}: Using client-first approach (respecting local changes)`);
+                            console.log(`🐞 DEBUG: Local has ${localArray.length} items:`, localArray);
+                            console.log(`🐞 DEBUG: Server has ${serverArray.length} items:`, serverArray);
+                            
+                            // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Умная обработка пустого сервера
+                            // Если сервер пустой, а локально есть данные - это может быть удаление на другом устройстве
+                            const serverIsEmpty = !hasServerData || serverArray.length === 0;
+                            const localHasData = hasLocalData && localArray.length > 0;
+                            const possibleServerDeletion = serverIsEmpty && localHasData && this.lastSyncTime;
+                            
+                            if (possibleServerDeletion) {
+                                console.log(`🗑️ SERVER DELETION DETECTED for ${key}: Server is empty but local has data`);
+                                console.log(`🗑️ This likely means items were deleted on another device`);
+                                console.log(`🔄 Applying server state (empty) to respect deletions`);
+                                
+                                // Применяем серверное состояние (пустой массив)
+                                mergedData = [];
+                                hasUpdates = true;
+                                
+                                console.log(`✅ ${key} cleared to match server deletion`);
+                            } else {
+                                // Обычная client-first стратегия для returning users
+                                mergedData = [...localArray];
+                                
+                                // 🔧 ИСПРАВЛЕНИЕ: Дедупликация для массивов объектов
+                                if (Array.isArray(mergedData) && mergedData.length > 0) {
+                                    mergedData = mergedData.filter((item, index, self) => 
+                                        item && index === self.findIndex(t => t && t.id === item.id)
+                                    );
+                                }
+                                
+                                // Добавляем только новые серверные элементы которых нет локально
+                                for (const serverItem of serverArray) {
+                                    if (!serverItem || !serverItem.id) continue; // Пропускаем invalid элементы
+                                    
+                                    // 🔧 НОВОЕ: Проверяем не был ли этот state удален пользователем
+                                    const deletedStates = this.get('deletedStates') || [];
+                                    if (deletedStates.includes(serverItem.id)) {
+                                        console.log(`🗑️ State ${serverItem.id} was deleted by user, not restoring from server`);
+                                        continue; // Пропускаем удаленный state
+                                    }
+                                    
+                                    const localItem = mergedData.find(m => m && m.id === serverItem.id);
+                                    if (!localItem) {
+                                        console.log(`📋 ${key} item ${serverItem.id} found only on server, adding to local`);
+                                        mergedData.push(serverItem);
+                                        hasUpdates = true;
+                                    } else {
+                                        console.log(`📋 ${key} item ${serverItem.id} exists in both local and server, keeping local version`);
+                                    }
+                                }
+                                
+                                // 🔧 ФИНАЛЬНАЯ ДЕДУПЛИКАЦИЯ 
+                                if (Array.isArray(mergedData)) {
+                                    mergedData = mergedData.filter((item, index, self) => 
+                                        item && index === self.findIndex(t => t && t.id === item.id)
+                                    );
+                                }
+                                
+                                console.log(`🐞 DEBUG: Final merged data for returning user:`, mergedData);
+                            }
+                            
+                            // 🔧 ИСПРАВЛЕНИЕ: Для returning users НЕ отмечаем для синхронизации если данные совпадают
+                            // Это предотвращает перезапись серверных данных локальными
+                            const hasLocalChanges = !this.arraysEqual(localArray, serverArray);
+                            
+                            if (hasLocalChanges && !possibleServerDeletion) {
+                              console.log(`🚀 CLIENT-FIRST: Found local changes in ${key}, marking for sync`);
+                              this.markForSync();
+                            } else {
+                              console.log(`📥 CLIENT-FIRST: No local ${key} changes or server deletion handled, NOT marking for sync`);
+                            }
                         }
                     } else if (key.includes('Order')) {
                         console.log(`🔄 DEFERRING ORDER ARRAY VALIDATION: ${key} (will process after data update)`);
@@ -2474,6 +2562,16 @@ class Storage {
                         });
                     }
                     
+                    // 🔧 НОВОЕ: Фильтрация undefined элементов для deletedStates
+                    if (key === 'deletedStates') {
+                        mergedData = mergedData.filter(item => item !== undefined && item !== null);
+                        console.log(`🔧 FILTERED undefined items from local ${key}:`, {
+                            before: localArray.length,
+                            after: mergedData.length,
+                            filtered: localArray.length - mergedData.length
+                        });
+                    }
+                    
                     // Затем добавляем серверные элементы, которых нет локально
                     for (const item of serverArray) {
                         // 🔧 ИСПРАВЛЕНИЕ: Пропускаем undefined элементы
@@ -2498,6 +2596,8 @@ class Storage {
                         } else if (key === 'deletedProtocols') {
                             mergedData = mergedData.filter(item => item !== undefined && item !== null);
                         } else if (key === 'deletedSkills') {
+                            mergedData = mergedData.filter(item => item !== undefined && item !== null);
+                        } else if (key === 'deletedStates') {
                             mergedData = mergedData.filter(item => item !== undefined && item !== null);
                         } else if (mergedData.length > 0 && mergedData[0] && typeof mergedData[0] === 'object' && mergedData[0].id) {
                             // Дедупликация для объектов с ID
@@ -3401,16 +3501,21 @@ class Storage {
       // Get current local data
       const localProtocols = this.getProtocols();
       const localSkills = this.getSkills();
+      const localStates = this.getStates();
       const deletedProtocols = this.get('deletedProtocols') || [];
       const deletedSkills = this.get('deletedSkills') || [];
+      const deletedStates = this.get('deletedStates') || [];
       
       console.log('🔍 INTEGRITY CHECK: Server data comparison:', {
         localProtocolsCount: localProtocols.length,
         serverProtocolsCount: (serverData.protocols || []).length,
         localSkillsCount: localSkills.length,
         serverSkillsCount: (serverData.skills || []).length,
+        localStatesCount: localStates.length,
+        serverStatesCount: (serverData.states || []).length,
         deletedProtocolsCount: deletedProtocols.length,
-        deletedSkillsCount: deletedSkills.length
+        deletedSkillsCount: deletedSkills.length,
+        deletedStatesCount: deletedStates.length
       });
       
       // Check for missing protocols (not in deleted list)
@@ -3445,10 +3550,27 @@ class Storage {
         hasIssues = true;
       }
       
+      // Check for missing states (not in deleted list)
+      const localStateIds = new Set(localStates.map(s => s.id));
+      const missingStates = (serverData.states || []).filter(serverState => 
+        !localStateIds.has(serverState.id) && 
+        !deletedStates.includes(serverState.id)
+      );
+      
+      if (missingStates.length > 0) {
+        console.log('🚨 INTEGRITY CHECK: Found missing states on local device (respecting deletions):', missingStates.map(s => s.id));
+        
+        // 🔧 FIX: Add missing states to existing array, not replace
+        const updatedStates = [...localStates, ...missingStates];
+        this.set(this.KEYS.STATES, updatedStates);
+        hasIssues = true;
+      }
+      
       if (hasIssues) {
         console.log('🔧 INTEGRITY CHECK: Fixed data discrepancies (respecting user deletions):', [
           `protocols: +${missingProtocols.length}`,
-          `skills: +${missingSkills.length}`
+          `skills: +${missingSkills.length}`,
+          `states: +${missingStates.length}`
         ]);
         
         // Refresh UI

@@ -1979,6 +1979,51 @@ function initMainApp() {
             }
             
             return window.Storage.clearDeletedCheckins();
+        },
+
+        // Clear deleted states list (for debugging)
+        clearDeletedStates() {
+            if (!window.Storage) {
+                console.error('❌ Storage not available');
+                return;
+            }
+            
+            console.log('🧹 CLEARING DELETED STATES LIST...');
+            window.Storage.set('deletedStates', []);
+            console.log('✅ Deleted states list cleared');
+            return { cleared: true };
+        },
+
+        // Safer sync debugging
+        async smartSync() {
+            console.log('🧠 Smart sync debugging - preserving data from all devices...');
+            
+            if (!window.Storage.currentUser) {
+                console.error('❌ No authenticated user');
+                return;
+            }
+            
+            try {
+                // Step 1: Force multiple sync cycles to resolve conflicts
+                console.log('🔄 Running multiple sync cycles...');
+                
+                for (let i = 1; i <= 3; i++) {
+                    console.log(`🔄 Sync cycle ${i}/3...`);
+                    await window.Storage.syncWithBackend();
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second between syncs
+                }
+                
+                console.log('✅ Smart sync completed - data should be consistent now');
+                
+                // Step 2: Refresh current page
+                if (window.App && window.App.renderPage) {
+                    window.App.renderPage(window.App.currentPage);
+                    console.log('🔄 Page refreshed after smart sync');
+                }
+                
+            } catch (error) {
+                console.error('❌ Smart sync failed:', error);
+            }
         }
     };
 
@@ -2711,6 +2756,19 @@ window.debugSync = {
     return window.Storage.clearDeletedCheckins();
   },
 
+  // Clear deleted states list (for debugging)
+  clearDeletedStates() {
+    if (!window.Storage) {
+      console.error('❌ Storage not available');
+      return;
+    }
+    
+    console.log('🧹 CLEARING DELETED STATES LIST...');
+    window.Storage.set('deletedStates', []);
+    console.log('✅ Deleted states list cleared');
+    return { cleared: true };
+  },
+
   // Safer sync debugging
   async smartSync() {
     console.log('🧠 Smart sync debugging - preserving data from all devices...');
@@ -2763,4 +2821,5 @@ console.log('  - debugSync.testBackend() - Test backend connectivity');
 console.log('  - debugSync.forceResetAndSync() - Force reset user data on server and resync');
 console.log('  - debugSync.cleanDuplicates() - Emergency cleanup of duplicate protocols/skills on server');
 console.log('  - debugSync.clearDeletedCheckins() - Clean undefined elements from deletedCheckins array');
+console.log('  - debugSync.clearDeletedStates() - Clear deleted states list (for debugging)');
 console.log('  - debugSync.smartSync() - Safer sync debugging');
