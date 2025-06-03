@@ -2094,15 +2094,18 @@ class Storage {
                         index === self.findIndex(t => t.id === item.id)
                     );
                     
-                    // Добавляем локальные элементы которых нет на сервере
-                    for (const localItem of localArray) {
-                        const serverItem = mergedData.find(m => m.id === localItem.id);
-                        if (!serverItem) {
-                            console.log(`📋 Protocol ${localItem.id} found only locally, adding to merged data`);
-                            mergedData.push(localItem);
+                    // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проходим по СЕРВЕРНЫМ протоколам, не локальным
+                    // Это обеспечивает восстановление удаленных протоколов
+                    console.log(`🔄 PROCESSING ${serverArray.length} SERVER PROTOCOLS for comparison/restoration`);
+                    
+                    for (const serverItem of serverArray) {
+                        const localItem = localArray.find(m => m.id === serverItem.id);
+                        if (!localItem) {
+                            console.log(`📋 Protocol ${serverItem.id} found only on server, restored from server (server-first)`);
+                            // Серверный протокол уже в mergedData, просто логируем
                             hasUpdates = true;
                         } else {
-                            // Элемент существует на сервере - проверяем изменения
+                            // Элемент существует локально - проверяем изменения
                             const localTargets = localItem.targets || [];
                             const serverTargets = serverItem.targets || [];
                             const targetsChanged = !this.arraysEqual(localTargets, serverTargets);
@@ -2175,7 +2178,7 @@ class Storage {
                         }
                     }
                     
-                    // 🔧 ФИНАЛЬНАЯ ДЕДУПЛИКАЦИЯ после добавления локальных элементов  
+                    // 🔧 ФИНАЛЬНАЯ ДЕДУПЛИКАЦИЯ после сравнения 
                     mergedData = mergedData.filter((item, index, self) => 
                         index === self.findIndex(t => t.id === item.id)
                     );
@@ -2191,16 +2194,18 @@ class Storage {
                         item && index === self.findIndex(t => t && t.id === item.id)
                     );
                     
-                    // Добавляем локальные элементы которых нет на сервере
-                    for (const localItem of localArray) {
-                        const serverItem = mergedData.find(m => m.id === localItem.id);
-                        if (!serverItem) {
-                            console.log(`📋 Skill ${localItem.id} found only locally, adding to merged data`);
-                            mergedData.push(localItem);
+                    // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проходим по СЕРВЕРНЫМ skills, не локальным
+                    console.log(`🔄 PROCESSING ${serverArray.length} SERVER SKILLS for comparison/restoration`);
+                    
+                    for (const serverItem of serverArray) {
+                        const localItem = localArray.find(m => m.id === serverItem.id);
+                        if (!localItem) {
+                            console.log(`📋 Skill ${serverItem.id} found only on server, restored from server (server-first)`);
+                            // Серверный skill уже в mergedData
                             hasUpdates = true;
                         } else {
-                            // Элемент существует на сервере - используем серверную версию
-                            console.log(`📋 Skill ${serverItem.id} exists on server, keeping server version (server-first)`);
+                            // Элемент существует локально - используем серверную версию
+                            console.log(`📋 Skill ${serverItem.id} exists in both local and server, keeping server version (server-first)`);
                         }
                     }
                     
@@ -2435,9 +2440,16 @@ class Storage {
                   const hasNewLocalItems = localArray.some(localItem => 
                     !serverArray.find(serverItem => serverItem.id === localItem.id)
                   );
+                  
+                  // 🔧 ИСПРАВЛЕНИЕ: Для server-first стратегии НЕ отмечаем для синхронизации
+                  // если сервер содержит больше данных чем локально (это восстановление, не загрузка)
+                  const isRestorationScenario = serverArray.length > localArray.length;
+                  
                   if (hasNewLocalItems) {
                     console.log(`🚀 SERVER-FIRST: Found new local ${key}, marking for sync`);
                     this.markForSync();
+                  } else if (isRestorationScenario) {
+                    console.log(`📥 SERVER-FIRST: Server has more ${key} than local (${serverArray.length} vs ${localArray.length}), NOT marking for sync (server restoration)`);
                   } else {
                     console.log(`📥 SERVER-FIRST: No new local ${key}, NOT marking for sync (preventing server data overwrite)`);
                   }
