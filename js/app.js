@@ -508,6 +508,21 @@ function initMainApp() {
                     // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Всегда принудительно очищаем и перезагружаем историю
                     this.filteredHistory = [];
                     
+                    // 🔧 ЭКСТРЕННАЯ ЗАЩИТА: Дополнительная очистка кеша истории
+                    console.log('🔧 Emergency history cache clearing...');
+                    
+                    // Принудительно удаляем все возможные остатки кеша
+                    if (window.Storage && window.Storage.currentUser) {
+                        const currentUserId = window.Storage.currentUser.uid;
+                        console.log(`🔧 Clearing history cache for user: ${currentUserId}`);
+                        
+                        // Перезагружаем данные из localStorage для текущего пользователя
+                        const freshHistory = window.Storage.get('history');
+                        this.filteredHistory = freshHistory ? [...freshHistory] : [];
+                        
+                        console.log(`✅ Fresh history loaded: ${this.filteredHistory.length} items`);
+                    }
+                    
                     // Очищаем поисковое поле
                     const historySearchInput = document.getElementById('history-search');
                     if (historySearchInput) {
@@ -2422,3 +2437,35 @@ console.log('  - debugSync.status() - Check sync status');
 console.log('  - debugSync.testBackend() - Test backend connectivity');
 console.log('  - debugSync.forceResetAndSync() - Force reset user data on server and resync');
 console.log('  - debugSync.smartSync() - Safer sync debugging');
+
+// 🔧 ЭКСТРЕННАЯ ЗАЩИТА: Очистка кеша при каждой загрузке страницы
+window.addEventListener('load', function() {
+    console.log('🔧 Emergency cache clearing on page load...');
+    
+    // Очищаем все UI кеши при загрузке страницы
+    if (window.App) {
+        window.App.filteredHistory = [];
+        window.App.filteredProtocols = [];
+        window.App.filteredSkills = [];
+        window.App.states = [];
+        
+        console.log('✅ UI caches cleared on page load');
+    }
+    
+    // Очищаем поисковые поля при загрузке
+    setTimeout(() => {
+        const searchInputs = [
+            document.getElementById('protocol-search'),
+            document.getElementById('skill-search'), 
+            document.getElementById('history-search')
+        ];
+        
+        searchInputs.forEach(input => {
+            if (input) {
+                input.value = '';
+            }
+        });
+        
+        console.log('✅ Search inputs cleared on page load');
+    }, 100);
+});
