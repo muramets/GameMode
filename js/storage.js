@@ -1732,7 +1732,7 @@ class Storage {
     });
     
     // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ при изменении порядка states
-    this.scheduleBackgroundSync('State order changed');
+    this.markForSync();
   }
 
   getStatesInOrder() {
@@ -1777,7 +1777,7 @@ class Storage {
     });
     
     // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ при изменении Quick Actions
-    this.scheduleBackgroundSync('Quick Action order changed');
+    this.markForSync();
   }
 
   getQuickActionsInOrder() {
@@ -3806,7 +3806,7 @@ class Storage {
     if (totalCleaned > 0) {
       console.log(`🧹 CLEANUP COMPLETE: Removed ${totalCleaned} undefined/null items total`);
       // Синхронизируем очищенные данные
-      this.scheduleBackgroundSync('Cleaned undefined values from deleted arrays');
+      this.markForSync();
     } else {
       console.log('🧹 CLEANUP: No undefined values found');
     }
