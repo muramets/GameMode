@@ -1116,8 +1116,17 @@ class Storage {
       verification: this.get(this.KEYS.PROTOCOL_ORDER)
     });
     
+    // 🔧 НОВОЕ: Сохраняем timestamp изменения для защиты от перезаписи
+    localStorage.setItem('protocolOrder_lastChanged', Date.now().toString());
+    
     // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ при изменении порядка protocols
-    this.scheduleBackgroundSync('Protocol order changed');
+    if (!this.syncInProgress) {
+      this.syncWithBackend().catch(error => {
+        console.warn('⚠️ Background sync after protocol order change failed:', error);
+      });
+    } else {
+      this.markForSync();
+    }
   }
 
   getProtocolsInOrder() {
@@ -1167,8 +1176,17 @@ class Storage {
       verification: this.get(this.KEYS.SKILL_ORDER)
     });
     
+    // 🔧 НОВОЕ: Сохраняем timestamp изменения для защиты от перезаписи
+    localStorage.setItem('skillOrder_lastChanged', Date.now().toString());
+    
     // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ при изменении порядка skills
-    this.scheduleBackgroundSync('Skill order changed');
+    if (!this.syncInProgress) {
+      this.syncWithBackend().catch(error => {
+        console.warn('⚠️ Background sync after skill order change failed:', error);
+      });
+    } else {
+      this.markForSync();
+    }
   }
 
   getSkillsInOrder() {
@@ -1731,6 +1749,9 @@ class Storage {
       verification: this.get(this.KEYS.STATE_ORDER)
     });
     
+    // 🔧 НОВОЕ: Сохраняем timestamp изменения для защиты от перезаписи
+    localStorage.setItem('stateOrder_lastChanged', Date.now().toString());
+    
     // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ при изменении порядка states
     this.markForSync();
   }
@@ -1775,6 +1796,9 @@ class Storage {
       verification: this.get(this.KEYS.QUICK_ACTION_ORDER),
       quickActionsUpdated: this.get(this.KEYS.QUICK_ACTIONS)
     });
+    
+    // 🔧 НОВОЕ: Сохраняем timestamp изменения для защиты от перезаписи
+    localStorage.setItem('quickActionOrder_lastChanged', Date.now().toString());
     
     // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ при изменении Quick Actions
     this.markForSync();
@@ -2948,8 +2972,18 @@ class Storage {
             // 🔄 ИСПРАВЛЕНИЕ: Если локальный порядок пустой, используем серверный порядок полностью
             let orderMergedData;
             if (validLocalIds.length === 0 && validServerIds.length > 0) {
-                console.log(`📥 ${key} local order is empty, using server order completely`);
-                orderMergedData = [...validServerIds];
+                // 🔧 ЗАЩИТА: Проверяем не был ли order изменен недавно
+                const orderChangeTimestampKey = `${key}_lastChanged`;
+                const lastOrderChange = localStorage.getItem(orderChangeTimestampKey);
+                const isRecentOrderChange = lastOrderChange && (Date.now() - parseInt(lastOrderChange)) < 30000; // 30 секунд
+                
+                if (isRecentOrderChange) {
+                    console.log(`🛡️ ${key} order was changed recently (${Math.round((Date.now() - parseInt(lastOrderChange))/1000)}s ago), preserving empty local order`);
+                    orderMergedData = [];
+                } else {
+                    console.log(`📥 ${key} local order is empty, using server order completely`);
+                    orderMergedData = [...validServerIds];
+                }
             } else {
                 // Сначала добавляем все валидные локальные ID'шники
                 orderMergedData = [...validLocalIds];
@@ -3790,7 +3824,17 @@ class Storage {
     deletedKeys.forEach(key => {
       const array = this.get(key) || [];
       const before = array.length;
-      const cleaned = array.filter(item => item !== undefined && item !== null && item !== '');
+      
+      // 🔧 УСИЛЕННАЯ ФИЛЬТРАЦИЯ: Убираем undefined, null, '', и любые не-примитивные значения
+      const cleaned = array.filter(item => {
+        return item !== undefined && 
+               item !== null && 
+               item !== '' &&
+               typeof item !== 'undefined' &&
+               (typeof item === 'string' || typeof item === 'number') &&
+               String(item).trim() !== '';
+      });
+      
       const after = cleaned.length;
       const removedCount = before - after;
       
@@ -3798,6 +3842,9 @@ class Storage {
         this.set(key, cleaned);
         console.log(`🧹 CLEANED ${key}: removed ${removedCount} undefined/null items (${before} → ${after})`);
         totalCleaned += removedCount;
+        
+        // 🔧 ПРИНУДИТЕЛЬНАЯ СИНХРОНИЗАЦИЯ для каждого очищенного массива
+        console.log(`🚀 FORCING SYNC for cleaned ${key}`);
       } else {
         console.log(`✅ ${key}: no cleanup needed (${before} items)`);
       }
