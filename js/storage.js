@@ -240,6 +240,21 @@ class Storage {
       this.checkAndMigrateLegacyData();
     }
     
+    // 🧹 НОВОЕ: Очистка undefined значений при запуске
+    this.cleanupDeletedArrays();
+    
+    // 🔧 НОВОЕ: Проверяем Quick Actions при инициализации
+    if (this.currentUser) {
+      const quickActions = this.get(this.KEYS.QUICK_ACTIONS) || [];
+      const quickActionOrder = this.get(this.KEYS.QUICK_ACTION_ORDER) || [];
+      console.log('🚀 INIT QUICK ACTIONS CHECK:', {
+        quickActionsCount: quickActions.length,
+        quickActionOrderCount: quickActionOrder.length,
+        quickActionsData: quickActions,
+        quickActionOrderData: quickActionOrder
+      });
+    }
+    
     // Initialize each key separately if it doesn't exist
     if (!this.get(this.KEYS.PROTOCOLS)) {
       // Only load default data for the original developer, others start with empty arrays
@@ -1093,7 +1108,16 @@ class Storage {
   }
 
   setProtocolOrder(order) {
-    return this.set(this.KEYS.PROTOCOL_ORDER, order);
+    this.set(this.KEYS.PROTOCOL_ORDER, order);
+    console.log('🔄 PROTOCOL ORDER SAVED:', {
+      order,
+      saved: true,
+      keyUsed: this.KEYS.PROTOCOL_ORDER,
+      verification: this.get(this.KEYS.PROTOCOL_ORDER)
+    });
+    
+    // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ при изменении порядка protocols
+    this.scheduleBackgroundSync('Protocol order changed');
   }
 
   getProtocolsInOrder() {
@@ -1135,7 +1159,16 @@ class Storage {
   }
 
   setSkillOrder(order) {
-    return this.set(this.KEYS.SKILL_ORDER, order);
+    this.set(this.KEYS.SKILL_ORDER, order);
+    console.log('🔄 SKILL ORDER SAVED:', {
+      order,
+      saved: true,
+      keyUsed: this.KEYS.SKILL_ORDER,
+      verification: this.get(this.KEYS.SKILL_ORDER)
+    });
+    
+    // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ при изменении порядка skills
+    this.scheduleBackgroundSync('Skill order changed');
   }
 
   getSkillsInOrder() {
@@ -1691,6 +1724,15 @@ class Storage {
 
   setStateOrder(stateOrder) {
     this.set(this.KEYS.STATE_ORDER, stateOrder);
+    console.log('🔄 STATE ORDER SAVED:', {
+      stateOrder,
+      saved: true,
+      keyUsed: this.KEYS.STATE_ORDER,
+      verification: this.get(this.KEYS.STATE_ORDER)
+    });
+    
+    // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ при изменении порядка states
+    this.scheduleBackgroundSync('State order changed');
   }
 
   getStatesInOrder() {
@@ -1726,6 +1768,16 @@ class Storage {
     this.set(this.KEYS.QUICK_ACTION_ORDER, quickActionOrder);
     // Also update the main quick actions array to match the order
     this.set(this.KEYS.QUICK_ACTIONS, quickActionOrder);
+    console.log('🔄 QUICK ACTION ORDER SAVED:', {
+      quickActionOrder,
+      saved: true,
+      keyUsed: this.KEYS.QUICK_ACTION_ORDER,
+      verification: this.get(this.KEYS.QUICK_ACTION_ORDER),
+      quickActionsUpdated: this.get(this.KEYS.QUICK_ACTIONS)
+    });
+    
+    // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ при изменении Quick Actions
+    this.scheduleBackgroundSync('Quick Action order changed');
   }
 
   getQuickActionsInOrder() {
@@ -3717,6 +3769,119 @@ class Storage {
       filteredCount: originalLength - cleanedStates.length,
       finalCount: cleanedStates.length 
     };
+  }
+
+  // ===== CLEANUP METHODS =====
+  
+  // 🔧 КРИТИЧНО: Очистка undefined значений из deleted массивов
+  cleanupDeletedArrays() {
+    console.log('🧹 CLEANUP: Starting deleted arrays cleanup...');
+    
+    const deletedKeys = [
+      'deletedCheckins',
+      'deletedProtocols', 
+      'deletedSkills',
+      'deletedStates',
+      'deletedQuickActions'
+    ];
+    
+    let totalCleaned = 0;
+    
+    deletedKeys.forEach(key => {
+      const array = this.get(key) || [];
+      const before = array.length;
+      const cleaned = array.filter(item => item !== undefined && item !== null && item !== '');
+      const after = cleaned.length;
+      const removedCount = before - after;
+      
+      if (removedCount > 0) {
+        this.set(key, cleaned);
+        console.log(`🧹 CLEANED ${key}: removed ${removedCount} undefined/null items (${before} → ${after})`);
+        totalCleaned += removedCount;
+      } else {
+        console.log(`✅ ${key}: no cleanup needed (${before} items)`);
+      }
+    });
+    
+    if (totalCleaned > 0) {
+      console.log(`🧹 CLEANUP COMPLETE: Removed ${totalCleaned} undefined/null items total`);
+      // Синхронизируем очищенные данные
+      this.scheduleBackgroundSync('Cleaned undefined values from deleted arrays');
+    } else {
+      console.log('🧹 CLEANUP: No undefined values found');
+    }
+  }
+  
+  // 🔧 НОВОЕ: Отладочная функция для диагностики Quick Actions
+  async debugQuickActionsSync() {
+    console.log('🔍 QUICK ACTIONS DEBUG: Starting comprehensive check...');
+    
+    // Локальные данные
+    const localQuickActions = this.get(this.KEYS.QUICK_ACTIONS) || [];
+    const localQuickActionOrder = this.get(this.KEYS.QUICK_ACTION_ORDER) || [];
+    
+    console.log('📱 LOCAL QUICK ACTIONS:', {
+      quickActionsCount: localQuickActions.length,
+      quickActionOrderCount: localQuickActionOrder.length,
+      quickActionsData: localQuickActions,
+      quickActionOrderData: localQuickActionOrder,
+      localStorage: {
+        quickActions: localStorage.getItem(this.KEYS.QUICK_ACTIONS),
+        quickActionOrder: localStorage.getItem(this.KEYS.QUICK_ACTION_ORDER)
+      }
+    });
+    
+    // Проверяем сервер
+    if (!this.isOnline || !this.currentUser) {
+      console.log('🚫 Cannot check server: offline or no user');
+      return;
+    }
+    
+    try {
+      const token = await this.currentUser.getIdToken();
+      const response = await fetch(`${BACKEND_URL}/api/sync?_t=${Date.now()}&_cb=${Math.random()}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate'
+        },
+        body: JSON.stringify({
+          quickActions: localQuickActions,
+          quickActionOrder: localQuickActionOrder
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🌐 SERVER QUICK ACTIONS:', {
+          serverQuickActionsCount: data.data.quickActions?.length || 0,
+          serverQuickActionOrderCount: data.data.quickActionOrder?.length || 0,
+          serverQuickActionsData: data.data.quickActions || [],
+          serverQuickActionOrderData: data.data.quickActionOrder || [],
+          fullServerResponse: data
+        });
+        
+        // Сравнение
+        const localCount = localQuickActions.length;
+        const serverCount = data.data.quickActions?.length || 0;
+        
+        if (localCount !== serverCount) {
+          console.log('⚠️ QUICK ACTIONS MISMATCH:', {
+            local: localCount,
+            server: serverCount,
+            difference: localCount - serverCount,
+            possibleCause: localCount > serverCount ? 'Server not saving local changes' : 'Server has data not synced locally'
+          });
+        } else {
+          console.log('✅ QUICK ACTIONS COUNT MATCH');
+        }
+      } else {
+        console.error('🚨 Server request failed:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('🚨 Quick Actions debug failed:', error);
+    }
   }
 }
 
