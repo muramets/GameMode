@@ -1437,57 +1437,52 @@ const Modals = {
           console.log('🗑️ History item delete clicked, checkinId:', checkinId);
           
           if (checkinId) {
-            // Add confirmation dialog like in App.deleteCheckin
-            if (confirm('Delete this check-in?')) {
-              console.log('🗑️ Deleting history item with confirmation:', checkinId);
-              
-              const checkins = window.Storage.getCheckins();
-              const checkin = checkins.find(c => c.id == checkinId);
-              
-              window.Storage.deleteCheckin(checkinId);
-              
-              // Handle different types of checkins
-              if (checkin && checkin.type === 'drag_drop') {
-                if (checkin.subType === 'protocol') {
-                  App.filteredProtocols = window.Storage.getProtocolsInOrder();
-                  if (App.currentPage === 'protocols') {
-                    UI.renderProtocols();
-                  }
-                  App.showToast('Protocol order reverted', 'success');
-                } else if (checkin.subType === 'skill') {
-                  App.filteredSkills = window.Storage.getSkillsInOrder();
-                  if (App.currentPage === 'skills') {
-                    UI.renderSkills();
-                    DragDrop.setupSkills();
-                  }
-                  App.showToast('Skill order reverted', 'success');
+            console.log('🗑️ Deleting history item:', checkinId);
+            
+            const checkins = window.Storage.getCheckins();
+            const checkin = checkins.find(c => c.id == checkinId);
+            
+            window.Storage.deleteCheckin(checkinId);
+            
+            // Handle different types of checkins
+            if (checkin && checkin.type === 'drag_drop') {
+              if (checkin.subType === 'protocol') {
+                App.filteredProtocols = window.Storage.getProtocolsInOrder();
+                if (App.currentPage === 'protocols') {
+                  UI.renderProtocols();
                 }
-              } else {
-                App.showToast('Check-in deleted', 'success');
+                App.showToast('Protocol order reverted', 'success');
+              } else if (checkin.subType === 'skill') {
+                App.filteredSkills = window.Storage.getSkillsInOrder();
+                if (App.currentPage === 'skills') {
+                  UI.renderSkills();
+                  DragDrop.setupSkills();
+                }
+                App.showToast('Skill order reverted', 'success');
               }
-              
-              // Refresh history
-              App.filteredHistory = [];
-              App.historyInitialized = false;
-              
-              if (App.currentPage === 'history') {
-                App.applyHistoryFilters();
-              } else {
-                UI.renderHistory();
-              }
-              
-              // Update user stats if on dashboard
-              if (App.currentPage === 'dashboard') {
-                UI.updateUserStats();
-              }
-              
-              // Re-setup history delete buttons after DOM update
-              setTimeout(() => {
-                this.setupHistoryDeleteButtons();
-              }, 100);
             } else {
-              console.log('🚫 History item deletion cancelled by user');
+              App.showToast('Check-in deleted', 'success');
             }
+            
+            // Refresh history
+            App.filteredHistory = [];
+            App.historyInitialized = false;
+            
+            if (App.currentPage === 'history') {
+              App.applyHistoryFilters();
+            } else {
+              UI.renderHistory();
+            }
+            
+            // Update user stats if on dashboard
+            if (App.currentPage === 'dashboard') {
+              UI.updateUserStats();
+            }
+            
+            // Re-setup history delete buttons after DOM update
+            setTimeout(() => {
+              this.setupHistoryDeleteButtons();
+            }, 100);
           } else {
             console.error('❌ Could not extract checkin ID from delete button');
           }
