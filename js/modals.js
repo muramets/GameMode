@@ -1375,7 +1375,7 @@ const Modals = {
       console.warn('⚠️ State delete button not found');
     }
     
-    // Setup Clear All History button
+    // Setup Clear All History button WITH CONFIRMATION
     const clearHistoryBtn = document.getElementById('clear-history');
     if (clearHistoryBtn) {
       // Remove existing listeners
@@ -1386,20 +1386,26 @@ const Modals = {
         e.preventDefault();
         e.stopPropagation();
         console.log('🗑️ Clear All History clicked');
-        console.log('🗑️ Clearing all history directly without confirmation...');
         
-        window.Storage.clearAllCheckins();
-        App.filteredHistory = [];
-        App.historyInitialized = false;
-        
-        // Clear search input
-        const historySearchInput = document.getElementById('history-search');
-        if (historySearchInput) {
-          historySearchInput.value = '';
+        // Add confirmation for Clear All History
+        if (confirm('Are you sure you want to clear all history? This action cannot be undone.')) {
+          console.log('🗑️ User confirmed, clearing all history...');
+          
+          window.Storage.clearAllCheckins();
+          App.filteredHistory = [];
+          App.historyInitialized = false;
+          
+          // Clear search input
+          const historySearchInput = document.getElementById('history-search');
+          if (historySearchInput) {
+            historySearchInput.value = '';
+          }
+          
+          App.showToast('History cleared', 'success');
+          App.renderPage('history');
+        } else {
+          console.log('🚫 User cancelled Clear All History');
         }
-        
-        App.showToast('History cleared', 'success');
-        App.renderPage('history');
       });
       
       console.log('✅ Clear All History button listener attached');
@@ -1407,104 +1413,90 @@ const Modals = {
       console.warn('⚠️ Clear All History button not found');
     }
     
-    // Setup individual history delete buttons (with delegation)
-    this.setupHistoryDeleteButtons();
+    // Setup individual history delete buttons (with delegation) - NO RECURSIVE CALL
+    this.setupHistoryDeleteDelegation();
     
     console.log('🔧 Delete button listeners setup complete');
   },
 
-  setupHistoryDeleteButtons() {
+  setupHistoryDeleteDelegation() {
     console.log('🔧 Setting up history delete button delegation...');
     
-    // Remove existing history body listeners
-    const historyBody = document.querySelector('.history-body');
-    if (historyBody) {
-      // Clone to remove all event listeners
-      const newHistoryBody = historyBody.cloneNode(true);
-      historyBody.parentNode.replaceChild(newHistoryBody, historyBody);
-      
-      // Setup event delegation for delete buttons
-      newHistoryBody.addEventListener('click', (e) => {
-        const deleteBtn = e.target.closest('.history-delete-btn');
-        if (deleteBtn) {
-          e.preventDefault();
-          e.stopPropagation();
+    // Use document-level delegation to avoid DOM manipulation issues
+    // Remove any existing delegation listeners first
+    if (this.historyDelegationHandler) {
+      document.removeEventListener('click', this.historyDelegationHandler);
+    }
+    
+    // Create new delegation handler
+    this.historyDelegationHandler = (e) => {
+      const deleteBtn = e.target.closest('.history-delete-btn');
+      if (deleteBtn) {
+        // Make sure we're clicking inside the history section
+        const historyBody = deleteBtn.closest('.history-body');
+        if (!historyBody) return;
+        
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Get checkin ID from data attribute
+        const checkinId = deleteBtn.dataset.checkinId;
+        
+        console.log('🗑️ History item delete clicked, checkinId:', checkinId);
+        
+        if (checkinId) {
+          console.log('🗑️ Deleting history item:', checkinId);
           
-          // Get checkin ID from data attribute (preferred) or onclick attribute (fallback)
-          const checkinId = deleteBtn.dataset.checkinId || 
-                           this.extractCheckinIdFromOnclick(deleteBtn.getAttribute('onclick'));
+          const checkins = window.Storage.getCheckins();
+          const checkin = checkins.find(c => c.id == checkinId);
           
-          console.log('🗑️ History item delete clicked, checkinId:', checkinId);
+          // Delete the checkin
+          window.Storage.deleteCheckin(checkinId);
           
-          if (checkinId) {
-            console.log('🗑️ Deleting history item:', checkinId);
-            
-            const checkins = window.Storage.getCheckins();
-            const checkin = checkins.find(c => c.id == checkinId);
-            
-            window.Storage.deleteCheckin(checkinId);
-            
-            // Handle different types of checkins
-            if (checkin && checkin.type === 'drag_drop') {
-              if (checkin.subType === 'protocol') {
-                App.filteredProtocols = window.Storage.getProtocolsInOrder();
-                if (App.currentPage === 'protocols') {
-                  UI.renderProtocols();
-                }
-                App.showToast('Protocol order reverted', 'success');
-              } else if (checkin.subType === 'skill') {
-                App.filteredSkills = window.Storage.getSkillsInOrder();
-                if (App.currentPage === 'skills') {
-                  UI.renderSkills();
-                  DragDrop.setupSkills();
-                }
-                App.showToast('Skill order reverted', 'success');
+          // Handle different types of checkins for appropriate toast messages
+          if (checkin && checkin.type === 'drag_drop') {
+            if (checkin.subType === 'protocol') {
+              App.filteredProtocols = window.Storage.getProtocolsInOrder();
+              if (App.currentPage === 'protocols') {
+                UI.renderProtocols();
               }
-            } else {
-              App.showToast('Check-in deleted', 'success');
+              App.showToast('Protocol order reverted', 'success');
+            } else if (checkin.subType === 'skill') {
+              App.filteredSkills = window.Storage.getSkillsInOrder();
+              if (App.currentPage === 'skills') {
+                UI.renderSkills();
+                DragDrop.setupSkills();
+              }
+              App.showToast('Skill order reverted', 'success');
             }
-            
-            // Refresh history
-            App.filteredHistory = [];
-            App.historyInitialized = false;
-            
-            if (App.currentPage === 'history') {
-              App.applyHistoryFilters();
-            } else {
-              UI.renderHistory();
-            }
-            
-            // Update user stats if on dashboard
-            if (App.currentPage === 'dashboard') {
-              UI.updateUserStats();
-            }
-            
-            // Re-setup history delete buttons after DOM update
-            setTimeout(() => {
-              this.setupHistoryDeleteButtons();
-            }, 100);
           } else {
-            console.error('❌ Could not extract checkin ID from delete button');
+            App.showToast('Check-in deleted', 'success');
           }
+          
+          // Refresh history WITHOUT manipulating DOM structure
+          App.filteredHistory = [];
+          App.historyInitialized = false;
+          
+          if (App.currentPage === 'history') {
+            App.applyHistoryFilters();
+          } else {
+            UI.renderHistory();
+          }
+          
+          // Update user stats if on dashboard
+          if (App.currentPage === 'dashboard') {
+            UI.updateUserStats();
+          }
+        } else {
+          console.error('❌ Could not extract checkin ID from delete button');
         }
-      });
-      
-      console.log('✅ History delete button delegation setup complete');
-    } else {
-      console.warn('⚠️ History body not found for delete button setup');
-    }
-  },
-
-  extractCheckinIdFromOnclick(onclickAttr) {
-    if (!onclickAttr) return null;
+      }
+    };
     
-    // Extract ID from patterns like "App.deleteCheckin(1234567890)"
-    const match = onclickAttr.match(/App\.deleteCheckin\(([^)]+)\)/);
-    if (match) {
-      return match[1];
-    }
+    // Add the delegation listener to document
+    document.addEventListener('click', this.historyDelegationHandler);
     
-    return null;
+    console.log('✅ History delete button delegation setup complete');
   },
 
   // 🐛 DEBUG FUNCTIONS FOR TROUBLESHOOTING

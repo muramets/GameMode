@@ -466,15 +466,8 @@ function initMainApp() {
                     break;
             }
             
-            // 🔧 CRITICAL: Re-setup delete button listeners after every page render
-            // This ensures all delete buttons work properly even after DOM updates
-            setTimeout(() => {
-                if (window.Modals && typeof window.Modals.setupDeleteButtonListeners === 'function') {
-                    window.Modals.setupDeleteButtonListeners();
-                } else {
-                    console.warn('⚠️ Modals.setupDeleteButtonListeners not available during page render');
-                }
-            }, 100);
+            // 🔧 Event delegation for delete buttons is now handled by modals.js initialization
+            // No need to re-setup on every page render since we use document-level delegation
         },
 
         // Actions
