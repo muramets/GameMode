@@ -602,7 +602,7 @@ const UI = {
               <span class="history-change-tag">Position change</span>
             </div>
             <div class="history-cell history-actions-cell">
-              <button class="history-delete-btn" onclick="App.deleteCheckin(${checkin.id})" title="Undo">
+              <button class="history-delete-btn" data-checkin-id="${checkin.id}" title="Undo">
                 <i class="fas fa-undo"></i>
               </button>
             </div>
@@ -631,7 +631,7 @@ const UI = {
               <span class="history-change-tag">Quick Actions updated</span>
             </div>
             <div class="history-cell history-actions-cell">
-              <button class="history-delete-btn" onclick="App.deleteCheckin(${checkin.id})" title="Delete">
+              <button class="history-delete-btn" data-checkin-id="${checkin.id}" title="Delete">
                 <i class="fas fa-trash"></i>
               </button>
             </div>
@@ -665,7 +665,7 @@ const UI = {
             </div>
             <div class="history-cell history-changes-cell">${changes}</div>
             <div class="history-cell history-actions-cell">
-              <button class="history-delete-btn" onclick="App.deleteCheckin(${checkin.id})" title="Delete">
+              <button class="history-delete-btn" data-checkin-id="${checkin.id}" title="Delete">
                 <i class="fas fa-trash"></i>
               </button>
             </div>

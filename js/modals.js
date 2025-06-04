@@ -1430,59 +1430,64 @@ const Modals = {
           e.preventDefault();
           e.stopPropagation();
           
-          // Extract checkin ID from button's data or onclick attribute
+          // Get checkin ID from data attribute (preferred) or onclick attribute (fallback)
           const checkinId = deleteBtn.dataset.checkinId || 
                            this.extractCheckinIdFromOnclick(deleteBtn.getAttribute('onclick'));
           
           console.log('🗑️ History item delete clicked, checkinId:', checkinId);
           
           if (checkinId) {
-            console.log('🗑️ Deleting history item directly without confirmation:', checkinId);
-            
-            const checkins = window.Storage.getCheckins();
-            const checkin = checkins.find(c => c.id == checkinId);
-            
-            window.Storage.deleteCheckin(checkinId);
-            
-            // Handle different types of checkins
-            if (checkin && checkin.type === 'drag_drop') {
-              if (checkin.subType === 'protocol') {
-                App.filteredProtocols = window.Storage.getProtocolsInOrder();
-                if (App.currentPage === 'protocols') {
-                  UI.renderProtocols();
+            // Add confirmation dialog like in App.deleteCheckin
+            if (confirm('Delete this check-in?')) {
+              console.log('🗑️ Deleting history item with confirmation:', checkinId);
+              
+              const checkins = window.Storage.getCheckins();
+              const checkin = checkins.find(c => c.id == checkinId);
+              
+              window.Storage.deleteCheckin(checkinId);
+              
+              // Handle different types of checkins
+              if (checkin && checkin.type === 'drag_drop') {
+                if (checkin.subType === 'protocol') {
+                  App.filteredProtocols = window.Storage.getProtocolsInOrder();
+                  if (App.currentPage === 'protocols') {
+                    UI.renderProtocols();
+                  }
+                  App.showToast('Protocol order reverted', 'success');
+                } else if (checkin.subType === 'skill') {
+                  App.filteredSkills = window.Storage.getSkillsInOrder();
+                  if (App.currentPage === 'skills') {
+                    UI.renderSkills();
+                    DragDrop.setupSkills();
+                  }
+                  App.showToast('Skill order reverted', 'success');
                 }
-                App.showToast('Protocol order reverted', 'success');
-              } else if (checkin.subType === 'skill') {
-                App.filteredSkills = window.Storage.getSkillsInOrder();
-                if (App.currentPage === 'skills') {
-                  UI.renderSkills();
-                  DragDrop.setupSkills();
-                }
-                App.showToast('Skill order reverted', 'success');
+              } else {
+                App.showToast('Check-in deleted', 'success');
               }
+              
+              // Refresh history
+              App.filteredHistory = [];
+              App.historyInitialized = false;
+              
+              if (App.currentPage === 'history') {
+                App.applyHistoryFilters();
+              } else {
+                UI.renderHistory();
+              }
+              
+              // Update user stats if on dashboard
+              if (App.currentPage === 'dashboard') {
+                UI.updateUserStats();
+              }
+              
+              // Re-setup history delete buttons after DOM update
+              setTimeout(() => {
+                this.setupHistoryDeleteButtons();
+              }, 100);
             } else {
-              App.showToast('Check-in deleted', 'success');
+              console.log('🚫 History item deletion cancelled by user');
             }
-            
-            // Refresh history
-            App.filteredHistory = [];
-            App.historyInitialized = false;
-            
-            if (App.currentPage === 'history') {
-              App.applyHistoryFilters();
-            } else {
-              UI.renderHistory();
-            }
-            
-            // Update user stats if on dashboard
-            if (App.currentPage === 'dashboard') {
-              UI.updateUserStats();
-            }
-            
-            // Re-setup history delete buttons after DOM update
-            setTimeout(() => {
-              this.setupHistoryDeleteButtons();
-            }, 100);
           } else {
             console.error('❌ Could not extract checkin ID from delete button');
           }

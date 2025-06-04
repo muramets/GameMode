@@ -526,49 +526,9 @@ function initMainApp() {
         },
 
         deleteCheckin(checkinId) {
-            if (confirm('Delete this check-in?')) {
-                const checkins = window.Storage.getCheckins();
-                const checkin = checkins.find(c => c.id === checkinId);
-                
-                window.Storage.deleteCheckin(checkinId);
-                
-                // If it was a drag & drop operation, refresh the affected page
-                if (checkin && checkin.type === 'drag_drop') {
-                    if (checkin.subType === 'protocol') {
-                        this.filteredProtocols = window.Storage.getProtocolsInOrder();
-                        if (this.currentPage === 'protocols') {
-                            UI.renderProtocols();
-                        }
-                        this.showToast('Protocol order reverted', 'success');
-                    } else if (checkin.subType === 'skill') {
-                        this.filteredSkills = window.Storage.getSkillsInOrder();
-                        if (this.currentPage === 'skills') {
-                            UI.renderSkills();
-                            DragDrop.setupSkills();
-                        }
-                        this.showToast('Skill order reverted', 'success');
-                    }
-                } else {
-                    this.showToast('Check-in deleted', 'success');
-                }
-                
-                // 🔧 FIX: Properly refresh history by reapplying filters instead of just resetting
-                this.filteredHistory = [];
-                this.historyInitialized = false;
-                
-                // Apply current filters to properly reload and filter history
-                if (this.currentPage === 'history') {
-                    this.applyHistoryFilters();
-                } else {
-                    // If not on history page, just reset for next visit
-                UI.renderHistory();
-                }
-                
-                // Update user stats if on dashboard
-                if (this.currentPage === 'dashboard') {
-                    UI.updateUserStats();
-                }
-            }
+            // 🔧 DEPRECATED: This method is now handled by event delegation in modals.js
+            // Left here for backward compatibility, but all functionality moved to setupHistoryDeleteButtons()
+            console.warn('⚠️ App.deleteCheckin() is deprecated - deletion now handled by modals.js event delegation');
         },
 
         // Toast notifications
