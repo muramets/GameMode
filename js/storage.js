@@ -1116,8 +1116,10 @@ class Storage {
       verification: this.get(this.KEYS.PROTOCOL_ORDER)
     });
     
-    // 🔧 НОВОЕ: Сохраняем timestamp изменения для защиты от перезаписи
-    localStorage.setItem('protocolOrder_lastChanged', Date.now().toString());
+    // 🔧 НОВОЕ: Сохраняем timestamp изменения для cross-device синхронизации
+    const orderTimestamp = Date.now();
+    this.set('protocolOrder_timestamp', orderTimestamp);
+    console.log('⏰ PROTOCOL ORDER TIMESTAMP SAVED:', orderTimestamp);
     
     // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ при изменении порядка protocols
     if (!this.syncInProgress) {
@@ -1176,8 +1178,10 @@ class Storage {
       verification: this.get(this.KEYS.SKILL_ORDER)
     });
     
-    // 🔧 НОВОЕ: Сохраняем timestamp изменения для защиты от перезаписи
-    localStorage.setItem('skillOrder_lastChanged', Date.now().toString());
+    // 🔧 НОВОЕ: Сохраняем timestamp изменения для cross-device синхронизации
+    const orderTimestamp = Date.now();
+    this.set('skillOrder_timestamp', orderTimestamp);
+    console.log('⏰ SKILL ORDER TIMESTAMP SAVED:', orderTimestamp);
     
     // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ при изменении порядка skills
     if (!this.syncInProgress) {
@@ -1749,8 +1753,10 @@ class Storage {
       verification: this.get(this.KEYS.STATE_ORDER)
     });
     
-    // 🔧 НОВОЕ: Сохраняем timestamp изменения для защиты от перезаписи
-    localStorage.setItem('stateOrder_lastChanged', Date.now().toString());
+    // 🔧 НОВОЕ: Сохраняем timestamp изменения для cross-device синхронизации
+    const orderTimestamp = Date.now();
+    this.set('stateOrder_timestamp', orderTimestamp);
+    console.log('⏰ STATE ORDER TIMESTAMP SAVED:', orderTimestamp);
     
     // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ при изменении порядка states
     this.markForSync();
@@ -1797,8 +1803,10 @@ class Storage {
       quickActionsUpdated: this.get(this.KEYS.QUICK_ACTIONS)
     });
     
-    // 🔧 НОВОЕ: Сохраняем timestamp изменения для защиты от перезаписи
-    localStorage.setItem('quickActionOrder_lastChanged', Date.now().toString());
+    // 🔧 НОВОЕ: Сохраняем timestamp изменения для cross-device синхронизации
+    const orderTimestamp = Date.now();
+    this.set('quickActionOrder_timestamp', orderTimestamp);
+    console.log('⏰ QUICK ACTION ORDER TIMESTAMP SAVED:', orderTimestamp);
     
     // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ при изменении Quick Actions
     this.markForSync();
@@ -1874,13 +1882,18 @@ class Storage {
       'deletedProtocols': 'deletedProtocols', // Special case - not in KEYS object
       'deletedSkills': 'deletedSkills', // Special case - not in KEYS object
       'deletedStates': 'deletedStates', // Special case - not in KEYS object
-      'deletedQuickActions': 'deletedQuickActions' // Special case - not in KEYS object
+      'deletedQuickActions': 'deletedQuickActions', // Special case - not in KEYS object
+      // 🔧 НОВОЕ: timestamp ключи для order массивов
+      'protocolOrder_timestamp': 'protocolOrder_timestamp',
+      'skillOrder_timestamp': 'skillOrder_timestamp', 
+      'stateOrder_timestamp': 'stateOrder_timestamp',
+      'quickActionOrder_timestamp': 'quickActionOrder_timestamp'
     };
     
     const mappedKey = keyMap[serverKey];
     if (mappedKey) {
-      // For deletedCheckins, deletedProtocols, deletedSkills, deletedStates, and deletedQuickActions, return the key directly (not through KEYS)
-      if (serverKey === 'deletedCheckins' || serverKey === 'deletedProtocols' || serverKey === 'deletedSkills' || serverKey === 'deletedStates' || serverKey === 'deletedQuickActions') {
+      // For deletedCheckins, deletedProtocols, deletedSkills, deletedStates, deletedQuickActions, and timestamp keys, return the key directly (not through KEYS)
+      if (serverKey === 'deletedCheckins' || serverKey === 'deletedProtocols' || serverKey === 'deletedSkills' || serverKey === 'deletedStates' || serverKey === 'deletedQuickActions' || serverKey.includes('_timestamp')) {
         return serverKey;
       }
       // For other keys, use KEYS object
@@ -1939,7 +1952,12 @@ class Storage {
         deletedProtocols: this.get('deletedProtocols') || [],
         deletedSkills: this.get('deletedSkills') || [],
         deletedStates: this.get('deletedStates') || [],
-        deletedQuickActions: this.get('deletedQuickActions') || []
+        deletedQuickActions: this.get('deletedQuickActions') || [],
+        // 🔧 НОВОЕ: отправляем timestamp'ы order массивов для умной синхронизации
+        protocolOrder_timestamp: this.get('protocolOrder_timestamp') || 0,
+        skillOrder_timestamp: this.get('skillOrder_timestamp') || 0,
+        stateOrder_timestamp: this.get('stateOrder_timestamp') || 0,
+        quickActionOrder_timestamp: this.get('quickActionOrder_timestamp') || 0
       };
       
       // 🐞 DEBUG: Логируем отправляемые данные Quick Actions
@@ -2969,43 +2987,68 @@ class Storage {
             // 🔄 ИСПРАВЛЕНИЕ: Если локальный порядок пустой, используем серверный порядок полностью
             let orderMergedData;
             if (validLocalIds.length === 0 && validServerIds.length > 0) {
-                // 🔧 ЗАЩИТА: Проверяем не был ли order изменен недавно
-                const orderChangeTimestampKey = `${key}_lastChanged`;
-                const lastOrderChange = localStorage.getItem(orderChangeTimestampKey);
-                const isRecentOrderChange = lastOrderChange && (Date.now() - parseInt(lastOrderChange)) < 30000; // 30 секунд
+                // 🔧 УМНАЯ TIMESTAMP-BASED СИНХРОНИЗАЦИЯ
+                const localTimestamp = this.get(`${key}_timestamp`) || 0;
+                const serverTimestamp = serverData[`${key}_timestamp`] || 0;
                 
-                if (isRecentOrderChange) {
-                    console.log(`🛡️ ${key} order was changed recently (${Math.round((Date.now() - parseInt(lastOrderChange))/1000)}s ago), preserving current local state`);
-                    
-                    // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Получаем АКТУАЛЬНЫЕ локальные данные из this.get() вместо пустого массива
-                    const currentLocalOrder = this.get(key) || []; // 🔧 ИСПРАВЛЕНИЕ: Используем key напрямую
-                    console.log(`🔧 TIMESTAMP PROTECTION: Retrieved current local ${key}:`, currentLocalOrder);
-                    
-                    if (currentLocalOrder.length > 0) {
-                        // Фильтруем только валидные ID'шники
-                        const validCurrentOrder = currentLocalOrder.filter(id => validIds.includes(id));
-                        orderMergedData = validCurrentOrder;
-                        console.log(`🛡️ PROTECTED ORDER PRESERVED: ${key} with ${validCurrentOrder.length} valid items`);
-                    } else {
-                        // Если текущий order тоже пустой, используем серверный
-                        orderMergedData = [...validServerIds];
-                        console.log(`🔧 FALLBACK: Current ${key} is empty, using server order`);
-                    }
-                } else {
-                    console.log(`📥 ${key} local order is empty, using server order completely`);
+                console.log(`⏰ TIMESTAMP COMPARISON for ${key}:`, {
+                    localTimestamp,
+                    serverTimestamp,
+                    localIsNewer: localTimestamp > serverTimestamp,
+                    serverIsNewer: serverTimestamp > localTimestamp,
+                    timeDifference: Math.abs(localTimestamp - serverTimestamp)
+                });
+                
+                if (serverTimestamp > localTimestamp) {
+                    console.log(`📥 ${key}: Using SERVER order (timestamp ${serverTimestamp} > ${localTimestamp})`);
                     orderMergedData = [...validServerIds];
+                } else {
+                    console.log(`💾 ${key}: Using LOCAL order (timestamp ${localTimestamp} >= ${serverTimestamp})`);
+                    // Получаем актуальные локальные данные
+                    const currentLocalOrder = this.get(key) || [];
+                    const validCurrentOrder = currentLocalOrder.filter(id => validIds.includes(id));
+                    orderMergedData = validCurrentOrder.length > 0 ? validCurrentOrder : [...validServerIds];
                 }
             } else {
-                // Сначала добавляем все валидные локальные ID'шники
-                orderMergedData = [...validLocalIds];
+                // 🔧 УМНАЯ TIMESTAMP-BASED ЛОГИКА для случая когда есть и локальные и серверные данные
+                const localTimestamp = this.get(`${key}_timestamp`) || 0;
+                const serverTimestamp = serverData[`${key}_timestamp`] || 0;
                 
-                // Затем добавляем валидные серверные ID'шники, которых нет локально
-                for (const serverId of validServerIds) {
-                    if (!orderMergedData.includes(serverId)) {
-                        console.log(`📋 ${key} ID ${serverId} found only on server, adding to local`);
-                        orderMergedData.push(serverId);
-                    } else {
-                        console.log(`📋 ${key} ID ${serverId} exists in both local and server, keeping local position`);
+                console.log(`⏰ SMART MERGE TIMESTAMP COMPARISON for ${key}:`, {
+                    localTimestamp,
+                    serverTimestamp,
+                    localIsNewer: localTimestamp > serverTimestamp,
+                    serverIsNewer: serverTimestamp > localTimestamp,
+                    timeDifference: Math.abs(localTimestamp - serverTimestamp)
+                });
+                
+                if (serverTimestamp > localTimestamp) {
+                    // Серверный порядок новее - используем его как основу
+                    console.log(`📥 ${key}: SMART MERGE - Using SERVER order as base (newer timestamp)`);
+                    orderMergedData = [...validServerIds];
+                    
+                    // Добавляем недостающие локальные элементы в конец
+                    for (const localId of validLocalIds) {
+                        if (!orderMergedData.includes(localId)) {
+                            console.log(`📋 ${key} ID ${localId} found only locally, adding to server-based order`);
+                            orderMergedData.push(localId);
+                        } else {
+                            console.log(`📋 ${key} ID ${localId} exists in both, keeping server position (newer timestamp)`);
+                        }
+                    }
+                } else {
+                    // Локальный порядок новее или равен - используем его как основу
+                    console.log(`💾 ${key}: SMART MERGE - Using LOCAL order as base (newer/equal timestamp)`);
+                    orderMergedData = [...validLocalIds];
+                    
+                    // Добавляем недостающие серверные элементы в конец
+                    for (const serverId of validServerIds) {
+                        if (!orderMergedData.includes(serverId)) {
+                            console.log(`📋 ${key} ID ${serverId} found only on server, adding to local-based order`);
+                            orderMergedData.push(serverId);
+                        } else {
+                            console.log(`📋 ${key} ID ${serverId} exists in both, keeping local position (newer/equal timestamp)`);
+                        }
                     }
                 }
             }
