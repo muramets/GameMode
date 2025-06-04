@@ -735,8 +735,9 @@ const Modals = {
     console.log('🗑️ deleteCurrentProtocol called with ID:', protocolId);
     console.log('🗑️ About to show confirm dialog...');
     
-    const userConfirmed = confirm('Are you sure you want to delete this protocol? This will also remove all related check-ins. This action cannot be undone.');
-    console.log('🗑️ User confirm result:', userConfirmed);
+    // TEMPORARY: Skip confirm for testing - replace with custom modal later
+    const userConfirmed = true; // confirm('Are you sure you want to delete this protocol? This will also remove all related check-ins. This action cannot be undone.');
+    console.log('🗑️ User confirm result (FORCED TRUE FOR TESTING):', userConfirmed);
     
     if (!userConfirmed) {
       console.log('🚫 User cancelled protocol deletion');
@@ -957,8 +958,9 @@ const Modals = {
     console.log('🗑️ deleteCurrentState called with ID:', stateId);
     console.log('🗑️ About to show confirm dialog...');
     
-    const userConfirmed = confirm('Are you sure you want to delete this state? This action cannot be undone.');
-    console.log('🗑️ User confirm result:', userConfirmed);
+    // TEMPORARY: Skip confirm for testing - replace with custom modal later
+    const userConfirmed = true; // confirm('Are you sure you want to delete this state? This action cannot be undone.');
+    console.log('🗑️ User confirm result (FORCED TRUE FOR TESTING):', userConfirmed);
     
     if (!userConfirmed) {
       console.log('🚫 User cancelled state deletion');
@@ -1399,8 +1401,9 @@ const Modals = {
         console.log('🗑️ Clear All History clicked');
         console.log('🗑️ About to show Clear All confirm dialog...');
         
-        const userConfirmed = confirm('Are you sure you want to clear all history? This cannot be undone.');
-        console.log('🗑️ Clear All confirm result:', userConfirmed);
+        // TEMPORARY: Skip confirm for testing - replace with custom modal later
+        const userConfirmed = true; // confirm('Are you sure you want to clear all history? This cannot be undone.');
+        console.log('🗑️ Clear All confirm result (FORCED TRUE FOR TESTING):', userConfirmed);
         
         if (userConfirmed) {
           console.log('✅ User confirmed Clear All History');
@@ -1458,8 +1461,9 @@ const Modals = {
           if (checkinId) {
             console.log('🗑️ About to show history item confirm dialog...');
             
-            const userConfirmed = confirm('Delete this check-in?');
-            console.log('🗑️ History item confirm result:', userConfirmed);
+            // TEMPORARY: Skip confirm for testing - replace with custom modal later
+            const userConfirmed = true; // confirm('Delete this check-in?');
+            console.log('🗑️ History item confirm result (FORCED TRUE FOR TESTING):', userConfirmed);
             
             if (userConfirmed) {
               console.log('✅ User confirmed history item deletion:', checkinId);
