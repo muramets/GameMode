@@ -834,12 +834,40 @@ class Storage {
       }
     }
     
-    // Track deleted checkin IDs to prevent restoration from server
+    // 🔧 НОВОЕ: Timestamp-based удаление для cross-device синхронизации
+    const deletionTimestamp = Date.now();
     const deletedCheckins = this.get('deletedCheckins') || [];
-    if (!deletedCheckins.includes(checkinId)) {
-      deletedCheckins.push(checkinId);
-      this.set('deletedCheckins', deletedCheckins);
+    
+    // Обновляем или добавляем запись об удалении с timestamp
+    const existingDeletionIndex = deletedCheckins.findIndex(item => 
+      (typeof item === 'object' ? item.id : item) === checkinId
+    );
+    
+    if (existingDeletionIndex !== -1) {
+      // Обновляем существующую запись
+      deletedCheckins[existingDeletionIndex] = {
+        id: checkinId,
+        deletedAt: deletionTimestamp,
+        type: checkin?.type || 'unknown'
+      };
+    } else {
+      // Добавляем новую запись
+      deletedCheckins.push({
+        id: checkinId,
+        deletedAt: deletionTimestamp,
+        type: checkin?.type || 'unknown'
+      });
     }
+    
+    this.set('deletedCheckins', deletedCheckins);
+    
+    console.log(`🗑️ CHECKIN DELETION with TIMESTAMP:`, {
+      checkinId,
+      deletedAt: deletionTimestamp,
+      deletedAtISO: new Date(deletionTimestamp).toISOString(),
+      checkinType: checkin?.type,
+      deletedCheckinsCount: deletedCheckins.length
+    });
     
     const filtered = checkins.filter(c => c.id !== checkinId);
     this.set(this.KEYS.HISTORY, filtered);
@@ -1275,7 +1303,10 @@ class Storage {
       name: skillData.name + (skillData.description ? '. ' + skillData.description : ''),
       icon: skillData.icon,
       hover: skillData.hover || '',
-      initialScore: skillData.initialScore
+      initialScore: skillData.initialScore,
+      // 🔧 НОВОЕ: Добавляем timestamp создания для timestamp-based удалений
+      createdAt: Date.now(),
+      lastModified: Date.now()
     };
     
     // Add to skills array
@@ -1303,7 +1334,10 @@ class Storage {
       name: skillData.name + (skillData.description ? '. ' + skillData.description : ''),
       icon: skillData.icon,
       hover: skillData.hover || '',
-      initialScore: skillData.initialScore
+      initialScore: skillData.initialScore,
+      // 🔧 НОВОЕ: Сохраняем существующий createdAt и обновляем lastModified
+      createdAt: skills[index].createdAt || Date.now(),
+      lastModified: Date.now()
     };
     
     this.set(this.KEYS.SKILLS, skills);
@@ -1319,22 +1353,47 @@ class Storage {
   // Delete skill
   deleteSkill(skillId) {
     const skills = this.getSkills();
+    const skillToDelete = skills.find(s => s.id === skillId);
     const filteredSkills = skills.filter(s => s.id !== skillId);
     
     if (filteredSkills.length === skills.length) {
       return false; // Skill not found
     }
     
-    // 🔧 НОВОЕ: Отслеживаем удаленные навыки аналогично deletedProtocols
+    // 🔧 НОВОЕ: Timestamp-based удаление для cross-device синхронизации
+    const deletionTimestamp = Date.now();
     const deletedSkills = this.get('deletedSkills') || [];
-    if (!deletedSkills.includes(skillId)) {
-      deletedSkills.push(skillId);
-      this.set('deletedSkills', deletedSkills);
-      console.log(`🗑️ SKILL DELETION TRACKED: Added skill ${skillId} to deletedSkills list`, {
-        skillId,
-        deletedSkillsCount: deletedSkills.length
+    
+    // Обновляем или добавляем запись об удалении с timestamp
+    const existingDeletionIndex = deletedSkills.findIndex(item => 
+      (typeof item === 'object' ? item.id : item) === skillId
+    );
+    
+    if (existingDeletionIndex !== -1) {
+      // Обновляем существующую запись
+      deletedSkills[existingDeletionIndex] = {
+        id: skillId,
+        deletedAt: deletionTimestamp,
+        name: skillToDelete?.name || 'Unknown Skill'
+      };
+    } else {
+      // Добавляем новую запись
+      deletedSkills.push({
+        id: skillId,
+        deletedAt: deletionTimestamp,
+        name: skillToDelete?.name || 'Unknown Skill'
       });
     }
+    
+    this.set('deletedSkills', deletedSkills);
+    
+    console.log(`🗑️ SKILL DELETION with TIMESTAMP:`, {
+      skillId,
+      deletedAt: deletionTimestamp,
+      deletedAtISO: new Date(deletionTimestamp).toISOString(),
+      skillName: skillToDelete?.name,
+      deletedSkillsCount: deletedSkills.length
+    });
     
     // Remove from skills
     this.set(this.KEYS.SKILLS, filteredSkills);
@@ -1371,7 +1430,10 @@ class Storage {
       icon: protocolData.icon,
       hover: protocolData.hover || '',
       weight: protocolData.weight,
-      targets: protocolData.targets || []
+      targets: protocolData.targets || [],
+      // 🔧 НОВОЕ: Добавляем timestamp создания для timestamp-based удалений
+      createdAt: Date.now(),
+      lastModified: Date.now()
     };
     
     // Add to protocols array
@@ -1412,10 +1474,14 @@ class Storage {
       icon: protocolData.icon,
       hover: protocolData.hover || '',
       weight: protocolData.weight,
-      targets: newTargets
+      targets: newTargets,
+      // 🔧 НОВОЕ: Обновляем timestamp изменения
+      createdAt: oldProtocol.createdAt || Date.now(),
+      lastModified: Date.now()
     };
     
     this.set(this.KEYS.PROTOCOLS, protocols);
+    
     
     // Check if targets changed or weight changed and recalculate history if needed
     const targetsChanged = !this.arraysEqual(oldTargets, newTargets);
@@ -1453,22 +1519,47 @@ class Storage {
   // Delete protocol
   deleteProtocol(protocolId) {
     const protocols = this.getProtocols();
+    const protocolToDelete = protocols.find(p => p.id === protocolId);
     const filteredProtocols = protocols.filter(p => p.id !== protocolId);
     
     if (filteredProtocols.length === protocols.length) {
       return false; // Protocol not found
     }
     
-    // 🔧 НОВОЕ: Отслеживаем удаленные протоколы аналогично deletedCheckins
+    // 🔧 НОВОЕ: Timestamp-based удаление для cross-device синхронизации
+    const deletionTimestamp = Date.now();
     const deletedProtocols = this.get('deletedProtocols') || [];
-    if (!deletedProtocols.includes(protocolId)) {
-      deletedProtocols.push(protocolId);
-      this.set('deletedProtocols', deletedProtocols);
-      console.log(`🗑️ PROTOCOL DELETION TRACKED: Added protocol ${protocolId} to deletedProtocols list`, {
-        protocolId,
-        deletedProtocolsCount: deletedProtocols.length
+    
+    // Обновляем или добавляем запись об удалении с timestamp
+    const existingDeletionIndex = deletedProtocols.findIndex(item => 
+      (typeof item === 'object' ? item.id : item) === protocolId
+    );
+    
+    if (existingDeletionIndex !== -1) {
+      // Обновляем существующую запись
+      deletedProtocols[existingDeletionIndex] = {
+        id: protocolId,
+        deletedAt: deletionTimestamp,
+        name: protocolToDelete?.name || 'Unknown Protocol'
+      };
+    } else {
+      // Добавляем новую запись
+      deletedProtocols.push({
+        id: protocolId,
+        deletedAt: deletionTimestamp,
+        name: protocolToDelete?.name || 'Unknown Protocol'
       });
     }
+    
+    this.set('deletedProtocols', deletedProtocols);
+    
+    console.log(`🗑️ PROTOCOL DELETION with TIMESTAMP:`, {
+      protocolId,
+      deletedAt: deletionTimestamp,
+      deletedAtISO: new Date(deletionTimestamp).toISOString(),
+      protocolName: protocolToDelete?.name,
+      deletedProtocolsCount: deletedProtocols.length
+    });
     
     // Remove from protocols
     this.set(this.KEYS.PROTOCOLS, filteredProtocols);
@@ -1511,7 +1602,10 @@ class Storage {
       icon: stateData.icon,
       hover: stateData.hover,
       skillIds: stateData.skillIds || [],
-      stateIds: stateData.stateIds || []
+      stateIds: stateData.stateIds || [],
+      // 🔧 НОВОЕ: Добавляем timestamp создания для timestamp-based удалений
+      createdAt: Date.now(),
+      lastModified: Date.now()
     };
     
     states.push(newState);
@@ -1538,7 +1632,9 @@ class Storage {
       icon: stateData.icon,
       hover: stateData.hover,
       skillIds: stateData.skillIds || [],
-      stateIds: stateData.stateIds || []
+      stateIds: stateData.stateIds || [],
+      // 🔧 НОВОЕ: Обновляем timestamp изменения
+      lastModified: Date.now()
     };
     
     this.set(this.KEYS.STATES, states);
@@ -1553,22 +1649,47 @@ class Storage {
 
   deleteState(stateId) {
     const states = this.getStates();
+    const stateToDelete = states.find(s => s.id === stateId);
     const filteredStates = states.filter(s => s.id !== stateId);
     
     if (filteredStates.length === states.length) {
       return false; // State not found
     }
     
-    // 🔧 НОВОЕ: Отслеживаем удаленные states аналогично deletedProtocols и deletedSkills
+    // 🔧 НОВОЕ: Timestamp-based удаление для cross-device синхронизации
+    const deletionTimestamp = Date.now();
     const deletedStates = this.get('deletedStates') || [];
-    if (!deletedStates.includes(stateId)) {
-      deletedStates.push(stateId);
-      this.set('deletedStates', deletedStates);
-      console.log(`🗑️ STATE DELETION TRACKED: Added state ${stateId} to deletedStates list`, {
-        stateId,
-        deletedStatesCount: deletedStates.length
+    
+    // Обновляем или добавляем запись об удалении с timestamp
+    const existingDeletionIndex = deletedStates.findIndex(item => 
+      (typeof item === 'object' ? item.id : item) === stateId
+    );
+    
+    if (existingDeletionIndex !== -1) {
+      // Обновляем существующую запись
+      deletedStates[existingDeletionIndex] = {
+        id: stateId,
+        deletedAt: deletionTimestamp,
+        name: stateToDelete?.name || 'Unknown State'
+      };
+    } else {
+      // Добавляем новую запись
+      deletedStates.push({
+        id: stateId,
+        deletedAt: deletionTimestamp,
+        name: stateToDelete?.name || 'Unknown State'
       });
     }
+    
+    this.set('deletedStates', deletedStates);
+    
+    console.log(`🗑️ STATE DELETION with TIMESTAMP:`, {
+      stateId,
+      deletedAt: deletionTimestamp,
+      deletedAtISO: new Date(deletionTimestamp).toISOString(),
+      stateName: stateToDelete?.name,
+      deletedStatesCount: deletedStates.length
+    });
     
     // Remove references to this state from other states
     filteredStates.forEach(state => {
@@ -1690,16 +1811,41 @@ class Storage {
       userEmail: this.currentUser?.email
     });
     
-    // 🔧 НОВОЕ: Добавляем отслеживание удаления Quick Actions (аналогично deletedProtocols/deletedSkills)
+    // 🔧 НОВОЕ: Timestamp-based удаление для cross-device синхронизации
+    const deletionTimestamp = Date.now();
     const deletedQuickActions = this.get("deletedQuickActions") || [];
-    if (!deletedQuickActions.includes(protocolId)) {
-      deletedQuickActions.push(protocolId);
-      this.set("deletedQuickActions", deletedQuickActions);
-      console.log(`🗑️ QUICK ACTION DELETION TRACKED: Added protocol ${protocolId} to deletedQuickActions list`, {
-        protocolId: protocolId,
-        deletedQuickActionsCount: deletedQuickActions.length
+    
+    // Обновляем или добавляем запись об удалении с timestamp
+    const existingDeletionIndex = deletedQuickActions.findIndex(item => 
+      (typeof item === 'object' ? item.id : item) === protocolId
+    );
+    
+    if (existingDeletionIndex !== -1) {
+      // Обновляем существующую запись
+      deletedQuickActions[existingDeletionIndex] = {
+        id: protocolId,
+        deletedAt: deletionTimestamp,
+        name: protocol?.name || 'Unknown Protocol'
+      };
+    } else {
+      // Добавляем новую запись
+      deletedQuickActions.push({
+        id: protocolId,
+        deletedAt: deletionTimestamp,
+        name: protocol?.name || 'Unknown Protocol'
       });
     }
+    
+    this.set("deletedQuickActions", deletedQuickActions);
+    
+    console.log(`🗑️ QUICK ACTION DELETION with TIMESTAMP:`, {
+      protocolId,
+      deletedAt: deletionTimestamp,
+      deletedAtISO: new Date(deletionTimestamp).toISOString(),
+      protocolName: protocol?.name,
+      deletedQuickActionsCount: deletedQuickActions.length
+    });
+    
     console.log('🚫 REMOVING FROM QUICK ACTIONS:', {
       protocolId,
       reason: 'user_removal'
@@ -2387,6 +2533,17 @@ class Storage {
                     mergedData = mergedData.filter((item, index, self) => 
                         index === self.findIndex(t => t.id === item.id)
                     );
+                    
+                    // 🔧 НОВОЕ: Применяем timestamp-based удаления для cross-device синхронизации
+                    const deletedProtocols = this.get('deletedProtocols') || [];
+                    if (deletedProtocols.length > 0) {
+                        console.log('🗑️ APPLYING TIMESTAMP-BASED PROTOCOL DELETIONS...');
+                        mergedData = this.applyTimestampBasedDeletions(mergedData, deletedProtocols, 'protocols');
+                        if (mergedData.length < localArray.length) {
+                            hasUpdates = true;
+                            console.log('📤 PROTOCOL DELETIONS APPLIED: Marking for sync to update server');
+                        }
+                    }
                     
                     // 🚀 ВАЖНО: Если у нас меньше протоколов чем на сервере, отправляем наши данные
                     // Это информирует сервер об удалениях пользователя
@@ -4067,6 +4224,163 @@ class Storage {
     } catch (error) {
       console.error('🚨 Quick Actions debug failed:', error);
     }
+  }
+
+  // 🔧 НОВОЕ: Обработка timestamp-based удалений для cross-device синхронизации
+  applyTimestampBasedDeletions(localArray, deletedArray, dataType) {
+    if (!Array.isArray(localArray) || !Array.isArray(deletedArray)) {
+      return localArray;
+    }
+    
+    console.log(`🗑️ APPLYING TIMESTAMP DELETIONS for ${dataType}:`, {
+      localCount: localArray.length,
+      deletedRecordsCount: deletedArray.length,
+      deletedRecords: deletedArray
+    });
+    
+    let filteredArray = [...localArray];
+    let deletedCount = 0;
+    
+    deletedArray.forEach(deletionRecord => {
+      // 🔧 ОБРАТНАЯ СОВМЕСТИМОСТЬ: Поддерживаем как старый формат (простой ID), так и новый (объект с timestamp)
+      const deletionId = typeof deletionRecord === 'object' ? deletionRecord.id : deletionRecord;
+      const deletionTimestamp = typeof deletionRecord === 'object' ? deletionRecord.deletedAt : 0;
+      
+      // Ищем элемент в локальном массиве
+      const itemIndex = filteredArray.findIndex(item => {
+        // 🔧 УНИВЕРСАЛЬНОЕ СРАВНЕНИЕ ID (поддержка string/number)
+        return item.id == deletionId || item.id === deletionId;
+      });
+      
+      if (itemIndex !== -1) {
+        const localItem = filteredArray[itemIndex];
+        
+        // 🔧 УМНОЕ ПОЛУЧЕНИЕ TIMESTAMP ЭЛЕМЕНТА
+        let itemTimestamp = this.getItemTimestamp(localItem, dataType);
+        
+        console.log(`🔍 DELETION CHECK for ${dataType} ID ${deletionId}:`, {
+          deletionRecord: typeof deletionRecord === 'object' ? {
+            id: deletionRecord.id,
+            deletedAt: deletionRecord.deletedAt,
+            deletedAtISO: new Date(deletionRecord.deletedAt || 0).toISOString(),
+            name: deletionRecord.name
+          } : `Simple ID: ${deletionRecord}`,
+          itemTimestamp: {
+            value: itemTimestamp,
+            iso: itemTimestamp > 0 ? new Date(itemTimestamp).toISOString() : 'no timestamp',
+            source: this.getTimestampSource(localItem, dataType)
+          },
+          comparison: {
+            deletionIsNewer: deletionTimestamp > itemTimestamp,
+            shouldDelete: deletionTimestamp >= itemTimestamp,
+            timeDifference: Math.abs(deletionTimestamp - itemTimestamp)
+          },
+          itemName: localItem.name || 'Unknown'
+        });
+        
+        // 🔧 ЛОГИКА УДАЛЕНИЯ:
+        // 1. Если старый формат (deletionTimestamp = 0) - удаляем всегда (обратная совместимость)
+        // 2. Если новый формат - удаляем только если timestamp удаления >= timestamp элемента
+        const shouldDelete = deletionTimestamp === 0 || deletionTimestamp >= itemTimestamp;
+        
+        if (shouldDelete) {
+          const reason = deletionTimestamp === 0 ? 'legacy deletion (no timestamp)' : 
+                        `deletion timestamp ${new Date(deletionTimestamp).toISOString()} >= item timestamp ${new Date(itemTimestamp).toISOString()}`;
+          
+          console.log(`🗑️ CROSS-DEVICE DELETION: Removing ${dataType} ID ${deletionId} - ${reason}`);
+          filteredArray.splice(itemIndex, 1);
+          deletedCount++;
+        } else {
+          console.log(`⏭️ SKIPPING DELETION: ${dataType} ID ${deletionId} was modified after deletion (item: ${new Date(itemTimestamp).toISOString()} > deletion: ${new Date(deletionTimestamp).toISOString()})`);
+        }
+      } else {
+        console.log(`👻 DELETION RECORD: ${dataType} ID ${deletionId} not found locally (already deleted or never existed)`);
+      }
+    });
+    
+    if (deletedCount > 0) {
+      console.log(`✅ TIMESTAMP DELETIONS APPLIED for ${dataType}:`, {
+        removedCount: deletedCount,
+        remainingCount: filteredArray.length,
+        originalCount: localArray.length
+      });
+    } else {
+      console.log(`🔄 NO DELETIONS APPLIED for ${dataType}: All items up to date or protected by timestamps`);
+    }
+    
+    return filteredArray;
+  }
+  
+  // 🔧 НОВОЕ: Получение timestamp элемента для сравнения с timestamp удаления
+  getItemTimestamp(item, dataType) {
+    if (!item) return 0;
+    
+    // 🔧 ПРИОРИТЕТНЫЙ ПОРЯДОК ПОИСКА TIMESTAMP:
+    // 1. lastModified (явно установленный timestamp изменения)
+    // 2. updatedAt (стандартное поле обновления)
+    // 3. createdAt (timestamp создания)
+    // 4. id если это timestamp (для history записей)
+    // 5. 0 (элемент без timestamp - всегда удаляется)
+    
+    // Явные timestamp поля
+    if (item.lastModified && typeof item.lastModified === 'number') {
+      return item.lastModified;
+    }
+    
+    if (item.updatedAt) {
+      const timestamp = typeof item.updatedAt === 'string' ? 
+                       new Date(item.updatedAt).getTime() : item.updatedAt;
+      if (!isNaN(timestamp)) return timestamp;
+    }
+    
+    if (item.createdAt) {
+      const timestamp = typeof item.createdAt === 'string' ? 
+                       new Date(item.createdAt).getTime() : item.createdAt;
+      if (!isNaN(timestamp)) return timestamp;
+    }
+    
+    // 🔧 СПЕЦИАЛЬНАЯ ЛОГИКА для History записей - ID это timestamp
+    if (dataType === 'history' && typeof item.id === 'number' && item.id > 1000000000000) {
+      return item.id;
+    }
+    
+    // 🔧 СПЕЦИАЛЬНАЯ ЛОГИКА для Quick Actions - используем addedAt если есть
+    if (dataType === 'quickActions' && item.addedAt) {
+      const timestamp = typeof item.addedAt === 'string' ? 
+                       new Date(item.addedAt).getTime() : item.addedAt;
+      if (!isNaN(timestamp)) return timestamp;
+    }
+    
+    // 🔧 FALLBACK: Если нет timestamp - элемент считается "старым" (timestamp = 0)
+    // Это означает что любое удаление с timestamp удалит такой элемент
+    return 0;
+  }
+  
+  // 🔧 НОВОЕ: Определение источника timestamp для логирования
+  getTimestampSource(item, dataType) {
+    if (!item) return 'no item';
+    
+    if (item.lastModified && typeof item.lastModified === 'number') {
+      return 'lastModified';
+    }
+    
+    if (item.updatedAt) {
+      return 'updatedAt';
+    }
+    
+    if (item.createdAt) {
+      return 'createdAt';
+    }
+    
+    if (dataType === 'history' && typeof item.id === 'number' && item.id > 1000000000000) {
+      return 'id (timestamp)';
+    }
+    
+    if (dataType === 'quickActions' && item.addedAt) {
+      return 'addedAt';
+    }
+    
+    return 'no timestamp (legacy)';
   }
 }
 
