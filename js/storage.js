@@ -2926,9 +2926,18 @@ class Storage {
           // 🔄 КРИТИЧНО: Обработка Order массивов ПОСЛЕ обновления всех данных
           console.log('🔧 PROCESSING DEFERRED ORDER ARRAYS...');
           
-          const orderArraysToProcess = Object.keys(serverData.data).filter(key => key.includes('Order'));
+          // 🔧 ИСПРАВЛЕНИЕ: Исключаем timestamp поля из обработки order массивов
+          const orderArraysToProcess = Object.keys(serverData.data).filter(key => 
+            key.includes('Order') && !key.includes('_timestamp')
+          );
           orderArraysToProcess.forEach(key => {
             const serverArray = serverData.data[key];
+            
+            // 🔧 ДОПОЛНИТЕЛЬНАЯ ЗАЩИТА: Проверяем что serverArray является массивом
+            if (!Array.isArray(serverArray)) {
+              console.log(`🚫 SKIPPING ${key}: not an array (${typeof serverArray})`);
+              return;
+            }
             
             // 🔧 ИСПРАВЛЕНИЕ: Получаем АКТУАЛЬНЫЕ локальные данные из localStorage
             // а не используем userData который может содержать устаревшие данные
