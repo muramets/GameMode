@@ -65,10 +65,43 @@ class Storage {
           }
         });
         
+        // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: В инкогнито ВСЕГДА нет данных, поэтому это ВСЕГДА первый вход
+        // Добавляем проверку что localStorage действительно работает
+        const isIncognitoMode = !hasRealUserData && isFirstTimeByFlag;
+        
+        // 🔧 ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Тестируем localStorage
+        let localStorageWorks = false;
+        try {
+          const testKey = `test_${Date.now()}`;
+          localStorage.setItem(testKey, 'test');
+          localStorageWorks = localStorage.getItem(testKey) === 'test';
+          localStorage.removeItem(testKey);
+        } catch (e) {
+          localStorageWorks = false;
+        }
+        
         // 🔧 ИСПРАВЛЕНИЕ: Пользователь считается новым если:
         // 1. Нет флага первого входа И
-        // 2. Нет реальных пользовательских данных
-        const isReallyFirstTime = isFirstTimeByFlag && !hasRealUserData;
+        // 2. Нет реальных пользовательских данных И 
+        // 3. localStorage работает (чтобы исключить ошибки)
+        const isReallyFirstTime = isFirstTimeByFlag && !hasRealUserData && localStorageWorks;
+        
+        // 🔧 УСИЛЕННОЕ ЛОГИРОВАНИЕ для отладки
+        console.log('🔍 FIRST TIME DETECTION DETAILS:', {
+          userEmail: user.email,
+          isFirstTimeByFlag,
+          hasRealUserData,
+          localStorageWorks,
+          isIncognitoMode,
+          isReallyFirstTime,
+          localStorageSize: Object.keys(localStorage).length,
+          userKeys: userDataKeys.map(key => ({
+            key,
+            userKey: `${user.uid}_${key}`,
+            hasData: !!localStorage.getItem(`${user.uid}_${key}`),
+            dataSize: localStorage.getItem(`${user.uid}_${key}`)?.length || 0
+          }))
+        });
         
         if (isReallyFirstTime) {
           console.log('🆕 FIRST TIME LOGIN DETECTED for user:', user.email);
@@ -76,6 +109,7 @@ class Storage {
           console.log('🔍 Detection details:', {
             flagExists: !isFirstTimeByFlag,
             hasUserData: hasRealUserData,
+            localStorageWorks,
             decision: 'FIRST_TIME'
           });
           localStorage.setItem(firstTimeKey, Date.now().toString());
@@ -86,6 +120,7 @@ class Storage {
           console.log('🔍 Detection details:', {
             flagExists: !isFirstTimeByFlag,
             hasUserData: hasRealUserData,
+            localStorageWorks,
             decision: 'RETURNING_USER'
           });
           this.isFirstTimeLogin = false;
@@ -3029,6 +3064,51 @@ class Storage {
                     localIsNewer: localTimestamp > serverTimestamp,
                     serverIsNewer: serverTimestamp > localTimestamp,
                     timeDifference: Math.abs(localTimestamp - serverTimestamp)
+                });
+                
+                // 🔧 ДОПОЛНИТЕЛЬНОЕ ЛОГИРОВАНИЕ для отладки timestamp'ов  
+                console.log(`🔍 DETAILED TIMESTAMP DEBUG for ${key} (SMART MERGE):`, {
+                    key,
+                    localTimestamp: {
+                        value: localTimestamp,
+                        type: typeof localTimestamp,
+                        isValid: Number.isInteger(localTimestamp) && localTimestamp > 0,
+                        dateString: localTimestamp > 0 ? new Date(localTimestamp).toISOString() : 'invalid'
+                    },
+                    serverTimestamp: {
+                        value: serverTimestamp,
+                        type: typeof serverTimestamp,
+                        isValid: Number.isInteger(serverTimestamp) && serverTimestamp > 0,
+                        dateString: serverTimestamp > 0 ? new Date(serverTimestamp).toISOString() : 'invalid'
+                    },
+                    validLocalIds: validLocalIds.length,
+                    validServerIds: validServerIds.length,
+                    serverDataKey: `${key}_timestamp`,
+                    comparisonResult: localTimestamp > serverTimestamp ? 'LOCAL_NEWER' : 
+                                    serverTimestamp > localTimestamp ? 'SERVER_NEWER' : 'EQUAL'
+                });
+                
+                // 🔧 ДОПОЛНИТЕЛЬНОЕ ЛОГИРОВАНИЕ для отладки timestamp'ов (EMPTY LOCAL)
+                console.log(`🔍 DETAILED TIMESTAMP DEBUG for ${key} (EMPTY LOCAL):`, {
+                    key,
+                    localTimestamp: {
+                        value: localTimestamp,
+                        type: typeof localTimestamp,
+                        isValid: Number.isInteger(localTimestamp) && localTimestamp > 0,
+                        dateString: localTimestamp > 0 ? new Date(localTimestamp).toISOString() : 'invalid'
+                    },
+                    serverTimestamp: {
+                        value: serverTimestamp,
+                        type: typeof serverTimestamp,
+                        isValid: Number.isInteger(serverTimestamp) && serverTimestamp > 0,
+                        dateString: serverTimestamp > 0 ? new Date(serverTimestamp).toISOString() : 'invalid'
+                    },
+                    validLocalIds: validLocalIds.length,
+                    validServerIds: validServerIds.length,
+                    serverDataKey: `${key}_timestamp`,
+                    serverDataAllKeys: Object.keys(serverData).filter(k => k.includes('timestamp')),
+                    comparisonResult: localTimestamp > serverTimestamp ? 'LOCAL_NEWER' : 
+                                    serverTimestamp > localTimestamp ? 'SERVER_NEWER' : 'EQUAL'
                 });
                 
                 if (serverTimestamp > localTimestamp) {
