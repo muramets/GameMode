@@ -733,18 +733,8 @@ const Modals = {
 
   deleteCurrentProtocol(protocolId) {
     console.log('🗑️ deleteCurrentProtocol called with ID:', protocolId);
-    console.log('🗑️ About to show confirm dialog...');
+    console.log('🗑️ Deleting protocol directly without confirmation...');
     
-    // TEMPORARY: Skip confirm for testing - replace with custom modal later
-    const userConfirmed = true; // confirm('Are you sure you want to delete this protocol? This will also remove all related check-ins. This action cannot be undone.');
-    console.log('🗑️ User confirm result (FORCED TRUE FOR TESTING):', userConfirmed);
-    
-    if (!userConfirmed) {
-      console.log('🚫 User cancelled protocol deletion');
-      return;
-    }
-    
-    console.log('✅ User confirmed protocol deletion, proceeding...');
     const success = window.Storage.deleteProtocol(protocolId);
     console.log('🗑️ Storage.deleteProtocol result:', success);
     
@@ -956,18 +946,8 @@ const Modals = {
 
   deleteCurrentState(stateId) {
     console.log('🗑️ deleteCurrentState called with ID:', stateId);
-    console.log('🗑️ About to show confirm dialog...');
+    console.log('🗑️ Deleting state directly without confirmation...');
     
-    // TEMPORARY: Skip confirm for testing - replace with custom modal later
-    const userConfirmed = true; // confirm('Are you sure you want to delete this state? This action cannot be undone.');
-    console.log('🗑️ User confirm result (FORCED TRUE FOR TESTING):', userConfirmed);
-    
-    if (!userConfirmed) {
-      console.log('🚫 User cancelled state deletion');
-      return;
-    }
-    
-    console.log('✅ User confirmed state deletion, proceeding...');
     const success = window.Storage.deleteState(stateId);
     console.log('🗑️ Storage.deleteState result:', success);
     
@@ -1112,7 +1092,14 @@ const Modals = {
 
   refreshStatesView() {
     if (App.currentPage === 'dashboard') {
-      UI.renderDashboard();
+      // Update only the states section, not the whole dashboard
+      const states = window.Storage.getStatesInOrder();
+      const statesContainer = document.querySelector('.states-grid');
+      
+      if (statesContainer) {
+        // Re-render only the states grid
+        UI.renderDashboard(); // Actually, for states we do need full dashboard refresh for now
+      }
     }
   },
 
@@ -1309,7 +1296,7 @@ const Modals = {
       
       // Refresh dashboard if we're on it
       if (App.currentPage === 'dashboard') {
-        UI.renderDashboard();
+        UI.renderQuickProtocols();
       }
     } else {
       App.showToast('Failed to add protocol to Quick Actions', 'error');
@@ -1399,29 +1386,20 @@ const Modals = {
         e.preventDefault();
         e.stopPropagation();
         console.log('🗑️ Clear All History clicked');
-        console.log('🗑️ About to show Clear All confirm dialog...');
+        console.log('🗑️ Clearing all history directly without confirmation...');
         
-        // TEMPORARY: Skip confirm for testing - replace with custom modal later
-        const userConfirmed = true; // confirm('Are you sure you want to clear all history? This cannot be undone.');
-        console.log('🗑️ Clear All confirm result (FORCED TRUE FOR TESTING):', userConfirmed);
+        window.Storage.clearAllCheckins();
+        App.filteredHistory = [];
+        App.historyInitialized = false;
         
-        if (userConfirmed) {
-          console.log('✅ User confirmed Clear All History');
-          window.Storage.clearAllCheckins();
-          App.filteredHistory = [];
-          App.historyInitialized = false;
-          
-          // Clear search input
-          const historySearchInput = document.getElementById('history-search');
-          if (historySearchInput) {
-            historySearchInput.value = '';
-          }
-          
-          App.showToast('History cleared', 'success');
-          App.renderPage('history');
-        } else {
-          console.log('🚫 User cancelled Clear All History');
+        // Clear search input
+        const historySearchInput = document.getElementById('history-search');
+        if (historySearchInput) {
+          historySearchInput.value = '';
         }
+        
+        App.showToast('History cleared', 'success');
+        App.renderPage('history');
       });
       
       console.log('✅ Clear All History button listener attached');
@@ -1459,62 +1437,52 @@ const Modals = {
           console.log('🗑️ History item delete clicked, checkinId:', checkinId);
           
           if (checkinId) {
-            console.log('🗑️ About to show history item confirm dialog...');
+            console.log('🗑️ Deleting history item directly without confirmation:', checkinId);
             
-            // TEMPORARY: Skip confirm for testing - replace with custom modal later
-            const userConfirmed = true; // confirm('Delete this check-in?');
-            console.log('🗑️ History item confirm result (FORCED TRUE FOR TESTING):', userConfirmed);
+            const checkins = window.Storage.getCheckins();
+            const checkin = checkins.find(c => c.id == checkinId);
             
-            if (userConfirmed) {
-              console.log('✅ User confirmed history item deletion:', checkinId);
-              
-              const checkins = window.Storage.getCheckins();
-              const checkin = checkins.find(c => c.id == checkinId);
-              
-              window.Storage.deleteCheckin(checkinId);
-              
-              // Handle different types of checkins
-              if (checkin && checkin.type === 'drag_drop') {
-                if (checkin.subType === 'protocol') {
-                  App.filteredProtocols = window.Storage.getProtocolsInOrder();
-                  if (App.currentPage === 'protocols') {
-                    UI.renderProtocols();
-                  }
-                  App.showToast('Protocol order reverted', 'success');
-                } else if (checkin.subType === 'skill') {
-                  App.filteredSkills = window.Storage.getSkillsInOrder();
-                  if (App.currentPage === 'skills') {
-                    UI.renderSkills();
-                    DragDrop.setupSkills();
-                  }
-                  App.showToast('Skill order reverted', 'success');
+            window.Storage.deleteCheckin(checkinId);
+            
+            // Handle different types of checkins
+            if (checkin && checkin.type === 'drag_drop') {
+              if (checkin.subType === 'protocol') {
+                App.filteredProtocols = window.Storage.getProtocolsInOrder();
+                if (App.currentPage === 'protocols') {
+                  UI.renderProtocols();
                 }
-              } else {
-                App.showToast('Check-in deleted', 'success');
+                App.showToast('Protocol order reverted', 'success');
+              } else if (checkin.subType === 'skill') {
+                App.filteredSkills = window.Storage.getSkillsInOrder();
+                if (App.currentPage === 'skills') {
+                  UI.renderSkills();
+                  DragDrop.setupSkills();
+                }
+                App.showToast('Skill order reverted', 'success');
               }
-              
-              // Refresh history
-              App.filteredHistory = [];
-              App.historyInitialized = false;
-              
-              if (App.currentPage === 'history') {
-                App.applyHistoryFilters();
-              } else {
-                UI.renderHistory();
-              }
-              
-              // Update user stats if on dashboard
-              if (App.currentPage === 'dashboard') {
-                UI.updateUserStats();
-              }
-              
-              // Re-setup history delete buttons after DOM update
-              setTimeout(() => {
-                this.setupHistoryDeleteButtons();
-              }, 100);
             } else {
-              console.log('🚫 User cancelled history item deletion');
+              App.showToast('Check-in deleted', 'success');
             }
+            
+            // Refresh history
+            App.filteredHistory = [];
+            App.historyInitialized = false;
+            
+            if (App.currentPage === 'history') {
+              App.applyHistoryFilters();
+            } else {
+              UI.renderHistory();
+            }
+            
+            // Update user stats if on dashboard
+            if (App.currentPage === 'dashboard') {
+              UI.updateUserStats();
+            }
+            
+            // Re-setup history delete buttons after DOM update
+            setTimeout(() => {
+              this.setupHistoryDeleteButtons();
+            }, 100);
           } else {
             console.error('❌ Could not extract checkin ID from delete button');
           }

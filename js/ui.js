@@ -225,7 +225,7 @@ const UI = {
               <span class="level-text">down</span>
             </button>
           </div>
-          <div class="quick-protocol-delete" onclick="event.stopPropagation(); window.Storage.removeFromQuickActions(${protocol.id}); UI.renderDashboard();" title="Remove from quick actions">
+          <div class="quick-protocol-delete" onclick="event.stopPropagation(); window.Storage.removeFromQuickActions(${protocol.id}); UI.renderQuickProtocols();" title="Remove from quick actions">
             <i class="fas fa-times"></i>
           </div>
         </div>
