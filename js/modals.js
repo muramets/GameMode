@@ -1446,6 +1446,24 @@ const Modals = {
           // Delete the checkin
           window.Storage.deleteCheckin(checkinId);
           
+          // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ УДАЛЕНИЯ ЧЕКИНА
+          // Это обеспечивает что удаленные чекины не появятся снова при обновлении страницы
+          if (!window.Storage.syncInProgress) {
+            console.log('🚀 SCHEDULING BACKGROUND SYNC: Individual checkin deleted');
+            setTimeout(() => {
+              if (!window.Storage.syncInProgress) {
+                window.Storage.syncWithBackend().catch(error => {
+                  console.warn('⚠️ Background sync after checkin deletion failed:', error);
+                });
+              } else {
+                console.log('🚫 BACKGROUND SYNC SKIPPED: Another sync already in progress (checkin delete)');
+              }
+            }, 300);
+          } else {
+            console.log('🚫 SYNC IN PROGRESS: Marking for sync instead');
+            window.Storage.markForSync();
+          }
+          
           // Handle different types of checkins for appropriate toast messages
           if (checkin && checkin.type === 'drag_drop') {
             if (checkin.subType === 'protocol') {

@@ -901,8 +901,19 @@ class Storage {
     const filtered = checkins.filter(c => c.id !== checkinId);
     this.set(this.KEYS.HISTORY, filtered);
     
-    // Mark for sync to ensure deletion is propagated to server
-    this.markForSync();
+    // 🚀 АКТИВНАЯ АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ после удаления чекина  
+    // Это гарантирует что удаление немедленно отправляется на сервер
+    if (!this.syncInProgress) {
+      console.log('🚀 AUTO-SYNC: Starting immediate sync after checkin deletion');
+      this.syncWithBackend().catch(error => {
+        console.warn('⚠️ Auto-sync after checkin deletion failed:', error);
+        // Fallback: mark for sync if immediate sync fails
+        this.markForSync();
+      });
+    } else {
+      console.log('🚫 SYNC IN PROGRESS: Marking checkin deletion for sync');
+      this.markForSync();
+    }
     
     return true;
   }
