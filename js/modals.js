@@ -1375,7 +1375,7 @@ const Modals = {
       console.warn('⚠️ State delete button not found');
     }
     
-    // Setup Clear All History button WITH CONFIRMATION
+    // Setup Clear All History button WITHOUT CONFIRMATION  
     const clearHistoryBtn = document.getElementById('clear-history');
     if (clearHistoryBtn) {
       // Remove existing listeners
@@ -1385,30 +1385,23 @@ const Modals = {
       newClearHistoryBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log('🗑️ Clear All History clicked');
+        console.log('🗑️ Clear All History clicked - direct deletion without confirmation');
         
-        // Add confirmation for Clear All History
-        if (confirm('Are you sure you want to clear all history? This action cannot be undone.')) {
-          console.log('🗑️ User confirmed, clearing all history...');
-          
-          window.Storage.clearAllCheckins();
-          App.filteredHistory = [];
-          App.historyInitialized = false;
-          
-          // Clear search input
-          const historySearchInput = document.getElementById('history-search');
-          if (historySearchInput) {
-            historySearchInput.value = '';
-          }
-          
-          App.showToast('History cleared', 'success');
-          App.renderPage('history');
-        } else {
-          console.log('🚫 User cancelled Clear All History');
+        window.Storage.clearAllCheckins();
+        App.filteredHistory = [];
+        App.historyInitialized = false;
+        
+        // Clear search input
+        const historySearchInput = document.getElementById('history-search');
+        if (historySearchInput) {
+          historySearchInput.value = '';
         }
+        
+        App.showToast('History cleared', 'success');
+        App.renderPage('history');
       });
       
-      console.log('✅ Clear All History button listener attached');
+      console.log('✅ Clear All History button listener attached (no confirmation)');
     } else {
       console.warn('⚠️ Clear All History button not found');
     }
