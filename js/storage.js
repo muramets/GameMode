@@ -3404,6 +3404,9 @@ class Storage {
             const deletedCheckinsCountForToast = (this.get('deletedCheckins') || []).length;
             const updates = Object.entries(mergeResults)
               .filter(([key, result]) => {
+                // 🔧 ИСКЛЮЧАЕМ DELETION МАССИВЫ: Не показываем тосты для deletion records
+                if (key.startsWith('deleted')) return false;
+                
                 // Exclude technical order arrays and empty gains from notifications
                 if (key.includes('Order')) return false;
                 if (key === 'quickActions' && result.action.includes('gained') && result.mergedCount - Math.min(result.localCount, result.serverCount) === 0) return false;
