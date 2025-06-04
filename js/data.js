@@ -287,14 +287,6 @@ const INITIAL_DATA = {
       stateIds: []
     },
     {
-      id: "stick_to_itiveness",
-      name: "Stick-to-itiveness. Still here",
-      icon: "🪝",
-      hover: "Not chasing highs. Just not quitting.",
-      skillIds: [1, 2, 4],
-      stateIds: []
-    },
-    {
       id: "physical_shape",
       name: "Physical Shape. Built presence",
       icon: "🔹",
@@ -303,27 +295,11 @@ const INITIAL_DATA = {
       stateIds: []
     },
     {
-      id: "builder_mode",
-      name: "Builder Mode. Acting with ownership",
-      icon: "🚀",
-      hover: "The mindset of making systems, not just tasks.",
-      skillIds: [5, 6, 3],
-      stateIds: []
-    },
-    {
       id: "harmony",
       name: "Harmony. You're in the right place",
       icon: "🎼",
       hover: "What you're doing matches where your mind wants to be.",
       skillIds: [5, 2, 1],
-      stateIds: []
-    },
-    {
-      id: "peace",
-      name: "Peace",
-      icon: "🌅",
-      hover: "The baseline that lets everything work.",
-      skillIds: [1, 2, 3, 4, 5, 6, 7, 8, 9],
       stateIds: []
     }
   ]
