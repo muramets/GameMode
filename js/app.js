@@ -451,10 +451,8 @@ function initMainApp() {
                     this.setupTooltips();
                     break;
                 case 'history':
-                    // Initialize filtered history if not already set
-                    if (this.filteredHistory.length === 0) {
-                        this.filteredHistory = window.Storage.getCheckins();
-                    }
+                    // Don't automatically reload history from storage - let UI.renderHistory() handle initialization properly
+                    // This prevents deleted checkins from being restored when switching to history page
                     
                     UI.renderHistory();
                     

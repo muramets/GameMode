@@ -1478,9 +1478,8 @@ const Modals = {
           App.historyInitialized = false;
           
           if (App.currentPage === 'history') {
+            // Apply filters to refresh history display
             App.applyHistoryFilters();
-          } else {
-            UI.renderHistory();
           }
           
           // Update user stats if on dashboard

@@ -514,15 +514,9 @@ const UI = {
 
   // History
   renderHistory() {
-    // 🔧 FIX: Initialize filteredHistory if empty but historyInitialized is false
-    if (App.filteredHistory.length === 0 && !App.historyInitialized) {
-      console.log('🔄 INITIALIZING HISTORY: filteredHistory empty, reloading from storage');
-      App.filteredHistory = window.Storage.getCheckins();
-      App.historyInitialized = true;
-    }
-    
-    // History should be initialized through App.applyHistoryFilters() for proper sorting
-    // This ensures newest-to-oldest order is maintained
+    // 🔧 FIX: Don't automatically reload from storage when filteredHistory is empty
+    // This prevents deleted checkins from being restored when UI refreshes
+    // Instead, history should be properly managed through App.applyHistoryFilters()
     
     const container = document.querySelector('.history-body');
     const skills = window.Storage.getSkills();
@@ -544,6 +538,12 @@ const UI = {
       if (hasActiveFilters || hasSearchQuery) {
         emptyMessage = "No results found";
         emptyDescription = "Try adjusting your filters or search query";
+      } else if (!App.historyInitialized) {
+        // First time loading - initialize properly through applyHistoryFilters
+        console.log('🔄 FIRST TIME HISTORY LOAD: Initializing through applyHistoryFilters');
+        App.historyInitialized = true;
+        App.applyHistoryFilters();
+        return; // Let applyHistoryFilters handle the rendering
       } else {
         emptyMessage = "No history yet";
         emptyDescription = "Start with your first protocol check-in!";
