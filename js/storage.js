@@ -2854,7 +2854,12 @@ class Storage {
                                     if (!serverItem || !serverItem.id) continue; // Пропускаем invalid элементы
                                     
                                     // 🔧 ИСПРАВЛЕНО: Используем очищенный массив deletedStates
-                                    if (deletedStates.includes(serverItem.id)) {
+                                    const isDeleted = deletedStates.some(deletionRecord => {
+                                        const deletionId = typeof deletionRecord === 'object' ? deletionRecord.id : deletionRecord;
+                                        return deletionId == serverItem.id || deletionId === serverItem.id;
+                                    });
+                                    
+                                    if (isDeleted) {
                                         console.log(`🗑️ State ${serverItem.id} was deleted by user, not restoring from server`);
                                         continue; // Пропускаем удаленный state
                                     }
