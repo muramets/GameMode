@@ -2470,9 +2470,14 @@ class Storage {
                         
                         const localItem = mergedData.find(m => m.id === serverItem.id);
                         if (!localItem) {
-                            // 🔧 НОВОЕ: Проверяем не был ли этот протокол удален пользователем
+                            // 🔧 НОВОЕ: Проверяем не был ли этот протокол удален пользователем (timestamp-based)
                             const deletedProtocols = this.get('deletedProtocols') || [];
-                            if (deletedProtocols.includes(serverItem.id)) {
+                            const isDeleted = deletedProtocols.some(deletionRecord => {
+                                const deletionId = typeof deletionRecord === 'object' ? deletionRecord.id : deletionRecord;
+                                return deletionId == serverItem.id || deletionId === serverItem.id;
+                            });
+                            
+                            if (isDeleted) {
                                 console.log(`🗑️ Protocol ${serverItem.id} was deleted by user, not restoring from server`);
                                 continue; // Пропускаем удаленный протокол
                             }
@@ -2581,9 +2586,14 @@ class Storage {
                         
                         const localItem = mergedData.find(m => m.id === serverItem.id);
                         if (!localItem) {
-                            // 🔧 НОВОЕ: Проверяем не был ли этот навык удален пользователем
+                            // 🔧 НОВОЕ: Проверяем не был ли этот навык удален пользователем (timestamp-based)
                             const deletedSkills = this.get('deletedSkills') || [];
-                            if (deletedSkills.includes(serverItem.id)) {
+                            const isDeleted = deletedSkills.some(deletionRecord => {
+                                const deletionId = typeof deletionRecord === 'object' ? deletionRecord.id : deletionRecord;
+                                return deletionId == serverItem.id || deletionId === serverItem.id;
+                            });
+                            
+                            if (isDeleted) {
                                 console.log(`🗑️ Skill ${serverItem.id} was deleted by user, not restoring from server`);
                                 continue; // Пропускаем удаленный навык
                             }
@@ -2640,19 +2650,47 @@ class Storage {
                             console.log(`🔍 CHECKING DELETED STATES for first-time user:`, deletedStates);
                             
                             if (deletedStates.length > 0) {
-                                // Фильтруем удаленные states даже для первого входа
-                                const filteredServerStates = serverArray.filter(serverState => 
-                                    !deletedStates.includes(serverState.id)
-                                );
-                                
+                                // 🔧 ИСПРАВЛЕНИЕ: Применяем timestamp-based удаления для states при first-time login
+                                console.log(`🗑️ FIRST TIME STATE FILTERING: Applying timestamp-based deletions`);
+                                const filteredServerStates = this.applyTimestampBasedDeletions(serverArray, deletedStates, 'states');
                                 console.log(`🗑️ FIRST TIME STATE FILTERING: Filtered out ${serverArray.length - filteredServerStates.length} deleted states`);
-                                console.log(`📥 FIRST TIME: Loading ${filteredServerStates.length} states from server (${deletedStates.length} filtered out)`);
+                                console.log(`📥 FIRST TIME: Loading ${filteredServerStates.length} states from server (${serverArray.length - filteredServerStates.length} deleted)`);
                                 
                                 mergedData = [...filteredServerStates];
                             } else {
                                 // Нет удаленных states, загружаем все
                                 mergedData = [...serverArray];
                                 console.log(`📥 FIRST TIME: Loading ${serverArray.length} states from server (no deletions)`);
+                            }
+                        } else if (key === 'protocols') {
+                            // 🔧 НОВОЕ: Применяем timestamp-based удаления даже для first-time users
+                            const deletedProtocols = this.get('deletedProtocols') || [];
+                            console.log(`🔍 CHECKING DELETED PROTOCOLS for first-time user:`, deletedProtocols);
+                            
+                            if (deletedProtocols.length > 0) {
+                                console.log(`🗑️ FIRST TIME PROTOCOL FILTERING: Applying timestamp-based deletions`);
+                                const filteredServerProtocols = this.applyTimestampBasedDeletions(serverArray, deletedProtocols, 'protocols');
+                                console.log(`📥 FIRST TIME: Loading ${filteredServerProtocols.length} protocols from server (${serverArray.length - filteredServerProtocols.length} deleted)`);
+                                mergedData = [...filteredServerProtocols];
+                            } else {
+                                // Нет удаленных protocols, загружаем все
+                                mergedData = [...serverArray];
+                                console.log(`📥 FIRST TIME: Loading ${serverArray.length} protocols from server (no deletions)`);
+                            }
+                        } else if (key === 'skills') {
+                            // 🔧 НОВОЕ: Применяем timestamp-based удаления для skills при first-time login
+                            const deletedSkills = this.get('deletedSkills') || [];
+                            console.log(`🔍 CHECKING DELETED SKILLS for first-time user:`, deletedSkills);
+                            
+                            if (deletedSkills.length > 0) {
+                                console.log(`🗑️ FIRST TIME SKILL FILTERING: Applying timestamp-based deletions`);
+                                const filteredServerSkills = this.applyTimestampBasedDeletions(serverArray, deletedSkills, 'skills');
+                                console.log(`📥 FIRST TIME: Loading ${filteredServerSkills.length} skills from server (${serverArray.length - filteredServerSkills.length} deleted)`);
+                                mergedData = [...filteredServerSkills];
+                            } else {
+                                // Нет удаленных skills, загружаем все
+                                mergedData = [...serverArray];
+                                console.log(`📥 FIRST TIME: Loading ${serverArray.length} skills from server (no deletions)`);
                             }
                         } else {
                             // Для других типов данных - стандартное поведение
