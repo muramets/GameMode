@@ -732,11 +732,21 @@ const Modals = {
   },
 
   deleteCurrentProtocol(protocolId) {
-    if (!confirm('Are you sure you want to delete this protocol? This will also remove all related check-ins. This action cannot be undone.')) {
+    console.log('🗑️ deleteCurrentProtocol called with ID:', protocolId);
+    console.log('🗑️ About to show confirm dialog...');
+    
+    const userConfirmed = confirm('Are you sure you want to delete this protocol? This will also remove all related check-ins. This action cannot be undone.');
+    console.log('🗑️ User confirm result:', userConfirmed);
+    
+    if (!userConfirmed) {
+      console.log('🚫 User cancelled protocol deletion');
       return;
     }
     
+    console.log('✅ User confirmed protocol deletion, proceeding...');
     const success = window.Storage.deleteProtocol(protocolId);
+    console.log('🗑️ Storage.deleteProtocol result:', success);
+    
     if (success) {
       App.showToast('Protocol deleted successfully', 'success');
       
@@ -944,11 +954,21 @@ const Modals = {
   },
 
   deleteCurrentState(stateId) {
-    if (!confirm('Are you sure you want to delete this state? This action cannot be undone.')) {
+    console.log('🗑️ deleteCurrentState called with ID:', stateId);
+    console.log('🗑️ About to show confirm dialog...');
+    
+    const userConfirmed = confirm('Are you sure you want to delete this state? This action cannot be undone.');
+    console.log('🗑️ User confirm result:', userConfirmed);
+    
+    if (!userConfirmed) {
+      console.log('🚫 User cancelled state deletion');
       return;
     }
     
+    console.log('✅ User confirmed state deletion, proceeding...');
     const success = window.Storage.deleteState(stateId);
+    console.log('🗑️ Storage.deleteState result:', success);
+    
     if (success) {
       App.showToast('State deleted successfully', 'success');
       
@@ -1377,8 +1397,13 @@ const Modals = {
         e.preventDefault();
         e.stopPropagation();
         console.log('🗑️ Clear All History clicked');
-        if (confirm('Are you sure you want to clear all history? This cannot be undone.')) {
-          console.log('🗑️ User confirmed Clear All History');
+        console.log('🗑️ About to show Clear All confirm dialog...');
+        
+        const userConfirmed = confirm('Are you sure you want to clear all history? This cannot be undone.');
+        console.log('🗑️ Clear All confirm result:', userConfirmed);
+        
+        if (userConfirmed) {
+          console.log('✅ User confirmed Clear All History');
           window.Storage.clearAllCheckins();
           App.filteredHistory = [];
           App.historyInitialized = false;
@@ -1431,8 +1456,13 @@ const Modals = {
           console.log('🗑️ History item delete clicked, checkinId:', checkinId);
           
           if (checkinId) {
-            if (confirm('Delete this check-in?')) {
-              console.log('🗑️ User confirmed history item deletion:', checkinId);
+            console.log('🗑️ About to show history item confirm dialog...');
+            
+            const userConfirmed = confirm('Delete this check-in?');
+            console.log('🗑️ History item confirm result:', userConfirmed);
+            
+            if (userConfirmed) {
+              console.log('✅ User confirmed history item deletion:', checkinId);
               
               const checkins = window.Storage.getCheckins();
               const checkin = checkins.find(c => c.id == checkinId);
