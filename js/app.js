@@ -465,6 +465,16 @@ function initMainApp() {
                     
                     break;
             }
+            
+            // 🔧 CRITICAL: Re-setup delete button listeners after every page render
+            // This ensures all delete buttons work properly even after DOM updates
+            setTimeout(() => {
+                if (window.Modals && typeof window.Modals.setupDeleteButtonListeners === 'function') {
+                    window.Modals.setupDeleteButtonListeners();
+                } else {
+                    console.warn('⚠️ Modals.setupDeleteButtonListeners not available during page render');
+                }
+            }, 100);
         },
 
         // Actions
