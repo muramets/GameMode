@@ -12,7 +12,17 @@ const Modals = {
     this.setupAddProtocolModal();
     this.setupAddStateModal();
     this.setupQuickActionModal();
+    
+    // 🔧 Ensure delete buttons have event listeners
+    this.setupDeleteButtonListeners();
+    
     console.log('✅ All modal handlers initialized');
+    
+    // 🐛 DEBUG: Check if delete buttons exist
+    console.log('🐛 DELETE BUTTONS DEBUG:');
+    console.log('  - delete-skill-btn:', document.getElementById('delete-skill-btn'));
+    console.log('  - delete-protocol-btn:', document.getElementById('delete-protocol-btn'));
+    console.log('  - delete-state-btn:', document.getElementById('delete-state-btn'));
   },
 
   setupAddSkillModal() {
@@ -173,15 +183,7 @@ const Modals = {
       }
     });
     
-    // Delete button
-    const deleteBtn = document.getElementById('delete-skill-btn');
-    if (deleteBtn) {
-      deleteBtn.addEventListener('click', () => {
-        if (this.currentSkillId) {
-          this.deleteCurrentSkill(this.currentSkillId);
-        }
-      });
-    }
+    // 🔧 Delete button event listener is now handled by setupDeleteButtonListeners()
   },
 
   openSkillModal() {
@@ -444,16 +446,6 @@ const Modals = {
         }
       }
     });
-    
-    // Delete button
-    const deleteBtn = document.getElementById('delete-protocol-btn');
-    if (deleteBtn) {
-      deleteBtn.addEventListener('click', () => {
-        if (this.currentProtocolId) {
-          this.deleteCurrentProtocol(this.currentProtocolId);
-        }
-      });
-    }
   },
 
   setupSkillSearch(slotNumber) {
@@ -887,16 +879,6 @@ const Modals = {
         }
       }
     });
-    
-    // Delete button
-    const deleteBtn = document.getElementById('delete-state-btn');
-    if (deleteBtn) {
-      deleteBtn.addEventListener('click', () => {
-        if (this.currentStateId) {
-          this.deleteCurrentState(this.currentStateId);
-        }
-      });
-    }
   },
 
   openStateModal() {
@@ -1309,6 +1291,240 @@ const Modals = {
       }
     } else {
       App.showToast('Failed to add protocol to Quick Actions', 'error');
+    }
+  },
+
+  setupDeleteButtonListeners() {
+    console.log('🔧 Setting up delete button event listeners...');
+    
+    // Setup skill delete button
+    const skillBtn = document.getElementById('delete-skill-btn');
+    if (skillBtn) {
+      // Remove existing listeners
+      skillBtn.replaceWith(skillBtn.cloneNode(true));
+      const newSkillBtn = document.getElementById('delete-skill-btn');
+      
+      newSkillBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🗑️ Skill delete clicked, currentSkillId:', this.currentSkillId);
+        if (this.currentSkillId) {
+          this.deleteCurrentSkill(this.currentSkillId);
+        } else {
+          console.warn('⚠️ No skill ID set for deletion');
+        }
+      });
+      
+      console.log('✅ Skill delete button listener attached');
+    } else {
+      console.warn('⚠️ Skill delete button not found');
+    }
+    
+    // Setup protocol delete button
+    const protocolBtn = document.getElementById('delete-protocol-btn');
+    if (protocolBtn) {
+      // Remove existing listeners
+      protocolBtn.replaceWith(protocolBtn.cloneNode(true));
+      const newProtocolBtn = document.getElementById('delete-protocol-btn');
+      
+      newProtocolBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🗑️ Protocol delete clicked, currentProtocolId:', this.currentProtocolId);
+        if (this.currentProtocolId) {
+          this.deleteCurrentProtocol(this.currentProtocolId);
+        } else {
+          console.warn('⚠️ No protocol ID set for deletion');
+        }
+      });
+      
+      console.log('✅ Protocol delete button listener attached');
+    } else {
+      console.warn('⚠️ Protocol delete button not found');
+    }
+    
+    // Setup state delete button
+    const stateBtn = document.getElementById('delete-state-btn');
+    if (stateBtn) {
+      // Remove existing listeners
+      stateBtn.replaceWith(stateBtn.cloneNode(true));
+      const newStateBtn = document.getElementById('delete-state-btn');
+      
+      newStateBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🗑️ State delete clicked, currentStateId:', this.currentStateId);
+        if (this.currentStateId) {
+          this.deleteCurrentState(this.currentStateId);
+        } else {
+          console.warn('⚠️ No state ID set for deletion');
+        }
+      });
+      
+      console.log('✅ State delete button listener attached');
+    } else {
+      console.warn('⚠️ State delete button not found');
+    }
+    
+    console.log('🔧 Delete button listeners setup complete');
+  },
+
+  // 🐛 DEBUG FUNCTIONS FOR TROUBLESHOOTING
+  debugDeleteButtons() {
+    console.log('🐛 DELETE BUTTONS DEBUG:');
+    console.log('  - delete-skill-btn:', document.getElementById('delete-skill-btn'));
+    console.log('  - delete-protocol-btn:', document.getElementById('delete-protocol-btn'));
+    console.log('  - delete-state-btn:', document.getElementById('delete-state-btn'));
+    
+    console.log('🐛 CURRENT IDS:');
+    console.log('  - currentSkillId:', this.currentSkillId);
+    console.log('  - currentProtocolId:', this.currentProtocolId);
+    console.log('  - currentStateId:', this.currentStateId);
+    
+    // Check for event listeners
+    const skillBtn = document.getElementById('delete-skill-btn');
+    const protocolBtn = document.getElementById('delete-protocol-btn');
+    const stateBtn = document.getElementById('delete-state-btn');
+    
+    console.log('🐛 BUTTON EVENT LISTENERS:');
+    console.log('  - skill button click listeners:', skillBtn ? skillBtn.onclick : 'null');
+    console.log('  - protocol button click listeners:', protocolBtn ? protocolBtn.onclick : 'null');
+    console.log('  - state button click listeners:', stateBtn ? stateBtn.onclick : 'null');
+  },
+
+  debugDataIntegrity() {
+    console.log('🐛 DATA INTEGRITY DEBUG:');
+    
+    const protocols = window.Storage.getProtocols();
+    const skills = window.Storage.getSkills();
+    const states = window.Storage.getStates();
+    
+    console.log('📊 Data counts:', {
+      protocols: protocols.length,
+      skills: skills.length,
+      states: states.length
+    });
+    
+    // Check for duplicate IDs
+    const protocolIds = protocols.map(p => p.id);
+    const skillIds = skills.map(s => s.id);
+    const stateIds = states.map(s => s.id);
+    
+    const duplicateProtocols = protocolIds.filter((id, index) => protocolIds.indexOf(id) !== index);
+    const duplicateSkills = skillIds.filter((id, index) => skillIds.indexOf(id) !== index);
+    const duplicateStates = stateIds.filter((id, index) => stateIds.indexOf(id) !== index);
+    
+    console.log('🔍 DUPLICATE IDS FOUND:');
+    console.log('  - duplicate protocol IDs:', duplicateProtocols);
+    console.log('  - duplicate skill IDs:', duplicateSkills);
+    console.log('  - duplicate state IDs:', duplicateStates);
+    
+    // Check for undefined/null values
+    const protocolsWithIssues = protocols.filter(p => !p || !p.id || p.id === undefined || p.id === null);
+    const skillsWithIssues = skills.filter(s => !s || !s.id || s.id === undefined || s.id === null);
+    const statesWithIssues = states.filter(s => !s || !s.id || s.id === undefined || s.id === null);
+    
+    console.log('⚠️ ITEMS WITH ISSUES:');
+    console.log('  - protocols with null/undefined IDs:', protocolsWithIssues);
+    console.log('  - skills with null/undefined IDs:', skillsWithIssues);
+    console.log('  - states with null/undefined IDs:', statesWithIssues);
+    
+    return {
+      duplicateProtocols,
+      duplicateSkills,
+      duplicateStates,
+      protocolsWithIssues,
+      skillsWithIssues,
+      statesWithIssues
+    };
+  },
+
+  debugDeletedArrays() {
+    console.log('🐛 DELETED ARRAYS DEBUG:');
+    
+    const deletedProtocols = JSON.parse(localStorage.getItem('deletedProtocols') || '[]');
+    const deletedSkills = JSON.parse(localStorage.getItem('deletedSkills') || '[]');
+    const deletedStates = JSON.parse(localStorage.getItem('deletedStates') || '[]');
+    const deletedCheckins = JSON.parse(localStorage.getItem('deletedCheckins') || '[]');
+    const deletedQuickActions = JSON.parse(localStorage.getItem('deletedQuickActions') || '[]');
+    
+    console.log('📋 DELETED ARRAYS:');
+    console.log('  - deletedProtocols:', deletedProtocols);
+    console.log('  - deletedSkills:', deletedSkills);
+    console.log('  - deletedStates:', deletedStates);
+    console.log('  - deletedCheckins length:', deletedCheckins.length);
+    console.log('  - deletedQuickActions:', deletedQuickActions);
+    
+    // Check for undefined values
+    const undefinedInProtocols = deletedProtocols.filter(id => id === undefined || id === null).length;
+    const undefinedInSkills = deletedSkills.filter(id => id === undefined || id === null).length;
+    const undefinedInStates = deletedStates.filter(id => id === undefined || id === null).length;
+    const undefinedInCheckins = deletedCheckins.filter(id => id === undefined || id === null).length;
+    const undefinedInQuickActions = deletedQuickActions.filter(id => id === undefined || id === null).length;
+    
+    console.log('⚠️ UNDEFINED VALUES COUNT:');
+    console.log('  - in deletedProtocols:', undefinedInProtocols);
+    console.log('  - in deletedSkills:', undefinedInSkills);
+    console.log('  - in deletedStates:', undefinedInStates);
+    console.log('  - in deletedCheckins:', undefinedInCheckins);
+    console.log('  - in deletedQuickActions:', undefinedInQuickActions);
+    
+    return {
+      deletedProtocols,
+      deletedSkills,
+      deletedStates,
+      undefinedCounts: {
+        protocols: undefinedInProtocols,
+        skills: undefinedInSkills,
+        states: undefinedInStates,
+        checkins: undefinedInCheckins,
+        quickActions: undefinedInQuickActions
+      }
+    };
+  },
+
+  fixDeletedArrays() {
+    console.log('🔧 FIXING DELETED ARRAYS...');
+    
+    const arrays = ['deletedProtocols', 'deletedSkills', 'deletedStates', 'deletedCheckins', 'deletedQuickActions'];
+    
+    arrays.forEach(arrayName => {
+      const currentArray = JSON.parse(localStorage.getItem(arrayName) || '[]');
+      const cleanedArray = currentArray.filter(id => id !== undefined && id !== null);
+      
+      if (cleanedArray.length !== currentArray.length) {
+        console.log(`🧹 Cleaned ${arrayName}: ${currentArray.length} → ${cleanedArray.length}`);
+        localStorage.setItem(arrayName, JSON.stringify(cleanedArray));
+      } else {
+        console.log(`✅ ${arrayName} already clean`);
+      }
+    });
+    
+    console.log('✅ DELETED ARRAYS CLEANUP COMPLETE');
+  },
+
+  testDeleteButtons() {
+    console.log('🧪 TESTING DELETE BUTTONS...');
+    
+    // Test if buttons can be found and have event listeners
+    const skillBtn = document.getElementById('delete-skill-btn');
+    const protocolBtn = document.getElementById('delete-protocol-btn');
+    const stateBtn = document.getElementById('delete-state-btn');
+    
+    console.log('🔍 BUTTON EXISTENCE:');
+    console.log('  - skill delete button:', !!skillBtn);
+    console.log('  - protocol delete button:', !!protocolBtn);
+    console.log('  - state delete button:', !!stateBtn);
+    
+    // Try to manually trigger click events (for testing)
+    if (skillBtn) {
+      console.log('🖱️ Skill button is clickable:', !skillBtn.disabled);
+    }
+    if (protocolBtn) {
+      console.log('🖱️ Protocol button is clickable:', !protocolBtn.disabled);
+    }
+    if (stateBtn) {
+      console.log('🖱️ State button is clickable:', !stateBtn.disabled);
     }
   }
 }; 
