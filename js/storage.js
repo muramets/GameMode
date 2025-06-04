@@ -2916,19 +2916,16 @@ class Storage {
             // а не используем userData который может содержать устаревшие данные
             const localStorageKey = this.getKeyConstant(key);
             
-            // 🔄 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем реальное состояние localStorage, а не кэш
+            // 🔄 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем this.get() вместо прямого localStorage.getItem()
+            // Это обеспечивает правильную работу с пользовательскими ключами
             let localArray = [];
             if (localStorageKey) {
-                const rawLocalData = localStorage.getItem(localStorageKey);
-                if (rawLocalData && rawLocalData !== 'null' && rawLocalData !== 'undefined') {
-                    try {
-                        localArray = JSON.parse(rawLocalData) || [];
-                    } catch (e) {
-                        console.warn(`⚠️ Failed to parse ${key} from localStorage:`, e);
-                        localArray = [];
-                    }
+                const rawLocalData = this.get(key); // 🔧 ИСПРАВЛЕНИЕ: Используем key вместо localStorageKey
+                if (rawLocalData && Array.isArray(rawLocalData)) {
+                    localArray = rawLocalData;
+                    console.log(`🔍 ${key} found in storage:`, localArray.length, 'items');
                 } else {
-                    console.log(`🔍 ${key} not found in localStorage (raw: ${rawLocalData})`);
+                    console.log(`🔍 ${key} not found or invalid format in storage`);
                     localArray = [];
                 }
             }
@@ -2978,8 +2975,22 @@ class Storage {
                 const isRecentOrderChange = lastOrderChange && (Date.now() - parseInt(lastOrderChange)) < 30000; // 30 секунд
                 
                 if (isRecentOrderChange) {
-                    console.log(`🛡️ ${key} order was changed recently (${Math.round((Date.now() - parseInt(lastOrderChange))/1000)}s ago), preserving empty local order`);
-                    orderMergedData = [];
+                    console.log(`🛡️ ${key} order was changed recently (${Math.round((Date.now() - parseInt(lastOrderChange))/1000)}s ago), preserving current local state`);
+                    
+                    // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Получаем АКТУАЛЬНЫЕ локальные данные из this.get() вместо пустого массива
+                    const currentLocalOrder = this.get(key) || []; // 🔧 ИСПРАВЛЕНИЕ: Используем key напрямую
+                    console.log(`🔧 TIMESTAMP PROTECTION: Retrieved current local ${key}:`, currentLocalOrder);
+                    
+                    if (currentLocalOrder.length > 0) {
+                        // Фильтруем только валидные ID'шники
+                        const validCurrentOrder = currentLocalOrder.filter(id => validIds.includes(id));
+                        orderMergedData = validCurrentOrder;
+                        console.log(`🛡️ PROTECTED ORDER PRESERVED: ${key} with ${validCurrentOrder.length} valid items`);
+                    } else {
+                        // Если текущий order тоже пустой, используем серверный
+                        orderMergedData = [...validServerIds];
+                        console.log(`🔧 FALLBACK: Current ${key} is empty, using server order`);
+                    }
                 } else {
                     console.log(`📥 ${key} local order is empty, using server order completely`);
                     orderMergedData = [...validServerIds];
@@ -3037,12 +3048,7 @@ class Storage {
             });
             
             // Сохраняем обновленный order массив
-            const orderStorageKey = this.getKeyConstant(key);
-            if (orderStorageKey) {
-              this.set(orderStorageKey, orderMergedData);
-            } else {
-              console.error(`🚨 Failed to save ${key}: invalid key mapping`);
-            }
+            this.set(key, orderMergedData);
             
             // Помечаем для синхронизации если нужно
             if (!this.arraysEqual(orderMergedData, serverArray)) {
