@@ -1994,6 +1994,16 @@ function initMainApp() {
             return { cleared: true };
         },
 
+        // Clean undefined values from deletedStates (for fixing sync issues)
+        cleanDeletedStates() {
+            if (!window.Storage) {
+                console.error('❌ Storage not available');
+                return;
+            }
+            
+            return window.Storage.cleanDeletedStates();
+        },
+
         // Safer sync debugging
         async smartSync() {
             console.log('🧠 Smart sync debugging - preserving data from all devices...');
@@ -2769,6 +2779,16 @@ window.debugSync = {
     return { cleared: true };
   },
 
+  // Clean undefined values from deletedStates (for fixing sync issues)
+  cleanDeletedStates() {
+    if (!window.Storage) {
+      console.error('❌ Storage not available');
+      return;
+    }
+    
+    return window.Storage.cleanDeletedStates();
+  },
+
   // Safer sync debugging
   async smartSync() {
     console.log('🧠 Smart sync debugging - preserving data from all devices...');
@@ -2822,4 +2842,5 @@ console.log('  - debugSync.forceResetAndSync() - Force reset user data on server
 console.log('  - debugSync.cleanDuplicates() - Emergency cleanup of duplicate protocols/skills on server');
 console.log('  - debugSync.clearDeletedCheckins() - Clean undefined elements from deletedCheckins array');
 console.log('  - debugSync.clearDeletedStates() - Clear deleted states list (for debugging)');
+console.log('  - debugSync.cleanDeletedStates() - Clean undefined values from deletedStates (fix sync issues)');
 console.log('  - debugSync.smartSync() - Safer sync debugging');

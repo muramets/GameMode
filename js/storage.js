@@ -2446,6 +2446,21 @@ class Storage {
                     if (key === 'states') {
                         console.log(`🔄 USING RELIABLE FIRST-TIME DETECTION FOR ${key.toUpperCase()}`);
                         
+                        // 🔧 КРИТИЧНО: Очищаем deletedStates от undefined значений ПЕРЕД использованием
+                        let deletedStates = this.get('deletedStates') || [];
+                        const originalDeletedStatesLength = deletedStates.length;
+                        deletedStates = deletedStates.filter(item => item !== undefined && item !== null && item !== '');
+                        
+                        if (deletedStates.length !== originalDeletedStatesLength) {
+                            console.log(`🔧 CLEANED undefined items from deletedStates:`, {
+                                before: originalDeletedStatesLength,
+                                after: deletedStates.length,
+                                filtered: originalDeletedStatesLength - deletedStates.length
+                            });
+                            // Сохраняем очищенный массив
+                            this.set('deletedStates', deletedStates);
+                        }
+                        
                         // 🔧 НАДЕЖНОЕ ОПРЕДЕЛЕНИЕ: Используем простой флаг первого входа
                         const isFirstTime = this.isFirstTimeLogin === true;
                         
@@ -2459,9 +2474,10 @@ class Storage {
                           userEmail: this.currentUser?.email,
                           strategy: isFirstTime ? 'SERVER_FIRST' : 'CLIENT_FIRST',
                           localData: localArray,
-                          serverData: serverArray
+                          serverData: serverArray,
+                          deletedStatesCount: deletedStates.length
                         });
-                        
+
                         if (isFirstTime) {
                             console.log(`🆕 FIRST TIME LOGIN for ${key}: Using server-first approach`);
                             console.log(`🐞 DEBUG: Server has ${serverArray.length} items:`, serverArray);
@@ -2513,8 +2529,7 @@ class Storage {
                                 for (const serverItem of serverArray) {
                                     if (!serverItem || !serverItem.id) continue; // Пропускаем invalid элементы
                                     
-                                    // 🔧 НОВОЕ: Проверяем не был ли этот state удален пользователем
-                                    const deletedStates = this.get('deletedStates') || [];
+                                    // 🔧 ИСПРАВЛЕНО: Используем очищенный массив deletedStates
                                     if (deletedStates.includes(serverItem.id)) {
                                         console.log(`🗑️ State ${serverItem.id} was deleted by user, not restoring from server`);
                                         continue; // Пропускаем удаленный state
@@ -2597,7 +2612,7 @@ class Storage {
                     
                     // 🔧 НОВОЕ: Фильтрация undefined элементов для deletedStates
                     if (key === 'deletedStates') {
-                        mergedData = mergedData.filter(item => item !== undefined && item !== null);
+                        mergedData = mergedData.filter(item => item !== undefined && item !== null && item !== '');
                         console.log(`🔧 FILTERED undefined items from local ${key}:`, {
                             before: localArray.length,
                             after: mergedData.length,
@@ -2631,7 +2646,8 @@ class Storage {
                         } else if (key === 'deletedSkills') {
                             mergedData = mergedData.filter(item => item !== undefined && item !== null);
                         } else if (key === 'deletedStates') {
-                            mergedData = mergedData.filter(item => item !== undefined && item !== null);
+                            // Убираем дублирующую фильтрацию - уже сделана выше
+                            console.log(`📝 STATES: Skipping duplicate filtering (already done)`);
                         } else if (mergedData.length > 0 && mergedData[0] && typeof mergedData[0] === 'object' && mergedData[0].id) {
                             // Дедупликация для объектов с ID
                             mergedData = mergedData.filter((item, index, self) => 
@@ -3667,6 +3683,39 @@ class Storage {
       before,
       after,
       removed
+    };
+  }
+
+  // Clear deleted states list (for debugging and fixing sync issues)
+  clearDeletedStates() {
+    console.log('🧹 CLEARING DELETED STATES LIST...');
+    const deletedStates = this.get('deletedStates') || [];
+    console.log('🔍 Before clearing:', deletedStates);
+    this.set('deletedStates', []);
+    console.log('✅ Deleted states list cleared');
+    return { cleared: true, previousCount: deletedStates.length };
+  }
+
+  // Clean undefined values from deletedStates (for fixing sync issues)
+  cleanDeletedStates() {
+    console.log('🧹 CLEANING UNDEFINED VALUES FROM DELETED STATES...');
+    const deletedStates = this.get('deletedStates') || [];
+    const originalLength = deletedStates.length;
+    const cleanedStates = deletedStates.filter(item => item !== undefined && item !== null && item !== '');
+    
+    console.log('🔍 Cleaning results:', {
+      before: originalLength,
+      after: cleanedStates.length,
+      filtered: originalLength - cleanedStates.length,
+      cleanedStates: cleanedStates
+    });
+    
+    this.set('deletedStates', cleanedStates);
+    console.log('✅ Deleted states cleaned');
+    return { 
+      cleaned: true, 
+      filteredCount: originalLength - cleanedStates.length,
+      finalCount: cleanedStates.length 
     };
   }
 }
