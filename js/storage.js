@@ -3950,10 +3950,18 @@ class Storage {
       
       // Check for missing protocols (not in deleted list)
       const localProtocolIds = new Set(localProtocols.map(p => p.id));
-      const missingProtocols = (serverData.protocols || []).filter(serverProtocol => 
-        !localProtocolIds.has(serverProtocol.id) && 
-        !deletedProtocols.includes(serverProtocol.id)
-      );
+      const missingProtocols = (serverData.protocols || []).filter(serverProtocol => {
+        // Проверяем что протокол не существует локально
+        if (localProtocolIds.has(serverProtocol.id)) return false;
+        
+        // 🔧 ИСПРАВЛЕНИЕ: Правильная проверка deletion records в timestamp-based формате
+        const isDeleted = deletedProtocols.some(deletionRecord => {
+          const deletionId = typeof deletionRecord === 'object' ? deletionRecord.id : deletionRecord;
+          return deletionId == serverProtocol.id || deletionId === serverProtocol.id;
+        });
+        
+        return !isDeleted;
+      });
       
       if (missingProtocols.length > 0) {
         console.log('🚨 INTEGRITY CHECK: Found missing protocols on local device (respecting deletions):', missingProtocols.map(p => p.id));
@@ -3966,10 +3974,18 @@ class Storage {
       
       // Check for missing skills (not in deleted list)
       const localSkillIds = new Set(localSkills.map(s => s.id));
-      const missingSkills = (serverData.skills || []).filter(serverSkill => 
-        !localSkillIds.has(serverSkill.id) && 
-        !deletedSkills.includes(serverSkill.id)
-      );
+      const missingSkills = (serverData.skills || []).filter(serverSkill => {
+        // Проверяем что навык не существует локально
+        if (localSkillIds.has(serverSkill.id)) return false;
+        
+        // 🔧 ИСПРАВЛЕНИЕ: Правильная проверка deletion records в timestamp-based формате
+        const isDeleted = deletedSkills.some(deletionRecord => {
+          const deletionId = typeof deletionRecord === 'object' ? deletionRecord.id : deletionRecord;
+          return deletionId == serverSkill.id || deletionId === serverSkill.id;
+        });
+        
+        return !isDeleted;
+      });
       
       if (missingSkills.length > 0) {
         console.log('🚨 INTEGRITY CHECK: Found missing skills on local device (respecting deletions):', missingSkills.map(s => s.id));
@@ -3982,10 +3998,18 @@ class Storage {
       
       // Check for missing states (not in deleted list)
       const localStateIds = new Set(localStates.map(s => s.id));
-      const missingStates = (serverData.states || []).filter(serverState => 
-        !localStateIds.has(serverState.id) && 
-        !deletedStates.includes(serverState.id)
-      );
+      const missingStates = (serverData.states || []).filter(serverState => {
+        // Проверяем что состояние не существует локально
+        if (localStateIds.has(serverState.id)) return false;
+        
+        // 🔧 ИСПРАВЛЕНИЕ: Правильная проверка deletion records в timestamp-based формате
+        const isDeleted = deletedStates.some(deletionRecord => {
+          const deletionId = typeof deletionRecord === 'object' ? deletionRecord.id : deletionRecord;
+          return deletionId == serverState.id || deletionId === serverState.id;
+        });
+        
+        return !isDeleted;
+      });
       
       if (missingStates.length > 0) {
         console.log('🚨 INTEGRITY CHECK: Found missing states on local device (respecting deletions):', missingStates.map(s => s.id));
