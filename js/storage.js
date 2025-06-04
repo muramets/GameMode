@@ -508,8 +508,37 @@ class Storage {
       const checkins = this.get(this.KEYS.HISTORY);
       const checkinsArray = Array.isArray(checkins) ? checkins : [];
       
+      // 🔧 ДОПОЛНИТЕЛЬНАЯ ЗАЩИТА: Фильтруем удаленные чекины 
+      // Это предотвращает показ чекинов, которые были удалены но восстановлены синхронизацией
+      const deletedCheckins = this.get('deletedCheckins') || [];
+      const deletedIds = new Set();
+      
+      // Создаем множество ID удаленных чекинов для быстрого поиска
+      deletedCheckins.forEach(item => {
+        const id = typeof item === 'object' ? item.id : item;
+        if (id !== undefined && id !== null) {
+          deletedIds.add(id.toString()); // Приводим к строке для универсального сравнения
+        }
+      });
+      
+      // Фильтруем удаленные чекины
+      const filteredCheckins = checkinsArray.filter(checkin => {
+        const checkinId = checkin.id?.toString();
+        const isDeleted = deletedIds.has(checkinId);
+        
+        if (isDeleted) {
+          console.log('🚫 FILTERING OUT DELETED CHECKIN:', {
+            checkinId: checkin.id,
+            timestamp: checkin.timestamp,
+            type: checkin.type
+          });
+        }
+        
+        return !isDeleted;
+      });
+      
       // 🔧 CONSISTENT SORTING: Always return newest-first (by timestamp descending)
-      return checkinsArray.sort((a, b) => {
+      return filteredCheckins.sort((a, b) => {
         const timestampA = new Date(a.timestamp).getTime();
         const timestampB = new Date(b.timestamp).getTime();
         return timestampB - timestampA; // Newest first (descending order)
