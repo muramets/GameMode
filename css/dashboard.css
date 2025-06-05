@@ -182,6 +182,7 @@
   color: var(--sub-color);
   font-family: 'Roboto Mono', monospace;
   margin-top: 0;
+  cursor: default;
 }
 
 /* Responsive design for user profile */
