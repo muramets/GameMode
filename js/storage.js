@@ -484,7 +484,12 @@ class Storage {
     const skills = this.getSkills();
     const index = skills.findIndex(s => s.id === id);
     if (index !== -1) {
-      skills[index] = { ...skills[index], ...updates };
+      // 🔧 КРИТИЧНО: Добавляем lastModified timestamp для правильной синхронизации
+      skills[index] = { 
+        ...skills[index], 
+        ...updates, 
+        lastModified: Date.now() 
+      };
       this.set(this.KEYS.SKILLS, skills);
       return true;
     }
