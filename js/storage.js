@@ -4493,6 +4493,165 @@ class Storage {
     
     return 'no timestamp (legacy)';
   }
+
+  // Force sync from server - completely replaces local data with server data
+  async forceSyncFromServer() {
+    // 🔧 КРИТИЧНО: Блокируем принудительную синхронизацию во время Clear All
+    if (this.clearAllInProgress) {
+      console.log('🚫 FORCE SYNC BLOCKED: Clear All operation in progress, skipping force sync');
+      return false;
+    }
+    
+    // 🔧 НОВОЕ: Защита от множественных параллельных синхронизаций
+    if (this.syncInProgress) {
+      console.log('🚫 FORCE SYNC BLOCKED: Another sync already in progress, skipping duplicate sync');
+      return false;
+    }
+    
+    if (!this.isOnline || !this.currentUser) {
+      console.log('🚫 FORCE SYNC SKIPPED:', {
+        isOnline: this.isOnline,
+        hasUser: !!this.currentUser,
+        userEmail: this.currentUser?.email
+      });
+      return false;
+    }
+    
+    // 🔧 УСТАНАВЛИВАЕМ ФЛАГ СИНХРОНИЗАЦИИ
+    this.syncInProgress = true;
+    
+    console.log('🔄 FORCE SYNC FROM SERVER STARTED:', {
+      user: this.currentUser.email,
+      userId: this.currentUser.uid,
+      backendUrl: BACKEND_URL,
+      strategy: 'server-first-complete-replacement'
+    });
+    
+    try {
+      const token = await this.currentUser.getIdToken();
+      
+      // Добавляем агрессивный cache busting
+      const timestamp = Date.now();
+      const syncUrl = `${BACKEND_URL}/api/sync?_force_server=true&_t=${timestamp}&_cb=${Math.random()}`;
+      
+      console.log('🌐 FORCE SYNC REQUEST:', {
+        url: syncUrl,
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          'If-Modified-Since': 'Thu, 01 Jan 1970 00:00:00 GMT'
+        }
+      });
+      
+      // Используем GET запрос для получения данных с сервера
+      const response = await fetch(syncUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          'If-Modified-Since': 'Thu, 01 Jan 1970 00:00:00 GMT'
+        }
+      });
+      
+      console.log('📡 FORCE SYNC RESPONSE:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+      
+      if (response.ok) {
+        const serverResponse = await response.json();
+        console.log('📥 FORCE SYNC RESPONSE DATA:', serverResponse);
+        
+        const serverData = serverResponse.data || {};
+        
+        console.log('📥 FORCE SYNC SERVER DATA DETAILS:', {
+          protocols: (serverData.protocols || []).length,
+          skills: (serverData.skills || []).length,
+          states: (serverData.states || []).length,
+          history: (serverData.history || []).length,
+          quickActions: (serverData.quickActions || []).length,
+          quickActionOrder: (serverData.quickActionOrder || []).length,
+          protocolOrder: (serverData.protocolOrder || []).length,
+          skillOrder: (serverData.skillOrder || []).length,
+          stateOrder: (serverData.stateOrder || []).length
+        });
+        
+        // 🔧 КРИТИЧНО: Полностью очищаем локальные данные и флаги удаления
+        console.log('🗑️ FORCE SYNC: Clearing all local data and deletion flags...');
+        
+        // Очищаем все флаги удаления - мы полностью доверяем серверу
+        this.set('deletedCheckins', []);
+        this.set('deletedProtocols', []);
+        this.set('deletedSkills', []);
+        this.set('deletedStates', []);
+        this.set('deletedQuickActions', []);
+        
+        // 🔧 НОВОЕ: Полностью заменяем локальные данные серверными
+        console.log('📥 FORCE SYNC: Replacing all local data with server data...');
+        
+        // Заменяем основные данные
+        this.set(this.KEYS.PROTOCOLS, serverData.protocols || []);
+        this.set(this.KEYS.SKILLS, serverData.skills || []);
+        this.set(this.KEYS.STATES, serverData.states || []);
+        this.set(this.KEYS.HISTORY, serverData.history || []);
+        this.set(this.KEYS.QUICK_ACTIONS, serverData.quickActions || []);
+        
+        // Заменяем порядки
+        this.set(this.KEYS.QUICK_ACTION_ORDER, serverData.quickActionOrder || []);
+        this.set(this.KEYS.PROTOCOL_ORDER, serverData.protocolOrder || []);
+        this.set(this.KEYS.SKILL_ORDER, serverData.skillOrder || []);
+        this.set(this.KEYS.STATE_ORDER, serverData.stateOrder || []);
+        
+        // Обновляем метки времени
+        if (serverData.protocolOrder_timestamp) {
+          this.set('protocolOrder_timestamp', serverData.protocolOrder_timestamp);
+        }
+        if (serverData.skillOrder_timestamp) {
+          this.set('skillOrder_timestamp', serverData.skillOrder_timestamp);
+        }
+        if (serverData.stateOrder_timestamp) {
+          this.set('stateOrder_timestamp', serverData.stateOrder_timestamp);
+        }
+        if (serverData.quickActionOrder_timestamp) {
+          this.set('quickActionOrder_timestamp', serverData.quickActionOrder_timestamp);
+        }
+        
+        this.lastSyncTime = new Date().toISOString();
+        
+        console.log('✅ FORCE SYNC FROM SERVER COMPLETED:', {
+          protocols: (serverData.protocols || []).length,
+          skills: (serverData.skills || []).length,
+          states: (serverData.states || []).length,
+          history: (serverData.history || []).length,
+          quickActions: (serverData.quickActions || []).length,
+          localDataCleared: true,
+          deletionFlagsCleared: true
+        });
+        
+        return true;
+        
+      } else {
+        const errorText = await response.text();
+        console.error('❌ FORCE SYNC FROM SERVER FAILED:', response.status, response.statusText, errorText);
+        return false;
+      }
+      
+    } catch (error) {
+      console.error('❌ FORCE SYNC FROM SERVER ERROR:', error);
+      return false;
+    } finally {
+      // 🔧 КРИТИЧНО: Всегда очищаем флаг синхронизации
+      this.syncInProgress = false;
+      console.log('🔓 FORCE SYNC: Sync lock released');
+    }
+  }
 }
 
 // Create global instance

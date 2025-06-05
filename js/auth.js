@@ -232,35 +232,39 @@ class Auth {
             
             // Show loading state
             if (window.App && window.App.showToast) {
-                window.App.showToast('Syncing from server...', 'info');
+                window.App.showToast('Clearing local data and syncing from server...', 'info');
             }
             
-            // Force complete sync from server
-            await window.Storage.syncWithBackend();
+            // Force complete sync from server - completely replaces local data
+            const syncSuccess = await window.Storage.forceSyncFromServer();
             
-            // Also run integrity check to ensure everything is up to date
-            const hasIssues = await window.Storage.performDataIntegrityCheck();
-            
-            // Re-render current page to show updated data
-            if (window.App && window.App.renderPage) {
-                window.App.renderPage(window.App.currentPage);
-            }
-            
-            if (window.App && window.App.showToast) {
-                if (hasIssues) {
-                    window.App.showToast('Synced from server and fixed data inconsistencies', 'success');
-                } else {
-                    window.App.showToast('Successfully synced from server', 'success');
+            if (syncSuccess) {
+                // Also run integrity check to ensure everything is up to date
+                const hasIssues = await window.Storage.performDataIntegrityCheck();
+                
+                // Re-render current page to show updated data
+                if (window.App && window.App.renderPage) {
+                    window.App.renderPage(window.App.currentPage);
                 }
+                
+                if (window.App && window.App.showToast) {
+                    if (hasIssues) {
+                        window.App.showToast('Forced sync from server and fixed data inconsistencies', 'success');
+                    } else {
+                        window.App.showToast('Successfully forced sync from server', 'success');
+                    }
+                }
+                
+                console.log('✅ Force sync from server completed');
+            } else {
+                throw new Error('Force sync failed');
             }
-            
-            console.log('✅ Force sync from server completed');
             
         } catch (error) {
             console.error('❌ Force sync from server failed:', error);
             
             if (window.App && window.App.showToast) {
-                window.App.showToast('Failed to sync from server', 'error');
+                window.App.showToast('Failed to force sync from server', 'error');
             }
         }
     }
