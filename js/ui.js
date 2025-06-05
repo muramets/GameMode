@@ -234,7 +234,7 @@ const UI = {
     }).join('');
     
     // Setup drag & drop
-    DragDrop.setupQuickProtocols();
+    DragDrop.setupQuickActions();
     
     // Setup tooltips for quick actions with hover information
     this.setupQuickActionsTooltips();
