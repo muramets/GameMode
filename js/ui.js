@@ -207,9 +207,10 @@ const UI = {
     
     container.innerHTML = protocols.map(protocol => {
       const icon = this.renderIcon(protocol.icon);
+      const hasHover = protocol.hover && protocol.hover.trim();
       
       return `
-        <div class="quick-protocol" draggable="true" data-protocol-id="${protocol.id}" title="${protocol.name}">
+        <div class="quick-protocol" draggable="true" data-protocol-id="${protocol.id}" ${hasHover ? `data-hover="${protocol.hover}"` : ''}>
           <div class="quick-protocol-icon">${icon}</div>
           <div class="quick-protocol-info">
             <div class="quick-protocol-name">${protocol.name.split('. ')[0]}</div>
@@ -232,11 +233,11 @@ const UI = {
       `;
     }).join('');
     
-    // Setup drag and drop for quick actions
-    setTimeout(() => {
-      DragDrop.setupQuickActions();
-      this.setupQuickProtocolTooltips();
-    }, 0);
+    // Setup drag & drop
+    DragDrop.setupQuickProtocols();
+    
+    // Setup tooltips for quick actions with hover information
+    this.setupQuickActionsTooltips();
   },
 
   // Setup tooltips for quick protocol names that are truncated
@@ -916,6 +917,38 @@ const UI = {
   
   clearQuestionIconTimeouts() {
     // No longer needed, but keeping for compatibility
+  },
+
+  // Setup tooltips for quick actions with hover information
+  setupQuickActionsTooltips() {
+    // Handle truncated protocol names
+    const quickProtocolNames = document.querySelectorAll('.quick-protocol-name');
+    
+    quickProtocolNames.forEach((nameElement, index) => {
+      const text = nameElement.textContent.trim();
+      const scrollWidth = nameElement.scrollWidth;
+      const clientWidth = nameElement.clientWidth;
+      const isOverflowing = scrollWidth > clientWidth;
+      
+      // Check if text is truncated (scrollWidth > clientWidth means text is overflowing)
+      if (isOverflowing) {
+        // Remove any existing listeners to prevent duplicates
+        nameElement.removeEventListener('mouseenter', nameElement._boundShowTooltip);
+        nameElement.removeEventListener('mouseleave', nameElement._boundHideTooltip);
+        
+        // Bind the functions to maintain proper context
+        nameElement._boundShowTooltip = (e) => this.showTooltip(e, text);
+        nameElement._boundHideTooltip = () => this.hideTooltip();
+        
+        // Add new event listeners
+        nameElement.addEventListener('mouseenter', nameElement._boundShowTooltip);
+        nameElement.addEventListener('mouseleave', nameElement._boundHideTooltip);
+      } else {
+        // Remove tooltip listeners if text fits
+        nameElement.removeEventListener('mouseenter', nameElement._boundShowTooltip);
+        nameElement.removeEventListener('mouseleave', nameElement._boundHideTooltip);
+      }
+    });
   }
 };
 

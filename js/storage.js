@@ -1152,7 +1152,7 @@ class Storage {
   // Get skill history
   getSkillHistory(skillId) {
     const checkins = this.getCheckins();
-    return checkins.filter(c => c.changes[skillId] !== undefined);
+    return checkins.filter(c => c.changes && c.changes[skillId] !== undefined);
   }
 
   // Get last update date for skill
@@ -2644,8 +2644,23 @@ class Storage {
                             hasUpdates = true;
                             addedFromServer++;
                         } else {
-                            // Навык существует локально - используем локальную версию (client-first для изменений)
-                            console.log(`📋 Skill ${serverItem.id} exists in both, keeping local version (client-first)`);
+                            // Навык существует локально - сравниваем initialScore и обновляем с сервера если отличается
+                            const localItem = mergedData.find(m => m.id === serverItem.id);
+                            const localInitialScore = localItem.initialScore;
+                            const serverInitialScore = serverItem.initialScore;
+                            
+                            if (Math.abs(localInitialScore - serverInitialScore) > 0.001) {
+                                console.log(`🔄 Skill ${serverItem.id} has different initialScore: local=${localInitialScore}, server=${serverInitialScore}, updating with server version`);
+                                
+                                // Обновляем локальную версию серверными данными
+                                const index = mergedData.findIndex(m => m.id === serverItem.id);
+                                if (index !== -1) {
+                                    mergedData[index] = { ...serverItem };
+                                    hasUpdates = true;
+                                }
+                            } else {
+                                console.log(`📋 Skill ${serverItem.id} initialScore matches (${localInitialScore}), keeping local version`);
+                            }
                         }
                     }
                     

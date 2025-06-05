@@ -277,6 +277,7 @@ function initMainApp() {
                         this.protocolsPage--;
                         UI.renderProtocols();
                         DragDrop.setupProtocols();
+                        this.setupTooltips();
                         this.updatePagination();
                     }
                 });
@@ -289,6 +290,7 @@ function initMainApp() {
                         this.protocolsPage++;
                         UI.renderProtocols();
                         DragDrop.setupProtocols();
+                        this.setupTooltips();
                         this.updatePagination();
                     }
                 });
@@ -376,6 +378,18 @@ function initMainApp() {
                     clearTooltip();
                 });
             });
+            
+            // Handle quick protocol cells with hover information
+            document.querySelectorAll('.quick-protocol[data-hover]').forEach(cell => {
+                cell.addEventListener('mouseenter', () => {
+                    clearTooltip();
+                    startTooltip(cell);
+                });
+                
+                cell.addEventListener('mouseleave', () => {
+                    clearTooltip();
+                });
+            });
         },
 
         navigateTo(page) {
@@ -439,6 +453,7 @@ function initMainApp() {
             switch(page) {
                 case 'dashboard':
                     UI.renderDashboard();
+                    this.setupTooltips();
                     break;
                 case 'protocols':
                     UI.renderProtocols();
