@@ -1100,12 +1100,12 @@ class Storage {
 
     checkins.forEach((checkin, index) => {
       if (checkin.changes && checkin.type === 'protocol') {
-        // Check if this checkin affects our skill and happened BEFORE OR ON target date (including target date)
+        // Check if this checkin affects our skill and happened BEFORE target date (target date = start of current day)
         const checkinDate = new Date(checkin.timestamp);
         
-        // 🔧 ИСПРАВЛЕНИЕ: Используем <= для включения чекинов целевого дня
-        // Это гарантирует что "yesterday" показывает значение на конец предыдущего дня включая чекины этого дня
-        if (checkinDate <= targetDateObj && checkin.changes[skillId] !== undefined) {
+        // 🔧 ИСПРАВЛЕНИЕ: Используем < для чекинов до целевого дня (целевой день = начало текущего дня)
+        // Теперь "yesterday" включает все чекины до начала текущего дня
+        if (checkinDate < targetDateObj && checkin.changes[skillId] !== undefined) {
           totalChange += checkin.changes[skillId];
         }
       }

@@ -65,7 +65,7 @@ const UI = {
           
           // Calculate yesterday's score
           const yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
+          yesterday.setHours(0, 0, 0, 0); // Начало сегодняшнего дня (00:00:00)
           const yesterdayScore = window.Storage.calculateStateScoreAtDate(state.id, yesterday);
           
           // Calculate change direction and class
