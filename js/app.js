@@ -2035,7 +2035,7 @@ window.addEventListener('resize', () => {
         window.App.updateNavIndicator();
     }
     if (window.UI) {
-        window.UI.setupQuickProtocolTooltips();
+        window.UI.setupQuickActionsTooltips();
     }
 });
 

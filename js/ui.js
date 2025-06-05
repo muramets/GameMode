@@ -240,8 +240,9 @@ const UI = {
     this.setupQuickActionsTooltips();
   },
 
-  // Setup tooltips for quick protocol names that are truncated
-  setupQuickProtocolTooltips() {
+  // Setup tooltips for quick actions with hover information
+  setupQuickActionsTooltips() {
+    // Handle truncated protocol names
     const quickProtocolNames = document.querySelectorAll('.quick-protocol-name');
     
     quickProtocolNames.forEach((nameElement, index) => {
@@ -250,8 +251,12 @@ const UI = {
       const clientWidth = nameElement.clientWidth;
       const isOverflowing = scrollWidth > clientWidth;
       
-      // Check if text is truncated (scrollWidth > clientWidth means text is overflowing)
-      if (isOverflowing) {
+      // Get the parent quick-protocol element to check if it has data-hover
+      const parentQuickProtocol = nameElement.closest('.quick-protocol');
+      const hasHoverInfo = parentQuickProtocol && parentQuickProtocol.hasAttribute('data-hover');
+      
+      // Only show JavaScript tooltip if text is truncated AND there's no hover info (to avoid conflicts with CSS tooltips)
+      if (isOverflowing && !hasHoverInfo) {
         // Remove any existing listeners to prevent duplicates
         nameElement.removeEventListener('mouseenter', nameElement._boundShowTooltip);
         nameElement.removeEventListener('mouseleave', nameElement._boundHideTooltip);
@@ -264,7 +269,7 @@ const UI = {
         nameElement.addEventListener('mouseenter', nameElement._boundShowTooltip);
         nameElement.addEventListener('mouseleave', nameElement._boundHideTooltip);
       } else {
-        // Remove tooltip listeners if text fits
+        // Remove tooltip listeners if text fits or if there's hover info (CSS tooltip will handle it)
         nameElement.removeEventListener('mouseenter', nameElement._boundShowTooltip);
         nameElement.removeEventListener('mouseleave', nameElement._boundHideTooltip);
       }
@@ -917,38 +922,6 @@ const UI = {
   
   clearQuestionIconTimeouts() {
     // No longer needed, but keeping for compatibility
-  },
-
-  // Setup tooltips for quick actions with hover information
-  setupQuickActionsTooltips() {
-    // Handle truncated protocol names
-    const quickProtocolNames = document.querySelectorAll('.quick-protocol-name');
-    
-    quickProtocolNames.forEach((nameElement, index) => {
-      const text = nameElement.textContent.trim();
-      const scrollWidth = nameElement.scrollWidth;
-      const clientWidth = nameElement.clientWidth;
-      const isOverflowing = scrollWidth > clientWidth;
-      
-      // Check if text is truncated (scrollWidth > clientWidth means text is overflowing)
-      if (isOverflowing) {
-        // Remove any existing listeners to prevent duplicates
-        nameElement.removeEventListener('mouseenter', nameElement._boundShowTooltip);
-        nameElement.removeEventListener('mouseleave', nameElement._boundHideTooltip);
-        
-        // Bind the functions to maintain proper context
-        nameElement._boundShowTooltip = (e) => this.showTooltip(e, text);
-        nameElement._boundHideTooltip = () => this.hideTooltip();
-        
-        // Add new event listeners
-        nameElement.addEventListener('mouseenter', nameElement._boundShowTooltip);
-        nameElement.addEventListener('mouseleave', nameElement._boundHideTooltip);
-      } else {
-        // Remove tooltip listeners if text fits
-        nameElement.removeEventListener('mouseenter', nameElement._boundShowTooltip);
-        nameElement.removeEventListener('mouseleave', nameElement._boundHideTooltip);
-      }
-    });
   }
 };
 
