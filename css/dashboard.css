@@ -183,6 +183,7 @@
   font-family: 'Roboto Mono', monospace;
   margin-top: 0;
   cursor: default;
+  transition: color 0.2s ease;
 }
 
 /* Responsive design for user profile */
