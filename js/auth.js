@@ -227,8 +227,8 @@ class Auth {
                 window.App.showToast('Syncing from server...', 'info');
             }
             
-            // Force complete sync from server (ignoring local changes for this operation)
-            await window.Storage.forceUploadToServer();
+            // Force complete sync from server
+            await window.Storage.syncWithBackend();
             
             // Also run integrity check to ensure everything is up to date
             const hasIssues = await window.Storage.performDataIntegrityCheck();
