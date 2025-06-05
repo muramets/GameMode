@@ -3835,7 +3835,7 @@ class Storage {
       
       console.log(`🔄 HISTORY MERGE STRATEGY: Local-first merge, added ${addedFromServer} server-only items`);
     } else {
-      console.log("🔄 USING TIMESTAMP-BASED STRATEGY FOR NON-HISTORY DATA");
+      console.log('🔄 USING LOCAL-FIRST STRATEGY FOR NON-HISTORY DATA');
       // For other data types, use the original local-first strategy
       // Add all local items first (preserving local version in case of conflicts)
       localArray.forEach(item => {

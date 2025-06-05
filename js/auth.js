@@ -58,6 +58,14 @@ class Auth {
             });
         }
         
+        // Sync from server button
+        const syncBtn = document.getElementById('sync-from-server-btn');
+        if (syncBtn) {
+            syncBtn.addEventListener('click', async () => {
+                this.syncFromServer();
+            });
+        }
+        
         // Setup custom email validation
         this.setupEmailValidation();
     }
@@ -207,6 +215,45 @@ class Auth {
             console.log('✅ Logout successful');
         } catch (error) {
             console.error('❌ Logout failed:', error);
+        }
+    }
+    
+    async syncFromServer() {
+        try {
+            console.log('🔄 Force syncing from server...');
+            
+            // Show loading state
+            if (window.App && window.App.showToast) {
+                window.App.showToast('Syncing from server...', 'info');
+            }
+            
+            // Force complete sync from server (ignoring local changes for this operation)
+            await window.Storage.forceUploadToServer();
+            
+            // Also run integrity check to ensure everything is up to date
+            const hasIssues = await window.Storage.performDataIntegrityCheck();
+            
+            // Re-render current page to show updated data
+            if (window.App && window.App.renderPage) {
+                window.App.renderPage(window.App.currentPage);
+            }
+            
+            if (window.App && window.App.showToast) {
+                if (hasIssues) {
+                    window.App.showToast('Synced from server and fixed data inconsistencies', 'success');
+                } else {
+                    window.App.showToast('Successfully synced from server', 'success');
+                }
+            }
+            
+            console.log('✅ Force sync from server completed');
+            
+        } catch (error) {
+            console.error('❌ Force sync from server failed:', error);
+            
+            if (window.App && window.App.showToast) {
+                window.App.showToast('Failed to sync from server', 'error');
+            }
         }
     }
     
