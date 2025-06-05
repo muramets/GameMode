@@ -159,18 +159,18 @@
   opacity: 0.7;
 }
 
-.checkin-trend-arrow.increase:hover {
+.stat-detail:hover .checkin-trend-arrow.increase {
   color: var(--correct-color);
   opacity: 1;
 }
 
-.checkin-trend-arrow.decrease:hover {
+.stat-detail:hover .checkin-trend-arrow.decrease {
   color: var(--error-color);
   opacity: 1;
 }
 
 .stat-detail {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--sub-color);
   font-family: 'Roboto Mono', monospace;
   margin-top: 0;
