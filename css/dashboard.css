@@ -526,7 +526,6 @@
   align-items: flex-start;
   flex: 1;
   min-width: 0;
-  overflow: hidden;
 }
 
 .quick-protocol-name {
@@ -629,7 +628,7 @@
 .quick-protocol[data-hover]::after {
   content: attr(data-hover);
   position: absolute;
-  top: calc(100% + 0.5rem);
+  bottom: calc(100% + 0.5rem);
   left: 50%;
   transform: translateX(-50%);
   background-color: #1e1e1e;
