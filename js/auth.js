@@ -66,6 +66,14 @@ class Auth {
             });
         }
         
+        // Push to server button
+        const pushBtn = document.getElementById('push-to-server-btn');
+        if (pushBtn) {
+            pushBtn.addEventListener('click', async () => {
+                this.pushToServer();
+            });
+        }
+        
         // Setup custom email validation
         this.setupEmailValidation();
     }
@@ -253,6 +261,42 @@ class Auth {
             
             if (window.App && window.App.showToast) {
                 window.App.showToast('Failed to sync from server', 'error');
+            }
+        }
+    }
+    
+    async pushToServer() {
+        try {
+            console.log('📤 Force pushing local data to server...');
+            
+            // Show loading state
+            if (window.App && window.App.showToast) {
+                window.App.showToast('Pushing data to server...', 'info');
+            }
+            
+            // Force upload local data to server
+            const uploadSuccess = await window.Storage.forceUploadToServer();
+            
+            if (uploadSuccess) {
+                // Re-render current page to show any updates
+                if (window.App && window.App.renderPage) {
+                    window.App.renderPage(window.App.currentPage);
+                }
+                
+                if (window.App && window.App.showToast) {
+                    window.App.showToast('Successfully pushed data to server', 'success');
+                }
+                
+                console.log('✅ Force push to server completed');
+            } else {
+                throw new Error('Upload failed');
+            }
+            
+        } catch (error) {
+            console.error('❌ Force push to server failed:', error);
+            
+            if (window.App && window.App.showToast) {
+                window.App.showToast('Failed to push data to server', 'error');
             }
         }
     }
