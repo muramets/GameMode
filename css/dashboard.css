@@ -140,8 +140,9 @@
 
 .stat-value {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
 }
 
 .stat-number {
@@ -158,12 +159,12 @@
   opacity: 0.7;
 }
 
-.user-stats:hover .checkin-trend-arrow.increase {
+.checkin-trend-arrow.increase:hover {
   color: var(--correct-color);
   opacity: 1;
 }
 
-.user-stats:hover .checkin-trend-arrow.decrease {
+.checkin-trend-arrow.decrease:hover {
   color: var(--error-color);
   opacity: 1;
 }
@@ -172,7 +173,7 @@
   font-size: 0.8rem;
   color: var(--sub-color);
   font-family: 'Roboto Mono', monospace;
-  margin-top: 0.25rem;
+  margin-top: 0;
 }
 
 /* Responsive design for user profile */
