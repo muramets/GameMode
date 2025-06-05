@@ -169,6 +169,14 @@
   opacity: 1;
 }
 
+.stat-detail.increase:hover {
+  color: var(--correct-color);
+}
+
+.stat-detail.decrease:hover {
+  color: var(--error-color);
+}
+
 .stat-detail {
   font-size: 0.75rem;
   color: var(--sub-color);

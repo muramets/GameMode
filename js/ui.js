@@ -784,11 +784,20 @@ const UI = {
       // Format XP with trend arrow
       const sign = todayTotalChange >= 0 ? '+' : '';
       let trendArrow = '';
+      let cssClass = '';
       
       if (todayTotalChange > 0.01) {
         trendArrow = '<span class="checkin-trend-arrow increase"><i class="fas fa-arrow-trend-up"></i></span>';
+        cssClass = 'increase';
       } else if (todayTotalChange < -0.01) {
         trendArrow = '<span class="checkin-trend-arrow decrease"><i class="fas fa-arrow-trend-down"></i></span>';
+        cssClass = 'decrease';
+      }
+      
+      // Remove existing trend classes and add new one
+      checkinsTodayDetail.className = checkinsTodayDetail.className.replace(/\b(increase|decrease)\b/g, '').trim();
+      if (cssClass) {
+        checkinsTodayDetail.classList.add(cssClass);
       }
       
       checkinsTodayDetail.innerHTML = `${sign}${todayTotalChange.toFixed(2)} xp ${trendArrow}`;
@@ -824,11 +833,20 @@ const UI = {
       // Format XP with trend arrow
       const sign = monthTotalChange >= 0 ? '+' : '';
       let trendArrow = '';
+      let cssClass = '';
       
       if (monthTotalChange > 0.01) {
         trendArrow = '<span class="checkin-trend-arrow increase"><i class="fas fa-arrow-trend-up"></i></span>';
+        cssClass = 'increase';
       } else if (monthTotalChange < -0.01) {
         trendArrow = '<span class="checkin-trend-arrow decrease"><i class="fas fa-arrow-trend-down"></i></span>';
+        cssClass = 'decrease';
+      }
+      
+      // Remove existing trend classes and add new one
+      checkinsMonthDetail.className = checkinsMonthDetail.className.replace(/\b(increase|decrease)\b/g, '').trim();
+      if (cssClass) {
+        checkinsMonthDetail.classList.add(cssClass);
       }
       
       checkinsMonthDetail.innerHTML = `${sign}${monthTotalChange.toFixed(2)} xp ${trendArrow}`;
