@@ -4551,26 +4551,42 @@ class Storage {
       
       console.log('🌐 FORCE SYNC REQUEST:', {
         url: syncUrl,
-        method: 'GET',
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
           'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
           'Pragma': 'no-cache',
           'Expires': '0',
           'If-Modified-Since': 'Thu, 01 Jan 1970 00:00:00 GMT'
-        }
+        },
+        body: 'empty data for server-first sync'
       });
       
-      // Используем GET запрос для получения данных с сервера
+      // Используем POST запрос с пустыми данными для получения серверных данных
       const response = await fetch(syncUrl, {
-        method: 'GET',
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
           'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
           'Pragma': 'no-cache',
           'Expires': '0',
           'If-Modified-Since': 'Thu, 01 Jan 1970 00:00:00 GMT'
-        }
+        },
+        body: JSON.stringify({
+          // Отправляем пустые данные, чтобы сервер вернул только свои данные
+          protocols: [],
+          skills: [],
+          states: [],
+          history: [],
+          quickActions: [],
+          quickActionOrder: [],
+          protocolOrder: [],
+          skillOrder: [],
+          stateOrder: [],
+          deletedCheckins: []
+        })
       });
       
       console.log('📡 FORCE SYNC RESPONSE:', {
