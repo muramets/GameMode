@@ -780,8 +780,18 @@ const UI = {
     const checkinsTodayDetail = document.getElementById('checkins-today-detail');
     if (checkinsToday && checkinsTodayDetail) {
       checkinsToday.textContent = todayCheckins.length;
+      
+      // Format XP with trend arrow
       const sign = todayTotalChange >= 0 ? '+' : '';
-      checkinsTodayDetail.textContent = `(${sign}${todayTotalChange.toFixed(2)} xp)`;
+      let trendArrow = '';
+      
+      if (todayTotalChange > 0.01) {
+        trendArrow = '<span class="checkin-trend-arrow increase"><i class="fas fa-arrow-trend-up"></i></span>';
+      } else if (todayTotalChange < -0.01) {
+        trendArrow = '<span class="checkin-trend-arrow decrease"><i class="fas fa-arrow-trend-down"></i></span>';
+      }
+      
+      checkinsTodayDetail.innerHTML = `${sign}${todayTotalChange.toFixed(2)} xp ${trendArrow}`;
     }
     
     // Filter this month's checkins
@@ -810,8 +820,18 @@ const UI = {
     const checkinsMonthDetail = document.getElementById('checkins-month-detail');
     if (checkinsMonth && checkinsMonthDetail) {
       checkinsMonth.textContent = monthCheckins.length;
+      
+      // Format XP with trend arrow
       const sign = monthTotalChange >= 0 ? '+' : '';
-      checkinsMonthDetail.textContent = `(${sign}${monthTotalChange.toFixed(2)} xp)`;
+      let trendArrow = '';
+      
+      if (monthTotalChange > 0.01) {
+        trendArrow = '<span class="checkin-trend-arrow increase"><i class="fas fa-arrow-trend-up"></i></span>';
+      } else if (monthTotalChange < -0.01) {
+        trendArrow = '<span class="checkin-trend-arrow decrease"><i class="fas fa-arrow-trend-down"></i></span>';
+      }
+      
+      checkinsMonthDetail.innerHTML = `${sign}${monthTotalChange.toFixed(2)} xp ${trendArrow}`;
     }
   },
 
