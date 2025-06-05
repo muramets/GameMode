@@ -1174,13 +1174,14 @@ const Modals = {
     
     if (!container) return;
     
-    const protocols = window.Storage.getProtocols();
+    // 🔧 ИСПРАВЛЕНИЕ: Используем тот же порядок, что и на странице протоколов
+    const protocols = window.Storage.getProtocolsInOrder();
     const currentQuickActions = window.Storage.getQuickActions();
     const skills = window.Storage.getSkills();
     
-    // Filter available protocols (not already in quick actions)
+    // 🔧 ИСПРАВЛЕНИЕ: Правильная фильтрация - currentQuickActions содержит ID, а не объекты
     let availableProtocols = protocols.filter(protocol => 
-      !currentQuickActions.some(qa => qa.id === protocol.id)
+      !currentQuickActions.includes(protocol.id)
     );
     
     // Keep track of available protocols before search for better empty state detection
