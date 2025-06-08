@@ -1055,10 +1055,11 @@ const UI = {
     const glowColor = hexToRgba(color, 0.03);
     const glowColorStrong = hexToRgba(color, 0.06);
     
-    // Apply very subtle external glow with only 2 layers
+    // Apply subtle external glow with 3 layers for better depth
     element.style.boxShadow = `
       0 0 6px ${glowColor},
-      0 0 12px ${hexToRgba(color, 0.02)}
+      0 0 12px ${hexToRgba(color, 0.02)},
+      0 0 18px ${hexToRgba(color, 0.01)}
     `;
     // Don't change border color to avoid visible outline
     element.style.transition = 'all 0.3s ease';
@@ -1072,19 +1073,21 @@ const UI = {
     }
     
     if (!this.createdAnimations.has(animationName)) {
-      // Create CSS animation keyframes with more subtle effect
+      // Create CSS animation keyframes with good animation from previous version
       const style = document.createElement('style');
       style.textContent = `
         @keyframes ${animationName} {
           0%, 100% {
             box-shadow: 
               0 0 6px ${glowColor},
-              0 0 12px ${hexToRgba(color, 0.02)};
+              0 0 12px ${hexToRgba(color, 0.02)},
+              0 0 18px ${hexToRgba(color, 0.01)};
           }
           50% {
             box-shadow: 
-              0 0 8px ${glowColorStrong},
-              0 0 16px ${hexToRgba(color, 0.04)};
+              0 0 10px ${glowColorStrong},
+              0 0 16px ${hexToRgba(color, 0.04)},
+              0 0 22px ${hexToRgba(color, 0.02)};
           }
         }
       `;
