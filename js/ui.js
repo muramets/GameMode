@@ -1451,8 +1451,8 @@ const UI = {
             0%, 100% {
               box-shadow: 
                 0 8px 25px rgba(0, 0, 0, 0.15),
-                0 0 8px ${hexToRgba(glowColor, 0.033)},
-                0 0 16px ${hexToRgba(glowColor, 0.017)};
+                0 0 9px ${hexToRgba(glowColor, 0.038)},
+                0 0 18px ${hexToRgba(glowColor, 0.020)};
             }
             50% {
               box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
