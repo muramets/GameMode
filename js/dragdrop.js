@@ -14,7 +14,7 @@ const DragDrop = {
     const originalRect = element.getBoundingClientRect();
     
     // Special handling for table rows (grid elements)
-    const isTableRow = element.classList.contains('protocol-row') || element.classList.contains('skill-row');
+    const isTableRow = element.classList.contains('protocol-row') || element.classList.contains('innerface-row');
     
     // For table rows, use exact original dimensions; for cards, keep original size
     const dragWidth = originalRect.width;
@@ -53,7 +53,7 @@ const DragDrop = {
     
     // Remove any hover effects or active states and data attributes
     clone.classList.remove('dragging');
-    clone.removeAttribute('data-skill-id');
+    clone.removeAttribute('data-innerface-id');
     clone.removeAttribute('data-protocol-id');
     clone.removeAttribute('data-state-id');
     clone.removeAttribute('draggable');
@@ -147,15 +147,15 @@ const DragDrop = {
     });
   },
 
-  setupSkills() {
-    const skillRows = document.querySelectorAll('.skill-row');
+  setupInnerfaces() {
+    const innerfaceRows = document.querySelectorAll('.innerface-row');
     
-    skillRows.forEach((row) => {
+    innerfaceRows.forEach((row) => {
       this.setupDragHandlers(
         row, 
-        'skillId', 
-        '.skill-row', 
-        (draggedId, targetId) => this.reorderSkills(draggedId, targetId)
+        'innerfaceId', 
+        '.innerface-row', 
+        (draggedId, targetId) => this.reorderInnerfaces(draggedId, targetId)
       );
     });
   },
@@ -278,24 +278,24 @@ const DragDrop = {
     );
   },
 
-  reorderSkills(draggedId, targetId) {
+  reorderInnerfaces(draggedId, targetId) {
     // Convert to proper types for comparison
     const draggedIdInt = parseInt(draggedId);
     const targetIdInt = parseInt(targetId);
     
     this.reorderItems(
-      App.filteredSkills,
+      App.filteredInnerfaces,
       draggedIdInt,
       targetIdInt,
-      (order) => window.Storage.setSkillOrder(order),
+      (order) => window.Storage.setInnerfaceOrder(order),
       () => {
-        App.filteredSkills = window.Storage.getSkillsInOrder();
-        UI.renderSkills();
-        DragDrop.setupSkills();
+        App.filteredInnerfaces = window.Storage.getInnerfacesInOrder();
+        UI.renderInnerfaces();
+        DragDrop.setupInnerfaces();
         App.setupTooltips();
       },
-      'skill',
-      'Skill order updated'
+      'innerface',
+      'Innerface order updated'
     );
   },
 

@@ -100,17 +100,17 @@ font-family: 'Roboto Mono', 'Consolas', monospace;
 - Drag & drop поддержка
 - Responsive адаптация
 
-### Skills Table
+### Innerfaces Table
 ```html
-<div class="skills-table">
-  <div class="skills-header">
-    <div class="skill-cell">#</div>
-    <div class="skill-cell">skill</div>
-    <div class="skill-cell">score</div>
-    <div class="skill-cell">progress</div>
-    <div class="skill-cell">last updated</div>
+<div class="innerfaces-table">
+  <div class="innerfaces-header">
+    <div class="innerface-cell">#</div>
+    <div class="innerface-cell">innerface</div>
+    <div class="innerface-cell">score</div>
+    <div class="innerface-cell">progress</div>
+    <div class="innerface-cell">last updated</div>
   </div>
-  <div class="skills-body">
+  <div class="innerfaces-body">
     <!-- Строки навыков -->
   </div>
 </div>
@@ -210,7 +210,7 @@ font-family: 'Roboto Mono', 'Consolas', monospace;
 
 ### Modal Types
 - **Edit Protocol Modal** - редактирование протоколов
-- **Edit Skill Modal** - редактирование навыков
+- **Edit Innerface Modal** - редактирование навыков
 - **Confirmation Modal** - подтверждение действий
 - **Info Modal** - отображение информации
 
@@ -334,7 +334,7 @@ font-family: 'Roboto Mono', 'Consolas', monospace;
 const UI = {
   renderDashboard() { /* ... */ },
   renderProtocols() { /* ... */ },
-  renderSkills() { /* ... */ },
+  renderInnerfaces() { /* ... */ },
   renderHistory() { /* ... */ }
 };
 ```

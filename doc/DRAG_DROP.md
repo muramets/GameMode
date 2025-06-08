@@ -6,7 +6,7 @@
 
 Система drag & drop реализована с нуля и обеспечивает интуитивное управление:
 - **Протоколами** в таблице protocols
-- **Навыками** в таблице skills
+- **Навыками** в таблице innerfaces
 - **Quick Actions** в dashboard
 - **States** в dashboard
 
@@ -51,7 +51,7 @@ const DragDrop = {
 - **Решение**: Ограничение ширины для table rows:
   ```javascript
   if (element.classList.contains('protocol-row') || 
-      element.classList.contains('skill-row')) {
+      element.classList.contains('innerface-row')) {
     clone.style.width = Math.min(originalRect.width, 400) + 'px';
   }
   ```
@@ -75,11 +75,11 @@ draggedType: 'protocol'
 targetType: 'protocol-list'
 ```
 
-### 2. Skill Reordering  
+### 2. Innerface Reordering  
 ```javascript
 // Перестановка навыков в таблице
-draggedType: 'skill'
-targetType: 'skill-list'
+draggedType: 'innerface'
+targetType: 'innerface-list'
 ```
 
 ### 3. Quick Actions Management
@@ -124,10 +124,10 @@ targetType: 'states'
 </div>
 ```
 
-### Skills Table
+### Innerfaces Table
 ```html
-<div class="skills-body" data-drop-zone="skill-list">
-  <!-- Skill rows -->
+<div class="innerfaces-body" data-drop-zone="innerface-list">
+  <!-- Innerface rows -->
 </div>
 ```
 
@@ -172,7 +172,7 @@ handleDrop(e) {
   // Обработка в зависимости от типа
   switch(this.draggedType) {
     case 'protocol': this.handleProtocolDrop(e); break;
-    case 'skill': this.handleSkillDrop(e); break;
+    case 'innerface': this.handleInnerfaceDrop(e); break;
     case 'state': this.handleStateDrop(e); break;
   }
 }
@@ -188,7 +188,7 @@ handleDrop(e) {
 Storage.setProtocolOrder(newOrder);
 
 // Сохранение нового порядка навыков  
-Storage.setSkillOrder(newOrder);
+Storage.setInnerfaceOrder(newOrder);
 
 // Обновление Quick Actions
 Storage.setQuickActions(updatedQuickActions);

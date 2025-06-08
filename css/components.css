@@ -198,7 +198,7 @@
 }
 
 .empty-state .protocol-name,
-.empty-state .skill-name,
+.empty-state .innerface-name,
 .empty-state .state-name,
 .empty-state .quick-protocol-name,
 .empty-state .history-action-main {
@@ -207,7 +207,7 @@
 }
 
 .empty-state .protocol-icon,
-.empty-state .skill-icon,
+.empty-state .innerface-icon,
 .empty-state .quick-protocol-icon {
   opacity: 0.4;
 }
@@ -288,7 +288,7 @@
 }
 
 .empty-state.protocol-row,
-.empty-state.skill-row,
+.empty-state.innerface-row,
 .empty-state.history-row {
   background: var(--sub-alt-color) !important;
   border-bottom: none !important;

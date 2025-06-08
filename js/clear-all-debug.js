@@ -6,12 +6,12 @@ window.clearAllDebug = {
     
     const preState = window.Storage.diagnosticClearAllState();
     
-    // Show skills scores before clear
-    const skills = window.Storage.getSkills();
-    console.log('💯 SKILLS SCORES BEFORE CLEAR:');
-    skills.slice(0, 3).forEach(skill => {
-      const score = window.Storage.calculateCurrentScore(skill.id);
-      console.log(`  ${skill.name}: ${score}`);
+    // Show innerfaces scores before clear
+    const innerfaces = window.Storage.getInnerfaces();
+    console.log('💯 INNERFACES SCORES BEFORE CLEAR:');
+    innerfaces.slice(0, 3).forEach(innerface => {
+      const score = window.Storage.calculateCurrentScore(innerface.id);
+      console.log(`  ${innerface.name}: ${score}`);
     });
     
     return preState;
@@ -23,12 +23,12 @@ window.clearAllDebug = {
     
     const postState = window.Storage.diagnosticClearAllState();
     
-    // Show skills scores after clear
-    const skills = window.Storage.getSkills();
-    console.log('💯 SKILLS SCORES AFTER CLEAR:');
-    skills.slice(0, 3).forEach(skill => {
-      const score = window.Storage.calculateCurrentScore(skill.id);
-      console.log(`  ${skill.name}: ${score}`);
+    // Show innerfaces scores after clear
+    const innerfaces = window.Storage.getInnerfaces();
+    console.log('💯 INNERFACES SCORES AFTER CLEAR:');
+    innerfaces.slice(0, 3).forEach(innerface => {
+      const score = window.Storage.calculateCurrentScore(innerface.id);
+      console.log(`  ${innerface.name}: ${score}`);
     });
     
     return postState;

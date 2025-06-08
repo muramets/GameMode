@@ -46,7 +46,7 @@ class Storage {
         // 🔧 КРИТИЧНО: Дополнительная проверка - есть ли у пользователя РЕАЛЬНЫЕ данные
         // Проверяем ключевые пользовательские данные (не default)
         const userDataKeys = [
-          'history', 'protocolOrder', 'skillOrder', 'stateOrder', 'quickActionOrder'
+          'history', 'protocolOrder', 'innerfaceOrder', 'stateOrder', 'quickActionOrder'
         ];
         
         let hasRealUserData = false;
@@ -140,7 +140,7 @@ class Storage {
   // Check if user has been initialized (has any data)
   hasBeenInitialized() {
     return this.get(this.KEYS.PROTOCOLS) !== null || 
-           this.get(this.KEYS.SKILLS) !== null || 
+           this.get(this.KEYS.INNERFACES) !== null || 
            this.get(this.KEYS.STATES) !== null;
   }
   
@@ -161,10 +161,10 @@ class Storage {
     
     // Check for legacy data (data without user prefix)
     const allLegacyKeys = [
-      this.KEYS.PROTOCOLS, this.KEYS.SKILLS, this.KEYS.STATES, this.KEYS.HISTORY,
+      this.KEYS.PROTOCOLS, this.KEYS.INNERFACES, this.KEYS.STATES, this.KEYS.HISTORY,
       this.KEYS.QUICK_ACTIONS, this.KEYS.QUICK_ACTION_ORDER, 
-      this.KEYS.PROTOCOL_ORDER, this.KEYS.SKILL_ORDER, this.KEYS.STATE_ORDER,
-      this.KEYS.SKILL_MIGRATION
+      this.KEYS.PROTOCOL_ORDER, this.KEYS.INNERFACE_ORDER, this.KEYS.STATE_ORDER,
+      this.KEYS.INNERFACE_MIGRATION
     ];
     let foundLegacyData = false;
     
@@ -189,7 +189,7 @@ class Storage {
               shouldMigrate = true;
             } else if (key === this.KEYS.PROTOCOLS && this.isDefaultProtocols(parsedCurrent) && parsedLegacy.length > 0) {
               shouldMigrate = true;
-            } else if (key === this.KEYS.SKILLS && this.isDefaultSkills(parsedCurrent) && parsedLegacy.length > 0) {
+            } else if (key === this.KEYS.INNERFACES && this.isDefaultInnerfaces(parsedCurrent) && parsedLegacy.length > 0) {
               shouldMigrate = true;
             } else if (key === this.KEYS.STATES && this.isDefaultStates(parsedCurrent) && parsedLegacy.length > 0) {
               shouldMigrate = true;
@@ -253,15 +253,15 @@ class Storage {
   // Keys
   KEYS = {
     PROTOCOLS: 'protocols',
-    SKILLS: 'skills',
+    INNERFACES: 'innerfaces',
     STATES: 'states',
     HISTORY: 'history',
     QUICK_ACTIONS: 'quickActions',
     QUICK_ACTION_ORDER: 'quickActionOrder',
     PROTOCOL_ORDER: 'protocolOrder',
-    SKILL_ORDER: 'skillOrder',
+    INNERFACE_ORDER: 'innerfaceOrder',
     STATE_ORDER: 'stateOrder',
-    SKILL_MIGRATION: 'skillMigration'
+    INNERFACE_MIGRATION: 'innerfaceMigration'
   };
 
   // Initialize app data
@@ -309,17 +309,17 @@ class Storage {
       // If user has custom data (length > 0), keep it as is
     }
     
-    if (!this.get(this.KEYS.SKILLS)) {
+    if (!this.get(this.KEYS.INNERFACES)) {
       // Only load default data for the original developer, others start with empty arrays
       const isDevUser = this.currentUser && this.currentUser.email === 'muramets007@gmail.com';
-      this.set(this.KEYS.SKILLS, isDevUser ? INITIAL_DATA.skills : []);
+      this.set(this.KEYS.INNERFACES, isDevUser ? INITIAL_DATA.innerfaces : []);
     } else {
-      const existingSkills = this.get(this.KEYS.SKILLS);
-      if (Array.isArray(existingSkills) && existingSkills.length === 0) {
+      const existingInnerfaces = this.get(this.KEYS.INNERFACES);
+      if (Array.isArray(existingInnerfaces) && existingInnerfaces.length === 0) {
         // For dev user only, load defaults if they have empty data
         const isDevUser = this.currentUser && this.currentUser.email === 'muramets007@gmail.com';
         if (isDevUser) {
-          this.set(this.KEYS.SKILLS, INITIAL_DATA.skills);
+          this.set(this.KEYS.INNERFACES, INITIAL_DATA.innerfaces);
         }
         // Other users keep empty arrays - sync will load their server data
       }
@@ -380,16 +380,16 @@ class Storage {
       this.set(this.KEYS.PROTOCOL_ORDER, []);
     }
     
-    if (!this.get(this.KEYS.SKILL_ORDER)) {
-      this.set(this.KEYS.SKILL_ORDER, []);
+    if (!this.get(this.KEYS.INNERFACE_ORDER)) {
+      this.set(this.KEYS.INNERFACE_ORDER, []);
     }
     
     if (!this.get(this.KEYS.STATE_ORDER)) {
       this.set(this.KEYS.STATE_ORDER, []);
     }
     
-    if (!this.get(this.KEYS.SKILL_MIGRATION)) {
-      this.set(this.KEYS.SKILL_MIGRATION, false);
+    if (!this.get(this.KEYS.INNERFACE_MIGRATION)) {
+      this.set(this.KEYS.INNERFACE_MIGRATION, false);
     }
   }
 
@@ -455,42 +455,42 @@ class Storage {
     }
   }
 
-  // Get all skills
-  getSkills() {
+  // Get all innerfaces
+  getInnerfaces() {
     try {
-      const skills = this.get(this.KEYS.SKILLS);
-      return Array.isArray(skills) ? skills : [];
+      const innerfaces = this.get(this.KEYS.INNERFACES);
+      return Array.isArray(innerfaces) ? innerfaces : [];
     } catch (error) {
-      console.warn('Error getting skills:', error);
+      console.warn('Error getting innerfaces:', error);
       return [];
     }
   }
 
-  // Get skill by ID
-  getSkillById(id) {
+  // Get innerface by ID
+  getInnerfaceById(id) {
     try {
-      const skills = this.getSkills();
-      // Find skill by exact ID match, considering both string and number IDs
-      const skill = skills.find(s => s.id === id || s.id == id);
-      return skill;
+      const innerfaces = this.getInnerfaces();
+      // Find innerface by exact ID match, considering both string and number IDs
+      const innerface = innerfaces.find(s => s.id === id || s.id == id);
+      return innerface;
     } catch (error) {
-      console.warn('Error getting skill by ID:', error);
+      console.warn('Error getting innerface by ID:', error);
       return null;
     }
   }
 
-  // Update skill
-  updateSkill(id, updates) {
-    const skills = this.getSkills();
-    const index = skills.findIndex(s => s.id === id);
+  // Update innerface
+  updateInnerface(id, updates) {
+    const innerfaces = this.getInnerfaces();
+    const index = innerfaces.findIndex(s => s.id === id);
     if (index !== -1) {
       // 🔧 КРИТИЧНО: Добавляем lastModified timestamp для правильной синхронизации
-      skills[index] = { 
-        ...skills[index], 
+      innerfaces[index] = { 
+        ...innerfaces[index], 
         ...updates, 
         lastModified: Date.now() 
       };
-      this.set(this.KEYS.SKILLS, skills);
+      this.set(this.KEYS.INNERFACES, innerfaces);
       return true;
     }
     return false;
@@ -593,12 +593,12 @@ class Storage {
       changes: {}
     };
 
-    // Calculate skill changes only if protocol has targets
+    // Calculate innerface changes only if protocol has targets
     if (protocol.targets && protocol.targets.length > 0) {
       const changeValue = action === '+' ? protocol.weight : -protocol.weight;
       
-      protocol.targets.forEach(skillId => {
-        checkin.changes[skillId] = changeValue;
+      protocol.targets.forEach(innerfaceId => {
+        checkin.changes[innerfaceId] = changeValue;
       });
     }
 
@@ -690,10 +690,10 @@ class Storage {
         
         // Remove old target effects
         if (oldTargets && oldTargets.length > 0) {
-          oldTargets.forEach(skillId => {
-            if (checkin.changes[skillId] !== undefined) {
-              console.log(`📋 Removing old target effect for skill ${skillId} from checkin ${checkin.id}`);
-              delete checkin.changes[skillId];
+          oldTargets.forEach(innerfaceId => {
+            if (checkin.changes[innerfaceId] !== undefined) {
+              console.log(`📋 Removing old target effect for innerface ${innerfaceId} from checkin ${checkin.id}`);
+              delete checkin.changes[innerfaceId];
               hasChanges = true;
               checkinChanged = true;
             }
@@ -702,9 +702,9 @@ class Storage {
 
         // Add new target effects with the current protocol weight
         if (newTargets && newTargets.length > 0) {
-          newTargets.forEach(skillId => {
-            console.log(`📋 Adding new target effect for skill ${skillId} to checkin ${checkin.id}: ${changeValue}`);
-            checkin.changes[skillId] = changeValue;
+          newTargets.forEach(innerfaceId => {
+            console.log(`📋 Adding new target effect for innerface ${innerfaceId} to checkin ${checkin.id}: ${changeValue}`);
+            checkin.changes[innerfaceId] = changeValue;
             hasChanges = true;
             checkinChanged = true;
           });
@@ -777,7 +777,7 @@ class Storage {
     const operation = {
       id: operationId,
       type: 'drag_drop',
-      subType: type, // 'protocol' or 'skill'
+      subType: type, // 'protocol' or 'innerface'
       itemId: itemId,
       itemName: itemName,
       itemIcon: itemIcon,
@@ -837,8 +837,8 @@ class Storage {
           currentOrder.splice(Math.min(actualPosition, currentOrder.length), 0, checkin.itemId);
           this.setProtocolOrder(currentOrder);
         }
-      } else if (checkin.subType === 'skill') {
-        const currentOrder = [...this.getSkillOrder()];
+      } else if (checkin.subType === 'innerface') {
+        const currentOrder = [...this.getInnerfaceOrder()];
         
         // Find where the item is now
         const currentIndex = currentOrder.indexOf(checkin.itemId);
@@ -863,7 +863,7 @@ class Storage {
           
           // Insert at the calculated position
           currentOrder.splice(Math.min(actualPosition, currentOrder.length), 0, checkin.itemId);
-          this.setSkillOrder(currentOrder);
+          this.setInnerfaceOrder(currentOrder);
         }
       }
     }
@@ -965,13 +965,13 @@ class Storage {
     try {
       const forceUploadData = {
         protocols: this.get(this.KEYS.PROTOCOLS) || [],
-        skills: this.get(this.KEYS.SKILLS) || [],
+        innerfaces: this.get(this.KEYS.INNERFACES) || [],
         states: this.get(this.KEYS.STATES) || [],
         history: [], // 🚨 ПРИНУДИТЕЛЬНО ПУСТАЯ ИСТОРИЯ
         quickActions: this.get(this.KEYS.QUICK_ACTIONS) || [],
         quickActionOrder: this.get(this.KEYS.QUICK_ACTION_ORDER) || [],
         protocolOrder: this.get(this.KEYS.PROTOCOL_ORDER) || [],
-        skillOrder: this.get(this.KEYS.SKILL_ORDER) || [],
+        innerfaceOrder: this.get(this.KEYS.INNERFACE_ORDER) || [],
         stateOrder: this.get(this.KEYS.STATE_ORDER) || []
       };
       
@@ -1037,24 +1037,24 @@ class Storage {
     console.log('🗑️ Deleted protocols list cleared');
   }
 
-  // Calculate current skill score
-  calculateCurrentScore(skillId) {
-    const skill = this.getSkillById(skillId);
-    if (!skill) return 0;
+  // Calculate current innerface score
+  calculateCurrentScore(innerfaceId) {
+    const innerface = this.getInnerfaceById(innerfaceId);
+    if (!innerface) return 0;
 
     const checkins = this.getCheckins();
     let totalChange = 0;
 
     checkins.forEach((checkin, index) => {
       if (checkin.changes && checkin.type === 'protocol') {
-        // Check if this checkin affects our skill
-        if (checkin.changes[skillId] !== undefined) {
-          totalChange += checkin.changes[skillId];
+        // Check if this checkin affects our innerface
+        if (checkin.changes[innerfaceId] !== undefined) {
+          totalChange += checkin.changes[innerfaceId];
         }
       }
     });
 
-    return Math.max(0, skill.initialScore + totalChange);
+    return Math.max(0, innerface.initialScore + totalChange);
   }
 
   // Calculate state score
@@ -1073,10 +1073,10 @@ class Storage {
     let total = 0;
     let count = 0;
 
-    // Calculate contribution from skills
-    if (state.skillIds && state.skillIds.length > 0) {
-      state.skillIds.forEach(skillId => {
-        total += this.calculateCurrentScore(skillId);
+    // Calculate contribution from innerfaces
+    if (state.innerfaceIds && state.innerfaceIds.length > 0) {
+      state.innerfaceIds.forEach(innerfaceId => {
+        total += this.calculateCurrentScore(innerfaceId);
         count++;
       });
     }
@@ -1092,10 +1092,10 @@ class Storage {
     return count > 0 ? total / count : 0;
   }
 
-  // Calculate skill score at specific date
-  calculateCurrentScoreAtDate(skillId, targetDate) {
-    const skill = this.getSkillById(skillId);
-    if (!skill) return 0;
+  // Calculate innerface score at specific date
+  calculateCurrentScoreAtDate(innerfaceId, targetDate) {
+    const innerface = this.getInnerfaceById(innerfaceId);
+    if (!innerface) return 0;
 
     const checkins = this.getCheckins();
     let totalChange = 0;
@@ -1105,18 +1105,18 @@ class Storage {
 
     checkins.forEach((checkin, index) => {
       if (checkin.changes && checkin.type === 'protocol') {
-        // Check if this checkin affects our skill and happened BEFORE target date (target date = start of current day)
+        // Check if this checkin affects our innerface and happened BEFORE target date (target date = start of current day)
         const checkinDate = new Date(checkin.timestamp);
         
         // 🔧 ИСПРАВЛЕНИЕ: Используем < для чекинов до целевого дня (целевой день = начало текущего дня)
         // Теперь "yesterday" включает все чекины до начала текущего дня
-        if (checkinDate < targetDateObj && checkin.changes[skillId] !== undefined) {
-          totalChange += checkin.changes[skillId];
+        if (checkinDate < targetDateObj && checkin.changes[innerfaceId] !== undefined) {
+          totalChange += checkin.changes[innerfaceId];
         }
       }
     });
 
-    return Math.max(0, skill.initialScore + totalChange);
+    return Math.max(0, innerface.initialScore + totalChange);
   }
 
   // Calculate state score at specific date
@@ -1135,10 +1135,10 @@ class Storage {
     let total = 0;
     let count = 0;
 
-    // Calculate contribution from skills
-    if (state.skillIds && state.skillIds.length > 0) {
-      state.skillIds.forEach(skillId => {
-        total += this.calculateCurrentScoreAtDate(skillId, targetDate);
+    // Calculate contribution from innerfaces
+    if (state.innerfaceIds && state.innerfaceIds.length > 0) {
+      state.innerfaceIds.forEach(innerfaceId => {
+        total += this.calculateCurrentScoreAtDate(innerfaceId, targetDate);
         count++;
       });
     }
@@ -1154,15 +1154,15 @@ class Storage {
     return count > 0 ? total / count : 0;
   }
 
-  // Get skill history
-  getSkillHistory(skillId) {
+  // Get innerface history
+  getInnerfaceHistory(innerfaceId) {
     const checkins = this.getCheckins();
-    return checkins.filter(c => c.changes && c.changes[skillId] !== undefined);
+    return checkins.filter(c => c.changes && c.changes[innerfaceId] !== undefined);
   }
 
-  // Get last update date for skill
-  getSkillLastUpdate(skillId) {
-    const history = this.getSkillHistory(skillId);
+  // Get last update date for innerface
+  getInnerfaceLastUpdate(innerfaceId) {
+    const history = this.getInnerfaceHistory(innerfaceId);
     if (history.length === 0) return null;
     
     return history[history.length - 1].timestamp;
@@ -1174,7 +1174,7 @@ class Storage {
       version: '1.0',
       exportDate: new Date().toISOString(),
       protocols: this.getProtocols(),
-      skills: this.getSkills(),
+      innerfaces: this.getInnerfaces(),
       states: this.getStates(),
       checkins: this.getCheckins(),
       settings: this.get(this.KEYS.SETTINGS)
@@ -1190,7 +1190,7 @@ class Storage {
       }
       
       this.set(this.KEYS.PROTOCOLS, data.protocols || []);
-      this.set(this.KEYS.SKILLS, data.skills || []);
+      this.set(this.KEYS.INNERFACES, data.innerfaces || []);
       this.set(this.KEYS.STATES, data.states || []);
       this.set(this.KEYS.HISTORY, data.checkins || []);
       this.set(this.KEYS.SETTINGS, data.settings || {});
@@ -1273,41 +1273,41 @@ class Storage {
     return ordered;
   }
 
-  // Skill Order Management
-  getSkillOrder() {
-    return this.get(this.KEYS.SKILL_ORDER) || [];
+  // Innerface Order Management
+  getInnerfaceOrder() {
+    return this.get(this.KEYS.INNERFACE_ORDER) || [];
   }
 
-  setSkillOrder(order) {
-    this.set(this.KEYS.SKILL_ORDER, order);
-    console.log('🔄 SKILL ORDER SAVED:', {
+  setInnerfaceOrder(order) {
+    this.set(this.KEYS.INNERFACE_ORDER, order);
+    console.log('🔄 INNERFACE ORDER SAVED:', {
       order,
       saved: true,
-      keyUsed: this.KEYS.SKILL_ORDER,
-      verification: this.get(this.KEYS.SKILL_ORDER)
+      keyUsed: this.KEYS.INNERFACE_ORDER,
+      verification: this.get(this.KEYS.INNERFACE_ORDER)
     });
     
     // 🔧 НОВОЕ: Сохраняем timestamp изменения для cross-device синхронизации
     const orderTimestamp = Date.now();
-    this.set('skillOrder_timestamp', orderTimestamp);
-    console.log('⏰ SKILL ORDER TIMESTAMP SAVED:', orderTimestamp);
+    this.set('innerfaceOrder_timestamp', orderTimestamp);
+    console.log('⏰ INNERFACE ORDER TIMESTAMP SAVED:', orderTimestamp);
     
-    // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ при изменении порядка skills
+    // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ при изменении порядка innerfaces
     if (!this.syncInProgress) {
       this.syncWithBackend().catch(error => {
-        console.warn('⚠️ Background sync after skill order change failed:', error);
+        console.warn('⚠️ Background sync after innerface order change failed:', error);
       });
     } else {
       this.markForSync();
     }
   }
 
-  getSkillsInOrder() {
-    const skills = this.getSkills();
-    const customOrder = this.getSkillOrder();
+  getInnerfacesInOrder() {
+    const innerfaces = this.getInnerfaces();
+    const customOrder = this.getInnerfaceOrder();
     
     if (customOrder.length === 0) {
-      return skills;
+      return innerfaces;
     }
     
     // Sort by custom order, then by original order for new items
@@ -1316,145 +1316,145 @@ class Storage {
     
     // Add items in custom order
     customOrder.forEach(id => {
-      // Find skill by exact ID match (no conversion)
-      const skill = skills.find(s => s.id === id);
-      if (skill) {
-        ordered.push(skill);
-        used.add(skill.id);
+      // Find innerface by exact ID match (no conversion)
+      const innerface = innerfaces.find(s => s.id === id);
+      if (innerface) {
+        ordered.push(innerface);
+        used.add(innerface.id);
       }
     });
     
     // Add any new items not in custom order
-    skills.forEach(skill => {
-      if (!used.has(skill.id)) {
-        ordered.push(skill);
+    innerfaces.forEach(innerface => {
+      if (!used.has(innerface.id)) {
+        ordered.push(innerface);
       }
     });
     
     return ordered;
   }
 
-  // Add new skill
-  addSkill(skillData) {
-    const skills = this.getSkills();
+  // Add new innerface
+  addInnerface(innerfaceData) {
+    const innerfaces = this.getInnerfaces();
     
     // Generate new ID - only consider numeric IDs for max calculation
-    const numericIds = skills.map(s => s.id).filter(id => typeof id === 'number');
+    const numericIds = innerfaces.map(s => s.id).filter(id => typeof id === 'number');
     const maxId = numericIds.length > 0 ? Math.max(...numericIds) : 0;
     const newId = maxId + 1;
     
-    // Create new skill object
-    const newSkill = {
+    // Create new innerface object
+    const newInnerface = {
       id: newId,
-      name: skillData.name + (skillData.description ? '. ' + skillData.description : ''),
-      icon: skillData.icon,
-      hover: skillData.hover || '',
-      initialScore: skillData.initialScore,
+      name: innerfaceData.name + (innerfaceData.description ? '. ' + innerfaceData.description : ''),
+      icon: innerfaceData.icon,
+      hover: innerfaceData.hover || '',
+      initialScore: innerfaceData.initialScore,
       // 🔧 НОВОЕ: Добавляем timestamp создания для timestamp-based удалений
       createdAt: Date.now(),
       lastModified: Date.now()
     };
     
-    // Add to skills array
-    skills.push(newSkill);
-    this.set(this.KEYS.SKILLS, skills);
+    // Add to innerfaces array
+    innerfaces.push(newInnerface);
+    this.set(this.KEYS.INNERFACES, innerfaces);
     
     // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ СОЗДАНИЯ НАВЫКА
     this.syncWithBackend().catch(error => {
-      console.warn('⚠️ Background sync after skill creation failed:', error);
+      console.warn('⚠️ Background sync after innerface creation failed:', error);
     });
     
-    return newSkill;
+    return newInnerface;
   }
 
-  // Update skill completely
-  updateSkillFull(skillId, skillData) {
-    const skills = this.getSkills();
-    const index = skills.findIndex(s => s.id === skillId);
+  // Update innerface completely
+  updateInnerfaceFull(innerfaceId, innerfaceData) {
+    const innerfaces = this.getInnerfaces();
+    const index = innerfaces.findIndex(s => s.id === innerfaceId);
     
     if (index === -1) return false;
     
-    // Update skill object
-    skills[index] = {
-      id: skillId,
-      name: skillData.name + (skillData.description ? '. ' + skillData.description : ''),
-      icon: skillData.icon,
-      hover: skillData.hover || '',
-      initialScore: skillData.initialScore,
+    // Update innerface object
+    innerfaces[index] = {
+      id: innerfaceId,
+      name: innerfaceData.name + (innerfaceData.description ? '. ' + innerfaceData.description : ''),
+      icon: innerfaceData.icon,
+      hover: innerfaceData.hover || '',
+      initialScore: innerfaceData.initialScore,
       // 🔧 НОВОЕ: Сохраняем существующий createdAt и обновляем lastModified
-      createdAt: skills[index].createdAt || Date.now(),
+      createdAt: innerfaces[index].createdAt || Date.now(),
       lastModified: Date.now()
     };
     
-    this.set(this.KEYS.SKILLS, skills);
+    this.set(this.KEYS.INNERFACES, innerfaces);
     
     // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ ОБНОВЛЕНИЯ НАВЫКА
     this.syncWithBackend().catch(error => {
-      console.warn('⚠️ Background sync after skill update failed:', error);
+      console.warn('⚠️ Background sync after innerface update failed:', error);
     });
     
-    return skills[index];
+    return innerfaces[index];
   }
 
-  // Delete skill
-  deleteSkill(skillId) {
-    const skills = this.getSkills();
-    const skillToDelete = skills.find(s => s.id === skillId);
-    const filteredSkills = skills.filter(s => s.id !== skillId);
+  // Delete innerface
+  deleteInnerface(innerfaceId) {
+    const innerfaces = this.getInnerfaces();
+    const innerfaceToDelete = innerfaces.find(s => s.id === innerfaceId);
+    const filteredInnerfaces = innerfaces.filter(s => s.id !== innerfaceId);
     
-    if (filteredSkills.length === skills.length) {
-      return false; // Skill not found
+    if (filteredInnerfaces.length === innerfaces.length) {
+      return false; // Innerface not found
     }
     
     // 🔧 НОВОЕ: Timestamp-based удаление для cross-device синхронизации
     const deletionTimestamp = Date.now();
-    const deletedSkills = this.get('deletedSkills') || [];
+    const deletedInnerfaces = this.get('deletedInnerfaces') || [];
     
     // Обновляем или добавляем запись об удалении с timestamp
-    const existingDeletionIndex = deletedSkills.findIndex(item => 
-      (typeof item === 'object' ? item.id : item) === skillId
+    const existingDeletionIndex = deletedInnerfaces.findIndex(item => 
+      (typeof item === 'object' ? item.id : item) === innerfaceId
     );
     
     if (existingDeletionIndex !== -1) {
       // Обновляем существующую запись
-      deletedSkills[existingDeletionIndex] = {
-        id: skillId,
+      deletedInnerfaces[existingDeletionIndex] = {
+        id: innerfaceId,
         deletedAt: deletionTimestamp,
-        name: skillToDelete?.name || 'Unknown Skill'
+        name: innerfaceToDelete?.name || 'Unknown Innerface'
       };
     } else {
       // Добавляем новую запись
-      deletedSkills.push({
-        id: skillId,
+      deletedInnerfaces.push({
+        id: innerfaceId,
         deletedAt: deletionTimestamp,
-        name: skillToDelete?.name || 'Unknown Skill'
+        name: innerfaceToDelete?.name || 'Unknown Innerface'
       });
     }
     
-    this.set('deletedSkills', deletedSkills);
+    this.set('deletedInnerfaces', deletedInnerfaces);
     
-    console.log(`🗑️ SKILL DELETION with TIMESTAMP:`, {
-      skillId,
+    console.log(`🗑️ INNERFACE DELETION with TIMESTAMP:`, {
+      innerfaceId,
       deletedAt: deletionTimestamp,
       deletedAtISO: new Date(deletionTimestamp).toISOString(),
-      skillName: skillToDelete?.name,
-      deletedSkillsCount: deletedSkills.length
+      innerfaceName: innerfaceToDelete?.name,
+      deletedInnerfacesCount: deletedInnerfaces.length
     });
     
-    // Remove from skills
-    this.set(this.KEYS.SKILLS, filteredSkills);
+    // Remove from innerfaces
+    this.set(this.KEYS.INNERFACES, filteredInnerfaces);
     
     // Remove from custom order
-    const customOrder = this.getSkillOrder();
-    const filteredOrder = customOrder.filter(id => id !== skillId);
-    this.setSkillOrder(filteredOrder);
+    const customOrder = this.getInnerfaceOrder();
+    const filteredOrder = customOrder.filter(id => id !== innerfaceId);
+    this.setInnerfaceOrder(filteredOrder);
     
-    // Note: We're not removing checkins/history related to this skill
+    // Note: We're not removing checkins/history related to this innerface
     // This preserves historical data integrity
     
     // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ УДАЛЕНИЯ НАВЫКА
     this.syncWithBackend().catch(error => {
-      console.warn('⚠️ Background sync after skill deletion failed:', error);
+      console.warn('⚠️ Background sync after innerface deletion failed:', error);
     });
     
     return true;
@@ -1647,7 +1647,7 @@ class Storage {
       subtext: stateData.subtext || '',
       icon: stateData.icon,
       hover: stateData.hover,
-      skillIds: stateData.skillIds || [],
+      innerfaceIds: stateData.innerfaceIds || [],
       stateIds: stateData.stateIds || [],
       // 🔧 НОВОЕ: Добавляем timestamp создания для timestamp-based удалений
       createdAt: Date.now(),
@@ -1677,7 +1677,7 @@ class Storage {
       subtext: stateData.subtext || '',
       icon: stateData.icon,
       hover: stateData.hover,
-      skillIds: stateData.skillIds || [],
+      innerfaceIds: stateData.innerfaceIds || [],
       stateIds: stateData.stateIds || [],
       // 🔧 НОВОЕ: Обновляем timestamp изменения
       lastModified: Date.now()
@@ -2099,28 +2099,28 @@ class Storage {
       'quickActions': 'QUICK_ACTIONS',
       'quickActionOrder': 'QUICK_ACTION_ORDER',
       'protocolOrder': 'PROTOCOL_ORDER',
-      'skillOrder': 'SKILL_ORDER',
+      'innerfaceOrder': 'INNERFACE_ORDER',
       'stateOrder': 'STATE_ORDER',
       'protocols': 'PROTOCOLS',
-      'skills': 'SKILLS',
+      'innerfaces': 'INNERFACES',
       'states': 'STATES',
       'history': 'HISTORY',
       'deletedCheckins': 'deletedCheckins', // Special case - not in KEYS object
       'deletedProtocols': 'deletedProtocols', // Special case - not in KEYS object
-      'deletedSkills': 'deletedSkills', // Special case - not in KEYS object
+      'deletedInnerfaces': 'deletedInnerfaces', // Special case - not in KEYS object
       'deletedStates': 'deletedStates', // Special case - not in KEYS object
       'deletedQuickActions': 'deletedQuickActions', // Special case - not in KEYS object
       // 🔧 НОВОЕ: timestamp ключи для order массивов
       'protocolOrder_timestamp': 'protocolOrder_timestamp',
-      'skillOrder_timestamp': 'skillOrder_timestamp', 
+      'innerfaceOrder_timestamp': 'innerfaceOrder_timestamp', 
       'stateOrder_timestamp': 'stateOrder_timestamp',
       'quickActionOrder_timestamp': 'quickActionOrder_timestamp'
     };
     
     const mappedKey = keyMap[serverKey];
     if (mappedKey) {
-      // For deletedCheckins, deletedProtocols, deletedSkills, deletedStates, deletedQuickActions, and timestamp keys, return the key directly (not through KEYS)
-      if (serverKey === 'deletedCheckins' || serverKey === 'deletedProtocols' || serverKey === 'deletedSkills' || serverKey === 'deletedStates' || serverKey === 'deletedQuickActions' || serverKey.includes('_timestamp')) {
+      // For deletedCheckins, deletedProtocols, deletedInnerfaces, deletedStates, deletedQuickActions, and timestamp keys, return the key directly (not through KEYS)
+      if (serverKey === 'deletedCheckins' || serverKey === 'deletedProtocols' || serverKey === 'deletedInnerfaces' || serverKey === 'deletedStates' || serverKey === 'deletedQuickActions' || serverKey.includes('_timestamp')) {
         return serverKey;
       }
       // For other keys, use KEYS object
@@ -2167,22 +2167,22 @@ class Storage {
     try {
       const userData = {
         protocols: this.get(this.KEYS.PROTOCOLS),
-        skills: this.get(this.KEYS.SKILLS),
+        innerfaces: this.get(this.KEYS.INNERFACES),
         states: this.get(this.KEYS.STATES),
         history: this.get(this.KEYS.HISTORY),
         quickActions: this.get(this.KEYS.QUICK_ACTIONS),
         quickActionOrder: this.get(this.KEYS.QUICK_ACTION_ORDER),
         protocolOrder: this.get(this.KEYS.PROTOCOL_ORDER),
-        skillOrder: this.get(this.KEYS.SKILL_ORDER),
+        innerfaceOrder: this.get(this.KEYS.INNERFACE_ORDER),
         stateOrder: this.get(this.KEYS.STATE_ORDER),
         deletedCheckins: this.get('deletedCheckins') || [],
         deletedProtocols: this.get('deletedProtocols') || [],
-        deletedSkills: this.get('deletedSkills') || [],
+        deletedInnerfaces: this.get('deletedInnerfaces') || [],
         deletedStates: this.get('deletedStates') || [],
         deletedQuickActions: this.get('deletedQuickActions') || [],
         // 🔧 НОВОЕ: отправляем timestamp'ы order массивов для умной синхронизации
         protocolOrder_timestamp: this.get('protocolOrder_timestamp') || 0,
-        skillOrder_timestamp: this.get('skillOrder_timestamp') || 0,
+        innerfaceOrder_timestamp: this.get('innerfaceOrder_timestamp') || 0,
         stateOrder_timestamp: this.get('stateOrder_timestamp') || 0,
         quickActionOrder_timestamp: this.get('quickActionOrder_timestamp') || 0
       };
@@ -2201,7 +2201,7 @@ class Storage {
       // 🔇 ЛОГИ ОТКЛЮЧЕНЫ - слишком шумные (повторяются при каждой синхронизации)
       // console.log('📤 SYNC DATA TO SEND:', {
       //   protocolsCount: userData.protocols?.length || 0,
-      //   skillsCount: userData.skills?.length || 0,
+      //   innerfacesCount: userData.innerfaces?.length || 0,
       //   statesCount: userData.states?.length || 0,
       //   historyCount: userData.history?.length || 0,
       //   quickActionsCount: userData.quickActions?.length || 0,
@@ -2602,8 +2602,8 @@ class Storage {
                         console.log(`🚀 USER DELETIONS DETECTED: Local has ${mergedData.length}, server has ${serverArray.length}. Marking for sync to inform server of deletions.`);
                         this.markForSync();
                     }
-                } else if (key === 'skills') {
-                    console.log('🔄 USING SMART CLIENT-FIRST FOR SKILLS (respecting deletions + adding new server items)');
+                } else if (key === 'innerfaces') {
+                    console.log('🔄 USING SMART CLIENT-FIRST FOR INNERFACES (respecting deletions + adding new server items)');
                     
                     // 🔧 ИСПРАВЛЕНИЕ: Используем client-first с добавлением новых серверных элементов
                     // Это уважает локальные удаления пользователя, но добавляет новые навыки с сервера
@@ -2616,35 +2616,35 @@ class Storage {
                         index === self.findIndex(t => t.id === item.id)
                     );
                     
-                    console.log(`🔄 STARTING WITH ${localArray.length} LOCAL SKILLS (user's current selection)`);
+                    console.log(`🔄 STARTING WITH ${localArray.length} LOCAL INNERFACES (user's current selection)`);
                     
                     // 🔧 КРИТИЧНО: Предотвращаем бесконечный цикл с помощью Set для отслеживания обработанных навыков
-                    const processedSkillIds = new Set();
+                    const processedInnerfaceIds = new Set();
                     let addedFromServer = 0;
                     
                     for (const serverItem of serverArray) {
                         // 🔧 КРИТИЧНО: Пропускаем уже обработанные навыки
-                        if (processedSkillIds.has(serverItem.id)) {
-                            console.log(`🔄 Skill ${serverItem.id} already processed, skipping duplicate`);
+                        if (processedInnerfaceIds.has(serverItem.id)) {
+                            console.log(`🔄 Innerface ${serverItem.id} already processed, skipping duplicate`);
                             continue;
                         }
-                        processedSkillIds.add(serverItem.id);
+                        processedInnerfaceIds.add(serverItem.id);
                         
                         const localItem = mergedData.find(m => m.id === serverItem.id);
                         if (!localItem) {
                             // 🔧 НОВОЕ: Проверяем не был ли этот навык удален пользователем (timestamp-based)
-                            const deletedSkills = this.get('deletedSkills') || [];
-                            const isDeleted = deletedSkills.some(deletionRecord => {
+                            const deletedInnerfaces = this.get('deletedInnerfaces') || [];
+                            const isDeleted = deletedInnerfaces.some(deletionRecord => {
                                 const deletionId = typeof deletionRecord === 'object' ? deletionRecord.id : deletionRecord;
                                 return deletionId == serverItem.id || deletionId === serverItem.id;
                             });
                             
                             if (isDeleted) {
-                                console.log(`🗑️ Skill ${serverItem.id} was deleted by user, not restoring from server`);
+                                console.log(`🗑️ Innerface ${serverItem.id} was deleted by user, not restoring from server`);
                                 continue; // Пропускаем удаленный навык
                             }
                             
-                            console.log(`📋 Skill ${serverItem.id} found only on server, adding as new skill`);
+                            console.log(`📋 Innerface ${serverItem.id} found only on server, adding as new innerface`);
                             mergedData.push(serverItem);
                             hasUpdates = true;
                             addedFromServer++;
@@ -2655,7 +2655,7 @@ class Storage {
                             const serverInitialScore = serverItem.initialScore;
                             
                             if (Math.abs(localInitialScore - serverInitialScore) > 0.001) {
-                                console.log(`🔄 Skill ${serverItem.id} has different initialScore: local=${localInitialScore}, server=${serverInitialScore}, updating with server version`);
+                                console.log(`🔄 Innerface ${serverItem.id} has different initialScore: local=${localInitialScore}, server=${serverInitialScore}, updating with server version`);
                                 
                                 // Обновляем локальную версию серверными данными
                                 const index = mergedData.findIndex(m => m.id === serverItem.id);
@@ -2664,12 +2664,12 @@ class Storage {
                                     hasUpdates = true;
                                 }
                             } else {
-                                console.log(`📋 Skill ${serverItem.id} initialScore matches (${localInitialScore}), keeping local version`);
+                                console.log(`📋 Innerface ${serverItem.id} initialScore matches (${localInitialScore}), keeping local version`);
                             }
                         }
                     }
                     
-                    console.log(`✅ SKILL MERGE COMPLETE: ${localArray.length} local + ${addedFromServer} new from server = ${mergedData.length} total`);
+                    console.log(`✅ INNERFACE MERGE COMPLETE: ${localArray.length} local + ${addedFromServer} new from server = ${mergedData.length} total`);
                     
                     // 🔧 ФИНАЛЬНАЯ ДЕДУПЛИКАЦИЯ
                     mergedData = mergedData.filter((item, index, self) => 
@@ -2679,7 +2679,7 @@ class Storage {
                     // 🚀 ВАЖНО: Если у нас меньше навыков чем на сервере, отправляем наши данные
                     // Это информирует сервер об удалениях пользователя
                     if (mergedData.length < serverArray.length) {
-                        console.log(`🚀 USER SKILL DELETIONS DETECTED: Local has ${mergedData.length}, server has ${serverArray.length}. Marking for sync to inform server of deletions.`);
+                        console.log(`🚀 USER INNERFACE DELETIONS DETECTED: Local has ${mergedData.length}, server has ${serverArray.length}. Marking for sync to inform server of deletions.`);
                         this.markForSync();
                     }
                 } else if (key === 'quickActions' || key === 'quickActionOrder') {
@@ -2738,20 +2738,20 @@ class Storage {
                                 mergedData = [...serverArray];
                                 console.log(`📥 FIRST TIME: Loading ${serverArray.length} protocols from server (no deletions)`);
                             }
-                        } else if (key === 'skills') {
-                            // 🔧 НОВОЕ: Применяем timestamp-based удаления для skills при first-time login
-                            const deletedSkills = this.get('deletedSkills') || [];
-                            console.log(`🔍 CHECKING DELETED SKILLS for first-time user:`, deletedSkills);
+                        } else if (key === 'innerfaces') {
+                            // 🔧 НОВОЕ: Применяем timestamp-based удаления для innerfaces при first-time login
+                            const deletedInnerfaces = this.get('deletedInnerfaces') || [];
+                            console.log(`🔍 CHECKING DELETED INNERFACES for first-time user:`, deletedInnerfaces);
                             
-                            if (deletedSkills.length > 0) {
-                                console.log(`🗑️ FIRST TIME SKILL FILTERING: Applying timestamp-based deletions`);
-                                const filteredServerSkills = this.applyTimestampBasedDeletions(serverArray, deletedSkills, 'skills');
-                                console.log(`📥 FIRST TIME: Loading ${filteredServerSkills.length} skills from server (${serverArray.length - filteredServerSkills.length} deleted)`);
-                                mergedData = [...filteredServerSkills];
+                            if (deletedInnerfaces.length > 0) {
+                                console.log(`🗑️ FIRST TIME INNERFACE FILTERING: Applying timestamp-based deletions`);
+                                const filteredServerInnerfaces = this.applyTimestampBasedDeletions(serverArray, deletedInnerfaces, 'innerfaces');
+                                console.log(`📥 FIRST TIME: Loading ${filteredServerInnerfaces.length} innerfaces from server (${serverArray.length - filteredServerInnerfaces.length} deleted)`);
+                                mergedData = [...filteredServerInnerfaces];
                             } else {
-                                // Нет удаленных skills, загружаем все
+                                // Нет удаленных innerfaces, загружаем все
                                 mergedData = [...serverArray];
-                                console.log(`📥 FIRST TIME: Loading ${serverArray.length} skills from server (no deletions)`);
+                                console.log(`📥 FIRST TIME: Loading ${serverArray.length} innerfaces from server (no deletions)`);
                             }
                         } else {
                             // Для других типов данных - стандартное поведение
@@ -2990,8 +2990,8 @@ class Storage {
                         });
                     }
                     
-                    // 🔧 НОВОЕ: Фильтрация undefined элементов для deletedSkills
-                    if (key === 'deletedSkills') {
+                    // 🔧 НОВОЕ: Фильтрация undefined элементов для deletedInnerfaces
+                    if (key === 'deletedInnerfaces') {
                         mergedData = mergedData.filter(item => item !== undefined && item !== null);
                         console.log(`🔧 FILTERED undefined items from local ${key}:`, {
                             before: localArray.length,
@@ -3033,7 +3033,7 @@ class Storage {
                             mergedData = mergedData.filter(item => item !== undefined && item !== null);
                         } else if (key === 'deletedProtocols') {
                             mergedData = mergedData.filter(item => item !== undefined && item !== null);
-                        } else if (key === 'deletedSkills') {
+                        } else if (key === 'deletedInnerfaces') {
                             mergedData = mergedData.filter(item => item !== undefined && item !== null);
                         } else if (key === 'deletedStates') {
                             // Убираем дублирующую фильтрацию - уже сделана выше
@@ -3066,7 +3066,7 @@ class Storage {
                 // If merged data differs from server, mark for sync
               // 🚨 КРИТИЧНО: НЕ отправляем данные при server-first стратегии
               // если мы просто получили больше данных с сервера
-              if (key === 'protocols' || key === 'skills' || key === 'quickActions' || key === 'quickActionOrder' || key === 'states') {
+              if (key === 'protocols' || key === 'innerfaces' || key === 'quickActions' || key === 'quickActionOrder' || key === 'states') {
                 // Для server-first стратегии отправляем данные ТОЛЬКО если есть 
                 // новые локальные элементы которых нет на сервере
                 if (key === 'quickActions' || key === 'quickActionOrder') {
@@ -3083,11 +3083,11 @@ class Storage {
                   console.log(`📥 SERVER-FIRST: States sync handling completed above`);
                 } else {
                   // Для protocols используем client-first логику - sync уже выполнен в блоке выше
-                  // Для skills проверяем новые элементы по ID
+                  // Для innerfaces проверяем новые элементы по ID
                   if (key === 'protocols') {
                     console.log(`📥 CLIENT-FIRST: Protocols sync handling completed above (respects deletions)`);
                   } else {
-                    // Для skills проверяем новые элементы по ID
+                    // Для innerfaces проверяем новые элементы по ID
                     const hasNewLocalItems = localArray.some(localItem => 
                       !serverArray.find(serverItem => serverItem.id === localItem.id)
                     );
@@ -3264,9 +3264,9 @@ class Storage {
             } else if (key === 'protocolOrder') {
                 const currentProtocols = this.getProtocols();
                 validIds = currentProtocols.map(p => p.id);
-            } else if (key === 'skillOrder') {
-                const currentSkills = this.getSkills();
-                validIds = currentSkills.map(s => s.id);
+            } else if (key === 'innerfaceOrder') {
+                const currentInnerfaces = this.getInnerfaces();
+                validIds = currentInnerfaces.map(s => s.id);
             } else if (key === 'quickActionOrder') {
                 const currentQuickActions = this.getQuickActions();
                 validIds = currentQuickActions;
@@ -3625,13 +3625,13 @@ class Storage {
           try {
             const minimalData = {
               protocols: [],
-              skills: [],
+              innerfaces: [],
               states: [],
               history: [],
               quickActions: [],
               quickActionOrder: [],
               protocolOrder: [],
-              skillOrder: [],
+              innerfaceOrder: [],
               stateOrder: []
             };
             
@@ -3700,25 +3700,25 @@ class Storage {
     try {
       const localData = {
         protocols: this.get(this.KEYS.PROTOCOLS) || [],
-        skills: this.get(this.KEYS.SKILLS) || [],
+        innerfaces: this.get(this.KEYS.INNERFACES) || [],
         states: this.get(this.KEYS.STATES) || [],
         history: this.get(this.KEYS.HISTORY) || [],
         quickActions: this.get(this.KEYS.QUICK_ACTIONS) || [],
         quickActionOrder: this.get(this.KEYS.QUICK_ACTION_ORDER) || [],
         protocolOrder: this.get(this.KEYS.PROTOCOL_ORDER) || [],
-        skillOrder: this.get(this.KEYS.SKILL_ORDER) || [],
+        innerfaceOrder: this.get(this.KEYS.INNERFACE_ORDER) || [],
         stateOrder: this.get(this.KEYS.STATE_ORDER) || []
       };
       
       console.log('📤 FORCE UPLOAD DATA:', {
         protocols: localData.protocols.length,
-        skills: localData.skills.length,
+        innerfaces: localData.innerfaces.length,
         states: localData.states.length,
         history: localData.history.length,
         quickActions: localData.quickActions.length,
         quickActionOrder: localData.quickActionOrder.length,
         protocolOrder: localData.protocolOrder.length,
-        skillOrder: localData.skillOrder.length,
+        innerfaceOrder: localData.innerfaceOrder.length,
         stateOrder: localData.stateOrder.length
       });
       
@@ -3771,10 +3771,10 @@ class Storage {
            protocols.every((p, i) => p.id === INITIAL_DATA.protocols[i].id);
   }
 
-  isDefaultSkills(skills) {
-    if (!Array.isArray(skills)) return false;
-    return skills.length === INITIAL_DATA.skills.length && 
-           skills.every((s, i) => s.id === INITIAL_DATA.skills[i].id);
+  isDefaultInnerfaces(innerfaces) {
+    if (!Array.isArray(innerfaces)) return false;
+    return innerfaces.length === INITIAL_DATA.innerfaces.length && 
+           innerfaces.every((s, i) => s.id === INITIAL_DATA.innerfaces[i].id);
   }
 
   isDefaultStates(states) {
@@ -4013,17 +4013,17 @@ class Storage {
         },
         body: JSON.stringify({
           protocols: [],
-          skills: [],
+          innerfaces: [],
           states: [],
           history: [],
           quickActions: [],
           quickActionOrder: [],
           protocolOrder: [],
-          skillOrder: [],
+          innerfaceOrder: [],
           stateOrder: [],
           deletedCheckins: [],
           deletedProtocols: [],
-          deletedSkills: []
+          deletedInnerfaces: []
         })
       });
       
@@ -4037,21 +4037,21 @@ class Storage {
       
       // Get current local data
       const localProtocols = this.getProtocols();
-      const localSkills = this.getSkills();
+      const localInnerfaces = this.getInnerfaces();
       const localStates = this.getStates();
       const deletedProtocols = this.get('deletedProtocols') || [];
-      const deletedSkills = this.get('deletedSkills') || [];
+      const deletedInnerfaces = this.get('deletedInnerfaces') || [];
       const deletedStates = this.get('deletedStates') || [];
       
       console.log('🔍 INTEGRITY CHECK: Server data comparison:', {
         localProtocolsCount: localProtocols.length,
         serverProtocolsCount: (serverData.protocols || []).length,
-        localSkillsCount: localSkills.length,
-        serverSkillsCount: (serverData.skills || []).length,
+        localInnerfacesCount: localInnerfaces.length,
+        serverInnerfacesCount: (serverData.innerfaces || []).length,
         localStatesCount: localStates.length,
         serverStatesCount: (serverData.states || []).length,
         deletedProtocolsCount: deletedProtocols.length,
-        deletedSkillsCount: deletedSkills.length,
+        deletedInnerfacesCount: deletedInnerfaces.length,
         deletedStatesCount: deletedStates.length
       });
       
@@ -4079,27 +4079,27 @@ class Storage {
         hasIssues = true;
       }
       
-      // Check for missing skills (not in deleted list)
-      const localSkillIds = new Set(localSkills.map(s => s.id));
-      const missingSkills = (serverData.skills || []).filter(serverSkill => {
+      // Check for missing innerfaces (not in deleted list)
+      const localInnerfaceIds = new Set(localInnerfaces.map(s => s.id));
+      const missingInnerfaces = (serverData.innerfaces || []).filter(serverInnerface => {
         // Проверяем что навык не существует локально
-        if (localSkillIds.has(serverSkill.id)) return false;
+        if (localInnerfaceIds.has(serverInnerface.id)) return false;
         
         // 🔧 ИСПРАВЛЕНИЕ: Правильная проверка deletion records в timestamp-based формате
-        const isDeleted = deletedSkills.some(deletionRecord => {
+        const isDeleted = deletedInnerfaces.some(deletionRecord => {
           const deletionId = typeof deletionRecord === 'object' ? deletionRecord.id : deletionRecord;
-          return deletionId == serverSkill.id || deletionId === serverSkill.id;
+          return deletionId == serverInnerface.id || deletionId === serverInnerface.id;
         });
         
         return !isDeleted;
       });
       
-      if (missingSkills.length > 0) {
-        console.log('🚨 INTEGRITY CHECK: Found missing skills on local device (respecting deletions):', missingSkills.map(s => s.id));
+      if (missingInnerfaces.length > 0) {
+        console.log('🚨 INTEGRITY CHECK: Found missing innerfaces on local device (respecting deletions):', missingInnerfaces.map(s => s.id));
         
-        // 🔧 FIX: Add missing skills to existing array, not replace
-        const updatedSkills = [...localSkills, ...missingSkills];
-        this.set(this.KEYS.SKILLS, updatedSkills);
+        // 🔧 FIX: Add missing innerfaces to existing array, not replace
+        const updatedInnerfaces = [...localInnerfaces, ...missingInnerfaces];
+        this.set(this.KEYS.INNERFACES, updatedInnerfaces);
         hasIssues = true;
       }
       
@@ -4130,7 +4130,7 @@ class Storage {
       if (hasIssues) {
         console.log('🔧 INTEGRITY CHECK: Fixed data discrepancies (respecting user deletions):', [
           `protocols: +${missingProtocols.length}`,
-          `skills: +${missingSkills.length}`,
+          `innerfaces: +${missingInnerfaces.length}`,
           `states: +${missingStates.length}`
         ]);
         
@@ -4158,10 +4158,10 @@ class Storage {
     }
   }
 
-  // Clear the list of deleted skills (for debugging)
-  clearDeletedSkills() {
-    this.set('deletedSkills', []);
-    console.log('🗑️ Deleted skills list cleared');
+  // Clear the list of deleted innerfaces (for debugging)
+  clearDeletedInnerfaces() {
+    this.set('deletedInnerfaces', []);
+    console.log('🗑️ Deleted innerfaces list cleared');
   }
 
   // Debug function to clear undefined elements from deletedCheckins
@@ -4240,7 +4240,7 @@ class Storage {
     const deletedKeys = [
       'deletedCheckins',
       'deletedProtocols', 
-      'deletedSkills',
+      'deletedInnerfaces',
       'deletedStates',
       'deletedQuickActions'
     ];
@@ -4582,13 +4582,13 @@ class Storage {
         body: JSON.stringify({
           // Отправляем пустые данные, чтобы сервер вернул только свои данные
           protocols: [],
-          skills: [],
+          innerfaces: [],
           states: [],
           history: [],
           quickActions: [],
           quickActionOrder: [],
           protocolOrder: [],
-          skillOrder: [],
+          innerfaceOrder: [],
           stateOrder: [],
           deletedCheckins: []
         })
@@ -4609,13 +4609,13 @@ class Storage {
         
         console.log('📥 FORCE SYNC SERVER DATA DETAILS:', {
           protocols: (serverData.protocols || []).length,
-          skills: (serverData.skills || []).length,
+          innerfaces: (serverData.innerfaces || []).length,
           states: (serverData.states || []).length,
           history: (serverData.history || []).length,
           quickActions: (serverData.quickActions || []).length,
           quickActionOrder: (serverData.quickActionOrder || []).length,
           protocolOrder: (serverData.protocolOrder || []).length,
-          skillOrder: (serverData.skillOrder || []).length,
+          innerfaceOrder: (serverData.innerfaceOrder || []).length,
           stateOrder: (serverData.stateOrder || []).length
         });
         
@@ -4625,7 +4625,7 @@ class Storage {
         // Очищаем все флаги удаления - мы полностью доверяем серверу
         this.set('deletedCheckins', []);
         this.set('deletedProtocols', []);
-        this.set('deletedSkills', []);
+        this.set('deletedInnerfaces', []);
         this.set('deletedStates', []);
         this.set('deletedQuickActions', []);
         
@@ -4634,7 +4634,7 @@ class Storage {
         
         // Заменяем основные данные
         this.set(this.KEYS.PROTOCOLS, serverData.protocols || []);
-        this.set(this.KEYS.SKILLS, serverData.skills || []);
+        this.set(this.KEYS.INNERFACES, serverData.innerfaces || []);
         this.set(this.KEYS.STATES, serverData.states || []);
         this.set(this.KEYS.HISTORY, serverData.history || []);
         this.set(this.KEYS.QUICK_ACTIONS, serverData.quickActions || []);
@@ -4642,15 +4642,15 @@ class Storage {
         // Заменяем порядки
         this.set(this.KEYS.QUICK_ACTION_ORDER, serverData.quickActionOrder || []);
         this.set(this.KEYS.PROTOCOL_ORDER, serverData.protocolOrder || []);
-        this.set(this.KEYS.SKILL_ORDER, serverData.skillOrder || []);
+        this.set(this.KEYS.INNERFACE_ORDER, serverData.innerfaceOrder || []);
         this.set(this.KEYS.STATE_ORDER, serverData.stateOrder || []);
         
         // Обновляем метки времени
         if (serverData.protocolOrder_timestamp) {
           this.set('protocolOrder_timestamp', serverData.protocolOrder_timestamp);
         }
-        if (serverData.skillOrder_timestamp) {
-          this.set('skillOrder_timestamp', serverData.skillOrder_timestamp);
+        if (serverData.innerfaceOrder_timestamp) {
+          this.set('innerfaceOrder_timestamp', serverData.innerfaceOrder_timestamp);
         }
         if (serverData.stateOrder_timestamp) {
           this.set('stateOrder_timestamp', serverData.stateOrder_timestamp);
@@ -4663,7 +4663,7 @@ class Storage {
         
         console.log('✅ FORCE SYNC FROM SERVER COMPLETED:', {
           protocols: (serverData.protocols || []).length,
-          skills: (serverData.skills || []).length,
+          innerfaces: (serverData.innerfaces || []).length,
           states: (serverData.states || []).length,
           history: (serverData.history || []).length,
           quickActions: (serverData.quickActions || []).length,

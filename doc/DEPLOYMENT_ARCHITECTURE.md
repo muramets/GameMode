@@ -247,7 +247,7 @@ app.use(cors({
   displayName: "Имя пользователя",
   userData: {
     // Весь JSON с данными пользователя
-    skills: [...],
+    innerfaces: [...],
     protocols: [...],
     states: [...],
     checkins: [...]

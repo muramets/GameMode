@@ -157,7 +157,7 @@
 }
 
 /* Expandable Navigation Styles */
-.nav-skills-group {
+.nav-innerfaces-group {
   display: flex;
   align-items: center;
   gap: 0;
@@ -261,7 +261,7 @@
   border-radius: 0.25rem;
 }
 
-.nav-skills-group:hover .nav-expand-arrow {
+.nav-innerfaces-group:hover .nav-expand-arrow {
   opacity: 0.8;
   transform: scale(1);
 }
@@ -282,7 +282,7 @@
 }
 
 /* Create seamless background extension effect */
-.nav-skills-group::after {
+.nav-innerfaces-group::after {
   content: '';
   position: absolute;
   top: 0;
@@ -296,8 +296,8 @@
   z-index: 0;
 }
 
-.nav-skills-group.expanded::after,
-.nav-skills-group.hover-expanded::after {
+.nav-innerfaces-group.expanded::after,
+.nav-innerfaces-group.hover-expanded::after {
   width: 90px; /* Slightly wider than min-width to ensure coverage */
   /* No delay when expanding */
   transition: width 0.25s cubic-bezier(0.4, 0.0, 0.2, 1);

@@ -168,9 +168,9 @@ function initMainApp() {
         protocolsPage: 1,
         protocolsPerPage: 30,
         filteredProtocols: [],
-        skillsPage: 1,
-        skillsPerPage: 30,
-        filteredSkills: [],
+        innerfacesPage: 1,
+        innerfacesPerPage: 30,
+        filteredInnerfaces: [],
         filteredHistory: [],
         historyInitialized: false,
         states: [],
@@ -180,7 +180,7 @@ function initMainApp() {
             protocol: 'all',
             state: 'all',
             effect: 'all',
-            skill: 'all',
+            innerface: 'all',
             customDateFrom: '',
             customDateTo: ''
         },
@@ -248,11 +248,11 @@ function initMainApp() {
                 });
             }
 
-            // Skill search
-            const skillSearchInput = document.getElementById('skill-search');
-            if (skillSearchInput) {
-                skillSearchInput.addEventListener('input', (e) => {
-                    this.filterSkills(e.target.value);
+            // Innerface search
+            const innerfaceSearchInput = document.getElementById('innerface-search');
+            if (innerfaceSearchInput) {
+                innerfaceSearchInput.addEventListener('input', (e) => {
+                    this.filterInnerfaces(e.target.value);
                 });
             }
 
@@ -296,29 +296,29 @@ function initMainApp() {
                 });
             }
 
-            // Skills pagination buttons
-            const skillsPrevBtn = document.getElementById('skills-prev-page');
-            const skillsNextBtn = document.getElementById('skills-next-page');
+            // Innerfaces pagination buttons
+            const innerfacesPrevBtn = document.getElementById('innerfaces-prev-page');
+            const innerfacesNextBtn = document.getElementById('innerfaces-next-page');
             
-            if (skillsPrevBtn) {
-                skillsPrevBtn.addEventListener('click', () => {
-                    if (this.skillsPage > 1) {
-                        this.skillsPage--;
-                        UI.renderSkills();
-                        DragDrop.setupSkills();
-                        this.updateSkillsPagination();
+            if (innerfacesPrevBtn) {
+                innerfacesPrevBtn.addEventListener('click', () => {
+                    if (this.innerfacesPage > 1) {
+                        this.innerfacesPage--;
+                        UI.renderInnerfaces();
+                        DragDrop.setupInnerfaces();
+                        this.updateInnerfacesPagination();
                     }
                 });
             }
 
-            if (skillsNextBtn) {
-                skillsNextBtn.addEventListener('click', () => {
-                    const totalPages = Math.ceil(this.filteredSkills.length / this.skillsPerPage);
-                    if (this.skillsPage < totalPages) {
-                        this.skillsPage++;
-                        UI.renderSkills();
-                        DragDrop.setupSkills();
-                        this.updateSkillsPagination();
+            if (innerfacesNextBtn) {
+                innerfacesNextBtn.addEventListener('click', () => {
+                    const totalPages = Math.ceil(this.filteredInnerfaces.length / this.innerfacesPerPage);
+                    if (this.innerfacesPage < totalPages) {
+                        this.innerfacesPage++;
+                        UI.renderInnerfaces();
+                        DragDrop.setupInnerfaces();
+                        this.updateInnerfacesPagination();
                     }
                 });
             }
@@ -343,7 +343,7 @@ function initMainApp() {
                 }
             };
 
-            // Add tooltip handlers to protocol and skill name cells
+            // Add tooltip handlers to protocol and innerface name cells
             this.setupTooltipRowHandlers(clearCurrentTooltip, (element) => {
                 currentTooltipElement = element;
                 tooltipTimeout = setTimeout(() => {
@@ -367,8 +367,8 @@ function initMainApp() {
                 });
             });
 
-            // Handle skill name cells
-            document.querySelectorAll('.skill-name-cell[data-hover]').forEach(cell => {
+            // Handle innerface name cells
+            document.querySelectorAll('.innerface-name-cell[data-hover]').forEach(cell => {
                 cell.addEventListener('mouseenter', () => {
                     clearTooltip();
                     startTooltip(cell);
@@ -412,12 +412,12 @@ function initMainApp() {
                 if (!isProgramExpanded) {
                     // Only expand if not already in program state
                     const navExpandBtn = document.getElementById('nav-expand-btn');
-                    const navSkillsGroup = document.querySelector('.nav-skills-group');
+                    const navInnerfacesGroup = document.querySelector('.nav-innerfaces-group');
                     
-                    if (navHistory && navExpandBtn && navSkillsGroup) {
+                    if (navHistory && navExpandBtn && navInnerfacesGroup) {
                         navExpandBtn.classList.add('expanded');
                         navHistory.classList.add('expanded');
-                        navSkillsGroup.classList.add('expanded');
+                        navInnerfacesGroup.classList.add('expanded');
                     }
                 }
             } else if (page !== 'history' && this.navExpansion) {
@@ -460,9 +460,9 @@ function initMainApp() {
                     DragDrop.setupProtocols();
                     this.setupTooltips();
                     break;
-                case 'skills':
-                    UI.renderSkills();
-                    DragDrop.setupSkills();
+                case 'innerfaces':
+                    UI.renderInnerfaces();
+                    DragDrop.setupInnerfaces();
                     this.setupTooltips();
                     break;
                 case 'history':
@@ -489,7 +489,7 @@ function initMainApp() {
             if (checkin) {
                 this.showToast('Check-in successful!', 'success');
                 
-                // Always update dashboard stats since skills changed
+                // Always update dashboard stats since innerfaces changed
                 UI.updateUserStats();
                 
                 // Update current page
@@ -507,9 +507,9 @@ function initMainApp() {
                     this.historyInitialized = false;
                 }
                 
-                // If we're not on skills page, but skills were affected, update skills data
-                if (this.currentPage !== 'skills') {
-                    this.filteredSkills = window.Storage.getSkillsInOrder();
+                // If we're not on innerfaces page, but innerfaces were affected, update innerfaces data
+                if (this.currentPage !== 'innerfaces') {
+                    this.filteredInnerfaces = window.Storage.getInnerfacesInOrder();
                 }
                 
                 // If we're not on dashboard, but dashboard shows states that could be affected
@@ -556,7 +556,7 @@ function initMainApp() {
 
         filterProtocols(query) {
             const allProtocols = window.Storage.getProtocolsInOrder();
-            const skills = window.Storage.getSkills();
+            const innerfaces = window.Storage.getInnerfaces();
             
             if (!query.trim()) {
                 this.filteredProtocols = allProtocols;
@@ -568,10 +568,10 @@ function initMainApp() {
                         return true;
                     }
                     
-                    // Search in target skills
+                    // Search in target innerfaces
                     const targetNames = protocol.targets.map(targetId => {
-                        const skill = skills.find(s => s.id === targetId);
-                        return skill ? skill.name.toLowerCase() : targetId;
+                        const innerface = innerfaces.find(s => s.id === targetId);
+                        return innerface ? innerface.name.toLowerCase() : targetId;
                     });
                     
                     return targetNames.some(name => name.includes(searchTerm));
@@ -606,44 +606,44 @@ function initMainApp() {
             }
         },
 
-        updateSkillsPagination() {
-            const totalSkills = this.filteredSkills.length;
-            const totalPages = Math.ceil(totalSkills / this.skillsPerPage);
+        updateInnerfacesPagination() {
+            const totalInnerfaces = this.filteredInnerfaces.length;
+            const totalPages = Math.ceil(totalInnerfaces / this.innerfacesPerPage);
             
-            const currentPageSpan = document.getElementById('skills-current-page');
-            const totalPagesSpan = document.getElementById('skills-total-pages');
-            const skillsPrevBtn = document.getElementById('skills-prev-page');
-            const skillsNextBtn = document.getElementById('skills-next-page');
+            const currentPageSpan = document.getElementById('innerfaces-current-page');
+            const totalPagesSpan = document.getElementById('innerfaces-total-pages');
+            const innerfacesPrevBtn = document.getElementById('innerfaces-prev-page');
+            const innerfacesNextBtn = document.getElementById('innerfaces-next-page');
             
-            if (currentPageSpan) currentPageSpan.textContent = this.skillsPage;
+            if (currentPageSpan) currentPageSpan.textContent = this.innerfacesPage;
             if (totalPagesSpan) totalPagesSpan.textContent = totalPages;
             
-            if (skillsPrevBtn) {
-                skillsPrevBtn.disabled = this.skillsPage <= 1;
+            if (innerfacesPrevBtn) {
+                innerfacesPrevBtn.disabled = this.innerfacesPage <= 1;
             }
             
-            if (skillsNextBtn) {
-                skillsNextBtn.disabled = this.skillsPage >= totalPages;
+            if (innerfacesNextBtn) {
+                innerfacesNextBtn.disabled = this.innerfacesPage >= totalPages;
             }
         },
 
-        filterSkills(query) {
-            const allSkills = window.Storage.getSkillsInOrder();
+        filterInnerfaces(query) {
+            const allInnerfaces = window.Storage.getInnerfacesInOrder();
             
             if (!query.trim()) {
-                this.filteredSkills = allSkills;
+                this.filteredInnerfaces = allInnerfaces;
             } else {
-                this.filteredSkills = allSkills.filter(skill => 
-                    skill.name.toLowerCase().includes(query.toLowerCase()) ||
-                    skill.hover.toLowerCase().includes(query.toLowerCase())
+                this.filteredInnerfaces = allInnerfaces.filter(innerface => 
+                    innerface.name.toLowerCase().includes(query.toLowerCase()) ||
+                    innerface.hover.toLowerCase().includes(query.toLowerCase())
                 );
             }
             
             // Reset to first page when filtering
-            this.skillsPage = 1;
-            UI.renderSkills();
-            DragDrop.setupSkills();
-            this.updateSkillsPagination();
+            this.innerfacesPage = 1;
+            UI.renderInnerfaces();
+            DragDrop.setupInnerfaces();
+            this.updateInnerfacesPagination();
         },
 
         filterHistory(query) {
@@ -656,7 +656,7 @@ function initMainApp() {
             // Populate dynamic filter options
             this.populateProtocolFilters();
             this.populateStateFilters();
-            this.populateSkillFilters();
+            this.populateInnerfaceFilters();
             
             const filterCheckboxes = document.querySelectorAll('.filter-checkbox');
             const customDateRange = document.getElementById('filter-custom-date-range');
@@ -664,10 +664,10 @@ function initMainApp() {
             const dateToInput = document.getElementById('filter-date-to');
             const protocolSubmenu = document.getElementById('protocol-filter-submenu');
             const stateSubmenu = document.getElementById('state-filter-submenu');
-            const skillSubmenu = document.getElementById('skill-filter-submenu');
+            const innerfaceSubmenu = document.getElementById('innerface-filter-submenu');
             const protocolSpecificOption = document.getElementById('protocol-specific-option');
             const stateSpecificOption = document.getElementById('state-specific-option');
-            const skillSpecificOption = document.getElementById('skill-specific-option');
+            const innerfaceSpecificOption = document.getElementById('innerface-specific-option');
             
             filterCheckboxes.forEach(checkbox => {
                 checkbox.addEventListener('change', (e) => {
@@ -691,7 +691,7 @@ function initMainApp() {
                                 customDateRange.style.display = 'none';
                             }
                             
-                            // Hide submenus for protocol/state/skill filters and remove active class
+                            // Hide submenus for protocol/state/innerface filters and remove active class
                             if (filterType === 'protocol' && protocolSubmenu && protocolSpecificOption) {
                                 protocolSubmenu.classList.remove('show');
                                 protocolSpecificOption.classList.remove('active');
@@ -704,11 +704,11 @@ function initMainApp() {
                                 // Uncheck all submenu options
                                 stateSubmenu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
                             }
-                            if (filterType === 'skill' && skillSubmenu && skillSpecificOption) {
-                                skillSubmenu.classList.remove('show');
-                                skillSpecificOption.classList.remove('active');
+                            if (filterType === 'innerface' && innerfaceSubmenu && innerfaceSpecificOption) {
+                                innerfaceSubmenu.classList.remove('show');
+                                innerfaceSpecificOption.classList.remove('active');
                                 // Uncheck all submenu options
-                                skillSubmenu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                                innerfaceSubmenu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
                             }
                         } else {
                             // Prevent unchecking "all" if it's the only one checked
@@ -734,9 +734,9 @@ function initMainApp() {
                                 stateSpecificOption.classList.add('active');
                                 // Don't auto-select anything - user will choose manually
                             }
-                            if (filterType === 'skill' && skillSubmenu && skillSpecificOption) {
-                                skillSubmenu.classList.add('show');
-                                skillSpecificOption.classList.add('active');
+                            if (filterType === 'innerface' && innerfaceSubmenu && innerfaceSpecificOption) {
+                                innerfaceSubmenu.classList.add('show');
+                                innerfaceSpecificOption.classList.add('active');
                                 // Don't auto-select anything - user will choose manually
                             }
                         } else {
@@ -758,10 +758,10 @@ function initMainApp() {
                                 stateSpecificOption.classList.remove('active');
                                 stateSubmenu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
                             }
-                            if (filterType === 'skill' && skillSubmenu && skillSpecificOption) {
-                                skillSubmenu.classList.remove('show');
-                                skillSpecificOption.classList.remove('active');
-                                skillSubmenu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                            if (filterType === 'innerface' && innerfaceSubmenu && innerfaceSpecificOption) {
+                                innerfaceSubmenu.classList.remove('show');
+                                innerfaceSpecificOption.classList.remove('active');
+                                innerfaceSubmenu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
                             }
                         }
                     } else {
@@ -831,8 +831,8 @@ function initMainApp() {
                                         if (filterType === 'state' && stateSpecificOption) {
                                             stateSpecificOption.classList.remove('active');
                                         }
-                                        if (filterType === 'skill' && skillSpecificOption) {
-                                            skillSpecificOption.classList.remove('active');
+                                        if (filterType === 'innerface' && innerfaceSpecificOption) {
+                                            innerfaceSpecificOption.classList.remove('active');
                                         }
                                     }
                                 }
@@ -893,7 +893,7 @@ function initMainApp() {
                                      this.historyFilters.protocol !== 'all' ||
                                      this.historyFilters.state !== 'all' ||
                                      this.historyFilters.effect !== 'all' ||
-                                     this.historyFilters.skill !== 'all';
+                                     this.historyFilters.innerface !== 'all';
             
             if (hasActiveFilters) {
                 filterIcon.classList.add('active');
@@ -909,7 +909,7 @@ function initMainApp() {
             
             // Start with all history (already sorted newest-first by getCheckins)
             const allHistory = window.Storage.getCheckins();
-            const skills = window.Storage.getSkills();
+            const innerfaces = window.Storage.getInnerfaces();
             
             this.filteredHistory = allHistory.filter(checkin => {
                 // Search filter
@@ -929,7 +929,7 @@ function initMainApp() {
                     
                     // Search in operation type
                     if (checkin.type === 'drag_drop') {
-                        const actionText = checkin.subType === 'protocol' ? 'reordered protocol' : 'reordered skill';
+                        const actionText = checkin.subType === 'protocol' ? 'reordered protocol' : 'reordered innerface';
                         if (actionText.includes(searchTerm)) {
                             matchesSearch = true;
                         }
@@ -943,14 +943,14 @@ function initMainApp() {
                         }
                     }
                     
-                    // Search in affected skill names
+                    // Search in affected innerface names
                     if (checkin.changes) {
-                        const affectedSkills = Object.keys(checkin.changes).map(skillId => {
-                            const skill = skills.find(s => s.id == skillId);
-                            return skill ? skill.name.toLowerCase() : '';
+                        const affectedInnerfaces = Object.keys(checkin.changes).map(innerfaceId => {
+                            const innerface = innerfaces.find(s => s.id == innerfaceId);
+                            return innerface ? innerface.name.toLowerCase() : '';
                         });
                         
-                        if (affectedSkills.some(skillName => skillName.includes(searchTerm))) {
+                        if (affectedInnerfaces.some(innerfaceName => innerfaceName.includes(searchTerm))) {
                             matchesSearch = true;
                         }
                     }
@@ -1054,7 +1054,7 @@ function initMainApp() {
                     }
                 }
                 
-                // State filter - show checkins that affect skills used by this state
+                // State filter - show checkins that affect innerfaces used by this state
                 if (this.historyFilters.state !== 'all') {
                     if (checkin.type !== 'protocol' || !checkin.protocolId) {
                         return false; // Only protocol checkins can be filtered by state
@@ -1066,8 +1066,8 @@ function initMainApp() {
                         return false;
                     }
                     
-                    // Get all skill IDs that affect this state (including from dependent states)
-                    const stateSkillIds = this.getStateAffectedSkills(state.id);
+                    // Get all innerface IDs that affect this state (including from dependent states)
+                    const stateInnerfaceIds = this.getStateAffectedInnerfaces(state.id);
                     
                     // Get the protocol and its targets
                     const protocol = window.Storage.getProtocolById(checkin.protocolId);
@@ -1075,33 +1075,33 @@ function initMainApp() {
                         return false;
                     }
                     
-                    // Check if this protocol targets any of the state's skill dependencies
-                    const protocolTargetsStateSkills = protocol.targets.some(targetId => 
-                        stateSkillIds.includes(parseInt(targetId))
+                    // Check if this protocol targets any of the state's innerface dependencies
+                    const protocolTargetsStateInnerfaces = protocol.targets.some(targetId => 
+                        stateInnerfaceIds.includes(parseInt(targetId))
                     );
                     
-                    if (!protocolTargetsStateSkills) {
+                    if (!protocolTargetsStateInnerfaces) {
                         return false;
                     }
                 }
                 
-                // Skill filter - show checkins that affect a specific skill
-                if (this.historyFilters.skill !== 'all') {
-                    const skillId = parseInt(this.historyFilters.skill);
+                // Innerface filter - show checkins that affect a specific innerface
+                if (this.historyFilters.innerface !== 'all') {
+                    const innerfaceId = parseInt(this.historyFilters.innerface);
                     
-                    // For protocol checkins, check if the skill was affected
+                    // For protocol checkins, check if the innerface was affected
                     if (checkin.type === 'protocol') {
-                        if (!checkin.changes || !checkin.changes[skillId]) {
+                        if (!checkin.changes || !checkin.changes[innerfaceId]) {
                             return false;
                         }
                     }
-                    // For drag & drop operations, check if it's the specific skill being reordered
-                    else if (checkin.type === 'drag_drop' && checkin.subType === 'skill') {
-                        if (checkin.itemId !== skillId) {
+                    // For drag & drop operations, check if it's the specific innerface being reordered
+                    else if (checkin.type === 'drag_drop' && checkin.subType === 'innerface') {
+                        if (checkin.itemId !== innerfaceId) {
                             return false;
                         }
                     }
-                    // For other types, exclude them when filtering by skill
+                    // For other types, exclude them when filtering by innerface
                     else {
                         return false;
                     }
@@ -1113,8 +1113,8 @@ function initMainApp() {
             UI.renderHistory();
         },
 
-        // Get all skill IDs that affect a state (including from dependent states)
-        getStateAffectedSkills(stateId, visitedStates = new Set()) {
+        // Get all innerface IDs that affect a state (including from dependent states)
+        getStateAffectedInnerfaces(stateId, visitedStates = new Set()) {
             // Prevent infinite recursion with circular dependencies
             if (visitedStates.has(stateId)) {
                 return [];
@@ -1126,23 +1126,23 @@ function initMainApp() {
                 return [];
             }
             
-            let affectedSkills = [];
+            let affectedInnerfaces = [];
             
-            // Add direct skill dependencies (convert to numbers)
-            if (state.skillIds && state.skillIds.length > 0) {
-                affectedSkills.push(...state.skillIds.map(id => parseInt(id)));
+            // Add direct innerface dependencies (convert to numbers)
+            if (state.innerfaceIds && state.innerfaceIds.length > 0) {
+                affectedInnerfaces.push(...state.innerfaceIds.map(id => parseInt(id)));
             }
             
-            // Add skills from dependent states (recursive)
+            // Add innerfaces from dependent states (recursive)
             if (state.stateIds && state.stateIds.length > 0) {
                 state.stateIds.forEach(dependentStateId => {
-                    const dependentSkills = this.getStateAffectedSkills(dependentStateId, new Set(visitedStates));
-                    affectedSkills.push(...dependentSkills);
+                    const dependentInnerfaces = this.getStateAffectedInnerfaces(dependentStateId, new Set(visitedStates));
+                    affectedInnerfaces.push(...dependentInnerfaces);
                 });
             }
             
             // Remove duplicates and return (all should be numbers now)
-            return [...new Set(affectedSkills)];
+            return [...new Set(affectedInnerfaces)];
         },
 
         // Populate dynamic filter options
@@ -1181,19 +1181,19 @@ function initMainApp() {
             }).join('');
         },
         
-        // Populate dynamic skill filters
-        populateSkillFilters() {
-            const skillContainer = document.getElementById('skill-filter-options');
-            if (!skillContainer) return;
+        // Populate dynamic innerface filters
+        populateInnerfaceFilters() {
+            const innerfaceContainer = document.getElementById('innerface-filter-options');
+            if (!innerfaceContainer) return;
             
-            const skills = window.Storage.getSkills();
-            skillContainer.innerHTML = skills.map(skill => {
-                const skillName = skill.name.split('. ')[0]; // Get main name part
+            const innerfaces = window.Storage.getInnerfaces();
+            innerfaceContainer.innerHTML = innerfaces.map(innerface => {
+                const innerfaceName = innerface.name.split('. ')[0]; // Get main name part
                 return `
                     <label class="filter-option">
-                        <input type="checkbox" class="filter-checkbox" data-filter="skill" data-value="${skill.id}">
+                        <input type="checkbox" class="filter-checkbox" data-filter="innerface" data-value="${innerface.id}">
                         <i class="fas fa-check filter-check-icon"></i>
-                        <span class="filter-label">${UI.renderIcon(skill.icon)} ${skillName}</span>
+                        <span class="filter-label">${UI.renderIcon(innerface.icon)} ${innerfaceName}</span>
                     </label>
                 `;
             }).join('');
@@ -1256,8 +1256,8 @@ function initMainApp() {
             this.updateFilterIcon();
         },
         
-        // Navigate to history page and filter by specific skill
-        viewSkillHistory(skillId) {
+        // Navigate to history page and filter by specific innerface
+        viewInnerfaceHistory(innerfaceId) {
             // Reset all filters first
             this.historyFilters = {
                 time: 'all',
@@ -1265,7 +1265,7 @@ function initMainApp() {
                 protocol: 'all',
                 state: 'all',
                 effect: 'all',
-                skill: skillId.toString(),
+                innerface: innerfaceId.toString(),
                 customDateFrom: '',
                 customDateTo: ''
             };
@@ -1284,19 +1284,19 @@ function initMainApp() {
                 this.navExpansion.setProgram(true);
             }
             
-            // Apply the skill filter
+            // Apply the innerface filter
             this.applyHistoryFilters();
             
-            // Update filter UI to show selected skill
+            // Update filter UI to show selected innerface
             setTimeout(() => {
                 this.updateFilterUI();
                 this.updateFilterIcon();
             }, 100);
             
             // Show a toast to inform user about the filter
-            const skill = window.Storage.getSkillById(skillId);
-            if (skill) {
-                this.showToast(`Showing history for ${skill.name}`, 'info');
+            const innerface = window.Storage.getInnerfaceById(innerfaceId);
+            if (innerface) {
+                this.showToast(`Showing history for ${innerface.name}`, 'info');
             }
         },
         
@@ -1309,7 +1309,7 @@ function initMainApp() {
                 protocol: protocolId.toString(),
                 state: 'all',
                 effect: 'all',
-                skill: 'all',
+                innerface: 'all',
                 customDateFrom: '',
                 customDateTo: ''
             };
@@ -1353,7 +1353,7 @@ function initMainApp() {
                 protocol: 'all',
                 state: stateId.toString(),
                 effect: 'all',
-                skill: 'all',
+                innerface: 'all',
                 customDateFrom: '',
                 customDateTo: ''
             };
@@ -1390,11 +1390,11 @@ function initMainApp() {
 
         // Setup expandable navigation
         setupExpandableNavigation() {
-            const navSkillsGroup = document.querySelector('.nav-skills-group');
+            const navInnerfacesGroup = document.querySelector('.nav-innerfaces-group');
             const navExpandBtn = document.getElementById('nav-expand-btn');
             const navHistory = document.getElementById('nav-history');
             
-            if (!navSkillsGroup || !navExpandBtn || !navHistory) return;
+            if (!navInnerfacesGroup || !navExpandBtn || !navHistory) return;
             
             let hoverTimeout;
             let isManuallyExpanded = false;
@@ -1407,7 +1407,7 @@ function initMainApp() {
                     clearTimeout(hoverTimeout);
                     navExpandBtn.classList.add('expanded');
                     navHistory.classList.add('expanded');
-                    navSkillsGroup.classList.add('hover-expanded');
+                    navInnerfacesGroup.classList.add('hover-expanded');
                 }
             });
             
@@ -1418,7 +1418,7 @@ function initMainApp() {
                     hoverTimeout = setTimeout(() => {
                         navExpandBtn.classList.remove('expanded');
                         navHistory.classList.remove('expanded');
-                        navSkillsGroup.classList.remove('hover-expanded');
+                        navInnerfacesGroup.classList.remove('hover-expanded');
                     }, 150);
                 }
             };
@@ -1439,12 +1439,12 @@ function initMainApp() {
                 if (isManuallyExpanded) {
                     navExpandBtn.classList.add('expanded');
                     navHistory.classList.add('expanded');
-                    navSkillsGroup.classList.add('expanded');
+                    navInnerfacesGroup.classList.add('expanded');
                 } else {
                     navExpandBtn.classList.remove('expanded');
                     navHistory.classList.remove('expanded');
-                    navSkillsGroup.classList.remove('expanded');
-                    navSkillsGroup.classList.remove('hover-expanded');
+                    navInnerfacesGroup.classList.remove('expanded');
+                    navInnerfacesGroup.classList.remove('hover-expanded');
                 }
             });
             
@@ -1456,13 +1456,13 @@ function initMainApp() {
                         navExpandBtn.classList.add('expanded');
                         navHistory.classList.add('program-expanded');
                         navHistory.classList.remove('expanded');
-                        navSkillsGroup.classList.add('expanded');
+                        navInnerfacesGroup.classList.add('expanded');
                     } else {
                         navExpandBtn.classList.remove('expanded');
                         navHistory.classList.remove('program-expanded');
                         navHistory.classList.remove('expanded');
-                        navSkillsGroup.classList.remove('expanded');
-                        navSkillsGroup.classList.remove('hover-expanded');
+                        navInnerfacesGroup.classList.remove('expanded');
+                        navInnerfacesGroup.classList.remove('hover-expanded');
                     }
                 },
                 
@@ -1471,7 +1471,7 @@ function initMainApp() {
                     isProgramExpanded = false;
                     navExpandBtn.classList.remove('expanded');
                     navHistory.classList.remove('expanded', 'program-expanded');
-                    navSkillsGroup.classList.remove('expanded', 'hover-expanded');
+                    navInnerfacesGroup.classList.remove('expanded', 'hover-expanded');
                 }
             };
         },
@@ -1510,9 +1510,9 @@ function initMainApp() {
             }
         },
         
-        // Emergency cleanup of duplicate protocols and skills on server
+        // Emergency cleanup of duplicate protocols and innerfaces on server
         async cleanDuplicates() {
-            console.log('🧹 EMERGENCY CLEANUP: Removing duplicate protocols and skills from server...');
+            console.log('🧹 EMERGENCY CLEANUP: Removing duplicate protocols and innerfaces from server...');
             try {
                 const token = await firebase.auth().currentUser.getIdToken();
                 const response = await fetch(`${BACKEND_URL}/api/emergency/clean-duplicates`, {
@@ -1534,9 +1534,9 @@ function initMainApp() {
                     // Show results
                     console.log('🧹 CLEANUP RESULTS:', {
                         protocolsRemoved: result.cleaned.protocols.removed,
-                        skillsRemoved: result.cleaned.skills.removed,
+                        innerfacesRemoved: result.cleaned.innerfaces.removed,
                         finalProtocolsCount: result.cleaned.protocols.after,
-                        finalSkillsCount: result.cleaned.skills.after
+                        finalInnerfacesCount: result.cleaned.innerfaces.after
                     });
                     
                     return result;
@@ -1656,7 +1656,7 @@ function initMainApp() {
                     action: checkin.action,
                     changes: checkin.changes,
                     hasTargetEffects: Object.keys(checkin.changes || {}).length > 0,
-                    affectedSkills: Object.keys(checkin.changes || {}),
+                    affectedInnerfaces: Object.keys(checkin.changes || {}),
                     raw: checkin
                 });
             });
@@ -1792,13 +1792,13 @@ function initMainApp() {
                     },
                     body: JSON.stringify({
                         protocols: [],
-                        skills: [],
+                        innerfaces: [],
                         states: [],
                         history: [],
                         quickActions: [],
                         quickActionOrder: [],
                         protocolOrder: [],
-                        skillOrder: [],
+                        innerfaceOrder: [],
                         stateOrder: [],
                         deletedCheckins: []
                     })
@@ -1823,14 +1823,14 @@ function initMainApp() {
                         });
                     }
                     
-                    // Focus on skills  
-                    if (serverData.skills) {
-                        console.log('\n🎯 SERVER SKILLS DETAILS:');
-                        serverData.skills.forEach(skill => {
-                            console.log(`  Skill ${skill.id}: ${skill.name}`, {
-                                value: skill.value,
-                                icon: skill.icon,
-                                updatedAt: skill.updatedAt || 'no timestamp'
+                    // Focus on innerfaces  
+                    if (serverData.innerfaces) {
+                        console.log('\n🎯 SERVER INNERFACES DETAILS:');
+                        serverData.innerfaces.forEach(innerface => {
+                            console.log(`  Innerface ${innerface.id}: ${innerface.name}`, {
+                                value: innerface.value,
+                                icon: innerface.icon,
+                                updatedAt: innerface.updatedAt || 'no timestamp'
                             });
                         });
                     }
@@ -1841,7 +1841,7 @@ function initMainApp() {
                     console.log('  Data Keys:', Object.keys(serverData));
                     console.log('  Data Counts:', {
                         protocols: (serverData.protocols || []).length,
-                        skills: (serverData.skills || []).length,
+                        innerfaces: (serverData.innerfaces || []).length,
                         states: (serverData.states || []).length,
                         history: (serverData.history || []).length,
                         quickActions: (serverData.quickActions || []).length
@@ -2126,7 +2126,7 @@ window.debugSync = {
     try {
       const localData = {
         protocols: window.Storage.get(window.Storage.KEYS.PROTOCOLS) || [],
-        skills: window.Storage.get(window.Storage.KEYS.SKILLS) || [],
+        innerfaces: window.Storage.get(window.Storage.KEYS.INNERFACES) || [],
         states: window.Storage.get(window.Storage.KEYS.STATES) || [],
         history: window.Storage.get(window.Storage.KEYS.HISTORY) || [],
         quickActions: window.Storage.get(window.Storage.KEYS.QUICK_ACTIONS) || []
@@ -2328,7 +2328,7 @@ window.debugSync = {
         action: checkin.action,
         changes: checkin.changes,
         hasTargetEffects: Object.keys(checkin.changes || {}).length > 0,
-        affectedSkills: Object.keys(checkin.changes || {}),
+        affectedInnerfaces: Object.keys(checkin.changes || {}),
         raw: checkin
       });
     });
@@ -2478,14 +2478,14 @@ window.debugSync = {
           });
         }
         
-        // Focus on skills  
-        if (serverData.skills) {
-          console.log('\n🎯 SERVER SKILLS DETAILS:');
-          serverData.skills.forEach(skill => {
-            console.log(`  Skill ${skill.id}: ${skill.name}`, {
-              value: skill.value,
-              icon: skill.icon,
-              updatedAt: skill.updatedAt || 'no timestamp'
+        // Focus on innerfaces  
+        if (serverData.innerfaces) {
+          console.log('\n🎯 SERVER INNERFACES DETAILS:');
+          serverData.innerfaces.forEach(innerface => {
+            console.log(`  Innerface ${innerface.id}: ${innerface.name}`, {
+              value: innerface.value,
+              icon: innerface.icon,
+              updatedAt: innerface.updatedAt || 'no timestamp'
             });
           });
         }
@@ -2496,7 +2496,7 @@ window.debugSync = {
         console.log('  Data Keys:', Object.keys(serverData));
         console.log('  Data Counts:', {
           protocols: (serverData.protocols || []).length,
-          skills: (serverData.skills || []).length,
+          innerfaces: (serverData.innerfaces || []).length,
           states: (serverData.states || []).length,
           history: (serverData.history || []).length,
           quickActions: (serverData.quickActions || []).length
@@ -2536,13 +2536,13 @@ window.debugSync = {
         },
         body: JSON.stringify({
           protocols: [],
-          skills: [],
+          innerfaces: [],
           states: [],
           history: [],
           quickActions: [],
           quickActionOrder: [],
           protocolOrder: [],
-          skillOrder: [],
+          innerfaceOrder: [],
           stateOrder: [],
           deletedCheckins: []
         })
@@ -2586,7 +2586,7 @@ window.debugSync = {
         console.log('  Data Keys:', Object.keys(serverData));
         console.log('  Data Counts:', {
           protocols: (serverData.protocols || []).length,
-          skills: (serverData.skills || []).length,
+          innerfaces: (serverData.innerfaces || []).length,
           states: (serverData.states || []).length,
           history: (serverData.history || []).length,
           quickActions: (serverData.quickActions || []).length,
@@ -2693,9 +2693,9 @@ window.debugSync = {
     };
   },
 
-  // Emergency cleanup of duplicate protocols and skills on server
+  // Emergency cleanup of duplicate protocols and innerfaces on server
   async cleanDuplicates() {
-    console.log('🧹 EMERGENCY CLEANUP: Removing duplicate protocols and skills from server...');
+    console.log('🧹 EMERGENCY CLEANUP: Removing duplicate protocols and innerfaces from server...');
     try {
       const token = await firebase.auth().currentUser.getIdToken();
       const response = await fetch(`${BACKEND_URL}/api/emergency/clean-duplicates`, {
@@ -2717,9 +2717,9 @@ window.debugSync = {
         // Show results
         console.log('🧹 CLEANUP RESULTS:', {
           protocolsRemoved: result.cleaned.protocols.removed,
-          skillsRemoved: result.cleaned.skills.removed,
+          innerfacesRemoved: result.cleaned.innerfaces.removed,
           finalProtocolsCount: result.cleaned.protocols.after,
-          finalSkillsCount: result.cleaned.skills.after
+          finalInnerfacesCount: result.cleaned.innerfaces.after
         });
         
         return result;
@@ -2815,7 +2815,7 @@ console.log('  - debugSync.compare() - Compare local vs server data');
 console.log('  - debugSync.status() - Check sync status');  
 console.log('  - debugSync.testBackend() - Test backend connectivity');
 console.log('  - debugSync.forceResetAndSync() - Force reset user data on server and resync');
-console.log('  - debugSync.cleanDuplicates() - Emergency cleanup of duplicate protocols/skills on server');
+console.log('  - debugSync.cleanDuplicates() - Emergency cleanup of duplicate protocols/innerfaces on server');
 console.log('  - debugSync.clearDeletedCheckins() - Clean undefined elements from deletedCheckins array');
 console.log('  - debugSync.clearDeletedStates() - Clear deleted states list (for debugging)');
 console.log('  - debugSync.cleanDeletedStates() - Clean undefined values from deletedStates (fix sync issues)');

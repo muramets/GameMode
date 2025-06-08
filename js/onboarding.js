@@ -13,23 +13,23 @@ class Onboarding {
                 type: 'step',
                 emoji: '<i class="fas fa-list"></i>',
                 title: 'Protocols',
-                text: `Actions are your Protocols. Like combos in a game — each move levels a skill and shifts your state.`,
+                text: `Actions are your Protocols. Like combos in a game — each move levels a innerface and shifts your state.`,
                 targetSelector: '.nav-item[data-page="protocols"]',
                 page: 'protocols'
             },
             {
                 type: 'step',
                 emoji: '<i class="fas fa-chart-line"></i>',
-                title: 'Skills',
-                text: `Every action upgrades or downgrades a skill — this is where you track your growth.`,
-                targetSelector: '.nav-item[data-page="skills"]',
-                page: 'skills'
+                title: 'Innerfaces',
+                text: `Every action upgrades or downgrades a innerface — this is where you track your growth.`,
+                targetSelector: '.nav-item[data-page="innerfaces"]',
+                page: 'innerfaces'
             },
             {
                 type: 'step',
                 emoji: '<i class="fas fa-tachometer-alt"></i>',
                 title: 'States',
-                text: `States are live feedback — your inner speedometer, shaped by your skills. Customize it to feel your rhythm.`,
+                text: `States are live feedback — your inner speedometer, shaped by your innerfaces. Customize it to feel your rhythm.`,
                 targetSelector: '.state-card:first-child',
                 page: 'dashboard'
             }
@@ -81,13 +81,13 @@ class Onboarding {
         // Save original data
         this.originalData = {
             protocols: window.Storage.getProtocols(),
-            skills: window.Storage.getSkills(),
+            innerfaces: window.Storage.getInnerfaces(),
             states: window.Storage.getStates(),
             checkins: window.Storage.getCheckins()
         };
 
         // Sample data
-        const sampleSkills = [
+        const sampleInnerfaces = [
             { id: 1, name: 'Focus', currentScore: 75, initialScore: 60, icon: 'focus', color: '#3b82f6' },
             { id: 2, name: 'Energy', currentScore: 82, initialScore: 70, icon: 'bolt', color: '#eab308' },
             { id: 3, name: 'Confidence', currentScore: 68, initialScore: 55, icon: 'heart', color: '#ef4444' },
@@ -172,22 +172,22 @@ class Onboarding {
 
             // Calculate changes based on protocol targets
             const changeValue = action === '+' ? protocol.weight : -protocol.weight;
-            protocol.targets.forEach(skillId => {
-                checkin.changes[skillId] = changeValue;
+            protocol.targets.forEach(innerfaceId => {
+                checkin.changes[innerfaceId] = changeValue;
             });
 
             sampleCheckins.push(checkin);
         }
 
         // Inject sample data
-        localStorage.setItem('rpg_therapy_skills', JSON.stringify(sampleSkills));
+        localStorage.setItem('rpg_therapy_innerfaces', JSON.stringify(sampleInnerfaces));
         localStorage.setItem('rpg_therapy_states', JSON.stringify(sampleStates));
         localStorage.setItem('rpg_therapy_protocols', JSON.stringify(sampleProtocols));
         localStorage.setItem('rpg_therapy_checkins', JSON.stringify(sampleCheckins));
 
         // Refresh the app with sample data
         if (window.App) {
-            window.App.filteredSkills = sampleSkills;
+            window.App.filteredInnerfaces = sampleInnerfaces;
             window.App.filteredStates = sampleStates;
             window.App.filteredProtocols = sampleProtocols;
             window.App.filteredHistory = sampleCheckins;
@@ -197,7 +197,7 @@ class Onboarding {
                 window.UI.updateUserStats();
                 window.UI.renderDashboard();
                 window.UI.renderProtocols();
-                window.UI.renderSkills();
+                window.UI.renderInnerfaces();
             }
         }
     }
@@ -207,14 +207,14 @@ class Onboarding {
         if (!this.originalData) return;
 
         // Restore original data
-        localStorage.setItem('rpg_therapy_skills', JSON.stringify(this.originalData.skills));
+        localStorage.setItem('rpg_therapy_innerfaces', JSON.stringify(this.originalData.innerfaces));
         localStorage.setItem('rpg_therapy_states', JSON.stringify(this.originalData.states));
         localStorage.setItem('rpg_therapy_protocols', JSON.stringify(this.originalData.protocols));
         localStorage.setItem('rpg_therapy_checkins', JSON.stringify(this.originalData.checkins));
 
         // Refresh the app
         if (window.App) {
-            window.App.filteredSkills = this.originalData.skills;
+            window.App.filteredInnerfaces = this.originalData.innerfaces;
             window.App.filteredStates = this.originalData.states;
             window.App.filteredProtocols = this.originalData.protocols;
             window.App.filteredHistory = this.originalData.checkins;
@@ -223,7 +223,7 @@ class Onboarding {
                 window.UI.updateUserStats();
                 window.UI.renderDashboard();
                 window.UI.renderProtocols();
-                window.UI.renderSkills();
+                window.UI.renderInnerfaces();
             }
         }
     }

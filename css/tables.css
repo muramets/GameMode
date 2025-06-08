@@ -1,8 +1,8 @@
-/* ===== Tables (Protocols, Skills, History) ===== */
+/* ===== Tables (Protocols, Innerfaces, History) ===== */
 
 /* Empty State Row Overrides - Remove all borders */
 .empty-state.protocol-row,
-.empty-state.skill-row,
+.empty-state.innerface-row,
 .empty-state.history-row {
   border-bottom: none !important;
   border-top: none !important;
@@ -243,8 +243,8 @@
   outline: none;
 }
 
-/* Skills Table */
-.skills-controls {
+/* Innerfaces Table */
+.innerfaces-controls {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -252,7 +252,7 @@
   gap: 1rem;
 }
 
-.skills-header {
+.innerfaces-header {
   display: grid;
   grid-template-columns: 60px 1fr 100px 100px 150px;
   gap: 1rem;
@@ -265,7 +265,7 @@
   border-bottom: 1px solid var(--bg-color);
 }
 
-.skills-header .skill-cell {
+.innerfaces-header .innerface-cell {
   display: flex;
   align-items: center;
   font-size: 0.75rem;
@@ -273,12 +273,12 @@
   color: var(--sub-color);
 }
 
-.skills-body {
+.innerfaces-body {
   display: flex;
   flex-direction: column;
 }
 
-.skill-row {
+.innerface-row {
   display: grid;
   grid-template-columns: 60px 1fr 100px 100px 150px;
   gap: 1rem;
@@ -289,15 +289,15 @@
   cursor: move;
 }
 
-.skill-row:nth-child(even) {
+.innerface-row:nth-child(even) {
   background-color: var(--sub-alt-color);
 }
 
-.skill-row:nth-child(odd) {
+.innerface-row:nth-child(odd) {
   background-color: var(--bg-color);
 }
 
-.skill-row.dragging {
+.innerface-row.dragging {
   opacity: 0.8;
   transform: rotate(3deg) scale(1.02);
   z-index: 1000;
@@ -305,20 +305,20 @@
   transition: none;
 }
 
-.skill-row.drag-over {
+.innerface-row.drag-over {
   transform: translateX(2px) scale(1.01) rotate(-1deg);
   border-top: 2px solid var(--main-color);
   background-color: var(--bg-color);
   box-shadow: 0 2px 8px rgba(226, 183, 20, 0.15);
 }
 
-.skill-cell {
+.innerface-cell {
   display: flex;
   align-items: center;
   font-size: 0.85rem;
 }
 
-.skill-name-cell {
+.innerface-name-cell {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -328,45 +328,45 @@
   justify-content: space-between;
 }
 
-.skill-number {
+.innerface-number {
   color: var(--sub-color);
   font-weight: 500;
 }
 
-.skill-name-cell .skill-icon {
+.innerface-name-cell .innerface-icon {
   font-size: 1rem;
 }
 
-.skill-name-full {
+.innerface-name-full {
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
 }
 
-.skill-name-main {
+.innerface-name-main {
   font-weight: 400;
   color: var(--text-color);
   font-size: 0.85rem;
 }
 
-.skill-name-desc {
+.innerface-name-desc {
   font-size: 0.75rem;
   color: var(--sub-color);
   font-weight: 300;
 }
 
-.skill-score-cell {
+.innerface-score-cell {
   color: var(--sub-color);
   font-family: 'Roboto Mono', monospace;
 }
 
-.skill-progress-cell {
+.innerface-progress-cell {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
 
-.skill-progress-bar {
+.innerface-progress-bar {
   width: 80px;
   height: 8px;
   background-color: var(--sub-alt-color);
@@ -374,20 +374,20 @@
   overflow: hidden;
 }
 
-.skill-row:nth-child(even) .skill-progress-bar {
+.innerface-row:nth-child(even) .innerface-progress-bar {
   background-color: var(--bg-color);
 }
 
-.skill-row:nth-child(odd) .skill-progress-bar {
+.innerface-row:nth-child(odd) .innerface-progress-bar {
   background-color: var(--sub-alt-color);
 }
 
-.skill-progress-fill {
+.innerface-progress-fill {
   height: 100%;
   transition: width 0.3s ease;
 }
 
-.skill-progress-percent {
+.innerface-progress-percent {
   font-family: 'Roboto Mono', monospace;
   font-size: 0.75rem;
   color: var(--sub-color);
@@ -415,31 +415,31 @@
   color: var(--sub-color);
 }
 
-.skill-content {
+.innerface-content {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   flex: 1;
 }
 
-.skill-score {
+.innerface-score {
   color: var(--sub-color);
   font-family: 'Roboto Mono', monospace;
 }
 
-.skill-last-updated {
+.innerface-last-updated {
   color: var(--sub-color);
   font-family: 'Roboto Mono', monospace;
   font-size: 0.75rem;
 }
 
-.skill-actions {
+.innerface-actions {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.skill-history-btn, .skill-settings-btn {
+.innerface-history-btn, .innerface-settings-btn {
   background: none;
   border: none;
   color: var(--sub-color);
@@ -453,22 +453,22 @@
   font-size: 0.9rem;
 }
 
-.skill-row:hover .skill-history-btn,
-.skill-row:hover .skill-settings-btn {
+.innerface-row:hover .innerface-history-btn,
+.innerface-row:hover .innerface-settings-btn {
   opacity: 1;
   transform: scale(1);
 }
 
-.skill-history-btn:hover,
-.skill-settings-btn:hover {
+.innerface-history-btn:hover,
+.innerface-settings-btn:hover {
   color: var(--main-color);
 }
 
-.skill-name-cell[data-hover] {
+.innerface-name-cell[data-hover] {
   position: relative;
 }
 
-.skill-name-cell[data-hover]::after {
+.innerface-name-cell[data-hover]::after {
   content: attr(data-hover);
   position: absolute;
   bottom: calc(100% + 0.25rem);
@@ -492,7 +492,7 @@
   font-family: 'Roboto Mono', monospace;
 }
 
-.skill-name-cell[data-hover].show-tooltip::after {
+.innerface-name-cell[data-hover].show-tooltip::after {
   opacity: 1;
   visibility: visible;
   transition-delay: 0s;
@@ -1088,26 +1088,26 @@
   color: var(--main-color) !important;
 }
 
-.skill-current-cell {
+.innerface-current-cell {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   position: relative;
 }
 
-.skill-change-arrow {
+.innerface-change-arrow {
   color: var(--sub-color);
   font-size: 0.8rem;
   transition: color 0.125s ease;
   opacity: 0.7;
 }
 
-.skill-row:hover .skill-change-arrow.increase {
+.innerface-row:hover .innerface-change-arrow.increase {
   color: var(--correct-color);
   opacity: 1;
 }
 
-.skill-row:hover .skill-change-arrow.decrease {
+.innerface-row:hover .innerface-change-arrow.decrease {
   color: var(--error-color);
   opacity: 1;
 }

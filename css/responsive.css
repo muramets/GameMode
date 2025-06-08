@@ -52,7 +52,7 @@
 
   /* Mobile protocols table - only essential columns */
   .protocols-table,
-  .skills-table,
+  .innerfaces-table,
   .history-table {
     font-size: 0.85rem;
   }
@@ -86,9 +86,9 @@
     display: none;
   }
 
-  /* Mobile skills table */
-  .skills-header,
-  .skill-row {
+  /* Mobile innerfaces table */
+  .innerfaces-header,
+  .innerface-row {
     grid-template-columns: 50px 1fr 80px;
     gap: 0.5rem;
     padding: 0.5rem 0.75rem;
@@ -105,19 +105,19 @@
   }
 
   .protocol-name-full,
-  .skill-name-full,
+  .innerface-name-full,
   .history-action-full {
     gap: 0.125rem;
   }
 
   .protocol-name-main,
-  .skill-name-main,
+  .innerface-name-main,
   .history-action-main {
     font-size: 0.8rem;
   }
 
   .protocol-name-desc,
-  .skill-name-desc,
+  .innerface-name-desc,
   .history-action-desc {
     font-size: 0.7rem;
   }
@@ -132,7 +132,7 @@
   }
 
   .protocols-controls,
-  .skills-controls,
+  .innerfaces-controls,
   .history-controls {
     flex-direction: column;
     align-items: stretch;

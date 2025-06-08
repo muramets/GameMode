@@ -211,7 +211,7 @@ const INITIAL_DATA = {
     }
   ],
 
-  skills: [
+  innerfaces: [
     {
       id: 1,
       name: "Focus. Attentional control",
@@ -283,7 +283,7 @@ const INITIAL_DATA = {
       name: "Mental clarity. Cognitive Resource",
       icon: "🧠",
       hover: "Capacity for clear thinking and intentional action.",
-      skillIds: [1, 2, 3],
+      innerfaceIds: [1, 2, 3],
       stateIds: []
     },
     {
@@ -291,7 +291,7 @@ const INITIAL_DATA = {
       name: "Physical Shape. Built presence",
       icon: "🔹",
       hover: "Self-image built through movement and consistency.",
-      skillIds: [4],
+      innerfaceIds: [4],
       stateIds: []
     },
     {
@@ -299,7 +299,7 @@ const INITIAL_DATA = {
       name: "Harmony. You're in the right place",
       icon: "🎼",
       hover: "What you're doing matches where your mind wants to be.",
-      skillIds: [5, 2, 1],
+      innerfaceIds: [5, 2, 1],
       stateIds: []
     }
   ]

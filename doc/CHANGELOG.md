@@ -157,7 +157,7 @@ GET    /api/test              // Health check
 
 ---
 
-## 🎯 v0.5.x - Skills System (Январь 2024)
+## 🎯 v0.5.x - Innerfaces System (Январь 2024)
 
 ### 🎯 **Система навыков**
 - Базовая RPG механика с уровнями 0-10

@@ -23,7 +23,7 @@
 - [**SEARCH_FUNCTIONALITY**](SEARCH_FUNCTIONALITY.md) - поиск и фильтрация данных
 
 ### 📖 Справочники
-- [**README_SKILL_IDS**](README_SKILL_IDS.md) - справочник ID навыков и их описания
+- [**README_INNERFACE_IDS**](README_INNERFACE_IDS.md) - справочник ID навыков и их описания
 
 ### 📝 История изменений
 - [**CHANGELOG**](CHANGELOG.md) - последние изменения и исправления
@@ -85,7 +85,7 @@ rpg-therapy/
 │   ├── STATES_MANAGEMENT.md # States
 │   ├── SEARCH_FUNCTIONALITY.md # Поиск
 │   ├── CSS_STRUCTURE.md    # CSS структура
-│   ├── README_SKILL_IDS.md # Справочник навыков
+│   ├── README_INNERFACE_IDS.md # Справочник навыков
 │   └── CHANGELOG.md        # История изменений
 ├── js/                      # JavaScript модули
 │   ├── app.js              # Инициализация

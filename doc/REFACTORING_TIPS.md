@@ -25,15 +25,15 @@
 **Текущая проблема:**
 ```javascript
 // Неопределенная структура
-function addSkill(skill) {
-  // Что именно в skill? Какие поля обязательны?
+function addInnerface(innerface) {
+  // Что именно в innerface? Какие поля обязательны?
 }
 ```
 
 **AI-дружественное решение:**
 ```typescript
-interface Skill {
-  readonly id: SkillId;
+interface Innerface {
+  readonly id: InnerfaceId;
   name: string;
   icon: EmojiString;
   hover: string;
@@ -43,12 +43,12 @@ interface Skill {
   updatedAt: ISOString;
 }
 
-type SkillId = number | string;
+type InnerfaceId = number | string;
 type ScoreValue = number; // 0 <= value <= 10
 type EmojiString = string; // Single emoji character
 type ISOString = string; // ISO 8601 date string
 
-function addSkill(skill: Omit<Skill, 'id' | 'createdAt' | 'updatedAt'>): SkillId {
+function addInnerface(innerface: Omit<Innerface, 'id' | 'createdAt' | 'updatedAt'>): InnerfaceId {
   // AI агент точно знает, что принимает и возвращает функция
 }
 ```
@@ -66,7 +66,7 @@ export interface Protocol {
   hover: string;
   action: '+' | '-';
   weight: Weight; // 0-1
-  targets: readonly SkillId[]; // 1-3 elements
+  targets: readonly InnerfaceId[]; // 1-3 elements
   isQuickAction?: boolean;
   order?: number;
   createdAt: ISOString;
@@ -87,7 +87,7 @@ type ProtocolHistoryData = {
   protocolId: ProtocolId;
   protocolName: string;
   action: '+' | '-';
-  changes: Record<SkillId, number>;
+  changes: Record<InnerfaceId, number>;
 };
 ```
 
@@ -109,11 +109,11 @@ js/
 ```
 src/
 ├── domains/
-│   ├── skills/
-│   │   ├── SkillEntity.ts
-│   │   ├── SkillRepository.ts
-│   │   ├── SkillService.ts
-│   │   └── SkillController.ts
+│   ├── innerfaces/
+│   │   ├── InnerfaceEntity.ts
+│   │   ├── InnerfaceRepository.ts
+│   │   ├── InnerfaceService.ts
+│   │   └── InnerfaceController.ts
 │   ├── protocols/
 │   │   ├── ProtocolEntity.ts
 │   │   ├── ProtocolRepository.ts
@@ -144,23 +144,23 @@ src/
 
 ```typescript
 // Четкий интерфейс для AI агента
-interface SkillRepository {
-  findById(id: SkillId): Promise<Skill | null>;
-  findAll(): Promise<readonly Skill[]>;
-  save(skill: Skill): Promise<void>;
-  delete(id: SkillId): Promise<void>;
+interface InnerfaceRepository {
+  findById(id: InnerfaceId): Promise<Innerface | null>;
+  findAll(): Promise<readonly Innerface[]>;
+  save(innerface: Innerface): Promise<void>;
+  delete(id: InnerfaceId): Promise<void>;
 }
 
-class HybridSkillRepository implements SkillRepository {
+class HybridInnerfaceRepository implements InnerfaceRepository {
   constructor(
     private localAdapter: LocalStorageAdapter,
     private cloudAdapter: CloudStorageAdapter
   ) {}
   
-  async findById(id: SkillId): Promise<Skill | null> {
+  async findById(id: InnerfaceId): Promise<Innerface | null> {
     // Сначала локально, затем облако
-    return await this.localAdapter.findSkill(id) 
-      ?? await this.cloudAdapter.findSkill(id);
+    return await this.localAdapter.findInnerface(id) 
+      ?? await this.cloudAdapter.findInnerface(id);
   }
 }
 ```
@@ -174,22 +174,22 @@ interface Command<T = void> {
   undo(): Promise<void>;
 }
 
-class AddSkillCommand implements Command<SkillId> {
+class AddInnerfaceCommand implements Command<InnerfaceId> {
   constructor(
-    private skillData: Omit<Skill, 'id' | 'createdAt' | 'updatedAt'>,
-    private repository: SkillRepository
+    private innerfaceData: Omit<Innerface, 'id' | 'createdAt' | 'updatedAt'>,
+    private repository: InnerfaceRepository
   ) {}
   
-  async execute(): Promise<SkillId> {
-    const skill: Skill = {
-      ...this.skillData,
+  async execute(): Promise<InnerfaceId> {
+    const innerface: Innerface = {
+      ...this.innerfaceData,
       id: generateId(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
     
-    await this.repository.save(skill);
-    return skill.id;
+    await this.repository.save(innerface);
+    return innerface.id;
   }
   
   async undo(): Promise<void> {
@@ -215,25 +215,25 @@ POST /api/user/data    // Какие поля принимает?
 ```graphql
 type Query {
   user: User!
-  skills: [Skill!]!
+  innerfaces: [Innerface!]!
   protocols: [Protocol!]!
   history(limit: Int = 100, offset: Int = 0): [HistoryEntry!]!
 }
 
 type Mutation {
-  addSkill(input: AddSkillInput!): AddSkillPayload!
+  addInnerface(input: AddInnerfaceInput!): AddInnerfacePayload!
   executeProtocol(protocolId: ID!, action: ActionType!): ExecuteProtocolPayload!
 }
 
-input AddSkillInput {
+input AddInnerfaceInput {
   name: String!
   icon: String!
   hover: String!
   initialScore: Float!
 }
 
-type AddSkillPayload {
-  skill: Skill!
+type AddInnerfacePayload {
+  innerface: Innerface!
   errors: [Error!]!
 }
 ```
@@ -243,15 +243,15 @@ type AddSkillPayload {
 ```typescript
 // Четкие события для AI агента
 type DomainEvent = 
-  | SkillAddedEvent
+  | InnerfaceAddedEvent
   | ProtocolExecutedEvent
   | DataSyncedEvent;
 
-interface SkillAddedEvent {
-  readonly type: 'SKILL_ADDED';
+interface InnerfaceAddedEvent {
+  readonly type: 'INNERFACE_ADDED';
   readonly payload: {
-    readonly skillId: SkillId;
-    readonly skill: Skill;
+    readonly innerfaceId: InnerfaceId;
+    readonly innerface: Innerface;
     readonly timestamp: ISOString;
   };
 }
@@ -282,11 +282,11 @@ class EventBus {
 **Избегать:**
 ```javascript
 // Сайд-эффекты и мутации
-function updateSkill(skillId) {
-  const skills = getSkills(); // Глобальное состояние
-  const skill = skills.find(s => s.id === skillId);
-  skill.score += 1; // Мутация
-  saveSkills(skills); // Сайд-эффект
+function updateInnerface(innerfaceId) {
+  const innerfaces = getInnerfaces(); // Глобальное состояние
+  const innerface = innerfaces.find(s => s.id === innerfaceId);
+  innerface.score += 1; // Мутация
+  saveInnerfaces(innerfaces); // Сайд-эффект
 }
 ```
 
@@ -300,12 +300,12 @@ function calculateNewScore(
   return Math.max(0, Math.min(10, currentScore + change));
 }
 
-function updateSkill(
-  skill: Skill, 
-  updates: Partial<Pick<Skill, 'name' | 'icon' | 'hover'>>
-): Skill {
+function updateInnerface(
+  innerface: Innerface, 
+  updates: Partial<Pick<Innerface, 'name' | 'icon' | 'hover'>>
+): Innerface {
   return {
-    ...skill,
+    ...innerface,
     ...updates,
     updatedAt: new Date().toISOString()
   };
@@ -317,7 +317,7 @@ function updateSkill(
 ```typescript
 import { List, Record } from 'immutable';
 
-const SkillRecord = Record({
+const InnerfaceRecord = Record({
   id: '',
   name: '',
   icon: '',
@@ -328,14 +328,14 @@ const SkillRecord = Record({
   updatedAt: ''
 });
 
-type SkillState = List<SkillRecord>;
+type InnerfaceState = List<InnerfaceRecord>;
 
 // AI может легко предсказать результат
-function addSkillToState(
-  state: SkillState, 
-  skill: Skill
-): SkillState {
-  return state.push(new SkillRecord(skill));
+function addInnerfaceToState(
+  state: InnerfaceState, 
+  innerface: Innerface
+): InnerfaceState {
+  return state.push(new InnerfaceRecord(innerface));
 }
 ```
 
@@ -344,22 +344,22 @@ function addSkillToState(
 ```typescript
 // Redux-подобная архитектура
 interface AppState {
-  readonly skills: readonly Skill[];
+  readonly innerfaces: readonly Innerface[];
   readonly protocols: readonly Protocol[];
   readonly history: readonly HistoryEntry[];
   readonly ui: UIState;
 }
 
 type Action = 
-  | { type: 'SKILL_ADDED'; payload: Skill }
+  | { type: 'INNERFACE_ADDED'; payload: Innerface }
   | { type: 'PROTOCOL_EXECUTED'; payload: { protocolId: ProtocolId; action: ActionType } };
 
-function skillsReducer(
-  state: readonly Skill[] = [], 
+function innerfacesReducer(
+  state: readonly Innerface[] = [], 
   action: Action
-): readonly Skill[] {
+): readonly Innerface[] {
   switch (action.type) {
-    case 'SKILL_ADDED':
+    case 'INNERFACE_ADDED':
       return [...state, action.payload];
     default:
       return state;
@@ -375,7 +375,7 @@ function skillsReducer(
 
 ```typescript
 /**
- * Executes a protocol and updates related skills
+ * Executes a protocol and updates related innerfaces
  * 
  * @param protocolId - Unique identifier of the protocol to execute
  * @param action - Whether to apply positive ('+') or negative ('-') effect
@@ -406,27 +406,27 @@ async function executeProtocol(
 **Для каждого модуля создать README.md:**
 
 ```markdown
-# Skills Domain
+# Innerfaces Domain
 
 ## Overview
-Manages user skills - the core progression system of RPG Therapy.
+Manages user innerfaces - the core progression system of RPG Therapy.
 
 ## Entities
-- `Skill` - Individual skill with progression tracking
-- `SkillCalculator` - Pure functions for score calculations
+- `Innerface` - Individual innerface with progression tracking
+- `InnerfaceCalculator` - Pure functions for score calculations
 
 ## Use Cases
-- Add new skill
-- Update skill progress
-- Calculate current skill level
-- Reorder skills
+- Add new innerface
+- Update innerface progress
+- Calculate current innerface level
+- Reorder innerfaces
 
 ## API
-See `SkillService.ts` for public interface.
+See `InnerfaceService.ts` for public interface.
 
 ## Data Flow
 ```
-User Action → SkillController → SkillService → SkillRepository → Storage
+User Action → InnerfaceController → InnerfaceService → InnerfaceRepository → Storage
 ```
 ```
 
@@ -476,24 +476,24 @@ export default defineConfig({
 
 ```typescript
 // Predictable testing for AI agents
-describe('SkillService', () => {
-  describe('addSkill', () => {
-    it('should create skill with generated ID and timestamps', async () => {
+describe('InnerfaceService', () => {
+  describe('addInnerface', () => {
+    it('should create innerface with generated ID and timestamps', async () => {
       // Given
-      const skillData = {
-        name: 'Test Skill',
+      const innerfaceData = {
+        name: 'Test Innerface',
         icon: '🎯',
         hover: 'Test hover',
         initialScore: 5
       };
       
       // When
-      const skillId = await skillService.addSkill(skillData);
+      const innerfaceId = await innerfaceService.addInnerface(innerfaceData);
       
       // Then
-      const skill = await skillRepository.findById(skillId);
-      expect(skill).toMatchObject({
-        ...skillData,
+      const innerface = await innerfaceRepository.findById(innerfaceId);
+      expect(innerface).toMatchObject({
+        ...innerfaceData,
         id: expect.any(String),
         createdAt: expect.any(String),
         updatedAt: expect.any(String)
@@ -514,7 +514,7 @@ describe('SkillService', () => {
 4. ✅ Добавить линтинг и форматирование
 
 ### 📅 Phase 2: Domain Separation (3 недели)
-1. 🔄 Выделить домены (Skills, Protocols, History)
+1. 🔄 Выделить домены (Innerfaces, Protocols, History)
 2. 🔄 Реализовать Repository pattern
 3. 🔄 Создать Service layer
 4. 🔄 Добавить Command pattern для операций

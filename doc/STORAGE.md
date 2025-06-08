@@ -53,7 +53,7 @@ class Storage {
 ```javascript
 // Пример ключей для пользователя abc123
 "abc123_protocols"     // Протоколы пользователя
-"abc123_skills"        // Навыки пользователя  
+"abc123_innerfaces"        // Навыки пользователя  
 "abc123_history"       // История пользователя
 "abc123_quickActions"  // Quick Actions пользователя
 ```
@@ -70,7 +70,7 @@ interface Protocol {
   hover: string;                // Описание при наведении
   action: '+' | '-';            // Положительное/отрицательное действие
   weight: number;               // Сила воздействия (0-1)
-  targets: SkillId[];           // ID целевых навыков (1-3)
+  targets: InnerfaceId[];           // ID целевых навыков (1-3)
   order?: number;               // Порядок отображения
   isQuickAction?: boolean;      // Входит ли в Quick Actions
   createdAt?: ISOString;        // Дата создания
@@ -89,10 +89,10 @@ deleteProtocol(id)                // Удалить протокол
 syncWithBackend()                 // Отправить изменения в облако
 ```
 
-### 2. 🎯 **Skills (Навыки)**
+### 2. 🎯 **Innerfaces (Навыки)**
 
 ```javascript
-interface Skill {
+interface Innerface {
   id: number | string;          // Уникальный идентификатор
   name: string;                 // "Название. Описание"
   icon: string;                 // Эмодзи иконка
@@ -107,15 +107,15 @@ interface Skill {
 **Методы управления:**
 ```javascript
 // Основные операции
-getSkills()                       // Получить все навыки
-getSkillById(id)                  // Получить навык по ID
-addSkill(skillData)               // Добавить новый навык
-updateSkillFull(id, data)         // Обновить навык
-deleteSkill(id)                   // Удалить навык
+getInnerfaces()                       // Получить все навыки
+getInnerfaceById(id)                  // Получить навык по ID
+addInnerface(innerfaceData)               // Добавить новый навык
+updateInnerfaceFull(id, data)         // Обновить навык
+deleteInnerface(id)                   // Удалить навык
 
 // Вычисления
-calculateCurrentScore(skillId)    // Текущий уровень навыка
-getSkillHistory(skillId)          // История изменений навыка
+calculateCurrentScore(innerfaceId)    // Текущий уровень навыка
+getInnerfaceHistory(innerfaceId)          // История изменений навыка
 ```
 
 ### 3. 🎭 **States (Состояния)**
@@ -125,7 +125,7 @@ interface State {
   id: number | string;          // Уникальный идентификатор
   name: string;                 // "Название состояния/роли"
   icon: string;                 // Эмодзи иконка
-  skillIds: SkillId[];          // Навыки, входящие в состояние
+  innerfaceIds: InnerfaceId[];          // Навыки, входящие в состояние
   stateIds: StateId[];          // Зависимые состояния (рекурсия)
   order?: number;               // Порядок отображения
   level?: number;               // Вычисляемый уровень состояния
@@ -152,10 +152,10 @@ interface HistoryEntry {
   protocolId?: ProtocolId;
   protocolName?: string;
   action?: '+' | '-';
-  changes?: Record<SkillId, number>;
+  changes?: Record<InnerfaceId, number>;
   
   // Для drag & drop
-  subType?: 'skill' | 'protocol' | 'state';
+  subType?: 'innerface' | 'protocol' | 'state';
   itemId?: number;
   itemName?: string;
   fromPosition?: number;
@@ -209,7 +209,7 @@ addCheckin(protocolId, action = '+') {
   this.saveLocally(checkin);
   
   // 2. UI обновляется немедленно
-  UI.updateSkillBars();
+  UI.updateInnerfaceBars();
   
   // 3. Фоновая синхронизация
   this.scheduleCloudSync(checkin);
@@ -293,7 +293,7 @@ get(key) {
 **Миграция старых данных при первом входе:**
 ```javascript
 checkAndMigrateLegacyData() {
-  const legacyKeys = ['protocols', 'skills', 'history'];
+  const legacyKeys = ['protocols', 'innerfaces', 'history'];
   
   legacyKeys.forEach(key => {
     const legacyData = localStorage.getItem(key);
@@ -321,7 +321,7 @@ validateProtocol(protocol) {
   
   // Дополнительные проверки
   if (protocol.targets.length === 0 || protocol.targets.length > 3) {
-    throw new Error('Protocol must have 1-3 target skills');
+    throw new Error('Protocol must have 1-3 target innerfaces');
   }
 }
 ```
@@ -332,14 +332,14 @@ validateProtocol(protocol) {
 
 **Загрузка данных по требованию:**
 ```javascript
-getSkillsInOrder() {
-  if (this._cachedSkillsOrder) {
-    return this._cachedSkillsOrder;
+getInnerfacesInOrder() {
+  if (this._cachedInnerfacesOrder) {
+    return this._cachedInnerfacesOrder;
   }
   
   // Вычисляем и кэшируем
-  this._cachedSkillsOrder = this.calculateSkillsOrder();
-  return this._cachedSkillsOrder;
+  this._cachedInnerfacesOrder = this.calculateInnerfacesOrder();
+  return this._cachedInnerfacesOrder;
 }
 ```
 
@@ -347,14 +347,14 @@ getSkillsInOrder() {
 
 **Кэширование вычислений:**
 ```javascript
-calculateCurrentScore(skillId) {
-  const cacheKey = `score_${skillId}_${this.getHistoryVersion()}`;
+calculateCurrentScore(innerfaceId) {
+  const cacheKey = `score_${innerfaceId}_${this.getHistoryVersion()}`;
   
   if (this._scoreCache[cacheKey]) {
     return this._scoreCache[cacheKey];
   }
   
-  const score = this.computeScore(skillId);
+  const score = this.computeScore(innerfaceId);
   this._scoreCache[cacheKey] = score;
   return score;
 }
@@ -381,7 +381,7 @@ scheduleCloudSync() {
 ```javascript
 async syncWithBackend() {
   const userData = {
-    skills: this.getSkills(),
+    innerfaces: this.getInnerfaces(),
     protocols: this.getProtocols(),
     states: this.getStates(),
     checkins: this.getCheckins()
@@ -394,7 +394,7 @@ async loadFromBackend() {
   const response = await apiClient.getUserData();
   
   if (response.success) {
-    this.setSkills(response.data.skills);
+    this.setInnerfaces(response.data.innerfaces);
     this.setProtocols(response.data.protocols);
     this.setStates(response.data.states);
     this.setCheckins(response.data.checkins);
@@ -426,7 +426,7 @@ handleOnlineStatus() {
 
 ```javascript
 // 1. Создание данных навыка
-const newSkill = {
+const newInnerface = {
   name: "Новый навык. Описание навыка",
   icon: "🎯",
   hover: "Подсказка при наведении",
@@ -434,13 +434,13 @@ const newSkill = {
 };
 
 // 2. Добавление в систему
-const skillId = Storage.addSkill(newSkill);
+const innerfaceId = Storage.addInnerface(newInnerface);
 
 // 3. Автоматическая синхронизация (фоновая)
 // Storage автоматически вызовет syncWithBackend()
 
 // 4. Обновление UI
-UI.renderSkills();
+UI.renderInnerfaces();
 ```
 
 ### 📋 Выполнение протокола
@@ -454,7 +454,7 @@ const action = '+';
 Storage.addCheckin(protocolId, action);
 
 // 3. Мгновенное обновление интерфейса
-UI.updateSkillBars();
+UI.updateInnerfaceBars();
 UI.renderHistory();
 
 // 4. Фоновая синхронизация с облаком

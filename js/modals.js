@@ -1,14 +1,14 @@
 // ===== modals.js - Modal Functionality =====
 
 const Modals = {
-  currentSkillId: null,
+  currentInnerfaceId: null,
   currentProtocolId: null,
   currentStateId: null,
   selectedTargets: [null, null, null], // Array for 3 targets
 
   init() {
     console.log('🔧 Modals.init() called - initializing modal handlers');
-    this.setupAddSkillModal();
+    this.setupAddInnerfaceModal();
     this.setupAddProtocolModal();
     this.setupAddStateModal();
     this.setupQuickActionModal();
@@ -20,53 +20,53 @@ const Modals = {
     
     // 🐛 DEBUG: Check if delete buttons exist
     console.log('🐛 DELETE BUTTONS DEBUG:');
-    console.log('  - delete-skill-btn:', document.getElementById('delete-skill-btn'));
+    console.log('  - delete-innerface-btn:', document.getElementById('delete-innerface-btn'));
     console.log('  - delete-protocol-btn:', document.getElementById('delete-protocol-btn'));
     console.log('  - delete-state-btn:', document.getElementById('delete-state-btn'));
   },
 
-  setupAddSkillModal() {
-    console.log('🔧 Setting up add skill modal');
-    const addSkillBtn = document.getElementById('add-skill-btn');
-    const modal = document.getElementById('add-skill-modal');
+  setupAddInnerfaceModal() {
+    console.log('🔧 Setting up add innerface modal');
+    const addInnerfaceBtn = document.getElementById('add-innerface-btn');
+    const modal = document.getElementById('add-innerface-modal');
     const modalContent = modal.querySelector('.modal-content');
-    const form = document.getElementById('add-skill-form');
+    const form = document.getElementById('add-innerface-form');
     
-    console.log('🔧 Add skill elements:', { addSkillBtn, modal, form });
+    console.log('🔧 Add innerface elements:', { addInnerfaceBtn, modal, form });
     
-    if (!addSkillBtn || !modal || !form) {
-      console.error('❌ Missing elements for skill modal:', { addSkillBtn, modal, form });
+    if (!addInnerfaceBtn || !modal || !form) {
+      console.error('❌ Missing elements for innerface modal:', { addInnerfaceBtn, modal, form });
       return;
     }
     
     const closeModal = () => {
       modal.classList.remove('active');
       document.body.style.overflow = '';
-      this.currentSkillId = null;
+      this.currentInnerfaceId = null;
       form.reset();
       
       // Reset modal to "Add" mode
-      document.getElementById('skill-modal-title').textContent = 'Add New Skill';
-      document.getElementById('submit-skill-btn').textContent = 'Add Skill';
-      const deleteBtn = document.getElementById('delete-skill-btn');
+      document.getElementById('innerface-modal-title').textContent = 'Add New Innerface';
+      document.getElementById('submit-innerface-btn').textContent = 'Add Innerface';
+      const deleteBtn = document.getElementById('delete-innerface-btn');
       if (deleteBtn) {
         deleteBtn.style.display = 'none';
       }
     };
     
     // Open modal button
-    addSkillBtn.addEventListener('click', () => {
-      this.openSkillModal();
+    addInnerfaceBtn.addEventListener('click', () => {
+      this.openInnerfaceModal();
     });
     
     // Close modal when clicking the X
-    const closeBtn = document.getElementById('close-skill-modal');
+    const closeBtn = document.getElementById('close-innerface-modal');
     if (closeBtn) {
       closeBtn.addEventListener('click', closeModal);
     }
     
     // Cancel button
-    const cancelBtn = document.getElementById('cancel-skill-btn');
+    const cancelBtn = document.getElementById('cancel-innerface-btn');
     if (cancelBtn) {
       cancelBtn.addEventListener('click', closeModal);
     }
@@ -89,40 +89,40 @@ const Modals = {
       e.preventDefault();
       
       const formData = new FormData(form);
-      const skillData = {
-        name: formData.get('skill-name'),
-        description: formData.get('skill-description'),
-        icon: formData.get('skill-emoji'),
-        hover: formData.get('skill-hover'),
-        initialScore: parseFloat(formData.get('skill-initial-score'))
+      const innerfaceData = {
+        name: formData.get('innerface-name'),
+        description: formData.get('innerface-description'),
+        icon: formData.get('innerface-emoji'),
+        hover: formData.get('innerface-hover'),
+        initialScore: parseFloat(formData.get('innerface-initial-score'))
       };
       
       // 🐛 DEBUG: Detailed logging for production debugging
-      console.log('🐛 SKILL FORM SUBMISSION DEBUG:');
+      console.log('🐛 INNERFACE FORM SUBMISSION DEBUG:');
       console.log('📋 Raw form data:', {
-        'skill-name': formData.get('skill-name'),
-        'skill-description': formData.get('skill-description'), 
-        'skill-emoji': formData.get('skill-emoji'),
-        'skill-hover': formData.get('skill-hover'),
-        'skill-initial-score': formData.get('skill-initial-score')
+        'innerface-name': formData.get('innerface-name'),
+        'innerface-description': formData.get('innerface-description'), 
+        'innerface-emoji': formData.get('innerface-emoji'),
+        'innerface-hover': formData.get('innerface-hover'),
+        'innerface-initial-score': formData.get('innerface-initial-score')
       });
-      console.log('📊 Processed skill data:', skillData);
+      console.log('📊 Processed innerface data:', innerfaceData);
       console.log('🔍 Validation checks:');
-      console.log('  - name:', skillData.name, '(truthy:', !!skillData.name, ')');
-      console.log('  - icon:', skillData.icon, '(truthy:', !!skillData.icon, ')');
-      console.log('  - initialScore:', skillData.initialScore, '(type:', typeof skillData.initialScore, ')');
-      console.log('  - initialScore >= 0:', skillData.initialScore >= 0);
-      console.log('  - initialScore <= 10:', skillData.initialScore <= 10);
-      console.log('  - isNaN(initialScore):', isNaN(skillData.initialScore));
+      console.log('  - name:', innerfaceData.name, '(truthy:', !!innerfaceData.name, ')');
+      console.log('  - icon:', innerfaceData.icon, '(truthy:', !!innerfaceData.icon, ')');
+      console.log('  - initialScore:', innerfaceData.initialScore, '(type:', typeof innerfaceData.initialScore, ')');
+      console.log('  - initialScore >= 0:', innerfaceData.initialScore >= 0);
+      console.log('  - initialScore <= 10:', innerfaceData.initialScore <= 10);
+      console.log('  - isNaN(initialScore):', isNaN(innerfaceData.initialScore));
       
       // Validate data
-      if (!skillData.name || !skillData.icon || skillData.initialScore < 0 || skillData.initialScore > 10) {
+      if (!innerfaceData.name || !innerfaceData.icon || innerfaceData.initialScore < 0 || innerfaceData.initialScore > 10) {
         console.log('❌ VALIDATION FAILED - reasons:');
-        if (!skillData.name) console.log('  - Missing name');
-        if (!skillData.icon) console.log('  - Missing icon');
-        if (skillData.initialScore < 0) console.log('  - Score too low:', skillData.initialScore);
-        if (skillData.initialScore > 10) console.log('  - Score too high:', skillData.initialScore);
-        if (isNaN(skillData.initialScore)) console.log('  - Score is NaN');
+        if (!innerfaceData.name) console.log('  - Missing name');
+        if (!innerfaceData.icon) console.log('  - Missing icon');
+        if (innerfaceData.initialScore < 0) console.log('  - Score too low:', innerfaceData.initialScore);
+        if (innerfaceData.initialScore > 10) console.log('  - Score too high:', innerfaceData.initialScore);
+        if (isNaN(innerfaceData.initialScore)) console.log('  - Score is NaN');
         
         App.showToast('Please fill all required fields and ensure score is between 0-10', 'error');
         return;
@@ -130,55 +130,55 @@ const Modals = {
       
       console.log('✅ VALIDATION PASSED - proceeding with submission');
       
-      if (this.currentSkillId) {
+      if (this.currentInnerfaceId) {
         // Edit mode
-        const updatedSkill = window.Storage.updateSkillFull(this.currentSkillId, skillData);
-        if (updatedSkill) {
-          App.showToast('Skill updated successfully!', 'success');
+        const updatedInnerface = window.Storage.updateInnerfaceFull(this.currentInnerfaceId, innerfaceData);
+        if (updatedInnerface) {
+          App.showToast('Innerface updated successfully!', 'success');
           
-          // Update filtered skills
-          App.filteredSkills = window.Storage.getSkillsInOrder();
-          if (App.currentPage === 'skills') {
-            UI.renderSkills();
-            DragDrop.setupSkills();
+          // Update filtered innerfaces
+          App.filteredInnerfaces = window.Storage.getInnerfacesInOrder();
+          if (App.currentPage === 'innerfaces') {
+            UI.renderInnerfaces();
+            DragDrop.setupInnerfaces();
             App.setupTooltips();
           }
           
           // 🔄 Sync with backend after successful update
-          console.log('🔄 Triggering sync after skill update...');
+          console.log('🔄 Triggering sync after innerface update...');
           window.Storage.syncWithBackend().catch(error => {
-            console.error('❌ Sync failed after skill update:', error);
-            App.showToast('⚠️ Skill saved locally but sync failed', 'warning');
+            console.error('❌ Sync failed after innerface update:', error);
+            App.showToast('⚠️ Innerface saved locally but sync failed', 'warning');
           });
           
           closeModal();
         } else {
-          App.showToast('Failed to update skill', 'error');
+          App.showToast('Failed to update innerface', 'error');
         }
       } else {
         // Add mode
-        const newSkill = window.Storage.addSkill(skillData);
-        if (newSkill) {
-          App.showToast('Skill added successfully!', 'success');
+        const newInnerface = window.Storage.addInnerface(innerfaceData);
+        if (newInnerface) {
+          App.showToast('Innerface added successfully!', 'success');
           
-          // Update filtered skills
-          App.filteredSkills = window.Storage.getSkillsInOrder();
-          if (App.currentPage === 'skills') {
-            UI.renderSkills();
-            DragDrop.setupSkills();
+          // Update filtered innerfaces
+          App.filteredInnerfaces = window.Storage.getInnerfacesInOrder();
+          if (App.currentPage === 'innerfaces') {
+            UI.renderInnerfaces();
+            DragDrop.setupInnerfaces();
             App.setupTooltips();
           }
           
           // 🔄 Sync with backend after successful add
-          console.log('🔄 Triggering sync after skill add...');
+          console.log('🔄 Triggering sync after innerface add...');
           window.Storage.syncWithBackend().catch(error => {
-            console.error('❌ Sync failed after skill add:', error);
-            App.showToast('⚠️ Skill saved locally but sync failed', 'warning');
+            console.error('❌ Sync failed after innerface add:', error);
+            App.showToast('⚠️ Innerface saved locally but sync failed', 'warning');
           });
           
           closeModal();
         } else {
-          App.showToast('Failed to add skill', 'error');
+          App.showToast('Failed to add innerface', 'error');
         }
       }
     });
@@ -186,9 +186,9 @@ const Modals = {
     // 🔧 Delete button event listener is now handled by setupDeleteButtonListeners()
   },
 
-  openSkillModal() {
-    console.log('🔧 openSkillModal() called');
-    const modal = document.getElementById('add-skill-modal');
+  openInnerfaceModal() {
+    console.log('🔧 openInnerfaceModal() called');
+    const modal = document.getElementById('add-innerface-modal');
     console.log('🔧 Modal element:', modal);
     if (modal) {
       console.log('🔧 Adding active class to modal');
@@ -196,7 +196,7 @@ const Modals = {
       document.body.style.overflow = 'hidden';
       
       // Focus on first input
-      const firstInput = document.getElementById('skill-name');
+      const firstInput = document.getElementById('innerface-name');
       if (firstInput) {
         setTimeout(() => firstInput.focus(), 100);
       }
@@ -205,90 +205,90 @@ const Modals = {
     }
   },
 
-  editSkill(skillId) {
+  editInnerface(innerfaceId) {
     // Convert string ID to number if needed for comparison
-    const searchId = typeof skillId === 'string' ? parseInt(skillId) || skillId : skillId;
+    const searchId = typeof innerfaceId === 'string' ? parseInt(innerfaceId) || innerfaceId : innerfaceId;
     
-    const skill = window.Storage.getSkillById(searchId);
-    if (!skill) {
-      App.showToast('Skill not found', 'error');
+    const innerface = window.Storage.getInnerfaceById(searchId);
+    if (!innerface) {
+      App.showToast('Innerface not found', 'error');
       return;
     }
     
-    this.currentSkillId = searchId;
+    this.currentInnerfaceId = searchId;
     
     // Parse name and description
-    const nameParts = skill.name.split('. ');
+    const nameParts = innerface.name.split('. ');
     const name = nameParts[0];
     const description = nameParts.slice(1).join('. ');
     
     // Populate form
-    document.getElementById('skill-name').value = name;
-    document.getElementById('skill-description').value = description;
-    document.getElementById('skill-emoji').value = skill.icon;
-    document.getElementById('skill-hover').value = skill.hover || '';
-    document.getElementById('skill-initial-score').value = skill.initialScore;
+    document.getElementById('innerface-name').value = name;
+    document.getElementById('innerface-description').value = description;
+    document.getElementById('innerface-emoji').value = innerface.icon;
+    document.getElementById('innerface-hover').value = innerface.hover || '';
+    document.getElementById('innerface-initial-score').value = innerface.initialScore;
     
     // Update modal for edit mode
-    document.getElementById('skill-modal-title').textContent = 'Edit Skill';
-    document.getElementById('submit-skill-btn').textContent = 'Update Skill';
-    const deleteBtn = document.getElementById('delete-skill-btn');
+    document.getElementById('innerface-modal-title').textContent = 'Edit Innerface';
+    document.getElementById('submit-innerface-btn').textContent = 'Update Innerface';
+    const deleteBtn = document.getElementById('delete-innerface-btn');
     if (deleteBtn) {
       deleteBtn.style.display = 'flex';
     }
     
-    this.openSkillModal();
+    this.openInnerfaceModal();
   },
 
-  deleteCurrentSkill(skillId) {
-    console.log('🗑️ deleteCurrentSkill called with ID:', skillId);
+  deleteCurrentInnerface(innerfaceId) {
+    console.log('🗑️ deleteCurrentInnerface called with ID:', innerfaceId);
     
-    // Get skill info for logging
-    const skill = window.Storage.getSkillById(skillId);
-    if (skill) {
-      console.log('🗑️ Skill found:', skill.name);
+    // Get innerface info for logging
+    const innerface = window.Storage.getInnerfaceById(innerfaceId);
+    if (innerface) {
+      console.log('🗑️ Innerface found:', innerface.name);
     } else {
-      console.error('❌ Skill not found with ID:', skillId);
-      App.showToast('Skill not found', 'error');
+      console.error('❌ Innerface not found with ID:', innerfaceId);
+      App.showToast('Innerface not found', 'error');
       return;
     }
     
-    console.log('🗑️ Deleting skill directly without confirmation...');
+    console.log('🗑️ Deleting innerface directly without confirmation...');
     
-    const success = window.Storage.deleteSkill(skillId);
-    console.log('🗑️ Storage.deleteSkill result:', success);
+    const success = window.Storage.deleteInnerface(innerfaceId);
+    console.log('🗑️ Storage.deleteInnerface result:', success);
     
     if (success) {
-      App.showToast('Skill deleted successfully', 'success');
+      App.showToast('Innerface deleted successfully', 'success');
       
       // Close modal
-      const modal = document.getElementById('add-skill-modal');
+      const modal = document.getElementById('add-innerface-modal');
       if (modal) {
         modal.classList.remove('active');
         document.body.style.overflow = '';
         console.log('🗑️ Modal closed');
       }
       
-      // Reset current skill ID
-      this.currentSkillId = null;
+      // Reset current innerface ID
+      this.currentInnerfaceId = null;
       
-      // Update filtered skills
-      App.filteredSkills = window.Storage.getSkillsInOrder();
-      if (App.currentPage === 'skills') {
-        UI.renderSkills();
-        DragDrop.setupSkills();
+      // Update filtered innerfaces
+      App.filteredInnerfaces = window.Storage.getInnerfacesInOrder();
+      if (App.currentPage === 'innerfaces') {
+        UI.renderInnerfaces();
+        DragDrop.setupInnerfaces();
         App.setupTooltips();
-        console.log('🗑️ Skills page refreshed');
+        console.log('🗑️ Innerfaces page refreshed');
       }
       
       // 🔄 Sync with backend after successful deletion
-      console.log('🔄 Triggering sync after skill deletion...');
+      console.log('🔄 Triggering sync after innerface deletion...');
       window.Storage.syncWithBackend().catch(error => {
-        console.error('❌ Sync failed after skill deletion:', error);
-        App.showToast('⚠️ Skill deleted locally but sync failed', 'warning');
+        console.error('❌ Sync failed after innerface deletion:', error);
+        App.showToast('⚠️ Innerface deleted locally but sync failed', 'warning');
       });
     } else {
-      App.showToast('Failed to delete skill', 'error');
+      App.showToast('Failed to delete innerface', 'error');
     }
   },
 
@@ -346,9 +346,9 @@ const Modals = {
       }
     });
     
-    // Setup skill search for all 3 slots
+    // Setup innerface search for all 3 slots
     for (let i = 1; i <= 3; i++) {
-      this.setupSkillSearch(i);
+      this.setupInnerfaceSearch(i);
     }
     
     // Form submission
@@ -473,9 +473,9 @@ const Modals = {
     });
   },
 
-  setupSkillSearch(slotNumber) {
-    const inputId = slotNumber === 1 ? 'skill-search-input' : `skill-search-input-${slotNumber}`;
-    const suggestionsId = slotNumber === 1 ? 'skill-suggestions' : `skill-suggestions-${slotNumber}`;
+  setupInnerfaceSearch(slotNumber) {
+    const inputId = slotNumber === 1 ? 'innerface-search-input' : `innerface-search-input-${slotNumber}`;
+    const suggestionsId = slotNumber === 1 ? 'innerface-suggestions' : `innerface-suggestions-${slotNumber}`;
     
     const input = document.getElementById(inputId);
     const suggestions = document.getElementById(suggestionsId);
@@ -483,12 +483,12 @@ const Modals = {
     if (!input || !suggestions) return;
     
     input.addEventListener('input', (e) => {
-      this.handleSkillSearch(e.target.value, slotNumber);
+      this.handleInnerfaceSearch(e.target.value, slotNumber);
     });
     
     input.addEventListener('focus', () => {
-      // Show all available skills when focusing, or search results if there's input
-      this.handleSkillSearch(input.value, slotNumber);
+      // Show all available innerfaces when focusing, or search results if there's input
+      this.handleInnerfaceSearch(input.value, slotNumber);
     });
     
     input.addEventListener('blur', () => {
@@ -508,8 +508,8 @@ const Modals = {
     // Clear all inputs and show slot 1
     for (let i = 1; i <= 3; i++) {
       const slotId = `target-slot-${i}`;
-      const inputId = i === 1 ? 'skill-search-input' : `skill-search-input-${i}`;
-      const suggestionsId = i === 1 ? 'skill-suggestions' : `skill-suggestions-${i}`;
+      const inputId = i === 1 ? 'innerface-search-input' : `innerface-search-input-${i}`;
+      const suggestionsId = i === 1 ? 'innerface-suggestions' : `innerface-suggestions-${i}`;
       
       const slot = document.getElementById(slotId);
       const input = document.getElementById(inputId);
@@ -531,15 +531,15 @@ const Modals = {
     const targetContent = slot.querySelector('.target-content');
     
     if (this.selectedTargets[slotIndex]) {
-      // Show selected skill badge
-      const skill = this.selectedTargets[slotIndex];
-      const nameParts = skill.name.split('. ');
+      // Show selected innerface badge
+      const innerface = this.selectedTargets[slotIndex];
+      const nameParts = innerface.name.split('. ');
       const mainName = nameParts[0];
       
       targetContent.innerHTML = `
-        <div class="selected-skill-badge">
-          <span class="skill-icon">${skill.icon}</span>
-          <span class="skill-name">${mainName}</span>
+        <div class="selected-innerface-badge">
+          <span class="innerface-icon">${innerface.icon}</span>
+          <span class="innerface-name">${mainName}</span>
           <button type="button" class="remove-btn" onclick="Modals.removeTarget(${slotIndex})">
             <i class="fas fa-times"></i>
           </button>
@@ -547,18 +547,18 @@ const Modals = {
       `;
     } else {
       // Show search input
-      const inputId = slotNumber === 1 ? 'skill-search-input' : `skill-search-input-${slotNumber}`;
-      const suggestionsId = slotNumber === 1 ? 'skill-suggestions' : `skill-suggestions-${slotNumber}`;
+      const inputId = slotNumber === 1 ? 'innerface-search-input' : `innerface-search-input-${slotNumber}`;
+      const suggestionsId = slotNumber === 1 ? 'innerface-suggestions' : `innerface-suggestions-${slotNumber}`;
       
       targetContent.innerHTML = `
-        <div class="skill-search-wrapper">
-          <input type="text" id="${inputId}" placeholder="Search and select a skill..." class="form-input" autocomplete="off">
-          <div class="skill-suggestions" id="${suggestionsId}"></div>
+        <div class="innerface-search-wrapper">
+          <input type="text" id="${inputId}" placeholder="Search and select a innerface..." class="form-input" autocomplete="off">
+          <div class="innerface-suggestions" id="${suggestionsId}"></div>
         </div>
       `;
       
       // Re-setup event listeners for this slot
-      this.setupSkillSearch(slotNumber);
+      this.setupInnerfaceSearch(slotNumber);
     }
   },
 
@@ -581,45 +581,45 @@ const Modals = {
     }
   },
 
-  handleSkillSearch(query, slotNumber) {
-    const suggestionsId = slotNumber === 1 ? 'skill-suggestions' : `skill-suggestions-${slotNumber}`;
+  handleInnerfaceSearch(query, slotNumber) {
+    const suggestionsId = slotNumber === 1 ? 'innerface-suggestions' : `innerface-suggestions-${slotNumber}`;
     const suggestions = document.getElementById(suggestionsId);
     
-    const allSkills = window.Storage.getSkills();
-    let filteredSkills;
+    const allInnerfaces = window.Storage.getInnerfaces();
+    let filteredInnerfaces;
     
-    // Filter out already selected skills first
-    const availableSkills = allSkills.filter(skill => {
-      return !this.selectedTargets.some(target => target && target.id === skill.id);
+    // Filter out already selected innerfaces first
+    const availableInnerfaces = allInnerfaces.filter(innerface => {
+      return !this.selectedTargets.some(target => target && target.id === innerface.id);
     });
     
     if (!query.trim()) {
-      // Show all available skills when no search query
-      filteredSkills = availableSkills.slice(0, 8); // Show more skills when no filter
+      // Show all available innerfaces when no search query
+      filteredInnerfaces = availableInnerfaces.slice(0, 8); // Show more innerfaces when no filter
     } else {
       // Filter by search term
       const searchTerm = query.toLowerCase();
-      filteredSkills = availableSkills.filter(skill => {
-        // Search in skill name and hover text
-        const name = skill.name.toLowerCase();
-        const hover = skill.hover ? skill.hover.toLowerCase() : '';
+      filteredInnerfaces = availableInnerfaces.filter(innerface => {
+        // Search in innerface name and hover text
+        const name = innerface.name.toLowerCase();
+        const hover = innerface.hover ? innerface.hover.toLowerCase() : '';
         
         return name.includes(searchTerm) || hover.includes(searchTerm);
       }).slice(0, 5); // Show fewer when filtering
     }
     
-    if (filteredSkills.length > 0) {
+    if (filteredInnerfaces.length > 0) {
       suggestions.style.display = 'block';
-      suggestions.innerHTML = filteredSkills.map(skill => {
-        const nameParts = skill.name.split('. ');
+      suggestions.innerHTML = filteredInnerfaces.map(innerface => {
+        const nameParts = innerface.name.split('. ');
         const mainName = nameParts[0];
         const shortDesc = nameParts.slice(1).join('. ');
         
         return `
-          <div class="skill-suggestion" data-skill-id="${skill.id}" data-slot-number="${slotNumber}">
-            <span class="skill-suggestion-icon">${skill.icon}</span>
+          <div class="innerface-suggestion" data-innerface-id="${innerface.id}" data-slot-number="${slotNumber}">
+            <span class="innerface-suggestion-icon">${innerface.icon}</span>
             <div>
-              <div class="skill-suggestion-name">${mainName}</div>
+              <div class="innerface-suggestion-name">${mainName}</div>
               ${shortDesc ? `<div style="font-size: 0.75rem; color: var(--sub-color);">${shortDesc}</div>` : ''}
             </div>
           </div>
@@ -627,16 +627,16 @@ const Modals = {
       }).join('');
       
       // Add event listeners to all suggestions
-      const suggestionElements = suggestions.querySelectorAll('.skill-suggestion');
+      const suggestionElements = suggestions.querySelectorAll('.innerface-suggestion');
       suggestionElements.forEach(suggestion => {
         // Use mousedown instead of click to prevent blur from interfering
         suggestion.addEventListener('mousedown', (e) => {
           e.preventDefault(); // Prevent blur event
-          const skillId = suggestion.getAttribute('data-skill-id');
+          const innerfaceId = suggestion.getAttribute('data-innerface-id');
           const slotNum = parseInt(suggestion.getAttribute('data-slot-number'));
-          // Convert skillId to number if it's a valid number, otherwise keep as is
-          const finalSkillId = isNaN(skillId) ? skillId : parseInt(skillId);
-          this.selectTarget(finalSkillId, slotNum);
+          // Convert innerfaceId to number if it's a valid number, otherwise keep as is
+          const finalInnerfaceId = isNaN(innerfaceId) ? innerfaceId : parseInt(innerfaceId);
+          this.selectTarget(finalInnerfaceId, slotNum);
         });
       });
     } else {
@@ -644,27 +644,27 @@ const Modals = {
     }
   },
 
-  selectTarget(skillId, slotNumber) {
-    // Ensure skillId is the right type for comparison
-    const skill = window.Storage.getSkillById(skillId);
-    if (!skill) {
-      console.error('Skill not found:', skillId);
+  selectTarget(innerfaceId, slotNumber) {
+    // Ensure innerfaceId is the right type for comparison
+    const innerface = window.Storage.getInnerfaceById(innerfaceId);
+    if (!innerface) {
+      console.error('Innerface not found:', innerfaceId);
       return;
     }
     
     const slotIndex = slotNumber - 1;
     
-    // Check if skill is already selected
-    if (this.selectedTargets.some(target => target && target.id == skill.id)) {
-      App.showToast('This skill is already selected', 'error');
+    // Check if innerface is already selected
+    if (this.selectedTargets.some(target => target && target.id == innerface.id)) {
+      App.showToast('This innerface is already selected', 'error');
       return;
     }
     
     // Set the target for this slot
-    this.selectedTargets[slotIndex] = skill;
+    this.selectedTargets[slotIndex] = innerface;
     
     // Hide suggestions for this slot
-    const suggestionsId = slotNumber === 1 ? 'skill-suggestions' : `skill-suggestions-${slotNumber}`;
+    const suggestionsId = slotNumber === 1 ? 'innerface-suggestions' : `innerface-suggestions-${slotNumber}`;
     const suggestions = document.getElementById(suggestionsId);
     if (suggestions) {
       suggestions.style.display = 'none';
@@ -673,7 +673,7 @@ const Modals = {
     // Update all slots
     this.updateTargetSlots();
     
-    App.showToast(`Target ${slotNumber} selected: ${skill.name.split('.')[0]}`, 'success');
+    App.showToast(`Target ${slotNumber} selected: ${innerface.name.split('.')[0]}`, 'success');
   },
 
   removeTarget(slotIndex) {
@@ -740,14 +740,14 @@ const Modals = {
     // Open modal first
     this.openProtocolModal();
     
-    // THEN load selected skills into targets (after the modal is open and resetTargets() is called)
+    // THEN load selected innerfaces into targets (after the modal is open and resetTargets() is called)
     this.selectedTargets = [null, null, null];
-    const allSkills = window.Storage.getSkills();
+    const allInnerfaces = window.Storage.getInnerfaces();
     protocol.targets.forEach((targetId, index) => {
       if (index < 3) {
-        const skill = allSkills.find(s => s.id === targetId);
-        if (skill) {
-          this.selectedTargets[index] = skill;
+        const innerface = allInnerfaces.find(s => s.id === targetId);
+        if (innerface) {
+          this.selectedTargets[index] = innerface;
         }
       }
     });
@@ -834,24 +834,24 @@ const Modals = {
     });
     
     // Tab switching
-    const skillsTab = document.getElementById('skills-tab');
+    const innerfacesTab = document.getElementById('innerfaces-tab');
     const statesTab = document.getElementById('states-tab');
-    const skillsPanel = document.getElementById('skills-panel');
+    const innerfacesPanel = document.getElementById('innerfaces-panel');
     const statesPanel = document.getElementById('states-panel');
     
-    if (skillsTab && statesTab && skillsPanel && statesPanel) {
-      skillsTab.addEventListener('click', () => {
-        skillsTab.classList.add('active');
+    if (innerfacesTab && statesTab && innerfacesPanel && statesPanel) {
+      innerfacesTab.addEventListener('click', () => {
+        innerfacesTab.classList.add('active');
         statesTab.classList.remove('active');
-        skillsPanel.classList.add('active');
+        innerfacesPanel.classList.add('active');
         statesPanel.classList.remove('active');
       });
       
       statesTab.addEventListener('click', () => {
         statesTab.classList.add('active');
-        skillsTab.classList.remove('active');
+        innerfacesTab.classList.remove('active');
         statesPanel.classList.add('active');
-        skillsPanel.classList.remove('active');
+        innerfacesPanel.classList.remove('active');
       });
     }
     
@@ -860,7 +860,7 @@ const Modals = {
       e.preventDefault();
       
       const formData = new FormData(form);
-      const selectedSkills = this.getSelectedDependencies('skills');
+      const selectedInnerfaces = this.getSelectedDependencies('innerfaces');
       const selectedStates = this.getSelectedDependencies('states');
       
       const stateData = {
@@ -868,7 +868,7 @@ const Modals = {
         subtext: formData.get('state-subtext') || '',
         icon: formData.get('state-emoji'),
         hover: formData.get('state-hover'),
-        skillIds: selectedSkills,
+        innerfaceIds: selectedInnerfaces,
         stateIds: selectedStates
       };
       
@@ -878,8 +878,8 @@ const Modals = {
         return;
       }
       
-      if (selectedSkills.length === 0 && selectedStates.length === 0) {
-        App.showToast('Please select at least one skill or state dependency', 'error');
+      if (selectedInnerfaces.length === 0 && selectedStates.length === 0) {
+        App.showToast('Please select at least one innerface or state dependency', 'error');
         return;
       }
       
@@ -965,7 +965,7 @@ const Modals = {
     
     // Set selected dependencies after modal opens
     setTimeout(() => {
-      this.setSelectedDependencies(state.skillIds, state.stateIds);
+      this.setSelectedDependencies(state.innerfaceIds, state.stateIds);
     }, 100);
   },
 
@@ -994,26 +994,26 @@ const Modals = {
 
   populateStateDependencies() {
     // Check if Storage is available and methods exist
-    if (!window.Storage || typeof window.Storage.getSkills !== 'function') {
+    if (!window.Storage || typeof window.Storage.getInnerfaces !== 'function') {
       console.warn('Storage not available yet, retrying...');
       setTimeout(() => this.populateStateDependencies(), 100);
       return;
     }
 
-    // Populate skills grid
-    const skillsGrid = document.getElementById('skills-dependency-grid');
-    const skills = window.Storage.getSkills();
+    // Populate innerfaces grid
+    const innerfacesGrid = document.getElementById('innerfaces-dependency-grid');
+    const innerfaces = window.Storage.getInnerfaces();
     
-    if (skillsGrid) {
-      skillsGrid.innerHTML = skills.map(skill => {
-        const nameParts = skill.name.split('. ');
+    if (innerfacesGrid) {
+      innerfacesGrid.innerHTML = innerfaces.map(innerface => {
+        const nameParts = innerface.name.split('. ');
         const mainName = nameParts[0];
         
         return `
-          <div class="dependency-item" data-type="skill" data-id="${skill.id}">
-            <input type="checkbox" value="${skill.id}" data-type="skill" style="display: none;">
+          <div class="dependency-item" data-type="innerface" data-id="${innerface.id}">
+            <input type="checkbox" value="${innerface.id}" data-type="innerface" style="display: none;">
             <div class="dependency-item-info">
-              <span class="dependency-item-icon">${skill.icon}</span>
+              <span class="dependency-item-icon">${innerface.icon}</span>
               <div class="dependency-item-name">${mainName}</div>
             </div>
           </div>
@@ -1021,7 +1021,7 @@ const Modals = {
       }).join('');
       
       // Add click handlers
-      skillsGrid.querySelectorAll('.dependency-item').forEach(item => {
+      innerfacesGrid.querySelectorAll('.dependency-item').forEach(item => {
         item.addEventListener('click', (e) => {
           this.toggleDependencyItem(item);
         });
@@ -1068,18 +1068,18 @@ const Modals = {
 
   getSelectedDependencies(type) {
     // Map plural form to singular for data attributes
-    const dataType = type === 'skills' ? 'skill' : type === 'states' ? 'state' : type;
+    const dataType = type === 'innerfaces' ? 'innerface' : type === 'states' ? 'state' : type;
     
     const checkboxes = document.querySelectorAll(`input[type="checkbox"][data-type="${dataType}"]:checked`);
     const result = Array.from(checkboxes).map(cb => cb.value);
     return result;
   },
 
-  setSelectedDependencies(skillIds, stateIds) {
-    // Set skills
-    if (skillIds) {
-      skillIds.forEach(skillId => {
-        const item = document.querySelector(`.dependency-item[data-type="skill"][data-id="${skillId}"]`);
+  setSelectedDependencies(innerfaceIds, stateIds) {
+    // Set innerfaces
+    if (innerfaceIds) {
+      innerfaceIds.forEach(innerfaceId => {
+        const item = document.querySelector(`.dependency-item[data-type="innerface"][data-id="${innerfaceId}"]`);
         const checkbox = item?.querySelector('input[type="checkbox"]');
         if (checkbox && item) {
           checkbox.checked = true;
@@ -1102,15 +1102,15 @@ const Modals = {
   },
 
   resetStateTabs() {
-    const skillsTab = document.getElementById('skills-tab');
+    const innerfacesTab = document.getElementById('innerfaces-tab');
     const statesTab = document.getElementById('states-tab');
-    const skillsPanel = document.getElementById('skills-panel');
+    const innerfacesPanel = document.getElementById('innerfaces-panel');
     const statesPanel = document.getElementById('states-panel');
     
-    if (skillsTab && statesTab && skillsPanel && statesPanel) {
-      skillsTab.classList.add('active');
+    if (innerfacesTab && statesTab && innerfacesPanel && statesPanel) {
+      innerfacesTab.classList.add('active');
       statesTab.classList.remove('active');
-      skillsPanel.classList.add('active');
+      innerfacesPanel.classList.add('active');
       statesPanel.classList.remove('active');
     }
   },
@@ -1202,7 +1202,7 @@ const Modals = {
     // 🔧 ИСПРАВЛЕНИЕ: Используем тот же порядок, что и на странице протоколов
     const protocols = window.Storage.getProtocolsInOrder();
     const currentQuickActions = window.Storage.getQuickActions();
-    const skills = window.Storage.getSkills();
+    const innerfaces = window.Storage.getInnerfaces();
     
     // 🔧 ИСПРАВЛЕНИЕ: Правильная фильтрация - currentQuickActions содержит ID, а не объекты
     let availableProtocols = protocols.filter(protocol => 
@@ -1264,10 +1264,10 @@ const Modals = {
     emptyState.style.display = 'none';
     
     container.innerHTML = availableProtocols.map((protocol, index) => {
-      // Get target skill names
+      // Get target innerface names
       const targetNames = protocol.targets.map(targetId => {
-        const skill = skills.find(s => s.id === targetId);
-        return skill ? skill.name.split('. ')[0] : `Unknown (${targetId})`;
+        const innerface = innerfaces.find(s => s.id === targetId);
+        return innerface ? innerface.name.split('. ')[0] : `Unknown (${targetId})`;
       });
       
       // Format protocol name with main and description parts
@@ -1332,27 +1332,27 @@ const Modals = {
   setupDeleteButtonListeners() {
     console.log('🔧 Setting up delete button event listeners...');
     
-    // Setup skill delete button
-    const skillBtn = document.getElementById('delete-skill-btn');
-    if (skillBtn) {
+    // Setup innerface delete button
+    const innerfaceBtn = document.getElementById('delete-innerface-btn');
+    if (innerfaceBtn) {
       // Remove existing listeners
-      skillBtn.replaceWith(skillBtn.cloneNode(true));
-      const newSkillBtn = document.getElementById('delete-skill-btn');
+      innerfaceBtn.replaceWith(innerfaceBtn.cloneNode(true));
+      const newInnerfaceBtn = document.getElementById('delete-innerface-btn');
       
-      newSkillBtn.addEventListener('click', (e) => {
+      newInnerfaceBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log('🗑️ Skill delete clicked, currentSkillId:', this.currentSkillId);
-        if (this.currentSkillId) {
-          this.deleteCurrentSkill(this.currentSkillId);
+        console.log('🗑️ Innerface delete clicked, currentInnerfaceId:', this.currentInnerfaceId);
+        if (this.currentInnerfaceId) {
+          this.deleteCurrentInnerface(this.currentInnerfaceId);
         } else {
-          console.warn('⚠️ No skill ID set for deletion');
+          console.warn('⚠️ No innerface ID set for deletion');
         }
       });
       
-      console.log('✅ Skill delete button listener attached');
+      console.log('✅ Innerface delete button listener attached');
     } else {
-      console.warn('⚠️ Skill delete button not found');
+      console.warn('⚠️ Innerface delete button not found');
     }
     
     // Setup protocol delete button
@@ -1498,13 +1498,13 @@ const Modals = {
                 UI.renderProtocols();
               }
               App.showToast('Protocol order reverted', 'success');
-            } else if (checkin.subType === 'skill') {
-              App.filteredSkills = window.Storage.getSkillsInOrder();
-              if (App.currentPage === 'skills') {
-                UI.renderSkills();
-                DragDrop.setupSkills();
+            } else if (checkin.subType === 'innerface') {
+              App.filteredInnerfaces = window.Storage.getInnerfacesInOrder();
+              if (App.currentPage === 'innerfaces') {
+                UI.renderInnerfaces();
+                DragDrop.setupInnerfaces();
               }
-              App.showToast('Skill order reverted', 'success');
+              App.showToast('Innerface order reverted', 'success');
             }
           } else {
             App.showToast('Check-in deleted', 'success');
@@ -1538,22 +1538,22 @@ const Modals = {
   // 🐛 DEBUG FUNCTIONS FOR TROUBLESHOOTING
   debugDeleteButtons() {
     console.log('🐛 DELETE BUTTONS DEBUG:');
-    console.log('  - delete-skill-btn:', document.getElementById('delete-skill-btn'));
+    console.log('  - delete-innerface-btn:', document.getElementById('delete-innerface-btn'));
     console.log('  - delete-protocol-btn:', document.getElementById('delete-protocol-btn'));
     console.log('  - delete-state-btn:', document.getElementById('delete-state-btn'));
     
     console.log('🐛 CURRENT IDS:');
-    console.log('  - currentSkillId:', this.currentSkillId);
+    console.log('  - currentInnerfaceId:', this.currentInnerfaceId);
     console.log('  - currentProtocolId:', this.currentProtocolId);
     console.log('  - currentStateId:', this.currentStateId);
     
     // Check for event listeners
-    const skillBtn = document.getElementById('delete-skill-btn');
+    const innerfaceBtn = document.getElementById('delete-innerface-btn');
     const protocolBtn = document.getElementById('delete-protocol-btn');
     const stateBtn = document.getElementById('delete-state-btn');
     
     console.log('🐛 BUTTON EVENT LISTENERS:');
-    console.log('  - skill button click listeners:', skillBtn ? skillBtn.onclick : 'null');
+    console.log('  - innerface button click listeners:', innerfaceBtn ? innerfaceBtn.onclick : 'null');
     console.log('  - protocol button click listeners:', protocolBtn ? protocolBtn.onclick : 'null');
     console.log('  - state button click listeners:', stateBtn ? stateBtn.onclick : 'null');
   },
@@ -1562,45 +1562,45 @@ const Modals = {
     console.log('🐛 DATA INTEGRITY DEBUG:');
     
     const protocols = window.Storage.getProtocols();
-    const skills = window.Storage.getSkills();
+    const innerfaces = window.Storage.getInnerfaces();
     const states = window.Storage.getStates();
     
     console.log('📊 Data counts:', {
       protocols: protocols.length,
-      skills: skills.length,
+      innerfaces: innerfaces.length,
       states: states.length
     });
     
     // Check for duplicate IDs
     const protocolIds = protocols.map(p => p.id);
-    const skillIds = skills.map(s => s.id);
+    const innerfaceIds = innerfaces.map(s => s.id);
     const stateIds = states.map(s => s.id);
     
     const duplicateProtocols = protocolIds.filter((id, index) => protocolIds.indexOf(id) !== index);
-    const duplicateSkills = skillIds.filter((id, index) => skillIds.indexOf(id) !== index);
+    const duplicateInnerfaces = innerfaceIds.filter((id, index) => innerfaceIds.indexOf(id) !== index);
     const duplicateStates = stateIds.filter((id, index) => stateIds.indexOf(id) !== index);
     
     console.log('🔍 DUPLICATE IDS FOUND:');
     console.log('  - duplicate protocol IDs:', duplicateProtocols);
-    console.log('  - duplicate skill IDs:', duplicateSkills);
+    console.log('  - duplicate innerface IDs:', duplicateInnerfaces);
     console.log('  - duplicate state IDs:', duplicateStates);
     
     // Check for undefined/null values
     const protocolsWithIssues = protocols.filter(p => !p || !p.id || p.id === undefined || p.id === null);
-    const skillsWithIssues = skills.filter(s => !s || !s.id || s.id === undefined || s.id === null);
+    const innerfacesWithIssues = innerfaces.filter(s => !s || !s.id || s.id === undefined || s.id === null);
     const statesWithIssues = states.filter(s => !s || !s.id || s.id === undefined || s.id === null);
     
     console.log('⚠️ ITEMS WITH ISSUES:');
     console.log('  - protocols with null/undefined IDs:', protocolsWithIssues);
-    console.log('  - skills with null/undefined IDs:', skillsWithIssues);
+    console.log('  - innerfaces with null/undefined IDs:', innerfacesWithIssues);
     console.log('  - states with null/undefined IDs:', statesWithIssues);
     
     return {
       duplicateProtocols,
-      duplicateSkills,
+      duplicateInnerfaces,
       duplicateStates,
       protocolsWithIssues,
-      skillsWithIssues,
+      innerfacesWithIssues,
       statesWithIssues
     };
   },
@@ -1609,39 +1609,39 @@ const Modals = {
     console.log('🐛 DELETED ARRAYS DEBUG:');
     
     const deletedProtocols = JSON.parse(localStorage.getItem('deletedProtocols') || '[]');
-    const deletedSkills = JSON.parse(localStorage.getItem('deletedSkills') || '[]');
+    const deletedInnerfaces = JSON.parse(localStorage.getItem('deletedInnerfaces') || '[]');
     const deletedStates = JSON.parse(localStorage.getItem('deletedStates') || '[]');
     const deletedCheckins = JSON.parse(localStorage.getItem('deletedCheckins') || '[]');
     const deletedQuickActions = JSON.parse(localStorage.getItem('deletedQuickActions') || '[]');
     
     console.log('📋 DELETED ARRAYS:');
     console.log('  - deletedProtocols:', deletedProtocols);
-    console.log('  - deletedSkills:', deletedSkills);
+    console.log('  - deletedInnerfaces:', deletedInnerfaces);
     console.log('  - deletedStates:', deletedStates);
     console.log('  - deletedCheckins length:', deletedCheckins.length);
     console.log('  - deletedQuickActions:', deletedQuickActions);
     
     // Check for undefined values
     const undefinedInProtocols = deletedProtocols.filter(id => id === undefined || id === null).length;
-    const undefinedInSkills = deletedSkills.filter(id => id === undefined || id === null).length;
+    const undefinedInInnerfaces = deletedInnerfaces.filter(id => id === undefined || id === null).length;
     const undefinedInStates = deletedStates.filter(id => id === undefined || id === null).length;
     const undefinedInCheckins = deletedCheckins.filter(id => id === undefined || id === null).length;
     const undefinedInQuickActions = deletedQuickActions.filter(id => id === undefined || id === null).length;
     
     console.log('⚠️ UNDEFINED VALUES COUNT:');
     console.log('  - in deletedProtocols:', undefinedInProtocols);
-    console.log('  - in deletedSkills:', undefinedInSkills);
+    console.log('  - in deletedInnerfaces:', undefinedInInnerfaces);
     console.log('  - in deletedStates:', undefinedInStates);
     console.log('  - in deletedCheckins:', undefinedInCheckins);
     console.log('  - in deletedQuickActions:', undefinedInQuickActions);
     
     return {
       deletedProtocols,
-      deletedSkills,
+      deletedInnerfaces,
       deletedStates,
       undefinedCounts: {
         protocols: undefinedInProtocols,
-        skills: undefinedInSkills,
+        innerfaces: undefinedInInnerfaces,
         states: undefinedInStates,
         checkins: undefinedInCheckins,
         quickActions: undefinedInQuickActions
@@ -1652,7 +1652,7 @@ const Modals = {
   fixDeletedArrays() {
     console.log('🔧 FIXING DELETED ARRAYS...');
     
-    const arrays = ['deletedProtocols', 'deletedSkills', 'deletedStates', 'deletedCheckins', 'deletedQuickActions'];
+    const arrays = ['deletedProtocols', 'deletedInnerfaces', 'deletedStates', 'deletedCheckins', 'deletedQuickActions'];
     
     arrays.forEach(arrayName => {
       const currentArray = JSON.parse(localStorage.getItem(arrayName) || '[]');
@@ -1673,18 +1673,18 @@ const Modals = {
     console.log('🧪 Testing delete buttons...');
     
     // Test if buttons can be found and have event listeners
-    const skillBtn = document.getElementById('delete-skill-btn');
+    const innerfaceBtn = document.getElementById('delete-innerface-btn');
     const protocolBtn = document.getElementById('delete-protocol-btn');
     const stateBtn = document.getElementById('delete-state-btn');
     
     console.log('🔍 BUTTON EXISTENCE:');
-    console.log('  - skill delete button:', !!skillBtn);
+    console.log('  - innerface delete button:', !!innerfaceBtn);
     console.log('  - protocol delete button:', !!protocolBtn);
     console.log('  - state delete button:', !!stateBtn);
     
     // Try to manually trigger click events (for testing)
-    if (skillBtn) {
-      console.log('🖱️ Skill button is clickable:', !skillBtn.disabled);
+    if (innerfaceBtn) {
+      console.log('🖱️ Innerface button is clickable:', !innerfaceBtn.disabled);
     }
     if (protocolBtn) {
       console.log('🖱️ Protocol button is clickable:', !protocolBtn.disabled);

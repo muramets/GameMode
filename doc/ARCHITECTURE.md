@@ -96,7 +96,7 @@ GET    /api/test          // Health check
   createdAt: Date,
   updatedAt: Date,
   userData: {             // Все данные приложения
-    skills: [...],
+    innerfaces: [...],
     protocols: [...],
     states: [...],
     checkins: [...]
@@ -206,10 +206,10 @@ class Storage {
 
 ### 📊 Основные сущности (Domain Model)
 
-#### 1. **Skills (Навыки)**
+#### 1. **Innerfaces (Навыки)**
 ```javascript
-interface Skill {
-  id: SkillId;
+interface Innerface {
+  id: InnerfaceId;
   name: string;           // "Название. Описание"
   icon: string;           // Эмодзи иконка
   hover: string;          // Подсказка
@@ -227,7 +227,7 @@ interface Protocol {
   hover: string;          // Описание
   action: '+' | '-';      // Положительное/отрицательное
   weight: number;         // Влияние (0-1)
-  targets: SkillId[];     // Целевые навыки (1-3)
+  targets: InnerfaceId[];     // Целевые навыки (1-3)
 }
 ```
 
@@ -237,7 +237,7 @@ interface State {
   id: StateId;
   name: string;           // "Название роли/состояния"
   icon: string;           // Эмодзи
-  skillIds: SkillId[];    // Навыки в составе состояния
+  innerfaceIds: InnerfaceId[];    // Навыки в составе состояния
   stateIds: StateId[];    // Зависимые состояния
   // level вычисляется как среднее от связанных навыков
 }
@@ -250,7 +250,7 @@ interface HistoryEntry {
   type: 'protocol' | 'drag_drop' | 'quick_action';
   timestamp: ISOString;
   protocolId?: ProtocolId;
-  changes?: Record<SkillId, number>;
+  changes?: Record<InnerfaceId, number>;
   // Дополнительные поля в зависимости от типа
 }
 ```
@@ -259,15 +259,15 @@ interface HistoryEntry {
 
 #### Расчет текущего уровня навыка:
 ```javascript
-calculateCurrentScore(skillId) {
-  const skill = this.getSkillById(skillId);
+calculateCurrentScore(innerfaceId) {
+  const innerface = this.getInnerfaceById(innerfaceId);
   const history = this.getCheckins();
   
   const totalChange = history
-    .filter(entry => entry.changes && entry.changes[skillId])
-    .reduce((sum, entry) => sum + entry.changes[skillId], 0);
+    .filter(entry => entry.changes && entry.changes[innerfaceId])
+    .reduce((sum, entry) => sum + entry.changes[innerfaceId], 0);
     
-  return Math.max(0, skill.initialScore + totalChange);
+  return Math.max(0, innerface.initialScore + totalChange);
 }
 ```
 
@@ -277,10 +277,10 @@ calculateStateScore(stateId) {
   const state = this.getStateById(stateId);
   
   // Рекурсивный расчет для вложенных состояний
-  const skillScores = state.skillIds.map(id => this.calculateCurrentScore(id));
+  const innerfaceScores = state.innerfaceIds.map(id => this.calculateCurrentScore(id));
   const stateScores = state.stateIds.map(id => this.calculateStateScore(id));
   
-  const allScores = [...skillScores, ...stateScores];
+  const allScores = [...innerfaceScores, ...stateScores];
   return allScores.reduce((sum, score) => sum + score, 0) / allScores.length;
 }
 ```
@@ -313,7 +313,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true },
   displayName: String,
   userData: {
-    skills: [skillSchema],
+    innerfaces: [innerfaceSchema],
     protocols: [protocolSchema],
     states: [stateSchema],
     checkins: [checkinSchema]
@@ -349,7 +349,7 @@ class DragDropSystem {
     // Настройка drag & drop для протоколов
   }
   
-  setupSkills() {
+  setupInnerfaces() {
     // Настройка для навыков
   }
   

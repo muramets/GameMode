@@ -1,7 +1,7 @@
 // ===== ui.js - UI Rendering =====
 
 const UI = {
-  // Get skill level color class
+  // Get innerface level color class
   getScoreClass(score) {
     if (score < 2) return 'score-1';
     if (score < 4) return 'score-2';
@@ -10,8 +10,8 @@ const UI = {
     return 'score-5';
   },
   
-  // Get skill level color
-  getSkillColor(score) {
+  // Get innerface level color
+  getInnerfaceColor(score) {
     if (score < 2) return '#ca4754';
     if (score < 4) return '#e6934a';
     if (score < 6) return '#e2b714';
@@ -60,7 +60,7 @@ const UI = {
         statesContainer.innerHTML = states.map(state => {
           const score = window.Storage.calculateStateScore(state.id);
           const scoreClass = this.getScoreClass(score);
-          const color = this.getSkillColor(score);
+          const color = this.getInnerfaceColor(score);
           const percentage = Math.round((score / 10) * 100);
           
           // Calculate yesterday's score
@@ -81,16 +81,16 @@ const UI = {
             changeIcon = '<i class="fas fa-arrow-down"></i>';
           }
           
-          // Get number of dependencies (skills or states)
-          const skillDeps = state.skillIds || [];
+          // Get number of dependencies (innerfaces or states)
+          const innerfaceDeps = state.innerfaceIds || [];
           const stateDeps = state.stateIds || [];
           
           // Create dependency display text
           let dependencyText = '';
-          if (skillDeps.length > 0 && stateDeps.length > 0) {
-            dependencyText = `Skills: ${skillDeps.length} States: ${stateDeps.length}`;
-          } else if (skillDeps.length > 0) {
-            dependencyText = `Skills: ${skillDeps.length}`;
+          if (innerfaceDeps.length > 0 && stateDeps.length > 0) {
+            dependencyText = `Innerfaces: ${innerfaceDeps.length} States: ${stateDeps.length}`;
+          } else if (innerfaceDeps.length > 0) {
+            dependencyText = `Innerfaces: ${innerfaceDeps.length}`;
           } else if (stateDeps.length > 0) {
             dependencyText = `States: ${stateDeps.length}`;
           } else {
@@ -174,7 +174,7 @@ const UI = {
               <div class="state-bar-fill" style="width: 0%; background-color: var(--sub-color);"></div>
             </div>
             <div class="state-details">
-              <span>Skills: 0</span>
+              <span>Innerfaces: 0</span>
               <span>0%</span>
             </div>
           </div>
@@ -280,8 +280,8 @@ const UI = {
   renderProtocols() {
     App.filteredProtocols = window.Storage.getProtocolsInOrder();
     
-    // Get all protocols and skills for display
-    const skills = window.Storage.getSkills();
+    // Get all protocols and innerfaces for display
+    const innerfaces = window.Storage.getInnerfaces();
     
     // Apply current search filter if any
     const searchInput = document.getElementById('protocol-search');
@@ -296,10 +296,10 @@ const UI = {
           return true;
         }
         
-        // Search in target skills
+        // Search in target innerfaces
         const targetNames = protocol.targets.map(targetId => {
-          const skill = skills.find(s => s.id === targetId);
-          return skill ? skill.name.toLowerCase() : targetId;
+          const innerface = innerfaces.find(s => s.id === targetId);
+          return innerface ? innerface.name.toLowerCase() : targetId;
         });
         
         return targetNames.some(name => name.includes(searchTerm));
@@ -355,10 +355,10 @@ const UI = {
       const globalIndex = startIndex + index + 1;
       const icon = this.renderIcon(protocol.icon);
       
-      // Get target skill names
+      // Get target innerface names
       const targetNames = protocol.targets.map(targetId => {
-        const skill = skills.find(s => s.id === targetId);
-        return skill ? skill.name.split('. ')[0] : `Unknown (${targetId})`;
+        const innerface = innerfaces.find(s => s.id === targetId);
+        return innerface ? innerface.name.split('. ')[0] : `Unknown (${targetId})`;
       });
       const targetTags = targetNames.map(name => 
         `<span class="protocol-target-tag">${name}</span>`
@@ -405,59 +405,59 @@ const UI = {
     }).join('');
   },
 
-  // Skills
-  renderSkills() {
-    App.filteredSkills = window.Storage.getSkillsInOrder();
+  // Innerfaces
+  renderInnerfaces() {
+    App.filteredInnerfaces = window.Storage.getInnerfacesInOrder();
     
     // Apply current search filter if any
-    const searchInput = document.getElementById('skill-search');
+    const searchInput = document.getElementById('innerface-search');
     if (searchInput && searchInput.value.trim()) {
-      // Apply filter locally without calling App.filterSkills to avoid recursion
-      const allSkills = window.Storage.getSkillsInOrder();
+      // Apply filter locally without calling App.filterInnerfaces to avoid recursion
+      const allInnerfaces = window.Storage.getInnerfacesInOrder();
       const searchTerm = searchInput.value.toLowerCase();
-      App.filteredSkills = allSkills.filter(skill => 
-        skill.name.toLowerCase().includes(searchTerm) ||
-        skill.hover.toLowerCase().includes(searchTerm)
+      App.filteredInnerfaces = allInnerfaces.filter(innerface => 
+        innerface.name.toLowerCase().includes(searchTerm) ||
+        innerface.hover.toLowerCase().includes(searchTerm)
       );
     }
     
-    const skills = App.filteredSkills;
-    const startIndex = (App.skillsPage - 1) * App.skillsPerPage;
-    const endIndex = startIndex + App.skillsPerPage;
-    const pageSkills = skills.slice(startIndex, endIndex);
+    const innerfaces = App.filteredInnerfaces;
+    const startIndex = (App.innerfacesPage - 1) * App.innerfacesPerPage;
+    const endIndex = startIndex + App.innerfacesPerPage;
+    const pageInnerfaces = innerfaces.slice(startIndex, endIndex);
     
-    const container = document.querySelector('.skills-body');
+    const container = document.querySelector('.innerfaces-body');
     if (!container) return;
     
-    if (pageSkills.length === 0) {
+    if (pageInnerfaces.length === 0) {
       // Check if search is applied to show appropriate message
       const hasSearchQuery = searchInput && searchInput.value.trim();
       
       let emptyMessage, emptyDescription;
       
       if (hasSearchQuery) {
-        emptyMessage = "No skills found";
+        emptyMessage = "No innerfaces found";
         emptyDescription = "Try adjusting your search query";
       } else {
-        emptyMessage = "No skills yet";
+        emptyMessage = "No innerfaces yet";
         emptyDescription = "";
       }
       
       container.innerHTML = `
-        <div class="skill-row empty-state">
-          <div class="skill-cell skill-id-cell">—</div>
-          <div class="skill-cell skill-name-cell">
-            <div class="skill-content">
-              <span class="skill-icon"><i class="fas fa-chart-bar"></i></span>
-              <div class="skill-name-full">
-                <div class="skill-name-main">${emptyMessage}</div>
-                ${emptyDescription ? `<div class="skill-name-desc" style="font-style: normal;">${emptyDescription}</div>` : ''}
+        <div class="innerface-row empty-state">
+          <div class="innerface-cell innerface-id-cell">—</div>
+          <div class="innerface-cell innerface-name-cell">
+            <div class="innerface-content">
+              <span class="innerface-icon"><i class="fas fa-chart-bar"></i></span>
+              <div class="innerface-name-full">
+                <div class="innerface-name-main">${emptyMessage}</div>
+                ${emptyDescription ? `<div class="innerface-name-desc" style="font-style: normal;">${emptyDescription}</div>` : ''}
               </div>
             </div>
           </div>
-          <div class="skill-cell skill-initial-cell">—</div>
-          <div class="skill-cell skill-current-cell">—</div>
-          <div class="skill-cell skill-progress-cell">
+          <div class="innerface-cell innerface-initial-cell">—</div>
+          <div class="innerface-cell innerface-current-cell">—</div>
+          <div class="innerface-cell innerface-progress-cell">
             <span class="empty-hint">${hasSearchQuery ? '—' : 'Click + to add'}</span>
           </div>
         </div>
@@ -465,53 +465,53 @@ const UI = {
       return;
     }
     
-    container.innerHTML = pageSkills.map((skill, index) => {
+    container.innerHTML = pageInnerfaces.map((innerface, index) => {
       const globalIndex = startIndex + index + 1;
-      const icon = this.renderIcon(skill.icon);
-      const current = window.Storage.calculateCurrentScore(skill.id);
-      const initial = skill.initialScore;
+      const icon = this.renderIcon(innerface.icon);
+      const current = window.Storage.calculateCurrentScore(innerface.id);
+      const initial = innerface.initialScore;
       const progress = current - initial;
       const progressClass = progress > 0 ? 'positive' : progress < 0 ? 'negative' : 'neutral';
-      const color = this.getSkillColor(current);
+      const color = this.getInnerfaceColor(current);
       
-      const hasHover = skill.hover && skill.hover.trim();
+      const hasHover = innerface.hover && innerface.hover.trim();
       
       return `
-        <div class="skill-row" draggable="true" data-skill-id="${skill.id}">
-          <div class="skill-cell skill-id-cell">${globalIndex}</div>
-          <div class="skill-cell skill-name-cell ${hasHover ? 'has-hover' : ''}" ${hasHover ? `data-hover="${skill.hover}"` : ''}>
-            <div class="skill-content">
-              <span class="skill-icon">${icon}</span>
-              <div class="skill-name-full">
-                <div class="skill-name-main">${skill.name.split('. ')[0]}</div>
-                ${skill.name.includes('. ') ? `<div class="skill-name-desc">${skill.name.split('. ').slice(1).join('. ')}</div>` : ''}
+        <div class="innerface-row" draggable="true" data-innerface-id="${innerface.id}">
+          <div class="innerface-cell innerface-id-cell">${globalIndex}</div>
+          <div class="innerface-cell innerface-name-cell ${hasHover ? 'has-hover' : ''}" ${hasHover ? `data-hover="${innerface.hover}"` : ''}>
+            <div class="innerface-content">
+              <span class="innerface-icon">${icon}</span>
+              <div class="innerface-name-full">
+                <div class="innerface-name-main">${innerface.name.split('. ')[0]}</div>
+                ${innerface.name.includes('. ') ? `<div class="innerface-name-desc">${innerface.name.split('. ').slice(1).join('. ')}</div>` : ''}
               </div>
             </div>
-            <button class="skill-settings-btn" onclick="Modals.editSkill(${skill.id})" title="Edit skill">
+            <button class="innerface-settings-btn" onclick="Modals.editInnerface(${innerface.id})" title="Edit innerface">
               <i class="fas fa-cog"></i>
             </button>
-            <button class="skill-history-btn" onclick="App.viewSkillHistory(${skill.id})" title="View skill history">
+            <button class="innerface-history-btn" onclick="App.viewInnerfaceHistory(${innerface.id})" title="View innerface history">
               <i class="fas fa-history"></i>
             </button>
           </div>
-          <div class="skill-cell skill-initial-cell">${initial.toFixed(2)}</div>
-          <div class="skill-cell skill-current-cell">
+          <div class="innerface-cell innerface-initial-cell">${initial.toFixed(2)}</div>
+          <div class="innerface-cell innerface-current-cell">
             <span style="color: ${color}; font-weight: 600;">${current.toFixed(2)}</span>
             ${(() => {
               const diff = current - initial;
               if (diff > 0.01) {
-                return '<span class="skill-change-arrow increase"><i class="fas fa-arrow-trend-up"></i></span>';
+                return '<span class="innerface-change-arrow increase"><i class="fas fa-arrow-trend-up"></i></span>';
               } else if (diff < -0.01) {
-                return '<span class="skill-change-arrow decrease"><i class="fas fa-arrow-trend-down"></i></span>';
+                return '<span class="innerface-change-arrow decrease"><i class="fas fa-arrow-trend-down"></i></span>';
               }
               return '';
             })()}
           </div>
-          <div class="skill-cell skill-progress-cell">
-            <div class="skill-progress-bar">
-              <div class="skill-progress-fill" style="width: ${Math.max(0, Math.min(100, (current / 10) * 100))}%; background-color: ${color};"></div>
+          <div class="innerface-cell innerface-progress-cell">
+            <div class="innerface-progress-bar">
+              <div class="innerface-progress-fill" style="width: ${Math.max(0, Math.min(100, (current / 10) * 100))}%; background-color: ${color};"></div>
             </div>
-            <span class="skill-progress-percent">${Math.round((current / 10) * 100)}%</span>
+            <span class="innerface-progress-percent">${Math.round((current / 10) * 100)}%</span>
           </div>
         </div>
       `;
@@ -525,7 +525,7 @@ const UI = {
     // Instead, history should be properly managed through App.applyHistoryFilters()
     
     const container = document.querySelector('.history-body');
-    const skills = window.Storage.getSkills();
+    const innerfaces = window.Storage.getInnerfaces();
     
     if (App.filteredHistory.length === 0) {
       // Check if filters are applied to show appropriate message
@@ -534,7 +534,7 @@ const UI = {
                                App.historyFilters.protocol !== 'all' ||
                                App.historyFilters.state !== 'all' ||
                                App.historyFilters.effect !== 'all' ||
-                               App.historyFilters.skill !== 'all';
+                               App.historyFilters.innerface !== 'all';
       
       const searchInput = document.getElementById('history-search');
       const hasSearchQuery = searchInput && searchInput.value.trim();
@@ -586,7 +586,7 @@ const UI = {
       
       if (checkin.type === 'drag_drop') {
         // Drag & Drop operation
-        const actionText = checkin.subType === 'protocol' ? 'Reordered protocol' : 'Reordered skill';
+        const actionText = checkin.subType === 'protocol' ? 'Reordered protocol' : 'Reordered innerface';
         const actionDesc = `Position: ${checkin.oldPosition} → ${checkin.newPosition}`;
         
         return `
@@ -645,13 +645,13 @@ const UI = {
         `;
       } else {
         // Regular protocol check-in
-        const changes = Object.entries(checkin.changes).map(([skillId, change]) => {
-          const skill = skills.find(s => s.id == skillId);
-          if (!skill) return '';
+        const changes = Object.entries(checkin.changes).map(([innerfaceId, change]) => {
+          const innerface = innerfaces.find(s => s.id == innerfaceId);
+          if (!innerface) return '';
           
           const sign = change > 0 ? '+' : '';
           const className = change > 0 ? 'positive' : 'negative';
-          return `<span class="history-change-tag ${className}">${this.renderIcon(skill.icon)} ${sign}${change.toFixed(2)}</span>`;
+          return `<span class="history-change-tag ${className}">${this.renderIcon(innerface.icon)} ${sign}${change.toFixed(2)}</span>`;
         }).join('');
         
         return `
@@ -684,7 +684,7 @@ const UI = {
   // Update user statistics in dashboard
   updateUserStats() {
     const checkins = window.Storage.getCheckins();
-    const skills = window.Storage.getSkills();
+    const innerfaces = window.Storage.getInnerfaces();
     const states = window.Storage.getStates();
     
     // Get today's date for filtering
@@ -705,7 +705,7 @@ const UI = {
     // Calculate total score changes for today (real sum, not absolute)
     let todayTotalChange = 0;
     todayCheckins.forEach(checkin => {
-      // For XP calculation, use protocol weight directly, not sum of skill changes
+      // For XP calculation, use protocol weight directly, not sum of innerface changes
       const protocol = window.Storage.getProtocolById(checkin.protocolId);
       if (protocol) {
         // Determine action from the changes (+ if positive, - if negative)
@@ -716,12 +716,12 @@ const UI = {
       }
     });
     
-    // Calculate current level - priority: states average, then skills average
+    // Calculate current level - priority: states average, then innerfaces average
     let currentLevel = 0;
     
     // 🔧 ИСПРАВЛЕНИЕ: Правильная логика расчета уровня персонажа
     // Если есть хотя бы один state - считаем среднее по states
-    // Если нет ни одного state - считаем среднее по skills
+    // Если нет ни одного state - считаем среднее по innerfaces
     if (states.length > 0) {
       // Use states average (приоритет states если они есть)
       let totalStateScore = 0;
@@ -736,20 +736,20 @@ const UI = {
       });
       
       currentLevel = validStatesCount > 0 ? totalStateScore / validStatesCount : 0;
-    } else if (skills.length > 0) {
-      // Fallback to skills average (если нет states)
-      let totalSkillScore = 0;
-      let validSkillsCount = 0;
+    } else if (innerfaces.length > 0) {
+      // Fallback to innerfaces average (если нет states)
+      let totalInnerfaceScore = 0;
+      let validInnerfacesCount = 0;
       
-      skills.forEach(skill => {
-        const skillScore = window.Storage.calculateCurrentScore(skill.id);
-        if (!isNaN(skillScore)) {
-          totalSkillScore += skillScore;
-          validSkillsCount++;
+      innerfaces.forEach(innerface => {
+        const innerfaceScore = window.Storage.calculateCurrentScore(innerface.id);
+        if (!isNaN(innerfaceScore)) {
+          totalInnerfaceScore += innerfaceScore;
+          validInnerfacesCount++;
         }
       });
       
-      currentLevel = validSkillsCount > 0 ? totalSkillScore / validSkillsCount : 0;
+      currentLevel = validInnerfacesCount > 0 ? totalInnerfaceScore / validInnerfacesCount : 0;
     } else {
       currentLevel = 0;
     }
@@ -760,7 +760,7 @@ const UI = {
     const progressDigit = document.getElementById('progress-digit');
     if (levelProgressFill && levelPercentage) {
       const percent = Math.min(100, (currentLevel / 10) * 100);
-      const color = this.getSkillColor(currentLevel);
+      const color = this.getInnerfaceColor(currentLevel);
       
       levelProgressFill.style.width = percent + '%';
       levelProgressFill.style.backgroundColor = color;

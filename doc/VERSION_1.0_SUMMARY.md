@@ -61,7 +61,7 @@ RPG Therapy has successfully evolved from a local browser application to a **pro
 
 ### 🔄 **Data Migration**
 - **Automatic legacy migration** from local to cloud storage
-- **User-specific namespacing** (`{userId}_skills`, `{userId}_protocols`)
+- **User-specific namespacing** (`{userId}_innerfaces`, `{userId}_protocols`)
 - **Seamless transition** from single-user to multi-user
 
 ---

@@ -126,10 +126,10 @@ fetch('https://rpg-therapy-backend-production.up.railway.app/api/test')
 **1. Проверьте миграцию legacy данных**
 ```javascript
 // В консоли браузера
-const legacySkills = localStorage.getItem('skills');
+const legacyInnerfaces = localStorage.getItem('innerfaces');
 const legacyProtocols = localStorage.getItem('protocols');
 console.log('Legacy data exists:', {
-  skills: !!legacySkills,
+  innerfaces: !!legacyInnerfaces,
   protocols: !!legacyProtocols
 });
 ```
@@ -276,11 +276,11 @@ performance.getEntriesByType('navigation')[0].loadEventEnd
 **1. Проверьте данные в консоли**
 ```javascript
 // В консоли браузера
-const skills = Storage.getSkills();
-const duplicates = skills.filter((skill, index, array) => 
-  array.findIndex(s => s.id === skill.id) !== index
+const innerfaces = Storage.getInnerfaces();
+const duplicates = innerfaces.filter((innerface, index, array) => 
+  array.findIndex(s => s.id === innerface.id) !== index
 );
-console.log('Duplicated skills:', duplicates);
+console.log('Duplicated innerfaces:', duplicates);
 ```
 
 **2. Очистите локальные данные**
@@ -308,19 +308,19 @@ Object.keys(localStorage)
 **1. Проверьте расчеты**
 ```javascript
 // В консоли
-const skillId = 1; // замените на проблемный ID
-const score = Storage.calculateCurrentScore(skillId);
+const innerfaceId = 1; // замените на проблемный ID
+const score = Storage.calculateCurrentScore(innerfaceId);
 console.log('Current score:', score);
 ```
 
 **2. Исправьте данные**
 ```javascript
 // Принудительно установить минимум 0
-const skills = Storage.getSkills();
-skills.forEach(skill => {
-  const currentScore = Storage.calculateCurrentScore(skill.id);
+const innerfaces = Storage.getInnerfaces();
+innerfaces.forEach(innerface => {
+  const currentScore = Storage.calculateCurrentScore(innerface.id);
   if (currentScore < 0) {
-    console.log(`Fixing negative score for skill ${skill.id}:`, currentScore);
+    console.log(`Fixing negative score for innerface ${innerface.id}:`, currentScore);
   }
 });
 ```
@@ -406,7 +406,7 @@ if (user) {
   console.log('📧 Email:', user.email);
   
   const userKey = (key) => `${user.uid}_${key}`;
-  console.log('🎯 Skills:', !!localStorage.getItem(userKey('skills')));
+  console.log('🎯 Innerfaces:', !!localStorage.getItem(userKey('innerfaces')));
   console.log('📋 Protocols:', !!localStorage.getItem(userKey('protocols')));
   console.log('📊 History:', !!localStorage.getItem(userKey('history')));
 } else {
@@ -563,11 +563,11 @@ networkDiagnostics();
 // В консоли браузера проверьте:
 console.log('Current user:', window.Storage.currentUser?.email);
 console.log('Protocols:', window.Storage.getProtocols().length);
-console.log('Skills:', window.Storage.getSkills().length);
+console.log('Innerfaces:', window.Storage.getInnerfaces().length);
 
 // Для проблемного пользователя:
 // - protocols.length > 0 (хотя пользователь ничего не создавал)
-// - skills.length > 0 (содержат дефолтные навыки)
+// - innerfaces.length > 0 (содержат дефолтные навыки)
 ```
 
 #### ✅ **Решения:**

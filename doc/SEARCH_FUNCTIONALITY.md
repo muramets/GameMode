@@ -2,7 +2,7 @@
 
 ## Обзор
 
-RPG Therapy приложение включает функциональность поиска на трех основных страницах: Protocols, Skills и History. Каждая страница имеет свои особенности поиска и фильтрации данных.
+RPG Therapy приложение включает функциональность поиска на трех основных страницах: Protocols, Innerfaces и History. Каждая страница имеет свои особенности поиска и фильтрации данных.
 
 ## Общие принципы поиска
 
@@ -43,7 +43,7 @@ filterItems(query) {
 ```javascript
 filterProtocols(query) {
   const allProtocols = Storage.getProtocolsInOrder();
-  const skills = Storage.getSkills();
+  const innerfaces = Storage.getInnerfaces();
   
   if (!query.trim()) {
     this.filteredProtocols = allProtocols;
@@ -57,8 +57,8 @@ filterProtocols(query) {
       
       // Поиск в связанных навыках
       const targetNames = protocol.targets.map(targetId => {
-        const skill = skills.find(s => s.id === targetId);
-        return skill ? skill.name.toLowerCase() : targetId;
+        const innerface = innerfaces.find(s => s.id === targetId);
+        return innerface ? innerface.name.toLowerCase() : targetId;
       });
       
       return targetNames.some(name => name.includes(searchTerm));
@@ -76,35 +76,35 @@ filterProtocols(query) {
 - `"social"` - найдет протоколы, влияющие на навыки социального типа
 - `"confidence"` - найдет протоколы по названию или связанным навыкам
 
-## 2. Skills Search
+## 2. Innerfaces Search
 
 ### Поисковые критерии
-1. **Название навыка** (`skill.name`)
-2. **Описание навыка** (`skill.hover`) - детальное описание
+1. **Название навыка** (`innerface.name`)
+2. **Описание навыка** (`innerface.hover`) - детальное описание
 
 ### Техническая реализация
 ```javascript
-filterSkills(query) {
-  const allSkills = Storage.getSkillsInOrder();
+filterInnerfaces(query) {
+  const allInnerfaces = Storage.getInnerfacesInOrder();
   
   if (!query.trim()) {
-    this.filteredSkills = allSkills;
+    this.filteredInnerfaces = allInnerfaces;
   } else {
     const searchTerm = query.toLowerCase();
-    this.filteredSkills = allSkills.filter(skill => {
+    this.filteredInnerfaces = allInnerfaces.filter(innerface => {
       // Поиск в названии навыка
-      if (skill.name.toLowerCase().includes(searchTerm)) {
+      if (innerface.name.toLowerCase().includes(searchTerm)) {
         return true;
       }
       
       // Поиск в описании навыка
-      const description = skill.hover ? skill.hover.toLowerCase() : '';
+      const description = innerface.hover ? innerface.hover.toLowerCase() : '';
       return description.includes(searchTerm);
     });
   }
   
-  this.skillsPage = 1;
-  UI.renderSkills();
+  this.innerfacesPage = 1;
+  UI.renderInnerfaces();
   this.setupTooltips();
 }
 ```
@@ -119,14 +119,14 @@ filterSkills(query) {
 ### Поисковые критерии
 1. **Название протокола** (`checkin.protocolName`)
 2. **Название элемента** (`checkin.itemName`) для drag & drop операций
-3. **Тип операции** (для drag & drop: "reordered protocol", "reordered skill")
+3. **Тип операции** (для drag & drop: "reordered protocol", "reordered innerface")
 4. **Затронутые навыки** (`checkin.changes`) - названия измененных навыков
 
 ### Техническая реализация
 ```javascript
 filterHistory(query) {
   const allHistory = Storage.getCheckins().reverse();
-  const skills = Storage.getSkills();
+  const innerfaces = Storage.getInnerfaces();
   
   if (!query.trim()) {
     this.filteredHistory = allHistory;
@@ -145,7 +145,7 @@ filterHistory(query) {
       
       // Поиск по типу операции
       if (checkin.type === 'drag_drop') {
-        const actionText = checkin.subType === 'protocol' ? 'reordered protocol' : 'reordered skill';
+        const actionText = checkin.subType === 'protocol' ? 'reordered protocol' : 'reordered innerface';
         if (actionText.includes(searchTerm)) {
           return true;
         }
@@ -153,12 +153,12 @@ filterHistory(query) {
       
       // Поиск в затронутых навыках
       if (checkin.changes) {
-        const affectedSkills = Object.keys(checkin.changes).map(skillId => {
-          const skill = skills.find(s => s.id == skillId);
-          return skill ? skill.name.toLowerCase() : '';
+        const affectedInnerfaces = Object.keys(checkin.changes).map(innerfaceId => {
+          const innerface = innerfaces.find(s => s.id == innerfaceId);
+          return innerface ? innerface.name.toLowerCase() : '';
         });
         
-        if (affectedSkills.some(skillName => skillName.includes(searchTerm))) {
+        if (affectedInnerfaces.some(innerfaceName => innerfaceName.includes(searchTerm))) {
           return true;
         }
       }
@@ -214,11 +214,11 @@ setupEventListeners() {
     });
   }
 
-  // Skill search
-  const skillSearchInput = document.getElementById('skill-search');
-  if (skillSearchInput) {
-    skillSearchInput.addEventListener('input', (e) => {
-      this.filterSkills(e.target.value);
+  // Innerface search
+  const innerfaceSearchInput = document.getElementById('innerface-search');
+  if (innerfaceSearchInput) {
+    innerfaceSearchInput.addEventListener('input', (e) => {
+      this.filterInnerfaces(e.target.value);
     });
   }
 
@@ -238,7 +238,7 @@ setupEventListeners() {
 ```javascript
 const App = {
   filteredProtocols: [],  // Отфильтрованные протоколы
-  filteredSkills: [],     // Отфильтрованные навыки
+  filteredInnerfaces: [],     // Отфильтрованные навыки
   filteredHistory: [],    // Отфильтрованная история
   // ...
 };

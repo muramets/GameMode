@@ -268,7 +268,7 @@ const userDataSchema = new mongoose.Schema({
     createdAt: Date,
     updatedAt: Date
   }],
-  skills: [{
+  innerfaces: [{
     id: Number,
     name: String,
     description: String,
@@ -289,7 +289,7 @@ const userDataSchema = new mongoose.Schema({
   quickActions: [Number],
   orders: {
     protocols: [Number],
-    skills: [Number],
+    innerfaces: [Number],
     quickActions: [Number]
   },
   createdAt: {
@@ -322,7 +322,7 @@ const historySchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['protocol', 'skill', 'drag_drop', 'manual']
+    enum: ['protocol', 'innerface', 'drag_drop', 'manual']
   },
   action: String,
   targetId: mongoose.Schema.Types.Mixed,
@@ -357,12 +357,12 @@ router.get('/user/data', authenticateToken, async (req, res) => {
       const defaultData = {
         uid: req.user.uid,
         protocols: [],
-        skills: [],
+        innerfaces: [],
         states: new Map(),
         quickActions: [],
         orders: {
           protocols: [],
-          skills: [],
+          innerfaces: [],
           quickActions: []
         }
       };
@@ -834,12 +834,12 @@ const Storage = {
   getAllData() {
     return {
       protocols: this.getProtocols(),
-      skills: this.getSkills(),
+      innerfaces: this.getInnerfaces(),
       states: this.getStates(),
       quickActions: this.getQuickActions(),
       orders: {
         protocols: this.getProtocolOrder(),
-        skills: this.getSkillOrder(),
+        innerfaces: this.getInnerfaceOrder(),
         quickActions: this.getQuickActionOrder()
       }
     };
@@ -853,8 +853,8 @@ const Storage = {
       if (serverData.protocols) {
         this.set(this.KEYS.PROTOCOLS, serverData.protocols);
       }
-      if (serverData.skills) {
-        this.set(this.KEYS.SKILLS, serverData.skills);
+      if (serverData.innerfaces) {
+        this.set(this.KEYS.INNERFACES, serverData.innerfaces);
       }
       if (serverData.states) {
         this.set(this.KEYS.STATES, serverData.states);
@@ -866,8 +866,8 @@ const Storage = {
         if (serverData.orders.protocols) {
           this.set(this.KEYS.PROTOCOL_ORDER, serverData.orders.protocols);
         }
-        if (serverData.orders.skills) {
-          this.set(this.KEYS.SKILL_ORDER, serverData.orders.skills);
+        if (serverData.orders.innerfaces) {
+          this.set(this.KEYS.INNERFACE_ORDER, serverData.orders.innerfaces);
         }
         if (serverData.orders.quickActions) {
           this.set(this.KEYS.QUICK_ACTION_ORDER, serverData.orders.quickActions);

@@ -144,7 +144,7 @@ const averageStateScore = states.length > 0 ? (totalStateScore / states.length) 
 **Обновление полосы прогресса:**
 ```javascript
 const percent = Math.min(100, (averageStateScore / 10) * 100);
-const color = this.getSkillColor(averageStateScore);
+const color = this.getInnerfaceColor(averageStateScore);
 
 levelProgressFill.style.width = percent + '%';
 levelProgressFill.style.backgroundColor = color;

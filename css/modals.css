@@ -658,7 +658,7 @@
   font-family: 'Roboto Mono', monospace;
 }
 
-/* ===== SKILL SELECTOR FOR PROTOCOLS ===== */
+/* ===== INNERFACE SELECTOR FOR PROTOCOLS ===== */
 .targets-container {
   display: flex;
   flex-direction: column;
@@ -696,13 +696,13 @@
   position: relative;
 }
 
-.skill-search-wrapper {
+.innerface-search-wrapper {
   position: relative;
   width: 100%;
 }
 
-.skill-search-wrapper input,
-.skill-search-wrapper .form-input {
+.innerface-search-wrapper input,
+.innerface-search-wrapper .form-input {
   width: 100%;
   padding: 0.75rem;
   border: 2px solid var(--border-color);
@@ -716,16 +716,16 @@
   box-sizing: border-box;
 }
 
-.skill-search-wrapper input::placeholder,
-.skill-search-wrapper .form-input::placeholder {
+.innerface-search-wrapper input::placeholder,
+.innerface-search-wrapper .form-input::placeholder {
   color: var(--sub-color);
   font-size: 0.9rem;
   font-family: 'Roboto Mono', monospace;
   opacity: 0.8;
 }
 
-.skill-search-wrapper input:focus,
-.skill-search-wrapper .form-input:focus {
+.innerface-search-wrapper input:focus,
+.innerface-search-wrapper .form-input:focus {
   outline: none;
   border-color: var(--main-color);
   box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.1);
@@ -733,51 +733,51 @@
   background-color: var(--input-bg) !important;
 }
 
-.skill-search-wrapper input:hover,
-.skill-search-wrapper .form-input:hover {
+.innerface-search-wrapper input:hover,
+.innerface-search-wrapper .form-input:hover {
   background: var(--input-bg) !important;
   background-color: var(--input-bg) !important;
 }
 
-.skill-search-wrapper input:active,
-.skill-search-wrapper .form-input:active {
+.innerface-search-wrapper input:active,
+.innerface-search-wrapper .form-input:active {
   background: var(--input-bg) !important;
   background-color: var(--input-bg) !important;
 }
 
-.skill-search-wrapper input:valid,
-.skill-search-wrapper .form-input:valid {
+.innerface-search-wrapper input:valid,
+.innerface-search-wrapper .form-input:valid {
   background: var(--input-bg) !important;
   background-color: var(--input-bg) !important;
 }
 
-.skill-search-wrapper input:invalid,
-.skill-search-wrapper .form-input:invalid {
+.innerface-search-wrapper input:invalid,
+.innerface-search-wrapper .form-input:invalid {
   background: var(--input-bg) !important;
   background-color: var(--input-bg) !important;
 }
 
 /* Ensure autocomplete doesn't override background */
-.skill-search-wrapper input:-webkit-autofill,
-.skill-search-wrapper .form-input:-webkit-autofill,
-.skill-search-wrapper input:-webkit-autofill:hover,
-.skill-search-wrapper .form-input:-webkit-autofill:hover,
-.skill-search-wrapper input:-webkit-autofill:focus,
-.skill-search-wrapper .form-input:-webkit-autofill:focus,
-.skill-search-wrapper input:-webkit-autofill:active,
-.skill-search-wrapper .form-input:-webkit-autofill:active {
+.innerface-search-wrapper input:-webkit-autofill,
+.innerface-search-wrapper .form-input:-webkit-autofill,
+.innerface-search-wrapper input:-webkit-autofill:hover,
+.innerface-search-wrapper .form-input:-webkit-autofill:hover,
+.innerface-search-wrapper input:-webkit-autofill:focus,
+.innerface-search-wrapper .form-input:-webkit-autofill:focus,
+.innerface-search-wrapper input:-webkit-autofill:active,
+.innerface-search-wrapper .form-input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 1000px var(--input-bg) inset !important;
   -webkit-text-fill-color: var(--text-color) !important;
   background: var(--input-bg) !important;
   background-color: var(--input-bg) !important;
 }
 
-.skill-search-container {
+.innerface-search-container {
   position: relative;
   margin-bottom: 1rem;
 }
 
-.skill-suggestions {
+.innerface-suggestions {
   position: absolute;
   top: 100%;
   left: 0;
@@ -792,11 +792,11 @@
   margin-top: 0.5em;
 }
 
-.skill-suggestions.active {
+.innerface-suggestions.active {
   display: block;
 }
 
-.skill-suggestion {
+.innerface-suggestion {
   padding: 0.75em 1em;
   cursor: pointer;
   transition: all 0.125s;
@@ -809,29 +809,29 @@
   gap: 0.7em;
 }
 
-.skill-suggestion:last-child {
+.innerface-suggestion:last-child {
   border-bottom: none;
 }
 
-.skill-suggestion:hover,
-.skill-suggestion.highlighted {
+.innerface-suggestion:hover,
+.innerface-suggestion.highlighted {
   background-color: var(--bg-color);
   color: var(--text-color);
 }
 
-.skill-suggestion-icon {
+.innerface-suggestion-icon {
   font-size: 0.9rem;
   min-width: 1.2em;
   text-align: center;
 }
 
-.skill-suggestion-name {
+.innerface-suggestion-name {
   font-weight: 500;
   margin-bottom: 0.1em;
   font-family: 'Roboto Mono', monospace;
 }
 
-.selected-skill {
+.selected-innerface {
   background-color: var(--main-color);
   color: var(--bg-color);
   padding: 0.75rem;
@@ -844,7 +844,7 @@
   font-family: 'Roboto Mono', monospace;
 }
 
-.selected-skill .skill-name {
+.selected-innerface .innerface-name {
   flex: 1;
   font-family: 'Roboto Mono', monospace;
 }
@@ -869,8 +869,8 @@
   outline: none;
 }
 
-/* New skill badge styles for better UX */
-.new-skill-badge {
+/* New innerface badge styles for better UX */
+.new-innerface-badge {
   background-color: var(--correct-color);
   color: var(--bg-color);
   padding: 0.125rem 0.5rem;
@@ -882,12 +882,12 @@
   margin-left: 0.5rem;
 }
 
-.selected-skill.new .skill-name {
+.selected-innerface.new .innerface-name {
   color: var(--bg-color);
   font-weight: 500;
 }
 
-.add-skill-hint {
+.add-innerface-hint {
   color: var(--sub-color);
   font-size: 0.85rem;
   margin-top: 0.75rem;
@@ -1192,8 +1192,8 @@
   font-size: 0.9rem;
 }
 
-/* Selected skill badge for targets */
-.selected-skill-badge {
+/* Selected innerface badge for targets */
+.selected-innerface-badge {
   background-color: var(--main-color);
   color: var(--bg-color);
   padding: 0.25rem 0.375rem;
@@ -1209,17 +1209,17 @@
   transition: all 0.125s;
 }
 
-.selected-skill-badge .skill-icon {
+.selected-innerface-badge .innerface-icon {
   font-size: 0.8rem;
 }
 
-.selected-skill-badge .skill-name {
+.selected-innerface-badge .innerface-name {
   flex: 1;
   font-weight: normal;
   font-size: 0.7rem;
 }
 
-.selected-skill-badge .remove-btn {
+.selected-innerface-badge .remove-btn {
   background: none;
   border: none;
   color: var(--bg-color);
@@ -1232,7 +1232,7 @@
   opacity: 0.8;
 }
 
-.selected-skill-badge .remove-btn:hover {
+.selected-innerface-badge .remove-btn:hover {
   opacity: 1;
   background-color: rgba(0, 0, 0, 0.1);
 }
