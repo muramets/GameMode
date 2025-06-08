@@ -1449,10 +1449,10 @@ const UI = {
         weakStyle.textContent = `
           @keyframes ${weakAnimationName} {
             0%, 100% {
-              box-shadow: 0 8px 25px ${hexToRgba(glowColor, 0.15)};
+              box-shadow: 0 8px 25px ${hexToRgba(glowColor, 0.075)};
             }
             50% {
-              box-shadow: 0 8px 25px ${hexToRgba(glowColor, 0.08)};
+              box-shadow: 0 8px 25px ${hexToRgba(glowColor, 0.04)};
             }
           }
         `;
