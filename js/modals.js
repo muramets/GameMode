@@ -63,6 +63,8 @@ const Modals = {
     
     // Open modal button
     addInnerfaceBtn.addEventListener('click', () => {
+      // 🔧 ИСПРАВЛЕНИЕ: Сбрасываем ID при создании нового элемента
+      this.currentInnerfaceId = null;
       this.openInnerfaceModal();
     });
     
@@ -208,8 +210,18 @@ const Modals = {
       modal.classList.add('active');
       document.body.style.overflow = 'hidden';
       
-      // 🔧 ИСПРАВЛЕНИЕ: Очищаем цвет при открытии новой модалки
-      this.resetColorPicker('innerface');
+      // 🔧 ИСПРАВЛЕНИЕ: Сбрасываем цвет только если это новый элемент
+      if (!this.currentInnerfaceId) {
+        this.resetColorPicker('innerface');
+        
+        // Reset modal for create mode
+        document.getElementById('innerface-modal-title').textContent = 'Add New Innerface';
+        document.getElementById('submit-innerface-btn').textContent = 'Add Innerface';
+        const deleteBtn = document.getElementById('delete-innerface-btn');
+        if (deleteBtn) {
+          deleteBtn.style.display = 'none';
+        }
+      }
       
       // Initialize color picker
       this.initializeColorPickersOnModalOpen('innerface');
@@ -342,6 +354,8 @@ const Modals = {
     
     // Open modal button
     addProtocolBtn.addEventListener('click', () => {
+      // 🔧 ИСПРАВЛЕНИЕ: Сбрасываем ID при создании нового элемента
+      this.currentProtocolId = null;
       this.openProtocolModal();
     });
     
@@ -630,8 +644,18 @@ const Modals = {
       this.resetProtocolTargets();
       this.populateProtocolInnerfaces();
       
-      // 🔧 ИСПРАВЛЕНИЕ: Очищаем цвет при открытии новой модалки
-      this.resetColorPicker('protocol');
+      // 🔧 ИСПРАВЛЕНИЕ: Сбрасываем цвет только если это новый элемент
+      if (!this.currentProtocolId) {
+        this.resetColorPicker('protocol');
+        
+        // Reset modal for create mode
+        document.getElementById('protocol-modal-title').textContent = 'Add New Protocol';
+        document.getElementById('submit-protocol-btn').textContent = 'Add Protocol';
+        const deleteBtn = document.getElementById('delete-protocol-btn');
+        if (deleteBtn) {
+          deleteBtn.style.display = 'none';
+        }
+      }
       
       // Initialize color picker
       this.initializeColorPickersOnModalOpen('protocol');
@@ -1729,8 +1753,8 @@ const Modals = {
     
     if (!colorInput || !colorOptions) return;
 
-    // Update hidden input
-    colorInput.value = color;
+    // Update hidden input - allow empty string for default
+    colorInput.value = color || '';
 
     // Update visual selection
     colorOptions.forEach(option => {
@@ -1740,6 +1764,13 @@ const Modals = {
         option.classList.remove('selected');
       }
     });
+    
+    if (window.DEBUG_MODALS) {
+      console.log(`🎨 SELECTED COLOR for ${type}:`, { 
+        color: color || 'default', 
+        inputValue: colorInput.value 
+      });
+    }
   },
 
   loadSavedColor(type, color) {
@@ -1747,30 +1778,17 @@ const Modals = {
       console.log(`🎨 LOADING SAVED COLOR for ${type}:`, { color, hasColor: !!color });
     }
     
-    // 🔧 ИСПРАВЛЕНИЕ: Если цвет не задан, НЕ выбираем дефолтный blue
-    if (!color) {
-      if (window.DEBUG_MODALS) {
-        console.log(`🎨 NO COLOR SET for ${type}: Not selecting any color`);
-      }
-      // Убираем выделение со всех цветов
-      const colorOptions = document.querySelectorAll(`#${type}-color-group .color-option`);
-      colorOptions.forEach(option => {
-        option.classList.remove('selected');
-      });
-      return;
-    }
-    
-    // Set the hidden input value
+    // Set the hidden input value (allow empty string for default)
     const colorInput = document.getElementById(`${type}-color`);
     if (colorInput) {
-      colorInput.value = color;
+      colorInput.value = color || '';
       if (window.DEBUG_MODALS) {
-        console.log(`🎨 SET COLOR INPUT for ${type}:`, color);
+        console.log(`🎨 SET COLOR INPUT for ${type}:`, color || 'default');
       }
     }
 
-    // Update visual selection only if color is specified
-    this.selectColor(type, color);
+    // Update visual selection (including default option)
+    this.selectColor(type, color || '');
   },
 
   // Update existing openInnerfaceModal and openProtocolModal functions
@@ -1783,30 +1801,27 @@ const Modals = {
     setTimeout(() => {
       this.toggleColorPickerVisibility(type);
       
-      // 🔧 ИСПРАВЛЕНИЕ: НЕ устанавливаем дефолтный цвет автоматически
-      // Пользователь должен явно выбрать цвет
-      const colorInput = document.getElementById(`${type}-color`);
-      const currentColor = colorInput?.value;
+      // 🔧 ИСПРАВЛЕНИЕ: Проверяем только если мы в режиме редактирования
+      const isEditMode = (type === 'innerface' && this.currentInnerfaceId) || 
+                        (type === 'protocol' && this.currentProtocolId);
       
-      if (window.DEBUG_MODALS) {
-        console.log(`🎨 CURRENT COLOR in input for ${type}:`, { currentColor, hasValue: !!currentColor });
-      }
-      
-      // Только если есть сохраненный цвет - выбираем его визуально
-      if (currentColor) {
-        this.selectColor(type, currentColor);
+      if (isEditMode) {
+        // В режиме редактирования - загружаем сохраненный цвет
+        const colorInput = document.getElementById(`${type}-color`);
+        const currentColor = colorInput?.value;
+        
         if (window.DEBUG_MODALS) {
-          console.log(`🎨 SELECTED SAVED COLOR for ${type}:`, currentColor);
+          console.log(`🎨 EDIT MODE - CURRENT COLOR in input for ${type}:`, { currentColor, hasValue: !!currentColor });
         }
+        
+        // Выбираем цвет (включая default если currentColor пустой)
+        this.selectColor(type, currentColor || '');
       } else {
+        // В режиме создания нового - по умолчанию выбираем Default
         if (window.DEBUG_MODALS) {
-          console.log(`🎨 NO COLOR TO SELECT for ${type}: Leaving picker empty`);
+          console.log(`🎨 CREATE MODE - Setting default color for ${type}`);
         }
-        // Убираем выделение со всех цветов
-        const colorOptions = document.querySelectorAll(`#${type}-color-group .color-option`);
-        colorOptions.forEach(option => {
-          option.classList.remove('selected');
-        });
+        this.selectColor(type, '');
       }
     }, 100);
   },
@@ -1827,6 +1842,8 @@ const Modals = {
     colorOptions.forEach(option => {
       option.classList.remove('selected');
     });
+    
+    // 🔧 ИСПРАВЛЕНИЕ: НЕ сбрасываем ID здесь, это делается при открытии новой модалки
   }
 }; 
 

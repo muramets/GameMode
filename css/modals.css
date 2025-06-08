@@ -1551,6 +1551,44 @@
   text-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
 }
 
+/* Default color option styling */
+.color-option.default-color {
+  background-color: var(--bg-color);
+  border: 2px dashed var(--sub-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.color-option.default-color .default-icon {
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: var(--sub-color);
+  font-family: 'Roboto Mono', monospace;
+}
+
+.color-option.default-color:hover {
+  border-color: var(--text-color);
+}
+
+.color-option.default-color:hover .default-icon {
+  color: var(--text-color);
+}
+
+.color-option.default-color.selected {
+  border-color: var(--text-color);
+  background-color: var(--sub-alt-color);
+  box-shadow: 0 0 0 2px var(--bg-color), 0 0 0 4px var(--text-color);
+}
+
+.color-option.default-color.selected .default-icon {
+  color: var(--text-color);
+}
+
+.color-option.default-color.selected::after {
+  display: none; /* Hide checkmark for default option */
+}
+
 /* Hide color picker by default, show when FontAwesome icon is detected */
 #innerface-color-group,
 #protocol-color-group {
