@@ -16,8 +16,11 @@
 
 .user-profile-block:hover {
   transform: scale(1.02);
+  /* Base hover shadow - will be enhanced by JavaScript with color animation */
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
 }
+
+/* Dynamic pulsing animation will be added by JavaScript */
 
 .user-info {
   display: flex;

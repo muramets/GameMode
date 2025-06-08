@@ -1039,6 +1039,9 @@ const UI = {
     }
     
     console.log('✅ BADGE GLOW DEBUG COMPLETE');
+    
+    // 🎨 НОВОЕ: Настройка пульсирующей анимации dashboard при ховере
+    this.setupDashboardHoverAnimation(todayColor);
   },
 
   // Helper function to apply elegant external glow to stat labels
@@ -1249,6 +1252,87 @@ const UI = {
         nameElement.removeEventListener('mouseenter', nameElement._boundShowTooltip);
         nameElement.removeEventListener('mouseleave', nameElement._boundHideTooltip);
       }
+    });
+  },
+
+  // Setup pulsing dashboard hover animation that alternates between dark and color glow
+  setupDashboardHoverAnimation(todayColor) {
+    const dashboard = document.querySelector('.user-profile-block');
+    if (!dashboard) return;
+    
+    // Remove any existing animation listeners
+    dashboard.removeEventListener('mouseenter', dashboard._boundMouseEnter);
+    dashboard.removeEventListener('mouseleave', dashboard._boundMouseLeave);
+    
+    // Helper function to convert hex to rgba
+    const hexToRgba = (hex, alpha) => {
+      if (!hex) return `rgba(0, 0, 0, ${alpha})`;
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+    
+    // Create animation name based on color
+    const animationName = todayColor ? `dashboard-pulse-${todayColor.replace('#', '')}` : 'dashboard-pulse-dark';
+    
+    // Create/update CSS animation
+    if (todayColor) {
+      // Check if animation doesn't exist yet
+      if (!this.dashboardAnimations) {
+        this.dashboardAnimations = new Set();
+      }
+      
+      if (!this.dashboardAnimations.has(animationName)) {
+        const style = document.createElement('style');
+        style.id = `dashboard-animation-${todayColor.replace('#', '')}`;
+        style.textContent = `
+          @keyframes ${animationName} {
+            0%, 100% {
+              transform: scale(1.02);
+              box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            }
+            50% {
+              transform: scale(1.02);
+              box-shadow: 
+                0 8px 30px rgba(0, 0, 0, 0.15),
+                0 0 20px ${hexToRgba(todayColor, 0.1)},
+                0 0 40px ${hexToRgba(todayColor, 0.05)};
+            }
+          }
+        `;
+        document.head.appendChild(style);
+        this.dashboardAnimations.add(animationName);
+        
+        console.log('🎨 DASHBOARD ANIMATION CREATED:', {
+          color: todayColor,
+          animationName
+        });
+      }
+    }
+    
+    // Mouse enter handler
+    dashboard._boundMouseEnter = () => {
+      if (todayColor) {
+        dashboard.style.animation = `${animationName} 2s ease-in-out infinite`;
+        console.log('🎨 DASHBOARD HOVER START:', { color: todayColor, animation: animationName });
+      }
+    };
+    
+    // Mouse leave handler  
+    dashboard._boundMouseLeave = () => {
+      dashboard.style.animation = '';
+      console.log('🎨 DASHBOARD HOVER END');
+    };
+    
+    // Add event listeners
+    dashboard.addEventListener('mouseenter', dashboard._boundMouseEnter);
+    dashboard.addEventListener('mouseleave', dashboard._boundMouseLeave);
+    
+    console.log('🎨 DASHBOARD HOVER ANIMATION SETUP:', {
+      todayColor,
+      animationName,
+      hasColor: !!todayColor
     });
   }
 };
