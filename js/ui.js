@@ -209,7 +209,7 @@ const UI = {
                     ${this.renderIcon(state.icon, iconColor)}
                   </div>
                   <div class="state-name-container">
-                    <div class="state-name" style="color: ${scoreTextColor};">${displayName}</div>
+                    <div class="state-name" style="color: ${iconColor};">${displayName}</div>
                     ${displaySubtext ? `<div class="state-subtext">${displaySubtext}</div>` : ''}
                   </div>
                 </div>
@@ -249,6 +249,8 @@ const UI = {
         setTimeout(() => this.setupStateQuestionIcons(), 0);
         // Setup drag and drop for states
         setTimeout(() => DragDrop.setupStates(), 0);
+        // Setup tooltips for state names that are truncated
+        setTimeout(() => this.setupStateNameTooltips(), 0);
       } else {
         statesContainer.innerHTML = `
           <div class="state-card empty-state">
@@ -1091,6 +1093,42 @@ const UI = {
   
   clearQuestionIconTimeouts() {
     // No longer needed, but keeping for compatibility
+  },
+
+  // Setup tooltips for state names that are truncated
+  setupStateNameTooltips() {
+    // Handle truncated state names
+    const stateNames = document.querySelectorAll('.state-name');
+    
+    stateNames.forEach((nameElement, index) => {
+      const text = nameElement.textContent.trim();
+      const scrollWidth = nameElement.scrollWidth;
+      const clientWidth = nameElement.clientWidth;
+      const isOverflowing = scrollWidth > clientWidth;
+      
+      // Get the parent state-card element to check if it has data-hover
+      const parentStateCard = nameElement.closest('.state-card');
+      const hasHoverInfo = parentStateCard && parentStateCard.hasAttribute('data-hover');
+      
+      // Only show JavaScript tooltip if text is truncated AND there's no hover info (to avoid conflicts with CSS tooltips)
+      if (isOverflowing && !hasHoverInfo) {
+        // Remove any existing listeners to prevent duplicates
+        nameElement.removeEventListener('mouseenter', nameElement._boundShowTooltip);
+        nameElement.removeEventListener('mouseleave', nameElement._boundHideTooltip);
+        
+        // Bind the functions to maintain proper context
+        nameElement._boundShowTooltip = (e) => this.showTooltip(e, text);
+        nameElement._boundHideTooltip = () => this.hideTooltip();
+        
+        // Add new event listeners
+        nameElement.addEventListener('mouseenter', nameElement._boundShowTooltip);
+        nameElement.addEventListener('mouseleave', nameElement._boundHideTooltip);
+      } else {
+        // Remove tooltip listeners if text fits or if there's hover info (CSS tooltip will handle it)
+        nameElement.removeEventListener('mouseenter', nameElement._boundShowTooltip);
+        nameElement.removeEventListener('mouseleave', nameElement._boundHideTooltip);
+      }
+    });
   }
 };
 
