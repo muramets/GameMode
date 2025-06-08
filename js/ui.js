@@ -1051,18 +1051,16 @@ const UI = {
       return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     };
     
-    // Much more subtle colors with lower opacity
-    const glowColor = hexToRgba(color, 0.06);
-    const glowColorStrong = hexToRgba(color, 0.12);
-    const borderColor = hexToRgba(color, 0.15);
+    // Much more subtle colors with very low opacity - no border changes
+    const glowColor = hexToRgba(color, 0.03);
+    const glowColorStrong = hexToRgba(color, 0.06);
     
-    // Apply external glow with multiple layers for depth
+    // Apply very subtle external glow with only 2 layers
     element.style.boxShadow = `
-      0 0 8px ${glowColor},
-      0 0 16px ${hexToRgba(color, 0.04)},
-      0 0 24px ${hexToRgba(color, 0.02)}
+      0 0 6px ${glowColor},
+      0 0 12px ${hexToRgba(color, 0.02)}
     `;
-    element.style.borderColor = borderColor;
+    // Don't change border color to avoid visible outline
     element.style.transition = 'all 0.3s ease';
     
     // Add CSS animation for gentle pulsing
@@ -1074,21 +1072,19 @@ const UI = {
     }
     
     if (!this.createdAnimations.has(animationName)) {
-      // Create CSS animation keyframes
+      // Create CSS animation keyframes with more subtle effect
       const style = document.createElement('style');
       style.textContent = `
         @keyframes ${animationName} {
           0%, 100% {
             box-shadow: 
-              0 0 8px ${glowColor},
-              0 0 16px ${hexToRgba(color, 0.04)},
-              0 0 24px ${hexToRgba(color, 0.02)};
+              0 0 6px ${glowColor},
+              0 0 12px ${hexToRgba(color, 0.02)};
           }
           50% {
             box-shadow: 
-              0 0 12px ${glowColorStrong},
-              0 0 20px ${hexToRgba(color, 0.08)},
-              0 0 28px ${hexToRgba(color, 0.04)};
+              0 0 8px ${glowColorStrong},
+              0 0 16px ${hexToRgba(color, 0.04)};
           }
         }
       `;
