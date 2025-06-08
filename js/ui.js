@@ -152,9 +152,10 @@ const UI = {
           const scoreClass = this.getInnerfaceColor(score).replace('level-', '');
           const scoreBasedColor = this.getDetailedProgressColor(score); // Детализированный цвет для прогресса
           
-          // 🔧 НОВОЕ: Определяем цвет state на основе зависимостей (только для иконки и названия)
+          // 🔧 НОВОЕ: Определяем цвет state на основе зависимостей (только для иконки и свечения)
           const dependencyColor = window.Storage.getStateColor(state.id);
-          const iconColor = dependencyColor || this.getInnerfaceColor(score); // Основной цвет для иконки
+          const iconColor = dependencyColor || this.getInnerfaceColor(score); // Цвет для иконки и свечения
+          const scoreTextColor = this.getDetailedProgressColor(score); // Цвет для названия и числового значения
           
           const percentage = Math.min((score / 10) * 100, 100);
           
@@ -201,14 +202,15 @@ const UI = {
           }
           
           return `
-            <div class="state-card ${scoreClass}" draggable="true" data-state-id="${state.id}">
+            <div class="state-card ${scoreClass}" draggable="true" data-state-id="${state.id}" data-glow-color="${iconColor}">
+              <div class="state-glow"></div>
               <div class="state-header">
                 <div class="state-info-container">
                   <div class="state-icon" style="color: ${iconColor};">
                     ${this.renderIcon(state.icon, iconColor)}
                   </div>
                   <div class="state-name-container">
-                    <div class="state-name" style="color: ${iconColor};">${displayName}</div>
+                    <div class="state-name" style="color: ${scoreTextColor};">${displayName}</div>
                     ${displaySubtext ? `<div class="state-subtext">${displaySubtext}</div>` : ''}
                   </div>
                 </div>
@@ -225,7 +227,7 @@ const UI = {
                 </div>
               </div>
               
-              <div class="state-score" style="color: ${iconColor};">
+              <div class="state-score" style="color: ${scoreTextColor};">
                 ${score.toFixed(2)}
                 ${changeIcon ? `<span class="state-change-arrow ${changeClass}">${changeIcon}</span>` : ''}
                 <div class="state-score-yesterday">
