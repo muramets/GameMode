@@ -642,35 +642,11 @@
                         <div class="form-group">
                             <label>Target Innerfaces (up to 3)</label>
                             <p class="form-help-text">Optional: Select innerfaces that this protocol will affect. You can add targets later and all past check-ins will be recalculated automatically.</p>
-                            <div class="targets-container">
-                                <div class="target-slot" id="target-slot-1">
-                                    <div class="target-label">Target 1:</div>
-                                    <div class="target-content">
-                                        <div class="innerface-search-wrapper">
-                                            <input type="text" id="innerface-search-input" placeholder="Search and select a innerface..." class="form-input" autocomplete="off">
-                                            <div class="innerface-suggestions" id="innerface-suggestions"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="target-slot" id="target-slot-2" style="display: none;">
-                                    <div class="target-label">Target 2:</div>
-                                    <div class="target-content">
-                                        <div class="innerface-search-wrapper">
-                                            <input type="text" id="innerface-search-input-2" placeholder="Search and select a innerface..." class="form-input" autocomplete="off">
-                                            <div class="innerface-suggestions" id="innerface-suggestions-2"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="target-slot" id="target-slot-3" style="display: none;">
-                                    <div class="target-label">Target 3:</div>
-                                    <div class="target-content">
-                                        <div class="innerface-search-wrapper">
-                                            <input type="text" id="innerface-search-input-3" placeholder="Search and select a innerface..." class="form-input" autocomplete="off">
-                                            <div class="innerface-suggestions" id="innerface-suggestions-3"></div>
-                                        </div>
-                                    </div>
+                            
+                            <!-- Новый Grid интерфейс как в State модалке -->
+                            <div class="protocol-innerfaces-container">
+                                <div class="dependency-grid" id="protocol-innerfaces-grid">
+                                    <!-- Innerfaces будут генерироваться JS -->
                                 </div>
                             </div>
                         </div>

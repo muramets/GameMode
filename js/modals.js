@@ -4,7 +4,6 @@ const Modals = {
   currentInnerfaceId: null,
   currentProtocolId: null,
   currentStateId: null,
-  selectedTargets: [null, null, null], // Array for 3 targets
 
   init() {
     console.log('🔧 Modals.init() called - initializing modal handlers');
@@ -304,7 +303,7 @@ const Modals = {
       modal.classList.remove('active');
       document.body.style.overflow = '';
       this.currentProtocolId = null;
-      this.resetTargets();
+      this.resetProtocolTargets();
       form.reset();
       
       // Reset modal to "Add" mode
@@ -346,23 +345,22 @@ const Modals = {
       }
     });
     
-    // Setup innerface search for all 3 slots
-    for (let i = 1; i <= 3; i++) {
-      this.setupInnerfaceSearch(i);
-    }
-    
     // Form submission
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       
       const formData = new FormData(form);
+      
+      // 🔧 НОВОЕ: Получаем выбранные innerfaces из grid'а вместо selectedTargets массива
+      const selectedInnerfaceIds = this.getSelectedProtocolInnerfaces();
+      
       const protocolData = {
         name: formData.get('protocol-name'),
         description: formData.get('protocol-description'),
         icon: formData.get('protocol-emoji'),
         hover: formData.get('protocol-hover'),
         weight: parseFloat(formData.get('protocol-weight')),
-        targets: this.selectedTargets.filter(target => target !== null).map(target => target.id)
+        targets: selectedInnerfaceIds
       };
       
       // 🐛 DEBUG: Detailed logging for production debugging
@@ -382,7 +380,7 @@ const Modals = {
       console.log('  - weight >= 0:', protocolData.weight >= 0);
       console.log('  - weight <= 1:', protocolData.weight <= 1);
       console.log('  - isNaN(weight):', isNaN(protocolData.weight));
-      console.log('  - selectedTargets:', this.selectedTargets);
+      console.log('  - selectedInnerfaces:', selectedInnerfaceIds);
       
       // Validate data
       if (!protocolData.name || !protocolData.icon || protocolData.weight < 0 || protocolData.weight > 1) {
@@ -473,222 +471,128 @@ const Modals = {
     });
   },
 
-  setupInnerfaceSearch(slotNumber) {
-    const inputId = slotNumber === 1 ? 'innerface-search-input' : `innerface-search-input-${slotNumber}`;
-    const suggestionsId = slotNumber === 1 ? 'innerface-suggestions' : `innerface-suggestions-${slotNumber}`;
-    
-    const input = document.getElementById(inputId);
-    const suggestions = document.getElementById(suggestionsId);
-    
-    if (!input || !suggestions) return;
-    
-    input.addEventListener('input', (e) => {
-      this.handleInnerfaceSearch(e.target.value, slotNumber);
-    });
-    
-    input.addEventListener('focus', () => {
-      // Show all available innerfaces when focusing, or search results if there's input
-      this.handleInnerfaceSearch(input.value, slotNumber);
-    });
-    
-    input.addEventListener('blur', () => {
-      setTimeout(() => {
-        suggestions.style.display = 'none';
-      }, 300);
-    });
-  },
-
-  resetTargets() {
-    this.selectedTargets = [null, null, null];
-    
-    // Hide slots 2 and 3
-    document.getElementById('target-slot-2').style.display = 'none';
-    document.getElementById('target-slot-3').style.display = 'none';
-    
-    // Clear all inputs and show slot 1
-    for (let i = 1; i <= 3; i++) {
-      const slotId = `target-slot-${i}`;
-      const inputId = i === 1 ? 'innerface-search-input' : `innerface-search-input-${i}`;
-      const suggestionsId = i === 1 ? 'innerface-suggestions' : `innerface-suggestions-${i}`;
-      
-      const slot = document.getElementById(slotId);
-      const input = document.getElementById(inputId);
-      const suggestions = document.getElementById(suggestionsId);
-      
-      if (input) input.value = '';
-      if (suggestions) suggestions.style.display = 'none';
-      
-      if (i === 1 && slot) {
-        slot.style.display = 'flex';
-      }
+  // 🔧 НОВОЕ: Функции для работы с grid интерфейсом протокола
+  resetProtocolTargets() {
+    // Сбрасываем выбор во всех innerface items
+    const grid = document.getElementById('protocol-innerfaces-grid');
+    if (grid) {
+      const allItems = grid.querySelectorAll('.dependency-item');
+      allItems.forEach(item => {
+        item.classList.remove('selected');
+        const checkbox = item.querySelector('input[type="checkbox"]');
+        if (checkbox) {
+          checkbox.checked = false;
+        }
+      });
     }
   },
 
-  renderTargetSlot(slotIndex) {
-    const slotNumber = slotIndex + 1;
-    const slotId = `target-slot-${slotNumber}`;
-    const slot = document.getElementById(slotId);
-    const targetContent = slot.querySelector('.target-content');
-    
-    if (this.selectedTargets[slotIndex]) {
-      // Show selected innerface badge
-      const innerface = this.selectedTargets[slotIndex];
-      const nameParts = innerface.name.split('. ');
-      const mainName = nameParts[0];
-      
-      targetContent.innerHTML = `
-        <div class="selected-innerface-badge">
-          <span class="innerface-icon">${innerface.icon}</span>
-          <span class="innerface-name">${mainName}</span>
-          <button type="button" class="remove-btn" onclick="Modals.removeTarget(${slotIndex})">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-      `;
-    } else {
-      // Show search input
-      const inputId = slotNumber === 1 ? 'innerface-search-input' : `innerface-search-input-${slotNumber}`;
-      const suggestionsId = slotNumber === 1 ? 'innerface-suggestions' : `innerface-suggestions-${slotNumber}`;
-      
-      targetContent.innerHTML = `
-        <div class="innerface-search-wrapper">
-          <input type="text" id="${inputId}" placeholder="Search and select a innerface..." class="form-input" autocomplete="off">
-          <div class="innerface-suggestions" id="${suggestionsId}"></div>
-        </div>
-      `;
-      
-      // Re-setup event listeners for this slot
-      this.setupInnerfaceSearch(slotNumber);
+  populateProtocolInnerfaces() {
+    // Check if Storage is available and methods exist
+    if (!window.Storage || typeof window.Storage.getInnerfaces !== 'function') {
+      console.warn('Storage not available yet, retrying...');
+      setTimeout(() => this.populateProtocolInnerfaces(), 100);
+      return;
     }
-  },
 
-  updateTargetSlots() {
-    for (let i = 0; i < 3; i++) {
-      const slotNumber = i + 1;
-      const slotId = `target-slot-${slotNumber}`;
-      const slot = document.getElementById(slotId);
-      
-      // Show slot if it has a target or if it's the next available slot
-      const shouldShow = this.selectedTargets[i] !== null || 
-                        (i === 0) || 
-                        (i > 0 && this.selectedTargets[i-1] !== null);
-      
-      if (slot) {
-        slot.style.display = shouldShow ? 'flex' : 'none';
-      }
-      
-      this.renderTargetSlot(i);
-    }
-  },
-
-  handleInnerfaceSearch(query, slotNumber) {
-    const suggestionsId = slotNumber === 1 ? 'innerface-suggestions' : `innerface-suggestions-${slotNumber}`;
-    const suggestions = document.getElementById(suggestionsId);
+    // Populate innerfaces grid
+    const innerfacesGrid = document.getElementById('protocol-innerfaces-grid');
+    const innerfaces = window.Storage.getInnerfaces();
     
-    // 🔧 ИСПРАВЛЕНИЕ: Всегда получаем свежие данные innerfaces
-    const allInnerfaces = window.Storage.getInnerfaces();
-    let filteredInnerfaces;
-    
-    // Filter out already selected innerfaces first
-    const availableInnerfaces = allInnerfaces.filter(innerface => {
-      return !this.selectedTargets.some(target => target && target.id === innerface.id);
-    });
-    
-    if (!query.trim()) {
-      // 🔧 ИСПРАВЛЕНИЕ: Показываем ВСЕ доступные innerfaces когда нет поискового запроса
-      // и сортируем их по имени для лучшего UX
-      filteredInnerfaces = availableInnerfaces
-        .sort((a, b) => a.name.localeCompare(b.name)); // Сортируем по алфавиту
-    } else {
-      // Filter by search term
-      const searchTerm = query.toLowerCase();
-      filteredInnerfaces = availableInnerfaces.filter(innerface => {
-        // Search in innerface name and hover text
-        const name = innerface.name.toLowerCase();
-        const hover = innerface.hover ? innerface.hover.toLowerCase() : '';
-        
-        return name.includes(searchTerm) || hover.includes(searchTerm);
-      }).slice(0, 8); // Ограничиваем только при поиске
-    }
-    
-    if (filteredInnerfaces.length > 0) {
-      suggestions.style.display = 'block';
-      suggestions.innerHTML = filteredInnerfaces.map(innerface => {
+    if (innerfacesGrid) {
+      innerfacesGrid.innerHTML = innerfaces.map(innerface => {
         const nameParts = innerface.name.split('. ');
         const mainName = nameParts[0];
-        const shortDesc = nameParts.slice(1).join('. ');
         
         return `
-          <div class="innerface-suggestion" data-innerface-id="${innerface.id}" data-slot-number="${slotNumber}">
-            <span class="innerface-suggestion-icon">${innerface.icon}</span>
-            <div>
-              <div class="innerface-suggestion-name">${mainName}</div>
-              ${shortDesc ? `<div style="font-size: 0.75rem; color: var(--sub-color);">${shortDesc}</div>` : ''}
+          <div class="dependency-item" data-type="innerface" data-id="${innerface.id}">
+            <input type="checkbox" value="${innerface.id}" data-type="innerface" style="display: none;">
+            <div class="dependency-item-info">
+              <span class="dependency-item-icon">${innerface.icon}</span>
+              <div class="dependency-item-name">${mainName}</div>
             </div>
           </div>
         `;
       }).join('');
       
-      // Add event listeners to all suggestions
-      const suggestionElements = suggestions.querySelectorAll('.innerface-suggestion');
-      suggestionElements.forEach(suggestion => {
-        // Use mousedown instead of click to prevent blur from interfering
-        suggestion.addEventListener('mousedown', (e) => {
-          e.preventDefault(); // Prevent blur event
-          const innerfaceId = suggestion.getAttribute('data-innerface-id');
-          const slotNum = parseInt(suggestion.getAttribute('data-slot-number'));
-          // Convert innerfaceId to number if it's a valid number, otherwise keep as is
-          const finalInnerfaceId = isNaN(innerfaceId) ? innerfaceId : parseInt(innerfaceId);
-          this.selectTarget(finalInnerfaceId, slotNum);
+      // Add click handlers
+      innerfacesGrid.querySelectorAll('.dependency-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+          this.toggleProtocolInnerface(item);
         });
       });
+    }
+  },
+
+  toggleProtocolInnerface(item) {
+    const checkbox = item.querySelector('input[type="checkbox"]');
+    if (!checkbox) return;
+    
+    // Проверяем лимит на 3 выбранных innerfaces
+    const selectedCount = this.getSelectedProtocolInnerfaces().length;
+    
+    if (!checkbox.checked && selectedCount >= 3) {
+      App.showToast('Maximum 3 innerfaces can be selected', 'warning');
+      return;
+    }
+    
+    checkbox.checked = !checkbox.checked;
+    
+    if (checkbox.checked) {
+      item.classList.add('selected');
+      // Добавляем анимацию при выборе
+      item.classList.add('just-selected');
+      setTimeout(() => {
+        item.classList.remove('just-selected');
+      }, 500);
     } else {
-      suggestions.style.display = 'none';
+      item.classList.remove('selected');
     }
+    
+    // Обновляем состояние disabled для остальных элементов
+    this.updateProtocolInnerfaceStates();
   },
 
-  selectTarget(innerfaceId, slotNumber) {
-    // Ensure innerfaceId is the right type for comparison
-    const innerface = window.Storage.getInnerfaceById(innerfaceId);
-    if (!innerface) {
-      console.error('Innerface not found:', innerfaceId);
-      return;
-    }
+  updateProtocolInnerfaceStates() {
+    const grid = document.getElementById('protocol-innerfaces-grid');
+    if (!grid) return;
     
-    const slotIndex = slotNumber - 1;
+    const selectedCount = this.getSelectedProtocolInnerfaces().length;
+    const allItems = grid.querySelectorAll('.dependency-item');
     
-    // Check if innerface is already selected
-    if (this.selectedTargets.some(target => target && target.id == innerface.id)) {
-      App.showToast('This innerface is already selected', 'error');
-      return;
-    }
-    
-    // Set the target for this slot
-    this.selectedTargets[slotIndex] = innerface;
-    
-    // Hide suggestions for this slot
-    const suggestionsId = slotNumber === 1 ? 'innerface-suggestions' : `innerface-suggestions-${slotNumber}`;
-    const suggestions = document.getElementById(suggestionsId);
-    if (suggestions) {
-      suggestions.style.display = 'none';
-    }
-    
-    // Update all slots
-    this.updateTargetSlots();
-    
-    App.showToast(`Target ${slotNumber} selected: ${innerface.name.split('.')[0]}`, 'success');
+    allItems.forEach(item => {
+      const checkbox = item.querySelector('input[type="checkbox"]');
+      const isSelected = checkbox && checkbox.checked;
+      
+      if (!isSelected && selectedCount >= 3) {
+        item.classList.add('disabled');
+      } else {
+        item.classList.remove('disabled');
+      }
+    });
   },
 
-  removeTarget(slotIndex) {
-    this.selectedTargets[slotIndex] = null;
+  getSelectedProtocolInnerfaces() {
+    // Получаем ID выбранных innerfaces из grid'а
+    const checkboxes = document.querySelectorAll('#protocol-innerfaces-grid input[type="checkbox"]:checked');
+    return Array.from(checkboxes).map(cb => parseInt(cb.value));
+  },
+
+  setSelectedProtocolInnerfaces(innerfaceIds) {
+    // Устанавливаем выбранные innerfaces в grid
+    if (!Array.isArray(innerfaceIds)) return;
     
-    // Shift remaining targets left
-    for (let i = slotIndex; i < 2; i++) {
-      this.selectedTargets[i] = this.selectedTargets[i + 1];
-    }
-    this.selectedTargets[2] = null;
+    innerfaceIds.forEach(innerfaceId => {
+      const item = document.querySelector(`#protocol-innerfaces-grid .dependency-item[data-id="${innerfaceId}"]`);
+      const checkbox = item?.querySelector('input[type="checkbox"]');
+      if (checkbox && item) {
+        checkbox.checked = true;
+        item.classList.add('selected');
+      }
+    });
     
-    this.updateTargetSlots();
+    // Обновляем состояние disabled элементов
+    this.updateProtocolInnerfaceStates();
   },
 
   openProtocolModal() {
@@ -697,8 +601,8 @@ const Modals = {
       modal.classList.add('active');
       document.body.style.overflow = 'hidden';
       
-      this.resetTargets();
-      this.updateTargetSlots();
+      this.resetProtocolTargets();
+      this.populateProtocolInnerfaces();
       
       // Focus on first input
       const firstInput = document.getElementById('protocol-name');
@@ -743,20 +647,12 @@ const Modals = {
     // Open modal first
     this.openProtocolModal();
     
-    // THEN load selected innerfaces into targets (after the modal is open and resetTargets() is called)
-    this.selectedTargets = [null, null, null];
-    const allInnerfaces = window.Storage.getInnerfaces();
-    protocol.targets.forEach((targetId, index) => {
-      if (index < 3) {
-        const innerface = allInnerfaces.find(s => s.id === targetId);
-        if (innerface) {
-          this.selectedTargets[index] = innerface;
-        }
+    // 🔧 НОВОЕ: Загружаем выбранные innerfaces в grid после открытия модалки
+    setTimeout(() => {
+      if (protocol.targets && protocol.targets.length > 0) {
+        this.setSelectedProtocolInnerfaces(protocol.targets);
       }
-    });
-    
-    // Update the display to show selected targets
-    this.updateTargetSlots();
+    }, 100);
   },
 
   deleteCurrentProtocol(protocolId) {

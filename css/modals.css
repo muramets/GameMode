@@ -1047,6 +1047,117 @@
   font-weight: 500;
 }
 
+/* ===== PROTOCOL INNERFACES GRID (Game Mode colors) ===== */
+.protocol-innerfaces-container {
+  margin-top: 1rem;
+}
+
+.protocol-innerfaces-container .dependency-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 1rem;
+  border: 1px solid var(--sub-color);
+  border-radius: 12px;
+  background-color: var(--bg-color);
+}
+
+.protocol-innerfaces-container .dependency-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 20px; /* Закругленные края как в навигации */
+  transition: all 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  cursor: pointer;
+  background-color: var(--sub-alt-color); /* Серый для неактивного */
+  color: var(--text-color);
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.8rem;
+  font-weight: 400;
+  white-space: nowrap;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.protocol-innerfaces-container .dependency-item:hover:not(.selected) {
+  background-color: var(--sub-color);
+  color: var(--text-color);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.protocol-innerfaces-container .dependency-item.selected {
+  background-color: var(--main-color); /* Желтый для активного */
+  color: var(--bg-color);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 12px rgba(255, 215, 0, 0.3);
+}
+
+.protocol-innerfaces-container .dependency-item-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.protocol-innerfaces-container .dependency-item-icon {
+  font-size: 1rem;
+  min-width: 1.2em;
+  text-align: center;
+  line-height: 1;
+}
+
+.protocol-innerfaces-container .dependency-item-name {
+  font-size: 0.8rem;
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.protocol-innerfaces-container .dependency-item.selected .dependency-item-name {
+  color: var(--bg-color);
+  font-weight: 500;
+}
+
+/* Лимит на 3 выбранных элемента */
+.protocol-innerfaces-container .dependency-item.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.protocol-innerfaces-container .dependency-item.disabled:hover {
+  background-color: var(--sub-alt-color) !important;
+  color: var(--text-color) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Анимация при выборе */
+.protocol-innerfaces-container .dependency-item.selected::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.2), 
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.protocol-innerfaces-container .dependency-item.selected.just-selected::before {
+  left: 100%;
+}
+
 /* ===== QUICK ACTION PROTOCOL SELECTION ===== */
 .quick-action-search-controls {
   margin-bottom: 1.5rem;
