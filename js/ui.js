@@ -122,11 +122,11 @@ const UI = {
           yesterday.setHours(0, 0, 0, 0); // Начало сегодняшнего дня (00:00:00)
           const yesterdayScore = window.Storage.calculateStateScoreAtDate(state.id, yesterday);
           const scoreClass = this.getInnerfaceColor(score).replace('level-', '');
-          const color = this.getInnerfaceColor(score);
+          const scoreBasedColor = this.getInnerfaceColor(score); // Цвет на основе score (для прогресса)
           
-          // 🔧 НОВОЕ: Определяем цвет state на основе зависимостей
+          // 🔧 НОВОЕ: Определяем цвет state на основе зависимостей (только для иконки и названия)
           const dependencyColor = window.Storage.getStateColor(state.id);
-          const stateColor = dependencyColor || color; // Fallback to score-based color
+          const iconColor = dependencyColor || scoreBasedColor; // Цвет для иконки и названия
           
           const percentage = Math.min((score / 10) * 100, 100);
           
@@ -135,11 +135,11 @@ const UI = {
           let changeIcon = '';
           let changeClass = '';
           if (change > 0) {
-            changeIcon = '↗';
-            changeClass = 'positive';
+            changeIcon = '<i class="fas fa-arrow-trend-up"></i>';
+            changeClass = 'increase';
           } else if (change < 0) {
-            changeIcon = '↘';
-            changeClass = 'negative';
+            changeIcon = '<i class="fas fa-arrow-trend-down"></i>';
+            changeClass = 'decrease';
           }
           
           // Get number of dependencies (innerfaces or states)
@@ -176,11 +176,11 @@ const UI = {
             <div class="state-card ${scoreClass}" draggable="true" data-state-id="${state.id}">
               <div class="state-header">
                 <div class="state-info-container">
-                  <div class="state-icon" style="color: ${stateColor};">
-                    ${this.renderIcon(state.icon, stateColor)}
+                  <div class="state-icon" style="color: ${iconColor};">
+                    ${this.renderIcon(state.icon, iconColor)}
                   </div>
                   <div class="state-name-container">
-                    <div class="state-name" style="color: ${stateColor};">${displayName}</div>
+                    <div class="state-name" style="color: ${iconColor};">${displayName}</div>
                     ${displaySubtext ? `<div class="state-subtext">${displaySubtext}</div>` : ''}
                   </div>
                 </div>
@@ -197,16 +197,16 @@ const UI = {
                 </div>
               </div>
               
-              <div class="state-score" style="color: ${stateColor};">
+              <div class="state-score" style="color: ${scoreBasedColor};">
                 ${score.toFixed(2)}
-                ${changeIcon ? `<span class="state-change-arrow ${changeClass}">${changeIcon}</span>` : ''}
+                ${changeIcon ? `<span class="innerface-change-arrow ${changeClass}">${changeIcon}</span>` : ''}
                 <div class="state-score-yesterday">
                   yesterday: ${yesterdayScore.toFixed(2)}
                 </div>
               </div>
               
               <div class="state-bar">
-                <div class="state-bar-fill" style="width: ${percentage}%; background-color: ${stateColor};"></div>
+                <div class="state-bar-fill" style="width: ${percentage}%; background-color: ${scoreBasedColor};"></div>
               </div>
               
               <div class="state-details">
