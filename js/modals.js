@@ -241,11 +241,23 @@ const Modals = {
   },
 
   deleteCurrentSkill(skillId) {
-    if (!confirm('Are you sure you want to delete this skill? This action cannot be undone.')) {
+    console.log('🗑️ deleteCurrentSkill called with ID:', skillId);
+    
+    // Get skill info for logging
+    const skill = window.Storage.getSkillById(skillId);
+    if (skill) {
+      console.log('🗑️ Skill found:', skill.name);
+    } else {
+      console.error('❌ Skill not found with ID:', skillId);
+      App.showToast('Skill not found', 'error');
       return;
     }
     
+    console.log('🗑️ Deleting skill directly without confirmation...');
+    
     const success = window.Storage.deleteSkill(skillId);
+    console.log('🗑️ Storage.deleteSkill result:', success);
+    
     if (success) {
       App.showToast('Skill deleted successfully', 'success');
       
@@ -254,14 +266,27 @@ const Modals = {
       if (modal) {
         modal.classList.remove('active');
         document.body.style.overflow = '';
+        console.log('🗑️ Modal closed');
       }
+      
+      // Reset current skill ID
+      this.currentSkillId = null;
       
       // Update filtered skills
       App.filteredSkills = window.Storage.getSkillsInOrder();
       if (App.currentPage === 'skills') {
         UI.renderSkills();
+        DragDrop.setupSkills();
         App.setupTooltips();
+        console.log('🗑️ Skills page refreshed');
       }
+      
+      // 🔄 Sync with backend after successful deletion
+      console.log('🔄 Triggering sync after skill deletion...');
+      window.Storage.syncWithBackend().catch(error => {
+        console.error('❌ Sync failed after skill deletion:', error);
+        App.showToast('⚠️ Skill deleted locally but sync failed', 'warning');
+      });
     } else {
       App.showToast('Failed to delete skill', 'error');
     }
