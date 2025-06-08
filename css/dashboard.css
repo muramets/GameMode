@@ -265,6 +265,7 @@
   flex-direction: column;
   gap: 0.25rem;
   flex: 1;
+  min-width: 0;
 }
 
 .state-controls {
@@ -287,11 +288,17 @@
   font-size: 17px;
   font-weight: 500;
   letter-spacing: 0.01em;
-  line-height: 1.2;
+  line-height: 1.2 !important;
   font-family: 'Roboto Mono', monospace;
   margin: 0;
   transition: all 0.2s ease;
   text-transform: capitalize;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  width: 100%;
+  max-width: 100%;
+  display: block !important;
 }
 
 .state-subtext {
@@ -694,6 +701,9 @@
   
   .state-name {
     font-size: 15px;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 }
 
