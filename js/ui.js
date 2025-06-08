@@ -135,10 +135,10 @@ const UI = {
           let changeIcon = '';
           let changeClass = '';
           if (change > 0) {
-            changeIcon = '<i class="fas fa-arrow-trend-up"></i>';
+            changeIcon = '<i class="fas fa-arrow-up"></i>';
             changeClass = 'increase';
           } else if (change < 0) {
-            changeIcon = '<i class="fas fa-arrow-trend-down"></i>';
+            changeIcon = '<i class="fas fa-arrow-down"></i>';
             changeClass = 'decrease';
           }
           
@@ -197,9 +197,9 @@ const UI = {
                 </div>
               </div>
               
-              <div class="state-score" style="color: ${scoreBasedColor};">
+              <div class="state-score" style="color: ${iconColor};">
                 ${score.toFixed(2)}
-                ${changeIcon ? `<span class="innerface-change-arrow ${changeClass}">${changeIcon}</span>` : ''}
+                ${changeIcon ? `<span class="state-change-arrow ${changeClass}">${changeIcon}</span>` : ''}
                 <div class="state-score-yesterday">
                   yesterday: ${yesterdayScore.toFixed(2)}
                 </div>
