@@ -70,11 +70,36 @@ const UI = {
   // Render icon properly - either as FontAwesome or emoji
   renderIcon(emoji, customColor = null) {
     const iconClass = this.emojiToFontAwesome(emoji);
+    
+    // 🔧 ДЕБАГ: Логируем информацию о цвете
+    if (customColor) {
+      console.log(`🎨 RENDER ICON DEBUG:`, {
+        emoji,
+        iconClass,
+        customColor,
+        isFontAwesome: iconClass.startsWith('fas '),
+        finalColor: customColor || 'var(--text-color)'
+      });
+    }
+    
     // If it's a FontAwesome class, wrap in <i> tag
     if (iconClass.startsWith('fas ')) {
       // Default to text color from CSS variables, use custom color if provided
       const color = customColor || 'var(--text-color)';
-      return `<i class="${iconClass}" style="color: ${color};"></i>`;
+      const result = `<i class="${iconClass}" style="color: ${color};"></i>`;
+      
+      // 🔧 ДЕБАГ: Логируем финальный результат для FontAwesome иконок
+      if (customColor) {
+        console.log(`🎨 FONTAWESOME ICON RESULT:`, {
+          emoji,
+          iconClass,
+          customColor,
+          finalColor: color,
+          html: result
+        });
+      }
+      
+      return result;
     }
     // Otherwise, return the emoji directly
     return iconClass;
@@ -147,7 +172,7 @@ const UI = {
               <div class="state-header">
                 <div class="state-info-container">
                   <div class="state-icon" style="color: ${color};">
-                    ${this.renderIcon(state.icon)}
+                    ${this.renderIcon(state.icon, color)}
                   </div>
                   <div class="state-name-container">
                     <div class="state-name" style="color: ${color};">${displayName}</div>
@@ -384,6 +409,16 @@ const UI = {
     
     container.innerHTML = pageProtocols.map((protocol, index) => {
       const globalIndex = startIndex + index + 1;
+      
+      // 🔧 ДЕБАГ: Логируем информацию о цвете протокола
+      console.log(`🎨 PROTOCOL RENDER DEBUG for ID ${protocol.id}:`, {
+        name: protocol.name.split('. ')[0],
+        icon: protocol.icon,
+        color: protocol.color,
+        hasColor: !!protocol.color,
+        colorType: typeof protocol.color
+      });
+      
       const icon = this.renderIcon(protocol.icon, protocol.color);
       
       // Get target innerface names

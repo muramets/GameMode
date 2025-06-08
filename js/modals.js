@@ -95,7 +95,7 @@ const Modals = {
         icon: formData.get('innerface-emoji'),
         hover: formData.get('innerface-hover'),
         initialScore: parseFloat(formData.get('innerface-initial-score')),
-        color: formData.get('innerface-color') || '#7fb3d3' // Default blue color
+        color: formData.get('innerface-color') || null // НЕ устанавливаем дефолтный цвет
       };
       
       // 🐛 DEBUG: Detailed logging for production debugging
@@ -372,7 +372,7 @@ const Modals = {
         hover: formData.get('protocol-hover'),
         weight: parseFloat(formData.get('protocol-weight')),
         targets: selectedInnerfaceIds,
-        color: formData.get('protocol-color') || '#7fb3d3' // Default blue color
+        color: formData.get('protocol-color') || null // НЕ устанавливаем дефолтный цвет
       };
       
       // 🐛 DEBUG: Detailed logging for production debugging
@@ -1688,27 +1688,57 @@ const Modals = {
   },
 
   loadSavedColor(type, color) {
-    if (!color) color = '#7fb3d3'; // Default blue
+    console.log(`🎨 LOADING SAVED COLOR for ${type}:`, { color, hasColor: !!color });
+    
+    // 🔧 ИСПРАВЛЕНИЕ: Если цвет не задан, НЕ выбираем дефолтный blue
+    if (!color) {
+      console.log(`🎨 NO COLOR SET for ${type}: Not selecting any color`);
+      // Убираем выделение со всех цветов
+      const colorOptions = document.querySelectorAll(`#${type}-color-group .color-option`);
+      colorOptions.forEach(option => {
+        option.classList.remove('selected');
+      });
+      return;
+    }
     
     // Set the hidden input value
     const colorInput = document.getElementById(`${type}-color`);
     if (colorInput) {
       colorInput.value = color;
+      console.log(`🎨 SET COLOR INPUT for ${type}:`, color);
     }
 
-    // Update visual selection
+    // Update visual selection only if color is specified
     this.selectColor(type, color);
   },
 
   // Update existing openInnerfaceModal and openProtocolModal functions
   initializeColorPickersOnModalOpen(type) {
+    console.log(`🎨 INITIALIZING COLOR PICKER for ${type}`);
+    
     // Show color picker if current emoji is FontAwesome
     setTimeout(() => {
       this.toggleColorPickerVisibility(type);
-      // Set default color selection
+      
+      // 🔧 ИСПРАВЛЕНИЕ: НЕ устанавливаем дефолтный цвет автоматически
+      // Пользователь должен явно выбрать цвет
       const colorInput = document.getElementById(`${type}-color`);
-      const currentColor = colorInput?.value || '#7fb3d3';
-      this.selectColor(type, currentColor);
+      const currentColor = colorInput?.value;
+      
+      console.log(`🎨 CURRENT COLOR in input for ${type}:`, { currentColor, hasValue: !!currentColor });
+      
+      // Только если есть сохраненный цвет - выбираем его визуально
+      if (currentColor) {
+        this.selectColor(type, currentColor);
+        console.log(`🎨 SELECTED SAVED COLOR for ${type}:`, currentColor);
+      } else {
+        console.log(`🎨 NO COLOR TO SELECT for ${type}: Leaving picker empty`);
+        // Убираем выделение со всех цветов
+        const colorOptions = document.querySelectorAll(`#${type}-color-group .color-option`);
+        colorOptions.forEach(option => {
+          option.classList.remove('selected');
+        });
+      }
     }, 100);
   }
 }; 
