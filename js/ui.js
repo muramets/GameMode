@@ -908,16 +908,46 @@ const UI = {
       }
     }
 
+    // 🔧 ОТЛАДКА: Добавим подробные логи для отладки badge glow эффектов
+    console.log('🔍 BADGE GLOW DEBUG: Starting color calculation...', {
+      todayCheckinsCount: todayCheckins.length,
+      innerfacesCount: innerfaces.length,
+      totalCheckinsCount: checkins.length
+    });
+
     // Get colors for stat badges based on most changed innerfaces
     const todayColor = window.Storage.getMostChangedInnerfaceColorToday();
     const monthColor = window.Storage.getMostChangedInnerfaceColorThisMonth();
     
+    console.log('🎨 BADGE COLORS CALCULATED:', {
+      todayColor,
+      monthColor,
+      todayColorType: typeof todayColor,
+      monthColorType: typeof monthColor
+    });
+    
+    // 🔧 ИСПРАВЛЕНИЕ: Улучшенные селекторы для stat labels
+    const todayStatLabel = document.querySelector('[data-stat="checkins-today"] .stat-label') || 
+                          document.querySelector('.stat-item:first-child .stat-label');
+    const monthStatLabel = document.querySelector('[data-stat="checkins-month"] .stat-label') || 
+                          document.querySelector('.stat-item:nth-child(2) .stat-label');
+    
+    console.log('🔍 STAT LABEL ELEMENTS:', {
+      todayStatLabel: !!todayStatLabel,
+      monthStatLabel: !!monthStatLabel,
+      todayLabelText: todayStatLabel?.textContent,
+      monthLabelText: monthStatLabel?.textContent
+    });
+    
     // Apply colors to today's check-ins badge
-    const todayStatLabel = document.querySelector('.stat-item:first-child .stat-label');
     if (todayStatLabel && todayColor) {
+      console.log('🎨 APPLYING TODAY GLOW:', { element: todayStatLabel, color: todayColor });
       this.applyInnerGlowToStatLabel(todayStatLabel, todayColor);
     } else if (todayStatLabel) {
+      console.log('🚫 REMOVING TODAY GLOW (no color):', { element: todayStatLabel, color: todayColor });
       this.removeInnerGlowFromStatLabel(todayStatLabel);
+    } else {
+      console.log('🚨 TODAY STAT LABEL NOT FOUND');
     }
 
     // Update today's checkins
@@ -970,11 +1000,14 @@ const UI = {
     });
 
     // Apply colors to month's check-ins badge
-    const monthStatLabel = document.querySelector('.stat-item:nth-child(2) .stat-label');
     if (monthStatLabel && monthColor) {
+      console.log('🎨 APPLYING MONTH GLOW:', { element: monthStatLabel, color: monthColor });
       this.applyInnerGlowToStatLabel(monthStatLabel, monthColor);
     } else if (monthStatLabel) {
+      console.log('🚫 REMOVING MONTH GLOW (no color):', { element: monthStatLabel, color: monthColor });
       this.removeInnerGlowFromStatLabel(monthStatLabel);
+    } else {
+      console.log('🚨 MONTH STAT LABEL NOT FOUND');
     }
     
     // Update month's checkins
@@ -1004,6 +1037,8 @@ const UI = {
       
       checkinsMonthDetail.innerHTML = `${sign}${monthTotalChange.toFixed(2)} xp ${trendArrow}`;
     }
+    
+    console.log('✅ BADGE GLOW DEBUG COMPLETE');
   },
 
   // Helper function to apply inner glow to stat labels

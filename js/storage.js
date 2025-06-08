@@ -4892,20 +4892,46 @@ class Storage {
     const history = this.getCheckins();
     const innerfaceChanges = {};
     
+    console.log('🔍 INNERFACE COLOR CALCULATION DEBUG:', {
+      startTimestamp,
+      endTimestamp,
+      startDate: new Date(startTimestamp).toISOString(),
+      endDate: new Date(endTimestamp).toISOString(),
+      totalHistoryCount: history.length
+    });
+    
     // Count changes for each innerface in the period
+    let processedCheckins = 0;
     history.forEach(checkin => {
-      if (checkin.timestamp >= startTimestamp && checkin.timestamp <= endTimestamp) {
+      const checkinTimestamp = new Date(checkin.timestamp).getTime();
+      
+      if (checkinTimestamp >= startTimestamp && checkinTimestamp <= endTimestamp && checkin.type === 'protocol') {
+        processedCheckins++;
+        
+        // Get protocol to check targets
         const protocol = this.getProtocolById(checkin.protocolId);
-        if (protocol && protocol.targets) {
+        if (protocol && protocol.targets && protocol.targets.length > 0) {
+          console.log(`📋 Processing checkin ${checkin.id}: protocol ${protocol.id} affects innerfaces:`, protocol.targets);
+          
           protocol.targets.forEach(innerfaceId => {
             if (!innerfaceChanges[innerfaceId]) {
               innerfaceChanges[innerfaceId] = 0;
             }
-            // Count absolute value of change (positive or negative)
-            innerfaceChanges[innerfaceId] += Math.abs(checkin.points || 1);
+            // Count the weight of the protocol as change amount
+            innerfaceChanges[innerfaceId] += Math.abs(protocol.weight || 1);
+            
+            console.log(`  📊 Innerface ${innerfaceId}: +${Math.abs(protocol.weight || 1)} (total: ${innerfaceChanges[innerfaceId]})`);
           });
+        } else {
+          console.log(`⚠️ Checkin ${checkin.id}: no protocol found or no targets`);
         }
       }
+    });
+    
+    console.log('📊 FINAL INNERFACE CHANGES:', {
+      processedCheckins,
+      innerfaceChanges,
+      innerfaceCount: Object.keys(innerfaceChanges).length
     });
     
     // Find innerface with most changes
@@ -4919,14 +4945,34 @@ class Storage {
       }
     });
     
+    console.log('🏆 MOST CHANGED INNERFACE:', {
+      innerfaceId: mostChangedInnerfaceId,
+      changes: maxChanges
+    });
+    
     if (mostChangedInnerfaceId) {
       const innerface = this.getInnerfaceById(mostChangedInnerfaceId);
+      console.log('🎨 INNERFACE DETAILS:', {
+        innerface: innerface ? {
+          id: innerface.id,
+          name: innerface.name,
+          color: innerface.color,
+          hasColor: !!innerface.color
+        } : null
+      });
+      
       if (innerface && innerface.color) {
+        console.log(`✅ RETURNING COLOR: ${innerface.color} for innerface ${innerface.name}`);
         return innerface.color;
+      } else {
+        console.log(`⚠️ INNERFACE ${mostChangedInnerfaceId} has no color`);
       }
+    } else {
+      console.log('ℹ️ NO INNERFACE CHANGES FOUND IN PERIOD');
     }
     
     // Fallback to default color if no changes found
+    console.log('🔄 RETURNING NULL (no color found)');
     return null;
   }
 }
