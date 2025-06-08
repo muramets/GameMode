@@ -1042,6 +1042,9 @@ const UI = {
     
     // 🎨 НОВОЕ: Настройка пульсирующей анимации dashboard при ховере
     this.setupDashboardHoverAnimation(todayColor);
+    
+    // 🎯 НОВОЕ: Настройка кликабельных бейджей для перехода в History
+    this.setupBadgeClicks();
   },
 
   // Helper function to apply elegant external glow to stat labels
@@ -1333,6 +1336,83 @@ const UI = {
       animationName,
       hasColor: !!todayColor
     });
+  },
+
+  // Setup clickable badges that navigate to history with appropriate filters
+  setupBadgeClicks() {
+    const todayBadge = document.querySelector('[data-stat="checkins-today"]');
+    const monthBadge = document.querySelector('[data-stat="checkins-month"]');
+    
+    // Remove existing listeners to prevent duplicates
+    if (todayBadge) {
+      todayBadge.removeEventListener('click', todayBadge._boundClickHandler);
+      todayBadge.style.cursor = 'pointer';
+      todayBadge.title = 'Click to view today\'s check-ins';
+      
+      todayBadge._boundClickHandler = () => {
+        console.log('🎯 TODAY BADGE CLICKED: Navigating to history with today filter');
+        this.navigateToHistoryWithFilter('today');
+      };
+      
+      todayBadge.addEventListener('click', todayBadge._boundClickHandler);
+    }
+    
+    if (monthBadge) {
+      monthBadge.removeEventListener('click', monthBadge._boundClickHandler);
+      monthBadge.style.cursor = 'pointer';
+      monthBadge.title = 'Click to view this month\'s check-ins';
+      
+      monthBadge._boundClickHandler = () => {
+        console.log('🎯 MONTH BADGE CLICKED: Navigating to history with month filter');
+        this.navigateToHistoryWithFilter('month');
+      };
+      
+      monthBadge.addEventListener('click', monthBadge._boundClickHandler);
+    }
+    
+    console.log('🎯 BADGE CLICKS SETUP:', {
+      todayBadgeFound: !!todayBadge,
+      monthBadgeFound: !!monthBadge
+    });
+  },
+
+  // Navigate to history page with specific time filter
+  navigateToHistoryWithFilter(timeFilter) {
+    if (!window.App) return;
+    
+    // Set up filter before navigation
+    window.App.historyFilters = {
+      time: timeFilter,
+      type: 'all',
+      protocol: 'all',
+      state: 'all',
+      effect: 'all',
+      innerface: 'all',
+      customDateFrom: '',
+      customDateTo: ''
+    };
+    
+    // Clear search input
+    const historySearchInput = document.getElementById('history-search');
+    if (historySearchInput) {
+      historySearchInput.value = '';
+    }
+    
+    // Navigate to history page
+    window.App.navigateTo('history');
+    
+    // Apply the time filter and update UI
+    setTimeout(() => {
+      window.App.applyHistoryFilters();
+      window.App.updateFilterUI();
+      window.App.updateFilterIcon();
+    }, 100);
+    
+    // Show toast notification
+    const filterLabel = timeFilter === 'today' ? 'today\'s' : 'this month\'s';
+    window.App.showToast(`Showing ${filterLabel} check-ins`, 'info');
+    
+    console.log('🎯 NAVIGATED TO HISTORY:', { timeFilter });
   }
 };
 

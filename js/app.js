@@ -393,6 +393,33 @@ function initMainApp() {
         },
 
         navigateTo(page) {
+            // 🎯 НОВОЕ: Сброс фильтров при уходе из History
+            if (this.currentPage === 'history' && page !== 'history') {
+                console.log('🔄 LEAVING HISTORY PAGE: Resetting filters');
+                this.historyFilters = {
+                    time: 'all',
+                    type: 'all',
+                    protocol: 'all',
+                    state: 'all',
+                    effect: 'all',
+                    innerface: 'all',
+                    customDateFrom: '',
+                    customDateTo: ''
+                };
+                
+                // Clear search input
+                const historySearchInput = document.getElementById('history-search');
+                if (historySearchInput) {
+                    historySearchInput.value = '';
+                }
+                
+                // Reset history data for next visit
+                this.filteredHistory = [];
+                this.historyInitialized = false;
+                
+                console.log('✅ HISTORY FILTERS RESET');
+            }
+            
             // Update nav
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.toggle('active', item.dataset.page === page);
