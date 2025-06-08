@@ -22,6 +22,33 @@ const UI = {
     return '#7fb3d3';
   },
 
+  // Get detailed progress color with smoother transitions
+  getDetailedProgressColor(score) {
+    // Clamp score to 0-10 range
+    const clampedScore = Math.max(0, Math.min(10, score));
+    
+    // More detailed color gradations for smoother transitions
+    if (clampedScore < 1) return '#b73e4a';      // Dark red
+    if (clampedScore < 1.5) return '#ca4754';    // Red (original)
+    if (clampedScore < 2) return '#d55460';      // Light red
+    if (clampedScore < 2.5) return '#df6248';    // Red-orange
+    if (clampedScore < 3) return '#e6934a';      // Orange (original)
+    if (clampedScore < 3.5) return '#e8a055';    // Light orange
+    if (clampedScore < 4) return '#e9ad60';      // Orange-yellow
+    if (clampedScore < 4.5) return '#e9ba6b';    // Yellow-orange
+    if (clampedScore < 5) return '#e2b714';      // Yellow (original)
+    if (clampedScore < 5.5) return '#ddc332';    // Light yellow
+    if (clampedScore < 6) return '#d8cf50';      // Yellow-green transition
+    if (clampedScore < 6.5) return '#c8d968';    // Yellow-green
+    if (clampedScore < 7) return '#b8d370';      // Light green transition
+    if (clampedScore < 7.5) return '#a8cd74';    // Light green
+    if (clampedScore < 8) return '#98c379';      // Green (original)
+    if (clampedScore < 8.5) return '#8cc47e';    // Light green-blue
+    if (clampedScore < 9) return '#80c583';      // Green-blue transition
+    if (clampedScore < 9.5) return '#7fb3d3';    // Blue (original)
+    return '#72a8d8';                            // Light blue
+  },
+
   // Convert emoji to FontAwesome icon
   emojiToFontAwesome(emoji) {
     const emojiMap = {
@@ -122,11 +149,11 @@ const UI = {
           yesterday.setHours(0, 0, 0, 0); // Начало сегодняшнего дня (00:00:00)
           const yesterdayScore = window.Storage.calculateStateScoreAtDate(state.id, yesterday);
           const scoreClass = this.getInnerfaceColor(score).replace('level-', '');
-          const scoreBasedColor = this.getInnerfaceColor(score); // Цвет на основе score (для прогресса)
+          const scoreBasedColor = this.getDetailedProgressColor(score); // Детализированный цвет для прогресса
           
           // 🔧 НОВОЕ: Определяем цвет state на основе зависимостей (только для иконки и названия)
           const dependencyColor = window.Storage.getStateColor(state.id);
-          const iconColor = dependencyColor || scoreBasedColor; // Цвет для иконки и названия
+          const iconColor = dependencyColor || this.getInnerfaceColor(score); // Основной цвет для иконки
           
           const percentage = Math.min((score / 10) * 100, 100);
           
@@ -544,7 +571,8 @@ const UI = {
       const initial = innerface.initialScore;
       const progress = current - initial;
       const progressClass = progress > 0 ? 'positive' : progress < 0 ? 'negative' : 'neutral';
-      const color = this.getInnerfaceColor(current);
+      const textColor = this.getInnerfaceColor(current); // Основной цвет для текста
+      const progressColor = this.getDetailedProgressColor(current); // Детализированный цвет для прогресса
       
       const hasHover = innerface.hover && innerface.hover.trim();
       
@@ -568,7 +596,7 @@ const UI = {
           </div>
           <div class="innerface-cell innerface-initial-cell">${initial.toFixed(2)}</div>
           <div class="innerface-cell innerface-current-cell">
-            <span style="color: ${color}; font-weight: 600;">${current.toFixed(2)}</span>
+            <span style="color: ${textColor}; font-weight: 600;">${current.toFixed(2)}</span>
             ${(() => {
               const diff = current - initial;
               if (diff > 0.01) {
@@ -581,7 +609,7 @@ const UI = {
           </div>
           <div class="innerface-cell innerface-progress-cell">
             <div class="innerface-progress-bar">
-              <div class="innerface-progress-fill" style="width: ${Math.max(0, Math.min(100, (current / 10) * 100))}%; background-color: ${color};"></div>
+              <div class="innerface-progress-fill" style="width: ${Math.max(0, Math.min(100, (current / 10) * 100))}%; background-color: ${progressColor};"></div>
             </div>
             <span class="innerface-progress-percent">${Math.round((current / 10) * 100)}%</span>
           </div>
