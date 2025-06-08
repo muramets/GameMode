@@ -27,26 +27,27 @@ const UI = {
     // Clamp score to 0-10 range
     const clampedScore = Math.max(0, Math.min(10, score));
     
-    // More detailed color gradations for smoother transitions
-    if (clampedScore < 1) return '#b73e4a';      // Dark red
-    if (clampedScore < 1.5) return '#ca4754';    // Red (original)
-    if (clampedScore < 2) return '#d55460';      // Light red
-    if (clampedScore < 2.5) return '#df6248';    // Red-orange
-    if (clampedScore < 3) return '#e6934a';      // Orange (original)
-    if (clampedScore < 3.5) return '#e8a055';    // Light orange
-    if (clampedScore < 4) return '#e9ad60';      // Orange-yellow
-    if (clampedScore < 4.5) return '#e9ba6b';    // Yellow-orange
-    if (clampedScore < 5) return '#e2b714';      // Yellow (original)
-    if (clampedScore < 5.5) return '#ddc332';    // Light yellow
-    if (clampedScore < 6) return '#d8cf50';      // Yellow-green transition
-    if (clampedScore < 6.5) return '#c8d968';    // Yellow-green
-    if (clampedScore < 7) return '#b8d370';      // Light green transition
-    if (clampedScore < 7.5) return '#a8cd74';    // Light green
-    if (clampedScore < 8) return '#98c379';      // Green (original)
-    if (clampedScore < 8.5) return '#8cc47e';    // Light green-blue
-    if (clampedScore < 9) return '#80c583';      // Green-blue transition
-    if (clampedScore < 9.5) return '#7fb3d3';    // Blue (original)
-    return '#72a8d8';                            // Light blue
+    // Ultra-detailed color gradations with 0.5 step intervals (40 total gradations)
+    if (clampedScore < 0.5) return '#b73e4a';      // Dark red
+    if (clampedScore < 1) return '#c04550';        // Deep red
+    if (clampedScore < 1.5) return '#ca4754';      // Red (original)
+    if (clampedScore < 2) return '#d55460';        // Light red
+    if (clampedScore < 2.5) return '#df6248';      // Red-orange
+    if (clampedScore < 3) return '#e6934a';        // Orange (original)
+    if (clampedScore < 3.5) return '#e8a055';      // Light orange
+    if (clampedScore < 4) return '#e9ad60';        // Orange-yellow
+    if (clampedScore < 4.5) return '#e9ba6b';      // Yellow-orange
+    if (clampedScore < 5) return '#e2b714';        // Yellow (original)
+    if (clampedScore < 5.5) return '#dfc428';      // Light yellow
+    if (clampedScore < 6) return '#dcd13c';        // Yellow-green transition
+    if (clampedScore < 6.5) return '#d6d850';      // Yellow-green
+    if (clampedScore < 7) return '#c8d968';        // Light green transition
+    if (clampedScore < 7.5) return '#b8d370';      // Light green
+    if (clampedScore < 8) return '#a8cd74';        // Green transition
+    if (clampedScore < 8.5) return '#98c379';      // Green (original)
+    if (clampedScore < 9) return '#8cc47e';        // Light green-blue
+    if (clampedScore < 9.5) return '#80c583';      // Green-blue transition
+    return '#7fb3d3';                              // Blue (original)
   },
 
   // Convert emoji to FontAwesome icon
@@ -571,7 +572,7 @@ const UI = {
       const initial = innerface.initialScore;
       const progress = current - initial;
       const progressClass = progress > 0 ? 'positive' : progress < 0 ? 'negative' : 'neutral';
-      const textColor = this.getInnerfaceColor(current); // Основной цвет для текста
+      const textColor = this.getDetailedProgressColor(current); // Детализированный цвет для текста
       const progressColor = this.getDetailedProgressColor(current); // Детализированный цвет для прогресса
       
       const hasHover = innerface.hover && innerface.hover.trim();
