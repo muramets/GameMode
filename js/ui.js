@@ -275,6 +275,9 @@ const UI = {
     
     this.renderQuickProtocols();
     this.updateUserStats();
+    
+    // 🌟 НОВОЕ: Настройка пульсирующих анимаций для карточек states
+    this.setupStateCardAnimations();
   },
 
   renderQuickProtocols() {
@@ -1411,6 +1414,109 @@ const UI = {
     window.App.showToast(`Showing ${filterLabel} check-ins`, 'info');
     
     console.log('🎯 NAVIGATED TO HISTORY:', { timeFilter });
+  },
+
+  // 🌟 НОВОЕ: Настройка пульсирующих анимаций для карточек states
+  setupStateCardAnimations() {
+    const stateCards = document.querySelectorAll('.state-card');
+    
+    // Helper function to convert hex to rgba
+    const hexToRgba = (hex, alpha) => {
+      if (!hex) return `rgba(0, 0, 0, ${alpha})`;
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+    
+    stateCards.forEach(card => {
+      const glowColor = card.getAttribute('data-glow-color');
+      if (!glowColor || glowColor === 'undefined') return;
+      
+      // Create animation names based on color
+      const weakAnimationName = `state-card-pulse-weak-${glowColor.replace('#', '')}`;
+      const strongAnimationName = `state-card-pulse-strong-${glowColor.replace('#', '')}`;
+      
+      // Check if animations don't exist yet
+      if (!this.stateCardAnimations) {
+        this.stateCardAnimations = new Set();
+      }
+      
+      // Create weak (always-on) animation
+      if (!this.stateCardAnimations.has(weakAnimationName)) {
+        const weakStyle = document.createElement('style');
+        weakStyle.id = `state-card-weak-animation-${glowColor.replace('#', '')}`;
+        weakStyle.textContent = `
+          @keyframes ${weakAnimationName} {
+            0%, 100% {
+              box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            }
+            50% {
+              box-shadow: 
+                0 8px 25px rgba(0, 0, 0, 0.15),
+                0 0 8px ${hexToRgba(glowColor, 0.03)},
+                0 0 16px ${hexToRgba(glowColor, 0.015)};
+            }
+          }
+        `;
+        document.head.appendChild(weakStyle);
+        this.stateCardAnimations.add(weakAnimationName);
+      }
+      
+      // Create strong (hover) animation
+      if (!this.stateCardAnimations.has(strongAnimationName)) {
+        const strongStyle = document.createElement('style');
+        strongStyle.id = `state-card-strong-animation-${glowColor.replace('#', '')}`;
+        strongStyle.textContent = `
+          @keyframes ${strongAnimationName} {
+            0%, 100% {
+              box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            }
+            50% {
+              box-shadow: 
+                0 8px 25px rgba(0, 0, 0, 0.15),
+                0 0 20px ${hexToRgba(glowColor, 0.12)},
+                0 0 40px ${hexToRgba(glowColor, 0.06)};
+            }
+          }
+        `;
+        document.head.appendChild(strongStyle);
+        this.stateCardAnimations.add(strongAnimationName);
+        
+        console.log('🎨 STATE CARD ANIMATIONS CREATED:', {
+          color: glowColor,
+          weakAnimation: weakAnimationName,
+          strongAnimation: strongAnimationName
+        });
+      }
+      
+      // Apply weak pulsing animation by default
+      card.style.animation = `${weakAnimationName} 6s ease-in-out infinite`;
+      
+      // Remove existing hover listeners to prevent duplicates
+      card.removeEventListener('mouseenter', card._boundStateHoverEnter);
+      card.removeEventListener('mouseleave', card._boundStateHoverLeave);
+      
+      // Create hover handlers
+      card._boundStateHoverEnter = () => {
+        card.style.animation = `${strongAnimationName} 3s ease-in-out infinite`;
+        console.log('🎨 STATE CARD HOVER START:', { color: glowColor, animation: strongAnimationName });
+      };
+      
+      card._boundStateHoverLeave = () => {
+        card.style.animation = `${weakAnimationName} 6s ease-in-out infinite`;
+        console.log('🎨 STATE CARD HOVER END:', { color: glowColor, animation: weakAnimationName });
+      };
+      
+      // Add hover event listeners
+      card.addEventListener('mouseenter', card._boundStateHoverEnter);
+      card.addEventListener('mouseleave', card._boundStateHoverLeave);
+    });
+    
+    console.log('🌟 STATE CARD ANIMATIONS SETUP:', {
+      cardsCount: stateCards.length,
+      animationsCreated: this.stateCardAnimations ? this.stateCardAnimations.size : 0
+    });
   }
 };
 
