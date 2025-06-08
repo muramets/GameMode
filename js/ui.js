@@ -1347,7 +1347,6 @@ const UI = {
     if (todayBadge) {
       todayBadge.removeEventListener('click', todayBadge._boundClickHandler);
       todayBadge.style.cursor = 'pointer';
-      todayBadge.title = 'Click to view today\'s check-ins';
       
       todayBadge._boundClickHandler = () => {
         console.log('🎯 TODAY BADGE CLICKED: Navigating to history with today filter');
@@ -1360,7 +1359,6 @@ const UI = {
     if (monthBadge) {
       monthBadge.removeEventListener('click', monthBadge._boundClickHandler);
       monthBadge.style.cursor = 'pointer';
-      monthBadge.title = 'Click to view this month\'s check-ins';
       
       monthBadge._boundClickHandler = () => {
         console.log('🎯 MONTH BADGE CLICKED: Navigating to history with month filter');

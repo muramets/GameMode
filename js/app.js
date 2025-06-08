@@ -1242,17 +1242,25 @@ function initMainApp() {
             // Set checkboxes based on current filters
             Object.entries(this.historyFilters).forEach(([filterType, filterValue]) => {
                 if (filterValue !== 'all' && filterValue !== '' && filterType !== 'customDateFrom' && filterType !== 'customDateTo') {
-                    // Set specific filter
-                    const specificCheckbox = document.querySelector(`[data-filter="${filterType}"][data-value="specific"]`);
-                    const valueCheckbox = document.querySelector(`[data-filter="${filterType}"][data-value="${filterValue}"]`);
-                    const submenu = document.getElementById(`${filterType}-filter-submenu`);
-                    const specificOption = document.getElementById(`${filterType}-specific-option`);
-                    
-                    if (specificCheckbox && valueCheckbox && submenu && specificOption) {
-                        specificCheckbox.checked = true;
-                        valueCheckbox.checked = true;
-                        submenu.classList.add('show');
-                        specificOption.classList.add('active');
+                    // 🎯 ИСПРАВЛЕНИЕ: Для прямых фильтров (time, type, effect) используем прямые значения, не submenu
+                    if (filterType === 'time' || filterType === 'type' || filterType === 'effect') {
+                        const valueCheckbox = document.querySelector(`[data-filter="${filterType}"][data-value="${filterValue}"]`);
+                        if (valueCheckbox) {
+                            valueCheckbox.checked = true;
+                        }
+                    } else {
+                        // For submenu filters (protocol, state, innerface) - use submenu logic
+                        const specificCheckbox = document.querySelector(`[data-filter="${filterType}"][data-value="specific"]`);
+                        const valueCheckbox = document.querySelector(`[data-filter="${filterType}"][data-value="${filterValue}"]`);
+                        const submenu = document.getElementById(`${filterType}-filter-submenu`);
+                        const specificOption = document.getElementById(`${filterType}-specific-option`);
+                        
+                        if (specificCheckbox && valueCheckbox && submenu && specificOption) {
+                            specificCheckbox.checked = true;
+                            valueCheckbox.checked = true;
+                            submenu.classList.add('show');
+                            specificOption.classList.add('active');
+                        }
                     }
                 } else {
                     // Set "all" filter
