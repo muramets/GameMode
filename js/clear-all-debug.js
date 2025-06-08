@@ -303,7 +303,24 @@ function disableAllDebug() {
   console.log('❌ ALL Debug logging DISABLED');
 }
 
+// 🌐 ГЛОБАЛЬНЫЙ ЭКСПОРТ: Делаем все debug функции доступными в консоли
+window.enableDebugUI = enableDebugUI;
+window.disableDebugUI = disableDebugUI;
+window.enableDebugModals = enableDebugModals;
+window.disableDebugModals = disableDebugModals;
+window.enableAllDebug = enableAllDebug;
+window.disableAllDebug = disableAllDebug;
+window.fixProtocolDeletionIssue = fixProtocolDeletionIssue;
+window.debugInnerfaceDropdown = debugInnerfaceDropdown;
+window.clearProblematicDeletions = clearProblematicDeletions;
+window.debugProtocolColors = debugProtocolColors;
+window.debugInnerfaceColors = debugInnerfaceColors;
+window.testColorRendering = testColorRendering;
+window.forceRefreshProtocols = forceRefreshProtocols;
+
 console.log('🔧 DEBUG CONTROL: Functions available:');
 console.log('- enableDebugUI() / disableDebugUI() - UI debug logs');
 console.log('- enableDebugModals() / disableDebugModals() - Modal debug logs');
 console.log('- enableAllDebug() / disableAllDebug() - All debug logs'); 
+console.log('🎨 COLOR DEBUG: All functions now globally available in console!');
+console.log('💡 Try: disableAllDebug() or debugProtocolColors()'); 
