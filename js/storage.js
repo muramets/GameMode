@@ -4798,6 +4798,74 @@ class Storage {
       return { removed: 0, remainingCount: cleaned.length };
     }
   }
+
+  // ===== STATE COLOR DETERMINATION =====
+  getStateColor(stateId) {
+    const state = this.getStateById(stateId);
+    if (!state) return null;
+    
+    const colors = [];
+    
+    // Priority 1: Get colors from state dependencies (other states)
+    if (state.stateIds && state.stateIds.length > 0) {
+      state.stateIds.forEach(depStateId => {
+        const depState = this.getStateById(depStateId);
+        if (depState) {
+          // Recursively get color from dependent state
+          const depColor = this.getStateColor(depStateId);
+          if (depColor) {
+            colors.push(depColor);
+          }
+        }
+      });
+      
+      // If we found colors from state dependencies, use them with higher priority
+      if (colors.length > 0) {
+        return this.getMostCommonColor(colors);
+      }
+    }
+    
+    // Priority 2: Get colors from innerface dependencies
+    if (state.innerfaceIds && state.innerfaceIds.length > 0) {
+      state.innerfaceIds.forEach(innerfaceId => {
+        const innerface = this.getInnerfaceById(innerfaceId);
+        if (innerface && innerface.color) {
+          colors.push(innerface.color);
+        }
+      });
+      
+      if (colors.length > 0) {
+        return this.getMostCommonColor(colors);
+      }
+    }
+    
+    // No color found from dependencies
+    return null;
+  }
+
+  // Helper function to find the most common color in an array
+  getMostCommonColor(colors) {
+    if (colors.length === 0) return null;
+    if (colors.length === 1) return colors[0];
+    
+    const colorCounts = {};
+    colors.forEach(color => {
+      colorCounts[color] = (colorCounts[color] || 0) + 1;
+    });
+    
+    // Find the color with the highest count
+    let mostCommonColor = colors[0];
+    let highestCount = 0;
+    
+    Object.entries(colorCounts).forEach(([color, count]) => {
+      if (count > highestCount) {
+        highestCount = count;
+        mostCommonColor = color;
+      }
+    });
+    
+    return mostCommonColor;
+  }
 }
 
 // Create global instance

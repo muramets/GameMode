@@ -118,26 +118,28 @@ const UI = {
       if (states.length > 0) {
         statesContainer.innerHTML = states.map(state => {
           const score = window.Storage.calculateStateScore(state.id);
-          const scoreClass = this.getScoreClass(score);
-          const color = this.getInnerfaceColor(score);
-          const percentage = Math.round((score / 10) * 100);
-          
-          // Calculate yesterday's score
           const yesterday = new Date();
           yesterday.setHours(0, 0, 0, 0); // Начало сегодняшнего дня (00:00:00)
           const yesterdayScore = window.Storage.calculateStateScoreAtDate(state.id, yesterday);
+          const scoreClass = this.getInnerfaceColor(score).replace('level-', '');
+          const color = this.getInnerfaceColor(score);
           
-          // Calculate change direction and class
-          const scoreDiff = score - yesterdayScore;
-          let changeClass = 'no-change';
+          // 🔧 НОВОЕ: Определяем цвет state на основе зависимостей
+          const dependencyColor = window.Storage.getStateColor(state.id);
+          const stateColor = dependencyColor || color; // Fallback to score-based color
+          
+          const percentage = Math.min((score / 10) * 100, 100);
+          
+          // Calculate change from yesterday
+          const change = score - yesterdayScore;
           let changeIcon = '';
-          
-          if (scoreDiff > 0.01) { // Threshold to avoid tiny changes
-            changeClass = 'increase';
-            changeIcon = '<i class="fas fa-arrow-up"></i>';
-          } else if (scoreDiff < -0.01) {
-            changeClass = 'decrease';
-            changeIcon = '<i class="fas fa-arrow-down"></i>';
+          let changeClass = '';
+          if (change > 0) {
+            changeIcon = '↗';
+            changeClass = 'positive';
+          } else if (change < 0) {
+            changeIcon = '↘';
+            changeClass = 'negative';
           }
           
           // Get number of dependencies (innerfaces or states)
@@ -156,15 +158,15 @@ const UI = {
             dependencyText = 'No dependencies';
           }
           
-          // Get legacy name and subtext for backward compatibility
-          let displayName, displaySubtext = '';
+          // 🔧 НОВОЕ: Поддержка отдельного subtext поля
+          let displayName, displaySubtext;
           
-          // Check if state has separate subtext field (new format)
+          // Проверяем есть ли отдельное поле subtext (новый формат)
           if (state.subtext !== undefined) {
             displayName = state.name;
             displaySubtext = state.subtext;
           } else {
-            // Legacy format: parse from name field
+            // Старый формат: парсим из name
             const nameParts = state.name.split('. ');
             displayName = nameParts[0];
             displaySubtext = nameParts.length > 1 ? nameParts.slice(1).join('. ') : '';
@@ -174,11 +176,11 @@ const UI = {
             <div class="state-card ${scoreClass}" draggable="true" data-state-id="${state.id}">
               <div class="state-header">
                 <div class="state-info-container">
-                  <div class="state-icon" style="color: ${color};">
-                    ${this.renderIcon(state.icon, color)}
+                  <div class="state-icon" style="color: ${stateColor};">
+                    ${this.renderIcon(state.icon, stateColor)}
                   </div>
                   <div class="state-name-container">
-                    <div class="state-name" style="color: ${color};">${displayName}</div>
+                    <div class="state-name" style="color: ${stateColor};">${displayName}</div>
                     ${displaySubtext ? `<div class="state-subtext">${displaySubtext}</div>` : ''}
                   </div>
                 </div>
@@ -195,7 +197,7 @@ const UI = {
                 </div>
               </div>
               
-              <div class="state-score" style="color: ${color};">
+              <div class="state-score" style="color: ${stateColor};">
                 ${score.toFixed(2)}
                 ${changeIcon ? `<span class="state-change-arrow ${changeClass}">${changeIcon}</span>` : ''}
                 <div class="state-score-yesterday">
@@ -204,12 +206,11 @@ const UI = {
               </div>
               
               <div class="state-bar">
-                <div class="state-bar-fill" style="width: ${percentage}%; background-color: ${color};"></div>
+                <div class="state-bar-fill" style="width: ${percentage}%; background-color: ${stateColor};"></div>
               </div>
               
               <div class="state-details">
                 <span>${dependencyText}</span>
-                <span>${percentage}%</span>
               </div>
             </div>
           `;
@@ -597,6 +598,7 @@ const UI = {
     
     const container = document.querySelector('.history-body');
     const innerfaces = window.Storage.getInnerfaces();
+    const protocols = window.Storage.getProtocols();
     
     if (App.filteredHistory.length === 0) {
       // Check if filters are applied to show appropriate message
@@ -660,6 +662,19 @@ const UI = {
         const actionText = checkin.subType === 'protocol' ? 'Reordered protocol' : 'Reordered innerface';
         const actionDesc = `Position: ${checkin.oldPosition} → ${checkin.newPosition}`;
         
+        // Get item color
+        let itemColor = null;
+        if (checkin.subType === 'protocol') {
+          const protocol = protocols.find(p => p.id == checkin.itemId);
+          itemColor = protocol?.color;
+        } else if (checkin.subType === 'innerface') {
+          const innerface = innerfaces.find(i => i.id == checkin.itemId);
+          itemColor = innerface?.color;
+        }
+        
+        const coloredIcon = this.renderIcon(checkin.itemIcon, itemColor);
+        const titleStyle = itemColor ? `style="color: ${itemColor};"` : '';
+        
         return `
           <div class="history-row">
             <div class="history-cell history-date-cell">
@@ -671,7 +686,7 @@ const UI = {
             <div class="history-cell history-type-cell">reorder</div>
             <div class="history-cell history-action-cell">
               <div class="history-action-full">
-                <div class="history-action-main">${this.renderIcon(checkin.itemIcon)} ${checkin.itemName}</div>
+                <div class="history-action-main" ${titleStyle}>${coloredIcon} ${checkin.itemName}</div>
                 <div class="history-action-desc">${actionDesc}</div>
               </div>
             </div>
@@ -689,6 +704,12 @@ const UI = {
         // Quick Action operation
         const actionDesc = checkin.subType === 'added' ? 'Added to Quick Actions' : 'Removed from Quick Actions';
         
+        // Get protocol color
+        const protocol = protocols.find(p => p.id == checkin.protocolId);
+        const protocolColor = protocol?.color;
+        const coloredIcon = this.renderIcon(checkin.protocolIcon, protocolColor);
+        const titleStyle = protocolColor ? `style="color: ${protocolColor};"` : '';
+        
         return `
           <div class="history-row">
             <div class="history-cell history-date-cell">
@@ -700,7 +721,7 @@ const UI = {
             <div class="history-cell history-type-cell">quick action</div>
             <div class="history-cell history-action-cell">
               <div class="history-action-full">
-                <div class="history-action-main">${this.renderIcon(checkin.protocolIcon)} ${checkin.protocolName}</div>
+                <div class="history-action-main" ${titleStyle}>${coloredIcon} ${checkin.protocolName}</div>
                 <div class="history-action-desc">${actionDesc}</div>
               </div>
             </div>
@@ -716,13 +737,22 @@ const UI = {
         `;
       } else {
         // Regular protocol check-in
+        const protocol = protocols.find(p => p.id == checkin.protocolId);
+        const protocolColor = protocol?.color;
+        const coloredProtocolIcon = this.renderIcon(checkin.protocolIcon, protocolColor);
+        const protocolTitleStyle = protocolColor ? `style="color: ${protocolColor};"` : '';
+        
         const changes = Object.entries(checkin.changes).map(([innerfaceId, change]) => {
           const innerface = innerfaces.find(s => s.id == innerfaceId);
           if (!innerface) return '';
           
           const sign = change > 0 ? '+' : '';
           const className = change > 0 ? 'positive' : 'negative';
-          return `<span class="history-change-tag ${className}">${this.renderIcon(innerface.icon)} ${sign}${change.toFixed(2)}</span>`;
+          const innerfaceColor = innerface.color;
+          const coloredInnerfaceIcon = this.renderIcon(innerface.icon, innerfaceColor);
+          const changeStyle = innerfaceColor ? `style="border-color: ${innerfaceColor}; color: ${innerfaceColor};"` : '';
+          
+          return `<span class="history-change-tag ${className}" ${changeStyle}>${coloredInnerfaceIcon} ${sign}${change.toFixed(2)}</span>`;
         }).join('');
         
         return `
@@ -736,7 +766,7 @@ const UI = {
             <div class="history-cell history-type-cell">protocol</div>
             <div class="history-cell history-action-cell">
               <div class="history-action-full">
-                <div class="history-action-main">${this.renderIcon(checkin.protocolIcon)} ${checkin.protocolName}</div>
+                <div class="history-action-main" ${protocolTitleStyle}>${coloredProtocolIcon} ${checkin.protocolName}</div>
                 <div class="history-action-desc">Check-in completed</div>
               </div>
             </div>

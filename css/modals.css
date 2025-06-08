@@ -1508,6 +1508,7 @@
   gap: 0.5rem;
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
+  padding: 0.25rem; /* Add padding to prevent clipping */
 }
 
 .color-option {
@@ -1519,6 +1520,7 @@
   transition: all 0.2s ease;
   position: relative;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 .color-option:hover {
@@ -1558,6 +1560,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box; /* Ensure proper sizing */
+  min-width: 2rem; /* Ensure minimum width */
+  min-height: 2rem; /* Ensure minimum height */
 }
 
 .color-option.default-color .default-icon {
@@ -1565,10 +1570,12 @@
   font-weight: bold;
   color: var(--sub-color);
   font-family: 'Roboto Mono', monospace;
+  user-select: none; /* Prevent text selection */
 }
 
 .color-option.default-color:hover {
   border-color: var(--text-color);
+  transform: scale(1.1);
 }
 
 .color-option.default-color:hover .default-icon {
@@ -1579,6 +1586,7 @@
   border-color: var(--text-color);
   background-color: var(--sub-alt-color);
   box-shadow: 0 0 0 2px var(--bg-color), 0 0 0 4px var(--text-color);
+  transform: scale(1.1);
 }
 
 .color-option.default-color.selected .default-icon {
