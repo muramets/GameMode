@@ -1295,13 +1295,13 @@ const UI = {
         style.textContent = `
           @keyframes ${animationName} {
             0%, 100% {
-              box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-            }
-            50% {
               box-shadow: 
                 0 8px 30px rgba(0, 0, 0, 0.15),
                 0 0 20px ${hexToRgba(todayColor, 0.1)},
                 0 0 40px ${hexToRgba(todayColor, 0.05)};
+            }
+            50% {
+              box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
             }
           }
         `;
