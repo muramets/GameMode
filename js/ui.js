@@ -1449,13 +1449,13 @@ const UI = {
         weakStyle.textContent = `
           @keyframes ${weakAnimationName} {
             0%, 100% {
-              box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-            }
-            50% {
               box-shadow: 
                 0 8px 25px rgba(0, 0, 0, 0.15),
-                0 0 8px ${hexToRgba(glowColor, 0.03)},
-                0 0 16px ${hexToRgba(glowColor, 0.015)};
+                0 0 8px ${hexToRgba(glowColor, 0.033)},
+                0 0 16px ${hexToRgba(glowColor, 0.017)};
+            }
+            50% {
+              box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
             }
           }
         `;
@@ -1470,13 +1470,13 @@ const UI = {
         strongStyle.textContent = `
           @keyframes ${strongAnimationName} {
             0%, 100% {
-              box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-            }
-            50% {
               box-shadow: 
                 0 8px 25px rgba(0, 0, 0, 0.15),
                 0 0 20px ${hexToRgba(glowColor, 0.12)},
                 0 0 40px ${hexToRgba(glowColor, 0.06)};
+            }
+            50% {
+              box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
             }
           }
         `;
