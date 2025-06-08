@@ -575,6 +575,23 @@
                             <input type="text" id="innerface-emoji" name="innerface-emoji" class="form-input" placeholder="e.g., 🗣️" maxlength="2" required>
                         </div>
                         
+                        <!-- Color picker for FontAwesome icons -->
+                        <div class="form-group" id="innerface-color-group" style="display: none;">
+                            <label for="innerface-color">Icon Color</label>
+                            <div class="color-picker-container">
+                                <div class="color-option" data-color="#ca4754" style="background-color: #ca4754;" title="Red"></div>
+                                <div class="color-option" data-color="#e6934a" style="background-color: #e6934a;" title="Orange"></div>
+                                <div class="color-option" data-color="#e2b714" style="background-color: #e2b714;" title="Yellow"></div>
+                                <div class="color-option" data-color="#98c379" style="background-color: #98c379;" title="Green"></div>
+                                <div class="color-option" data-color="#7fb3d3" style="background-color: #7fb3d3;" title="Blue"></div>
+                                <div class="color-option" data-color="#c882c8" style="background-color: #c882c8;" title="Purple"></div>
+                                <div class="color-option" data-color="#e394b3" style="background-color: #e394b3;" title="Pink"></div>
+                                <div class="color-option" data-color="#6fbdb3" style="background-color: #6fbdb3;" title="Teal"></div>
+                            </div>
+                            <input type="hidden" id="innerface-color" name="innerface-color" value="#7fb3d3">
+                            <p class="form-help-text">Choose a color to categorize this innerface (only for FontAwesome icons)</p>
+                        </div>
+                        
                         <div class="form-group">
                             <label for="innerface-hover">Hover Text</label>
                             <textarea id="innerface-hover" name="innerface-hover" class="form-textarea" placeholder="Detailed description shown on hover..." rows="3"></textarea>
@@ -627,6 +644,23 @@
                         <div class="form-group">
                             <label for="protocol-emoji">Emoji</label>
                             <input type="text" id="protocol-emoji" name="protocol-emoji" class="form-input" placeholder="e.g., 🌅" maxlength="2" required>
+                        </div>
+                        
+                        <!-- Color picker for FontAwesome icons -->
+                        <div class="form-group" id="protocol-color-group" style="display: none;">
+                            <label for="protocol-color">Icon Color</label>
+                            <div class="color-picker-container">
+                                <div class="color-option" data-color="#ca4754" style="background-color: #ca4754;" title="Red"></div>
+                                <div class="color-option" data-color="#e6934a" style="background-color: #e6934a;" title="Orange"></div>
+                                <div class="color-option" data-color="#e2b714" style="background-color: #e2b714;" title="Yellow"></div>
+                                <div class="color-option" data-color="#98c379" style="background-color: #98c379;" title="Green"></div>
+                                <div class="color-option" data-color="#7fb3d3" style="background-color: #7fb3d3;" title="Blue"></div>
+                                <div class="color-option" data-color="#c882c8" style="background-color: #c882c8;" title="Purple"></div>
+                                <div class="color-option" data-color="#e394b3" style="background-color: #e394b3;" title="Pink"></div>
+                                <div class="color-option" data-color="#6fbdb3" style="background-color: #6fbdb3;" title="Teal"></div>
+                            </div>
+                            <input type="hidden" id="protocol-color" name="protocol-color" value="#7fb3d3">
+                            <p class="form-help-text">Choose a color to categorize this protocol (only for FontAwesome icons)</p>
                         </div>
                         
                         <div class="form-group">

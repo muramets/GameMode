@@ -11,6 +11,7 @@ const Modals = {
     this.setupAddProtocolModal();
     this.setupAddStateModal();
     this.setupQuickActionModal();
+    this.setupColorPickers();
     
     // 🔧 Ensure delete buttons have event listeners
     this.setupDeleteButtonListeners();
@@ -93,7 +94,8 @@ const Modals = {
         description: formData.get('innerface-description'),
         icon: formData.get('innerface-emoji'),
         hover: formData.get('innerface-hover'),
-        initialScore: parseFloat(formData.get('innerface-initial-score'))
+        initialScore: parseFloat(formData.get('innerface-initial-score')),
+        color: formData.get('innerface-color') || '#7fb3d3' // Default blue color
       };
       
       // 🐛 DEBUG: Detailed logging for production debugging
@@ -103,7 +105,8 @@ const Modals = {
         'innerface-description': formData.get('innerface-description'), 
         'innerface-emoji': formData.get('innerface-emoji'),
         'innerface-hover': formData.get('innerface-hover'),
-        'innerface-initial-score': formData.get('innerface-initial-score')
+        'innerface-initial-score': formData.get('innerface-initial-score'),
+        'innerface-color': formData.get('innerface-color')
       });
       console.log('📊 Processed innerface data:', innerfaceData);
       console.log('🔍 Validation checks:');
@@ -194,6 +197,9 @@ const Modals = {
       modal.classList.add('active');
       document.body.style.overflow = 'hidden';
       
+      // Initialize color picker
+      this.initializeColorPickersOnModalOpen('innerface');
+      
       // Focus on first input
       const firstInput = document.getElementById('innerface-name');
       if (firstInput) {
@@ -227,6 +233,11 @@ const Modals = {
     document.getElementById('innerface-emoji').value = innerface.icon;
     document.getElementById('innerface-hover').value = innerface.hover || '';
     document.getElementById('innerface-initial-score').value = innerface.initialScore;
+    
+    // Load saved color
+    if (innerface.color) {
+      this.loadSavedColor('innerface', innerface.color);
+    }
     
     // Update modal for edit mode
     document.getElementById('innerface-modal-title').textContent = 'Edit Innerface';
@@ -360,7 +371,8 @@ const Modals = {
         icon: formData.get('protocol-emoji'),
         hover: formData.get('protocol-hover'),
         weight: parseFloat(formData.get('protocol-weight')),
-        targets: selectedInnerfaceIds
+        targets: selectedInnerfaceIds,
+        color: formData.get('protocol-color') || '#7fb3d3' // Default blue color
       };
       
       // 🐛 DEBUG: Detailed logging for production debugging
@@ -604,6 +616,9 @@ const Modals = {
       this.resetProtocolTargets();
       this.populateProtocolInnerfaces();
       
+      // Initialize color picker
+      this.initializeColorPickersOnModalOpen('protocol');
+      
       // Focus on first input
       const firstInput = document.getElementById('protocol-name');
       if (firstInput) {
@@ -635,6 +650,11 @@ const Modals = {
     document.getElementById('protocol-emoji').value = protocol.icon;
     document.getElementById('protocol-hover').value = protocol.hover || '';
     document.getElementById('protocol-weight').value = protocol.weight;
+    
+    // Load saved color
+    if (protocol.color) {
+      this.loadSavedColor('protocol', protocol.color);
+    }
     
     // Update modal for edit mode
     document.getElementById('protocol-modal-title').textContent = 'Edit Protocol';
@@ -1591,6 +1611,105 @@ const Modals = {
     if (stateBtn) {
       console.log('🖱️ State button is clickable:', !stateBtn.disabled);
     }
+  },
+
+  // ===== COLOR PICKER FUNCTIONALITY =====
+  setupColorPickers() {
+    // Setup innerface color picker
+    this.setupColorPickerForModal('innerface');
+    // Setup protocol color picker  
+    this.setupColorPickerForModal('protocol');
+  },
+
+  setupColorPickerForModal(type) {
+    const emojiInput = document.getElementById(`${type}-emoji`);
+    const colorGroup = document.getElementById(`${type}-color-group`);
+    const colorInput = document.getElementById(`${type}-color`);
+    const colorOptions = colorGroup?.querySelectorAll('.color-option');
+
+    if (!emojiInput || !colorGroup || !colorInput || !colorOptions) return;
+
+    // Watch emoji input for FontAwesome conversion
+    emojiInput.addEventListener('input', () => {
+      this.toggleColorPickerVisibility(type);
+    });
+
+    // Handle color option clicks
+    colorOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        const color = option.dataset.color;
+        this.selectColor(type, color);
+      });
+    });
+  },
+
+  toggleColorPickerVisibility(type) {
+    const emojiInput = document.getElementById(`${type}-emoji`);
+    const colorGroup = document.getElementById(`${type}-color-group`);
+    
+    if (!emojiInput || !colorGroup) return;
+
+    const emoji = emojiInput.value.trim();
+    const iconClass = UI.emojiToFontAwesome(emoji);
+    
+    // Show color picker only if emoji converts to FontAwesome
+    if (iconClass.startsWith('fas ')) {
+      colorGroup.style.display = 'block';
+      setTimeout(() => {
+        colorGroup.classList.add('show');
+      }, 10);
+    } else {
+      colorGroup.classList.remove('show');
+      setTimeout(() => {
+        if (!colorGroup.classList.contains('show')) {
+          colorGroup.style.display = 'none';
+        }
+      }, 300);
+    }
+  },
+
+  selectColor(type, color) {
+    const colorInput = document.getElementById(`${type}-color`);
+    const colorOptions = document.querySelectorAll(`#${type}-color-group .color-option`);
+    
+    if (!colorInput || !colorOptions) return;
+
+    // Update hidden input
+    colorInput.value = color;
+
+    // Update visual selection
+    colorOptions.forEach(option => {
+      if (option.dataset.color === color) {
+        option.classList.add('selected');
+      } else {
+        option.classList.remove('selected');
+      }
+    });
+  },
+
+  loadSavedColor(type, color) {
+    if (!color) color = '#7fb3d3'; // Default blue
+    
+    // Set the hidden input value
+    const colorInput = document.getElementById(`${type}-color`);
+    if (colorInput) {
+      colorInput.value = color;
+    }
+
+    // Update visual selection
+    this.selectColor(type, color);
+  },
+
+  // Update existing openInnerfaceModal and openProtocolModal functions
+  initializeColorPickersOnModalOpen(type) {
+    // Show color picker if current emoji is FontAwesome
+    setTimeout(() => {
+      this.toggleColorPickerVisibility(type);
+      // Set default color selection
+      const colorInput = document.getElementById(`${type}-color`);
+      const currentColor = colorInput?.value || '#7fb3d3';
+      this.selectColor(type, currentColor);
+    }, 100);
   }
 }; 
 

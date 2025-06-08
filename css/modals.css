@@ -1499,4 +1499,73 @@
   #add-protocol-modal .btn {
     padding: 0.75rem 1rem !important;
   }
+}
+
+/* ===== COLOR PICKER FOR FONTAWESOME ICONS ===== */
+.color-picker-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.color-option {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.color-option:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.color-option.selected {
+  border-color: var(--text-color);
+  box-shadow: 0 0 0 2px var(--bg-color), 0 0 0 4px var(--text-color);
+  transform: scale(1.1);
+}
+
+.color-option.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-weight: bold;
+  font-size: 0.8rem;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Color-specific overrides for better checkmark visibility */
+.color-option[data-color="#e2b714"].selected::after,
+.color-option[data-color="#98c379"].selected::after {
+  color: var(--bg-color);
+  text-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
+}
+
+/* Hide color picker by default, show when FontAwesome icon is detected */
+#innerface-color-group,
+#protocol-color-group {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+#innerface-color-group.show,
+#protocol-color-group.show {
+  opacity: 1;
+  max-height: 200px;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
 } 

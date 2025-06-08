@@ -68,11 +68,13 @@ const UI = {
   },
 
   // Render icon properly - either as FontAwesome or emoji
-  renderIcon(emoji) {
+  renderIcon(emoji, customColor = null) {
     const iconClass = this.emojiToFontAwesome(emoji);
     // If it's a FontAwesome class, wrap in <i> tag
     if (iconClass.startsWith('fas ')) {
-      return `<i class="${iconClass}"></i>`;
+      // Default to text color from CSS variables, use custom color if provided
+      const color = customColor || 'var(--text-color)';
+      return `<i class="${iconClass}" style="color: ${color};"></i>`;
     }
     // Otherwise, return the emoji directly
     return iconClass;
@@ -235,7 +237,7 @@ const UI = {
     }
     
     container.innerHTML = protocols.map(protocol => {
-      const icon = this.renderIcon(protocol.icon);
+      const icon = this.renderIcon(protocol.icon, protocol.color);
       const hasHover = protocol.hover && protocol.hover.trim();
       
       return `
@@ -382,7 +384,7 @@ const UI = {
     
     container.innerHTML = pageProtocols.map((protocol, index) => {
       const globalIndex = startIndex + index + 1;
-      const icon = this.renderIcon(protocol.icon);
+      const icon = this.renderIcon(protocol.icon, protocol.color);
       
       // Get target innerface names
       const targetNames = protocol.targets.map(targetId => {
@@ -496,7 +498,7 @@ const UI = {
     
     container.innerHTML = pageInnerfaces.map((innerface, index) => {
       const globalIndex = startIndex + index + 1;
-      const icon = this.renderIcon(innerface.icon);
+      const icon = this.renderIcon(innerface.icon, innerface.color);
       const current = window.Storage.calculateCurrentScore(innerface.id);
       const initial = innerface.initialScore;
       const progress = current - initial;
