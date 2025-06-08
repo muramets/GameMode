@@ -1289,11 +1289,9 @@ const UI = {
         style.textContent = `
           @keyframes ${animationName} {
             0%, 100% {
-              transform: scale(1.02);
               box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
             }
             50% {
-              transform: scale(1.02);
               box-shadow: 
                 0 8px 30px rgba(0, 0, 0, 0.15),
                 0 0 20px ${hexToRgba(todayColor, 0.1)},
@@ -1311,9 +1309,10 @@ const UI = {
       }
     }
     
-    // Mouse enter handler
+    // Mouse enter handler - preserve CSS transform, only add animation
     dashboard._boundMouseEnter = () => {
       if (todayColor) {
+        // Preserve the smooth transform from CSS, only add the pulsing box-shadow animation
         dashboard.style.animation = `${animationName} 2s ease-in-out infinite`;
         console.log('🎨 DASHBOARD HOVER START:', { color: todayColor, animation: animationName });
       }
