@@ -1449,13 +1449,10 @@ const UI = {
         weakStyle.textContent = `
           @keyframes ${weakAnimationName} {
             0%, 100% {
-              box-shadow: 
-                0 8px 25px rgba(0, 0, 0, 0.15),
-                0 0 9px ${hexToRgba(glowColor, 0.038)},
-                0 0 18px ${hexToRgba(glowColor, 0.020)};
+              box-shadow: 0 8px 25px ${hexToRgba(glowColor, 0.15)};
             }
             50% {
-              box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+              box-shadow: 0 8px 25px ${hexToRgba(glowColor, 0.08)};
             }
           }
         `;
@@ -1471,12 +1468,12 @@ const UI = {
           @keyframes ${strongAnimationName} {
             0%, 100% {
               box-shadow: 
-                0 8px 25px rgba(0, 0, 0, 0.15),
+                0 8px 25px ${hexToRgba(glowColor, 0.20)},
                 0 0 20px ${hexToRgba(glowColor, 0.12)},
                 0 0 40px ${hexToRgba(glowColor, 0.06)};
             }
             50% {
-              box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+              box-shadow: 0 8px 25px ${hexToRgba(glowColor, 0.10)};
             }
           }
         `;
