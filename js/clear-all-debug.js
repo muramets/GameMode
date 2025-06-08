@@ -148,6 +148,110 @@ function clearProblematicDeletions() {
   return results;
 }
 
+// 🎨 НОВОЕ: Debug функции для проверки цветов
+function debugProtocolColors() {
+  console.log('🎨 PROTOCOL COLORS DEBUG REPORT:');
+  
+  const protocols = window.Storage.getProtocols();
+  
+  console.log(`📊 Total protocols: ${protocols.length}`);
+  
+  const protocolsWithColors = protocols.filter(p => p.color);
+  const protocolsWithoutColors = protocols.filter(p => !p.color);
+  
+  console.log(`🎨 Protocols with colors: ${protocolsWithColors.length}`);
+  console.log(`⚪ Protocols without colors: ${protocolsWithoutColors.length}`);
+  
+  console.log('\n🎨 PROTOCOLS WITH COLORS:');
+  protocolsWithColors.forEach(protocol => {
+    console.log(`  ${protocol.id}: ${protocol.name.split('. ')[0]} - ${protocol.color} (${protocol.icon})`);
+  });
+  
+  console.log('\n⚪ PROTOCOLS WITHOUT COLORS:');
+  protocolsWithoutColors.forEach(protocol => {
+    console.log(`  ${protocol.id}: ${protocol.name.split('. ')[0]} - no color (${protocol.icon})`);
+  });
+  
+  // Test renderIcon function
+  console.log('\n🧪 TESTING RENDER ICON FUNCTION:');
+  protocolsWithColors.slice(0, 3).forEach(protocol => {
+    const result = window.UI.renderIcon(protocol.icon, protocol.color);
+    console.log(`  Protocol ${protocol.id} (${protocol.icon}) with color ${protocol.color}:`);
+    console.log(`  Result: ${result}`);
+  });
+  
+  return {
+    total: protocols.length,
+    withColors: protocolsWithColors.length,
+    withoutColors: protocolsWithoutColors.length,
+    protocolsWithColors,
+    protocolsWithoutColors
+  };
+}
+
+function debugInnerfaceColors() {
+  console.log('🎨 INNERFACE COLORS DEBUG REPORT:');
+  
+  const innerfaces = window.Storage.getInnerfaces();
+  
+  console.log(`📊 Total innerfaces: ${innerfaces.length}`);
+  
+  const innerfacesWithColors = innerfaces.filter(i => i.color);
+  const innerfacesWithoutColors = innerfaces.filter(i => !i.color);
+  
+  console.log(`🎨 Innerfaces with colors: ${innerfacesWithColors.length}`);
+  console.log(`⚪ Innerfaces without colors: ${innerfacesWithoutColors.length}`);
+  
+  console.log('\n🎨 INNERFACES WITH COLORS:');
+  innerfacesWithColors.forEach(innerface => {
+    console.log(`  ${innerface.id}: ${innerface.name.split('. ')[0]} - ${innerface.color} (${innerface.icon})`);
+  });
+  
+  console.log('\n⚪ INNERFACES WITHOUT COLORS:');
+  innerfacesWithoutColors.forEach(innerface => {
+    console.log(`  ${innerface.id}: ${innerface.name.split('. ')[0]} - no color (${innerface.icon})`);
+  });
+  
+  return {
+    total: innerfaces.length,
+    withColors: innerfacesWithColors.length,
+    withoutColors: innerfacesWithoutColors.length,
+    innerfacesWithColors,
+    innerfacesWithoutColors
+  };
+}
+
+function testColorRendering() {
+  console.log('🧪 TESTING COLOR RENDERING:');
+  
+  const testColors = ['#ca4754', '#e6934a', '#e2b714', '#98c379', '#7fb3d3'];
+  const testEmojis = ['🌀', '📦', '🎧', '🔁', '❤️'];
+  
+  testEmojis.forEach((emoji, index) => {
+    const color = testColors[index];
+    const result = window.UI.renderIcon(emoji, color);
+    console.log(`🎨 Test ${index + 1}: ${emoji} with color ${color}`);
+    console.log(`   Result: ${result}`);
+    console.log(`   Is FontAwesome: ${window.UI.emojiToFontAwesome(emoji).startsWith('fas ')}`);
+  });
+}
+
+function forceRefreshProtocols() {
+  console.log('🔄 FORCING PROTOCOL REFRESH...');
+  
+  if (window.UI && window.UI.renderProtocols) {
+    window.UI.renderProtocols();
+    console.log('✅ Protocols refreshed');
+  } else {
+    console.error('❌ UI.renderProtocols not available');
+  }
+  
+  if (window.App && window.App.currentPage === 'protocols') {
+    window.App.renderPage('protocols');
+    console.log('✅ Protocols page re-rendered');
+  }
+}
+
 console.log('🧪 CLEAR ALL DEBUG: Functions available:');
 console.log('1. clearAllDataCompletely() - Full reset');
 console.log('2. clearAllHistoryOnly() - Clear history only');
@@ -156,4 +260,9 @@ console.log('4. debugInnerfaceDropdown() - Debug innerface dropdown');
 console.log('5. clearProblematicDeletions() - Clear all deletion records');
 console.log('6. window.Storage.cleanupOldDeletionRecords() - Clean old deletions');
 console.log('7. window.Storage.removeFromDeletedProtocols([26, 27]) - Remove specific IDs');
-console.log('💡 Use these functions in console to fix issues!'); 
+console.log('🧪 COLOR DEBUG: Functions available:');
+console.log('1. debugProtocolColors() - Check protocol color data');
+console.log('2. debugInnerfaceColors() - Check innerface color data');
+console.log('3. testColorRendering() - Test color rendering with sample data');
+console.log('4. forceRefreshProtocols() - Force refresh protocol display');
+console.log('💡 Use these functions in console to fix issues and debug color issues!'); 
