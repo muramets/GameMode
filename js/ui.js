@@ -1,5 +1,8 @@
 // ===== ui.js - UI Rendering =====
 
+// 🔧 ДЕБАГ ПЕРЕКЛЮЧАТЕЛЬ: Установите в false чтобы скрыть дебаг логи
+window.DEBUG_UI = false;
+
 const UI = {
   // Get innerface level color class
   getScoreClass(score) {
@@ -71,8 +74,8 @@ const UI = {
   renderIcon(emoji, customColor = null) {
     const iconClass = this.emojiToFontAwesome(emoji);
     
-    // 🔧 ДЕБАГ: Логируем информацию о цвете
-    if (customColor) {
+    // 🔧 ДЕБАГ: Логируем информацию о цвете только если дебаг включен
+    if (window.DEBUG_UI && customColor) {
       console.log(`🎨 RENDER ICON DEBUG:`, {
         emoji,
         iconClass,
@@ -88,8 +91,8 @@ const UI = {
       const color = customColor || 'var(--text-color)';
       const result = `<i class="${iconClass}" style="color: ${color};"></i>`;
       
-      // 🔧 ДЕБАГ: Логируем финальный результат для FontAwesome иконок
-      if (customColor) {
+      // 🔧 ДЕБАГ: Логируем финальный результат для FontAwesome иконок только если дебаг включен
+      if (window.DEBUG_UI && customColor) {
         console.log(`🎨 FONTAWESOME ICON RESULT:`, {
           emoji,
           iconClass,
@@ -410,14 +413,16 @@ const UI = {
     container.innerHTML = pageProtocols.map((protocol, index) => {
       const globalIndex = startIndex + index + 1;
       
-      // 🔧 ДЕБАГ: Логируем информацию о цвете протокола
-      console.log(`🎨 PROTOCOL RENDER DEBUG for ID ${protocol.id}:`, {
-        name: protocol.name.split('. ')[0],
-        icon: protocol.icon,
-        color: protocol.color,
-        hasColor: !!protocol.color,
-        colorType: typeof protocol.color
-      });
+      // 🔧 ДЕБАГ: Логируем информацию о цвете протокола только если дебаг включен
+      if (window.DEBUG_UI) {
+        console.log(`🎨 PROTOCOL RENDER DEBUG for ID ${protocol.id}:`, {
+          name: protocol.name.split('. ')[0],
+          icon: protocol.icon,
+          color: protocol.color,
+          hasColor: !!protocol.color,
+          colorType: typeof protocol.color
+        });
+      }
       
       const icon = this.renderIcon(protocol.icon, protocol.color);
       

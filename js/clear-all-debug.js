@@ -265,4 +265,45 @@ console.log('1. debugProtocolColors() - Check protocol color data');
 console.log('2. debugInnerfaceColors() - Check innerface color data');
 console.log('3. testColorRendering() - Test color rendering with sample data');
 console.log('4. forceRefreshProtocols() - Force refresh protocol display');
-console.log('💡 Use these functions in console to fix issues and debug color issues!'); 
+console.log('💡 Use these functions in console to fix issues and debug color issues!');
+
+// 🔧 DEBUG CONTROL FUNCTIONS
+function enableDebugUI() {
+  window.DEBUG_UI = true;
+  console.log('✅ UI Debug logging ENABLED');
+  console.log('🔧 Restart any operations to see debug output');
+}
+
+function disableDebugUI() {
+  window.DEBUG_UI = false;
+  console.log('❌ UI Debug logging DISABLED');
+}
+
+function enableDebugModals() {
+  window.DEBUG_MODALS = true;
+  console.log('✅ Modals Debug logging ENABLED');
+  console.log('🔧 Open any modal to see debug output');
+}
+
+function disableDebugModals() {
+  window.DEBUG_MODALS = false;
+  console.log('❌ Modals Debug logging DISABLED');
+}
+
+function enableAllDebug() {
+  window.DEBUG_UI = true;
+  window.DEBUG_MODALS = true;
+  console.log('✅ ALL Debug logging ENABLED');
+  console.log('🔧 Restart operations to see debug output');
+}
+
+function disableAllDebug() {
+  window.DEBUG_UI = false;
+  window.DEBUG_MODALS = false;
+  console.log('❌ ALL Debug logging DISABLED');
+}
+
+console.log('🔧 DEBUG CONTROL: Functions available:');
+console.log('- enableDebugUI() / disableDebugUI() - UI debug logs');
+console.log('- enableDebugModals() / disableDebugModals() - Modal debug logs');
+console.log('- enableAllDebug() / disableAllDebug() - All debug logs'); 

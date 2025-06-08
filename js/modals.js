@@ -1,12 +1,17 @@
 // ===== modals.js - Modal Functionality =====
 
+// 🔧 ДЕБАГ ПЕРЕКЛЮЧАТЕЛЬ: Установите в false чтобы скрыть дебаг логи
+window.DEBUG_MODALS = false;
+
 const Modals = {
   currentInnerfaceId: null,
   currentProtocolId: null,
   currentStateId: null,
 
   init() {
-    console.log('🔧 Modals.init() called - initializing modal handlers');
+    if (window.DEBUG_MODALS) {
+      console.log('🔧 Modals.init() called - initializing modal handlers');
+    }
     this.setupAddInnerfaceModal();
     this.setupAddProtocolModal();
     this.setupAddStateModal();
@@ -16,13 +21,15 @@ const Modals = {
     // 🔧 Ensure delete buttons have event listeners
     this.setupDeleteButtonListeners();
     
-    console.log('✅ All modal handlers initialized');
-    
-    // 🐛 DEBUG: Check if delete buttons exist
-    console.log('🐛 DELETE BUTTONS DEBUG:');
-    console.log('  - delete-innerface-btn:', document.getElementById('delete-innerface-btn'));
-    console.log('  - delete-protocol-btn:', document.getElementById('delete-protocol-btn'));
-    console.log('  - delete-state-btn:', document.getElementById('delete-state-btn'));
+    if (window.DEBUG_MODALS) {
+      console.log('✅ All modal handlers initialized');
+      
+      // 🐛 DEBUG: Check if delete buttons exist
+      console.log('🐛 DELETE BUTTONS DEBUG:');
+      console.log('  - delete-innerface-btn:', document.getElementById('delete-innerface-btn'));
+      console.log('  - delete-protocol-btn:', document.getElementById('delete-protocol-btn'));
+      console.log('  - delete-state-btn:', document.getElementById('delete-state-btn'));
+    }
   },
 
   setupAddInnerfaceModal() {
@@ -189,13 +196,20 @@ const Modals = {
   },
 
   openInnerfaceModal() {
-    console.log('🔧 openInnerfaceModal() called');
+    if (window.DEBUG_MODALS) {
+      console.log('🔧 openInnerfaceModal() called');
+      console.log('🔧 Modal element:', document.getElementById('add-innerface-modal'));
+    }
     const modal = document.getElementById('add-innerface-modal');
-    console.log('🔧 Modal element:', modal);
     if (modal) {
-      console.log('🔧 Adding active class to modal');
+      if (window.DEBUG_MODALS) {
+        console.log('🔧 Adding active class to modal');
+      }
       modal.classList.add('active');
       document.body.style.overflow = 'hidden';
+      
+      // 🔧 ИСПРАВЛЕНИЕ: Очищаем цвет при открытии новой модалки
+      this.resetColorPicker('innerface');
       
       // Initialize color picker
       this.initializeColorPickersOnModalOpen('innerface');
@@ -615,6 +629,9 @@ const Modals = {
       
       this.resetProtocolTargets();
       this.populateProtocolInnerfaces();
+      
+      // 🔧 ИСПРАВЛЕНИЕ: Очищаем цвет при открытии новой модалки
+      this.resetColorPicker('protocol');
       
       // Initialize color picker
       this.initializeColorPickersOnModalOpen('protocol');
@@ -1249,7 +1266,9 @@ const Modals = {
   },
 
   setupDeleteButtonListeners() {
-    console.log('🔧 Setting up delete button event listeners...');
+    if (window.DEBUG_MODALS) {
+      console.log('🔧 Setting up delete button event listeners...');
+    }
     
     // Setup innerface delete button
     const innerfaceBtn = document.getElementById('delete-innerface-btn');
@@ -1261,7 +1280,9 @@ const Modals = {
       newInnerfaceBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log('🗑️ Innerface delete clicked, currentInnerfaceId:', this.currentInnerfaceId);
+        if (window.DEBUG_MODALS) {
+          console.log('🗑️ Innerface delete clicked, currentInnerfaceId:', this.currentInnerfaceId);
+        }
         if (this.currentInnerfaceId) {
           this.deleteCurrentInnerface(this.currentInnerfaceId);
         } else {
@@ -1269,7 +1290,9 @@ const Modals = {
         }
       });
       
-      console.log('✅ Innerface delete button listener attached');
+      if (window.DEBUG_MODALS) {
+        console.log('✅ Innerface delete button listener attached');
+      }
     } else {
       console.warn('⚠️ Innerface delete button not found');
     }
@@ -1284,7 +1307,9 @@ const Modals = {
       newProtocolBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log('🗑️ Protocol delete clicked, currentProtocolId:', this.currentProtocolId);
+        if (window.DEBUG_MODALS) {
+          console.log('🗑️ Protocol delete clicked, currentProtocolId:', this.currentProtocolId);
+        }
         if (this.currentProtocolId) {
           this.deleteCurrentProtocol(this.currentProtocolId);
         } else {
@@ -1292,7 +1317,9 @@ const Modals = {
         }
       });
       
-      console.log('✅ Protocol delete button listener attached');
+      if (window.DEBUG_MODALS) {
+        console.log('✅ Protocol delete button listener attached');
+      }
     } else {
       console.warn('⚠️ Protocol delete button not found');
     }
@@ -1307,7 +1334,9 @@ const Modals = {
       newStateBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log('🗑️ State delete clicked, currentStateId:', this.currentStateId);
+        if (window.DEBUG_MODALS) {
+          console.log('🗑️ State delete clicked, currentStateId:', this.currentStateId);
+        }
         if (this.currentStateId) {
           this.deleteCurrentState(this.currentStateId);
         } else {
@@ -1315,7 +1344,9 @@ const Modals = {
         }
       });
       
-      console.log('✅ State delete button listener attached');
+      if (window.DEBUG_MODALS) {
+        console.log('✅ State delete button listener attached');
+      }
     } else {
       console.warn('⚠️ State delete button not found');
     }
@@ -1330,7 +1361,9 @@ const Modals = {
       newClearHistoryBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log('🗑️ Clear All History clicked - direct deletion without confirmation');
+        if (window.DEBUG_MODALS) {
+          console.log('🗑️ Clear All History clicked - direct deletion without confirmation');
+        }
         
         window.Storage.clearAllCheckins();
         App.filteredHistory = [];
@@ -1346,7 +1379,9 @@ const Modals = {
         App.renderPage('history');
       });
       
-      console.log('✅ Clear All History button listener attached (no confirmation)');
+      if (window.DEBUG_MODALS) {
+        console.log('✅ Clear All History button listener attached (no confirmation)');
+      }
     } else {
       console.warn('⚠️ Clear All History button not found');
     }
@@ -1354,11 +1389,15 @@ const Modals = {
     // Setup individual history delete buttons (with delegation) - NO RECURSIVE CALL
     this.setupHistoryDeleteDelegation();
     
-    console.log('🔧 Delete button listeners setup complete');
+    if (window.DEBUG_MODALS) {
+      console.log('🔧 Delete button listeners setup complete');
+    }
   },
 
   setupHistoryDeleteDelegation() {
-    console.log('🔧 Setting up history delete button delegation...');
+    if (window.DEBUG_MODALS) {
+      console.log('🔧 Setting up history delete button delegation...');
+    }
     
     // Use document-level delegation to avoid DOM manipulation issues
     // Remove any existing delegation listeners first
@@ -1380,10 +1419,14 @@ const Modals = {
         // Get checkin ID from data attribute
         const checkinId = deleteBtn.dataset.checkinId;
         
-        console.log('🗑️ History item delete clicked, checkinId:', checkinId);
+        if (window.DEBUG_MODALS) {
+          console.log('🗑️ History item delete clicked, checkinId:', checkinId);
+        }
         
         if (checkinId) {
-          console.log('🗑️ Deleting history item:', checkinId);
+          if (window.DEBUG_MODALS) {
+            console.log('🗑️ Deleting history item:', checkinId);
+          }
           
           const checkins = window.Storage.getCheckins();
           const checkin = checkins.find(c => c.id == checkinId);
@@ -1394,18 +1437,26 @@ const Modals = {
           // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ УДАЛЕНИЯ ЧЕКИНА
           // Это обеспечивает что удаленные чекины не появятся снова при обновлении страницы
           if (!window.Storage.syncInProgress) {
-            console.log('🚀 SCHEDULING BACKGROUND SYNC: Individual checkin deleted');
+            if (window.DEBUG_MODALS) {
+              console.log('🚀 SCHEDULING BACKGROUND SYNC: Individual checkin deleted');
+            }
             setTimeout(() => {
               if (!window.Storage.syncInProgress) {
                 window.Storage.syncWithBackend().catch(error => {
-                  console.warn('⚠️ Background sync after checkin deletion failed:', error);
+                  if (window.DEBUG_MODALS) {
+                    console.warn('⚠️ Background sync after checkin deletion failed:', error);
+                  }
                 });
               } else {
-                console.log('🚫 BACKGROUND SYNC SKIPPED: Another sync already in progress (checkin delete)');
+                if (window.DEBUG_MODALS) {
+                  console.log('🚫 BACKGROUND SYNC SKIPPED: Another sync already in progress (checkin delete)');
+                }
               }
             }, 300);
           } else {
-            console.log('🚫 SYNC IN PROGRESS: Marking for sync instead');
+            if (window.DEBUG_MODALS) {
+              console.log('🚫 SYNC IN PROGRESS: Marking for sync instead');
+            }
             window.Storage.markForSync();
           }
           
@@ -1443,7 +1494,9 @@ const Modals = {
             UI.updateUserStats();
           }
         } else {
-          console.error('❌ Could not extract checkin ID from delete button');
+          if (window.DEBUG_MODALS) {
+            console.error('❌ Could not extract checkin ID from delete button');
+          }
         }
       }
     };
@@ -1451,7 +1504,9 @@ const Modals = {
     // Add the delegation listener to document
     document.addEventListener('click', this.historyDelegationHandler);
     
-    console.log('✅ History delete button delegation setup complete');
+    if (window.DEBUG_MODALS) {
+      console.log('✅ History delete button delegation setup complete');
+    }
   },
 
   // 🐛 DEBUG FUNCTIONS FOR TROUBLESHOOTING
@@ -1688,11 +1743,15 @@ const Modals = {
   },
 
   loadSavedColor(type, color) {
-    console.log(`🎨 LOADING SAVED COLOR for ${type}:`, { color, hasColor: !!color });
+    if (window.DEBUG_MODALS) {
+      console.log(`🎨 LOADING SAVED COLOR for ${type}:`, { color, hasColor: !!color });
+    }
     
     // 🔧 ИСПРАВЛЕНИЕ: Если цвет не задан, НЕ выбираем дефолтный blue
     if (!color) {
-      console.log(`🎨 NO COLOR SET for ${type}: Not selecting any color`);
+      if (window.DEBUG_MODALS) {
+        console.log(`🎨 NO COLOR SET for ${type}: Not selecting any color`);
+      }
       // Убираем выделение со всех цветов
       const colorOptions = document.querySelectorAll(`#${type}-color-group .color-option`);
       colorOptions.forEach(option => {
@@ -1705,7 +1764,9 @@ const Modals = {
     const colorInput = document.getElementById(`${type}-color`);
     if (colorInput) {
       colorInput.value = color;
-      console.log(`🎨 SET COLOR INPUT for ${type}:`, color);
+      if (window.DEBUG_MODALS) {
+        console.log(`🎨 SET COLOR INPUT for ${type}:`, color);
+      }
     }
 
     // Update visual selection only if color is specified
@@ -1714,7 +1775,9 @@ const Modals = {
 
   // Update existing openInnerfaceModal and openProtocolModal functions
   initializeColorPickersOnModalOpen(type) {
-    console.log(`🎨 INITIALIZING COLOR PICKER for ${type}`);
+    if (window.DEBUG_MODALS) {
+      console.log(`🎨 INITIALIZING COLOR PICKER for ${type}`);
+    }
     
     // Show color picker if current emoji is FontAwesome
     setTimeout(() => {
@@ -1725,14 +1788,20 @@ const Modals = {
       const colorInput = document.getElementById(`${type}-color`);
       const currentColor = colorInput?.value;
       
-      console.log(`🎨 CURRENT COLOR in input for ${type}:`, { currentColor, hasValue: !!currentColor });
+      if (window.DEBUG_MODALS) {
+        console.log(`🎨 CURRENT COLOR in input for ${type}:`, { currentColor, hasValue: !!currentColor });
+      }
       
       // Только если есть сохраненный цвет - выбираем его визуально
       if (currentColor) {
         this.selectColor(type, currentColor);
-        console.log(`🎨 SELECTED SAVED COLOR for ${type}:`, currentColor);
+        if (window.DEBUG_MODALS) {
+          console.log(`🎨 SELECTED SAVED COLOR for ${type}:`, currentColor);
+        }
       } else {
-        console.log(`🎨 NO COLOR TO SELECT for ${type}: Leaving picker empty`);
+        if (window.DEBUG_MODALS) {
+          console.log(`🎨 NO COLOR TO SELECT for ${type}: Leaving picker empty`);
+        }
         // Убираем выделение со всех цветов
         const colorOptions = document.querySelectorAll(`#${type}-color-group .color-option`);
         colorOptions.forEach(option => {
@@ -1740,6 +1809,24 @@ const Modals = {
         });
       }
     }, 100);
+  },
+
+  resetColorPicker(type) {
+    if (window.DEBUG_MODALS) {
+      console.log(`🎨 RESETTING COLOR PICKER for ${type}`);
+    }
+    
+    // Очищаем скрытое поле цвета
+    const colorInput = document.getElementById(`${type}-color`);
+    if (colorInput) {
+      colorInput.value = '';
+    }
+    
+    // Убираем выделение со всех цветов
+    const colorOptions = document.querySelectorAll(`#${type}-color-group .color-option`);
+    colorOptions.forEach(option => {
+      option.classList.remove('selected');
+    });
   }
 }; 
 
