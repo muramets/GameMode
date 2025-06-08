@@ -1350,6 +1350,7 @@ class Storage {
       icon: innerfaceData.icon,
       hover: innerfaceData.hover || '',
       initialScore: innerfaceData.initialScore,
+      color: innerfaceData.color || '#7fb3d3', // Save color field
       // 🔧 НОВОЕ: Добавляем timestamp создания для timestamp-based удалений
       createdAt: Date.now(),
       lastModified: Date.now()
@@ -1381,6 +1382,7 @@ class Storage {
       icon: innerfaceData.icon,
       hover: innerfaceData.hover || '',
       initialScore: innerfaceData.initialScore,
+      color: innerfaceData.color || innerfaces[index].color || '#7fb3d3', // Save color field
       // 🔧 НОВОЕ: Сохраняем существующий createdAt и обновляем lastModified
       createdAt: innerfaces[index].createdAt || Date.now(),
       lastModified: Date.now()
@@ -1477,6 +1479,7 @@ class Storage {
       hover: protocolData.hover || '',
       weight: protocolData.weight,
       targets: protocolData.targets || [],
+      color: protocolData.color || '#7fb3d3', // Save color field
       // 🔧 НОВОЕ: Добавляем timestamp создания для timestamp-based удалений
       createdAt: Date.now(),
       lastModified: Date.now()
@@ -1521,6 +1524,7 @@ class Storage {
       hover: protocolData.hover || '',
       weight: protocolData.weight,
       targets: newTargets,
+      color: protocolData.color || oldProtocol.color || '#7fb3d3', // Save color field
       // 🔧 НОВОЕ: Обновляем timestamp изменения
       createdAt: oldProtocol.createdAt || Date.now(),
       lastModified: Date.now()
