@@ -263,7 +263,7 @@
 .state-name-container {
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
+  gap: 0.25rem;
   flex: 1;
 }
 
@@ -284,7 +284,7 @@
 }
 
 .state-name {
-  font-size: 0.9rem;
+  font-size: 17px;
   font-weight: 500;
   letter-spacing: 0.01em;
   line-height: 1.2;
@@ -693,7 +693,7 @@
   }
   
   .state-name {
-    font-size: 0.8rem;
+    font-size: 15px;
   }
 }
 
