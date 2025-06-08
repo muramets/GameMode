@@ -585,6 +585,7 @@ const Modals = {
     const suggestionsId = slotNumber === 1 ? 'innerface-suggestions' : `innerface-suggestions-${slotNumber}`;
     const suggestions = document.getElementById(suggestionsId);
     
+    // 🔧 ИСПРАВЛЕНИЕ: Всегда получаем свежие данные innerfaces
     const allInnerfaces = window.Storage.getInnerfaces();
     let filteredInnerfaces;
     
@@ -594,8 +595,10 @@ const Modals = {
     });
     
     if (!query.trim()) {
-      // Show all available innerfaces when no search query
-      filteredInnerfaces = availableInnerfaces.slice(0, 8); // Show more innerfaces when no filter
+      // 🔧 ИСПРАВЛЕНИЕ: Показываем ВСЕ доступные innerfaces когда нет поискового запроса
+      // и сортируем их по имени для лучшего UX
+      filteredInnerfaces = availableInnerfaces
+        .sort((a, b) => a.name.localeCompare(b.name)); // Сортируем по алфавиту
     } else {
       // Filter by search term
       const searchTerm = query.toLowerCase();
@@ -605,7 +608,7 @@ const Modals = {
         const hover = innerface.hover ? innerface.hover.toLowerCase() : '';
         
         return name.includes(searchTerm) || hover.includes(searchTerm);
-      }).slice(0, 5); // Show fewer when filtering
+      }).slice(0, 8); // Ограничиваем только при поиске
     }
     
     if (filteredInnerfaces.length > 0) {

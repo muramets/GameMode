@@ -4403,26 +4403,32 @@ class Storage {
           },
           comparison: {
             deletionIsNewer: deletionTimestamp > itemTimestamp,
-            shouldDelete: deletionTimestamp >= itemTimestamp,
+            shouldDelete: deletionTimestamp > itemTimestamp, // 🔧 ИСПРАВЛЕНО: используем > вместо >=
             timeDifference: Math.abs(deletionTimestamp - itemTimestamp)
           },
           itemName: localItem.name || 'Unknown'
         });
         
-        // 🔧 ЛОГИКА УДАЛЕНИЯ:
-        // 1. Если старый формат (deletionTimestamp = 0) - удаляем всегда (обратная совместимость)
-        // 2. Если новый формат - удаляем только если timestamp удаления >= timestamp элемента
-        const shouldDelete = deletionTimestamp === 0 || deletionTimestamp >= itemTimestamp;
+        // 🔧 ИСПРАВЛЕННАЯ ЛОГИКА УДАЛЕНИЯ:
+        // 1. Если старый формат (deletionTimestamp = 0) и элемент тоже без timestamp - удаляем (обратная совместимость)
+        // 2. Если новый формат - удаляем только если timestamp удаления строго больше timestamp элемента
+        // 3. 🔧 НОВОЕ: Если элемент имеет timestamp, а удаление не имеет - НЕ удаляем (защита новых элементов)
+        const shouldDelete = (deletionTimestamp === 0 && itemTimestamp === 0) || 
+                           (deletionTimestamp > 0 && deletionTimestamp > itemTimestamp);
         
         if (shouldDelete) {
-          const reason = deletionTimestamp === 0 ? 'legacy deletion (no timestamp)' : 
-                        `deletion timestamp ${new Date(deletionTimestamp).toISOString()} >= item timestamp ${new Date(itemTimestamp).toISOString()}`;
+          const reason = deletionTimestamp === 0 ? 'legacy deletion (both have no timestamp)' : 
+                        `deletion timestamp ${new Date(deletionTimestamp).toISOString()} > item timestamp ${new Date(itemTimestamp).toISOString()}`;
           
           console.log(`🗑️ CROSS-DEVICE DELETION: Removing ${dataType} ID ${deletionId} - ${reason}`);
           filteredArray.splice(itemIndex, 1);
           deletedCount++;
         } else {
-          console.log(`⏭️ SKIPPING DELETION: ${dataType} ID ${deletionId} was modified after deletion (item: ${new Date(itemTimestamp).toISOString()} > deletion: ${new Date(deletionTimestamp).toISOString()})`);
+          const reason = itemTimestamp > deletionTimestamp ? 
+            `item was created/modified after deletion (item: ${new Date(itemTimestamp).toISOString()} > deletion: ${new Date(deletionTimestamp).toISOString()})` :
+            'protecting new timestamped item from legacy deletion';
+          
+          console.log(`⏭️ SKIPPING DELETION: ${dataType} ID ${deletionId} - ${reason}`);
         }
       } else {
         console.log(`👻 DELETION RECORD: ${dataType} ID ${deletionId} not found locally (already deleted or never existed)`);
@@ -4686,6 +4692,106 @@ class Storage {
       // 🔧 КРИТИЧНО: Всегда очищаем флаг синхронизации
       this.syncInProgress = false;
       console.log('🔓 FORCE SYNC: Sync lock released');
+    }
+  }
+
+  // Clear deleted protocols list (for debugging and fixing sync issues)
+  clearDeletedProtocols() {
+    console.log('🧹 CLEARING DELETED PROTOCOLS LIST...');
+    const deletedProtocols = this.get('deletedProtocols') || [];
+    console.log('🔍 Before clearing:', deletedProtocols);
+    this.set('deletedProtocols', []);
+    console.log('✅ Deleted protocols list cleared');
+    return { cleared: true, previousCount: deletedProtocols.length };
+  }
+
+  // 🔧 НОВОЕ: Очистка устаревших записей удаления для освобождения ID
+  cleanupOldDeletionRecords() {
+    console.log('🧹 CLEANUP: Starting old deletion records cleanup...');
+    
+    const deletionKeys = [
+      'deletedProtocols',
+      'deletedInnerfaces', 
+      'deletedStates',
+      'deletedQuickActions'
+    ];
+    
+    const cutoffTime = Date.now() - (30 * 24 * 60 * 60 * 1000); // 30 дней назад
+    let totalCleaned = 0;
+    
+    deletionKeys.forEach(key => {
+      const deletionArray = this.get(key) || [];
+      const before = deletionArray.length;
+      
+      // Очищаем старые записи удаления (старше 30 дней)
+      const cleaned = deletionArray.filter(item => {
+        if (typeof item === 'object' && item.deletedAt) {
+          const isOld = item.deletedAt < cutoffTime;
+          if (isOld) {
+            console.log(`🗑️ REMOVING OLD DELETION RECORD: ${key} ID ${item.id} (deleted ${new Date(item.deletedAt).toISOString()})`);
+          }
+          return !isOld;
+        }
+        // Оставляем legacy записи (без timestamp) - пользователь должен решить что с ними делать
+        return true;
+      });
+      
+      const after = cleaned.length;
+      const removedCount = before - after;
+      
+      if (removedCount > 0) {
+        this.set(key, cleaned);
+        console.log(`🧹 CLEANED OLD DELETIONS from ${key}: removed ${removedCount} old records (${before} → ${after})`);
+        totalCleaned += removedCount;
+      } else {
+        console.log(`✅ ${key}: no old deletion records found (${before} items)`);
+      }
+    });
+    
+    if (totalCleaned > 0) {
+      console.log(`🧹 OLD DELETION CLEANUP COMPLETE: Removed ${totalCleaned} old deletion records`);
+      this.markForSync();
+    } else {
+      console.log('🧹 OLD DELETION CLEANUP: No old records found');
+    }
+    
+    return { cleaned: totalCleaned };
+  }
+
+  // 🔧 НОВОЕ: Удаление конкретных ID из списка удаленных протоколов
+  removeFromDeletedProtocols(protocolIds) {
+    console.log('🧹 REMOVING SPECIFIC IDs FROM DELETED PROTOCOLS:', protocolIds);
+    
+    const deletedProtocols = this.get('deletedProtocols') || [];
+    const idsToRemove = Array.isArray(protocolIds) ? protocolIds : [protocolIds];
+    
+    console.log('🔍 Before removal:', deletedProtocols);
+    
+    const cleaned = deletedProtocols.filter(item => {
+      const itemId = typeof item === 'object' ? item.id : item;
+      const shouldRemove = idsToRemove.includes(itemId) || idsToRemove.includes(String(itemId)) || idsToRemove.includes(Number(itemId));
+      
+      if (shouldRemove) {
+        console.log(`🗑️ REMOVING deletion record for protocol ID ${itemId}`);
+      }
+      
+      return !shouldRemove;
+    });
+    
+    const removedCount = deletedProtocols.length - cleaned.length;
+    
+    if (removedCount > 0) {
+      this.set('deletedProtocols', cleaned);
+      console.log(`✅ REMOVED ${removedCount} deletion records for protocols:`, idsToRemove);
+      console.log('🔍 After removal:', cleaned);
+      
+      // Синхронизируем изменения
+      this.markForSync();
+      
+      return { removed: removedCount, remainingCount: cleaned.length };
+    } else {
+      console.log('⚠️ No deletion records found for specified protocol IDs');
+      return { removed: 0, remainingCount: cleaned.length };
     }
   }
 }
