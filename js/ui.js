@@ -1041,7 +1041,7 @@ const UI = {
     console.log('✅ BADGE GLOW DEBUG COMPLETE');
   },
 
-  // Helper function to apply inner glow to stat labels
+  // Helper function to apply elegant external glow to stat labels
   applyInnerGlowToStatLabel(element, color) {
     // Convert hex color to rgba for the glow effect
     const hexToRgba = (hex, alpha) => {
@@ -1051,18 +1051,60 @@ const UI = {
       return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     };
     
-    const glowColor = hexToRgba(color, 0.15);
-    const borderColor = hexToRgba(color, 0.3);
+    // Much more subtle colors with lower opacity
+    const glowColor = hexToRgba(color, 0.06);
+    const glowColorStrong = hexToRgba(color, 0.12);
+    const borderColor = hexToRgba(color, 0.15);
     
-    element.style.boxShadow = `inset 0 0 8px ${glowColor}, inset 0 0 16px ${hexToRgba(color, 0.08)}`;
+    // Apply external glow with multiple layers for depth
+    element.style.boxShadow = `
+      0 0 8px ${glowColor},
+      0 0 16px ${hexToRgba(color, 0.04)},
+      0 0 24px ${hexToRgba(color, 0.02)}
+    `;
     element.style.borderColor = borderColor;
     element.style.transition = 'all 0.3s ease';
+    
+    // Add CSS animation for gentle pulsing
+    const animationName = `badge-glow-${color.replace('#', '')}`;
+    
+    // Check if animation doesn't exist yet
+    if (!this.createdAnimations) {
+      this.createdAnimations = new Set();
+    }
+    
+    if (!this.createdAnimations.has(animationName)) {
+      // Create CSS animation keyframes
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes ${animationName} {
+          0%, 100% {
+            box-shadow: 
+              0 0 8px ${glowColor},
+              0 0 16px ${hexToRgba(color, 0.04)},
+              0 0 24px ${hexToRgba(color, 0.02)};
+          }
+          50% {
+            box-shadow: 
+              0 0 12px ${glowColorStrong},
+              0 0 20px ${hexToRgba(color, 0.08)},
+              0 0 28px ${hexToRgba(color, 0.04)};
+          }
+        }
+      `;
+      document.head.appendChild(style);
+      this.createdAnimations.add(animationName);
+    }
+    
+    // Apply the animation
+    element.style.animation = `${animationName} 3s ease-in-out infinite`;
   },
 
-  // Helper function to remove inner glow from stat labels
+  // Helper function to remove glow from stat labels
   removeInnerGlowFromStatLabel(element) {
     element.style.boxShadow = '';
     element.style.borderColor = '';
+    element.style.animation = '';
     element.style.transition = 'all 0.3s ease';
   },
 
