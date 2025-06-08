@@ -10,6 +10,13 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 2rem;
+  transition: all 0.3s cubic-bezier(0.2, 0.0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.user-profile-block:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
 }
 
 .user-info {
@@ -62,6 +69,14 @@
 .level-label {
   font-size: 0.75rem;
   color: var(--sub-color);
+  text-align: center;
+  padding: 0.25rem 0.5rem;
+  background-color: var(--bg-color);
+  border-radius: 0.25rem;
+  white-space: nowrap;
+  margin-bottom: 0.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  transition: all 0.3s ease;
 }
 
 .level-progress {
@@ -136,6 +151,8 @@
   border-radius: 0.25rem;
   white-space: nowrap;
   margin-bottom: 0.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  transition: all 0.3s ease;
 }
 
 .stat-value {

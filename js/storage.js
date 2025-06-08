@@ -4866,6 +4866,69 @@ class Storage {
     
     return mostCommonColor;
   }
+
+  // ===== INNERFACE COLOR DETERMINATION FOR CHECK-INS BADGES =====
+  
+  // Get the color of the innerface with the most changes today
+  getMostChangedInnerfaceColorToday() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayTimestamp = today.getTime();
+    
+    return this.getMostChangedInnerfaceColorInPeriod(todayTimestamp, Date.now());
+  }
+  
+  // Get the color of the innerface with the most changes this month
+  getMostChangedInnerfaceColorThisMonth() {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    
+    return this.getMostChangedInnerfaceColorInPeriod(startOfMonth.getTime(), Date.now());
+  }
+  
+  // Get the color of the innerface with the most changes in a specific period
+  getMostChangedInnerfaceColorInPeriod(startTimestamp, endTimestamp) {
+    const history = this.getCheckins();
+    const innerfaceChanges = {};
+    
+    // Count changes for each innerface in the period
+    history.forEach(checkin => {
+      if (checkin.timestamp >= startTimestamp && checkin.timestamp <= endTimestamp) {
+        const protocol = this.getProtocolById(checkin.protocolId);
+        if (protocol && protocol.targets) {
+          protocol.targets.forEach(innerfaceId => {
+            if (!innerfaceChanges[innerfaceId]) {
+              innerfaceChanges[innerfaceId] = 0;
+            }
+            // Count absolute value of change (positive or negative)
+            innerfaceChanges[innerfaceId] += Math.abs(checkin.points || 1);
+          });
+        }
+      }
+    });
+    
+    // Find innerface with most changes
+    let mostChangedInnerfaceId = null;
+    let maxChanges = 0;
+    
+    Object.entries(innerfaceChanges).forEach(([innerfaceId, changes]) => {
+      if (changes > maxChanges) {
+        maxChanges = changes;
+        mostChangedInnerfaceId = innerfaceId;
+      }
+    });
+    
+    if (mostChangedInnerfaceId) {
+      const innerface = this.getInnerfaceById(mostChangedInnerfaceId);
+      if (innerface && innerface.color) {
+        return innerface.color;
+      }
+    }
+    
+    // Fallback to default color if no changes found
+    return null;
+  }
 }
 
 // Create global instance

@@ -907,7 +907,19 @@ const UI = {
         progressDigit.textContent = levelFirstDigit;
       }
     }
+
+    // Get colors for stat badges based on most changed innerfaces
+    const todayColor = window.Storage.getMostChangedInnerfaceColorToday();
+    const monthColor = window.Storage.getMostChangedInnerfaceColorThisMonth();
     
+    // Apply colors to today's check-ins badge
+    const todayStatLabel = document.querySelector('.stat-item:first-child .stat-label');
+    if (todayStatLabel && todayColor) {
+      this.applyInnerGlowToStatLabel(todayStatLabel, todayColor);
+    } else if (todayStatLabel) {
+      this.removeInnerGlowFromStatLabel(todayStatLabel);
+    }
+
     // Update today's checkins
     const checkinsToday = document.getElementById('checkins-today');
     const checkinsTodayDetail = document.getElementById('checkins-today-detail');
@@ -956,6 +968,14 @@ const UI = {
         monthTotalChange += xpChange;
       }
     });
+
+    // Apply colors to month's check-ins badge
+    const monthStatLabel = document.querySelector('.stat-item:nth-child(2) .stat-label');
+    if (monthStatLabel && monthColor) {
+      this.applyInnerGlowToStatLabel(monthStatLabel, monthColor);
+    } else if (monthStatLabel) {
+      this.removeInnerGlowFromStatLabel(monthStatLabel);
+    }
     
     // Update month's checkins
     const checkinsMonth = document.getElementById('checkins-month');
@@ -984,6 +1004,31 @@ const UI = {
       
       checkinsMonthDetail.innerHTML = `${sign}${monthTotalChange.toFixed(2)} xp ${trendArrow}`;
     }
+  },
+
+  // Helper function to apply inner glow to stat labels
+  applyInnerGlowToStatLabel(element, color) {
+    // Convert hex color to rgba for the glow effect
+    const hexToRgba = (hex, alpha) => {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+    
+    const glowColor = hexToRgba(color, 0.15);
+    const borderColor = hexToRgba(color, 0.3);
+    
+    element.style.boxShadow = `inset 0 0 8px ${glowColor}, inset 0 0 16px ${hexToRgba(color, 0.08)}`;
+    element.style.borderColor = borderColor;
+    element.style.transition = 'all 0.3s ease';
+  },
+
+  // Helper function to remove inner glow from stat labels
+  removeInnerGlowFromStatLabel(element) {
+    element.style.boxShadow = '';
+    element.style.borderColor = '';
+    element.style.transition = 'all 0.3s ease';
   },
 
   // Setup question icon hover functionality
