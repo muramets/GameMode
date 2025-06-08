@@ -203,7 +203,6 @@ const UI = {
           
           return `
             <div class="state-card ${scoreClass}" draggable="true" data-state-id="${state.id}" data-glow-color="${iconColor}">
-              <div class="state-glow"></div>
               <div class="state-header">
                 <div class="state-info-container">
                   <div class="state-icon" style="color: ${iconColor};">

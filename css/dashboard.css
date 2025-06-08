@@ -712,230 +712,79 @@
   }
 }
 
-/* State Card Glow Effect */
-.state-glow {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 20px;
-  border-radius: 1rem 1rem 0 0;
-  pointer-events: none;
-  opacity: 0.4;
-  transition: opacity 0.3s ease;
-  background: linear-gradient(
-    180deg,
-    var(--glow-color, var(--sub-color)) 0%,
-    transparent 100%
-  );
-  filter: blur(0.5px);
+/* External glow effect on hover with dynamic colors */
+.state-card[data-glow-color="#ca4754"]:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 0 20px rgba(202, 71, 84, 0.4), 0 0 40px rgba(202, 71, 84, 0.2);
 }
 
-/* Additional concentrated glow layer */
-.state-glow::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 8px;
-  border-radius: 1rem 1rem 0 0;
-  background: linear-gradient(
-    180deg,
-    var(--glow-color, var(--sub-color)) 0%,
-    transparent 100%
-  );
-  opacity: 0.8;
-  filter: blur(1px);
+.state-card[data-glow-color="#c04550"]:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 0 20px rgba(192, 69, 80, 0.4), 0 0 40px rgba(192, 69, 80, 0.2);
 }
 
-/* Dynamic glow color using CSS custom properties */
-.state-card[data-glow-color="#ca4754"] .state-glow {
-  background: linear-gradient(180deg, rgba(202, 71, 84, 0.7) 0%, rgba(202, 71, 84, 0.2) 50%, transparent 100%);
+.state-card[data-glow-color="#d55460"]:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 0 20px rgba(213, 84, 96, 0.4), 0 0 40px rgba(213, 84, 96, 0.2);
 }
 
-.state-card[data-glow-color="#ca4754"] .state-glow::before {
-  background: linear-gradient(180deg, rgba(202, 71, 84, 0.9) 0%, transparent 100%);
+.state-card[data-glow-color="#df6248"]:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 0 20px rgba(223, 98, 72, 0.4), 0 0 40px rgba(223, 98, 72, 0.2);
 }
 
-.state-card[data-glow-color="#c04550"] .state-glow {
-  background: linear-gradient(180deg, rgba(192, 69, 80, 0.7) 0%, rgba(192, 69, 80, 0.2) 50%, transparent 100%);
+.state-card[data-glow-color="#e6934a"]:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 0 20px rgba(230, 147, 74, 0.4), 0 0 40px rgba(230, 147, 74, 0.2);
 }
 
-.state-card[data-glow-color="#c04550"] .state-glow::before {
-  background: linear-gradient(180deg, rgba(192, 69, 80, 0.9) 0%, transparent 100%);
+.state-card[data-glow-color="#e8a055"]:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 0 20px rgba(232, 160, 85, 0.4), 0 0 40px rgba(232, 160, 85, 0.2);
 }
 
-.state-card[data-glow-color="#d55460"] .state-glow {
-  background: linear-gradient(180deg, rgba(213, 84, 96, 0.7) 0%, rgba(213, 84, 96, 0.2) 50%, transparent 100%);
+.state-card[data-glow-color="#e9ad60"]:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 0 20px rgba(233, 173, 96, 0.4), 0 0 40px rgba(233, 173, 96, 0.2);
 }
 
-.state-card[data-glow-color="#d55460"] .state-glow::before {
-  background: linear-gradient(180deg, rgba(213, 84, 96, 0.9) 0%, transparent 100%);
+.state-card[data-glow-color="#e9ba6b"]:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 0 20px rgba(233, 186, 107, 0.4), 0 0 40px rgba(233, 186, 107, 0.2);
 }
 
-.state-card[data-glow-color="#df6248"] .state-glow {
-  background: linear-gradient(180deg, rgba(223, 98, 72, 0.7) 0%, rgba(223, 98, 72, 0.2) 50%, transparent 100%);
+.state-card[data-glow-color="#e2b714"]:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 0 20px rgba(226, 183, 20, 0.4), 0 0 40px rgba(226, 183, 20, 0.2);
 }
 
-.state-card[data-glow-color="#df6248"] .state-glow::before {
-  background: linear-gradient(180deg, rgba(223, 98, 72, 0.9) 0%, transparent 100%);
+.state-card[data-glow-color="#dfc428"]:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 0 20px rgba(223, 196, 40, 0.4), 0 0 40px rgba(223, 196, 40, 0.2);
 }
 
-.state-card[data-glow-color="#e6934a"] .state-glow {
-  background: linear-gradient(180deg, rgba(230, 147, 74, 0.7) 0%, rgba(230, 147, 74, 0.2) 50%, transparent 100%);
+.state-card[data-glow-color="#dcd13c"]:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 0 20px rgba(220, 209, 60, 0.4), 0 0 40px rgba(220, 209, 60, 0.2);
 }
 
-.state-card[data-glow-color="#e6934a"] .state-glow::before {
-  background: linear-gradient(180deg, rgba(230, 147, 74, 0.9) 0%, transparent 100%);
+.state-card[data-glow-color="#d6d850"]:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 0 20px rgba(214, 216, 80, 0.4), 0 0 40px rgba(214, 216, 80, 0.2);
 }
 
-.state-card[data-glow-color="#e8a055"] .state-glow {
-  background: linear-gradient(180deg, rgba(232, 160, 85, 0.7) 0%, rgba(232, 160, 85, 0.2) 50%, transparent 100%);
+.state-card[data-glow-color="#c8d968"]:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 0 20px rgba(200, 217, 104, 0.4), 0 0 40px rgba(200, 217, 104, 0.2);
 }
 
-.state-card[data-glow-color="#e8a055"] .state-glow::before {
-  background: linear-gradient(180deg, rgba(232, 160, 85, 0.9) 0%, transparent 100%);
+.state-card[data-glow-color="#b8d370"]:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 0 20px rgba(184, 211, 112, 0.4), 0 0 40px rgba(184, 211, 112, 0.2);
 }
 
-.state-card[data-glow-color="#e9ad60"] .state-glow {
-  background: linear-gradient(180deg, rgba(233, 173, 96, 0.7) 0%, rgba(233, 173, 96, 0.2) 50%, transparent 100%);
+.state-card[data-glow-color="#a8cd74"]:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 0 20px rgba(168, 205, 116, 0.4), 0 0 40px rgba(168, 205, 116, 0.2);
 }
 
-.state-card[data-glow-color="#e9ad60"] .state-glow::before {
-  background: linear-gradient(180deg, rgba(233, 173, 96, 0.9) 0%, transparent 100%);
+.state-card[data-glow-color="#98c379"]:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 0 20px rgba(152, 195, 121, 0.4), 0 0 40px rgba(152, 195, 121, 0.2);
 }
 
-.state-card[data-glow-color="#e9ba6b"] .state-glow {
-  background: linear-gradient(180deg, rgba(233, 186, 107, 0.7) 0%, rgba(233, 186, 107, 0.2) 50%, transparent 100%);
+.state-card[data-glow-color="#8cc47e"]:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 0 20px rgba(140, 196, 126, 0.4), 0 0 40px rgba(140, 196, 126, 0.2);
 }
 
-.state-card[data-glow-color="#e9ba6b"] .state-glow::before {
-  background: linear-gradient(180deg, rgba(233, 186, 107, 0.9) 0%, transparent 100%);
+.state-card[data-glow-color="#80c583"]:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 0 20px rgba(128, 197, 131, 0.4), 0 0 40px rgba(128, 197, 131, 0.2);
 }
 
-.state-card[data-glow-color="#e2b714"] .state-glow {
-  background: linear-gradient(180deg, rgba(226, 183, 20, 0.7) 0%, rgba(226, 183, 20, 0.2) 50%, transparent 100%);
-}
-
-.state-card[data-glow-color="#e2b714"] .state-glow::before {
-  background: linear-gradient(180deg, rgba(226, 183, 20, 0.9) 0%, transparent 100%);
-}
-
-.state-card[data-glow-color="#dfc428"] .state-glow {
-  background: linear-gradient(180deg, rgba(223, 196, 40, 0.7) 0%, rgba(223, 196, 40, 0.2) 50%, transparent 100%);
-}
-
-.state-card[data-glow-color="#dfc428"] .state-glow::before {
-  background: linear-gradient(180deg, rgba(223, 196, 40, 0.9) 0%, transparent 100%);
-}
-
-.state-card[data-glow-color="#dcd13c"] .state-glow {
-  background: linear-gradient(180deg, rgba(220, 209, 60, 0.7) 0%, rgba(220, 209, 60, 0.2) 50%, transparent 100%);
-}
-
-.state-card[data-glow-color="#dcd13c"] .state-glow::before {
-  background: linear-gradient(180deg, rgba(220, 209, 60, 0.9) 0%, transparent 100%);
-}
-
-.state-card[data-glow-color="#d6d850"] .state-glow {
-  background: linear-gradient(180deg, rgba(214, 216, 80, 0.7) 0%, rgba(214, 216, 80, 0.2) 50%, transparent 100%);
-}
-
-.state-card[data-glow-color="#d6d850"] .state-glow::before {
-  background: linear-gradient(180deg, rgba(214, 216, 80, 0.9) 0%, transparent 100%);
-}
-
-.state-card[data-glow-color="#c8d968"] .state-glow {
-  background: linear-gradient(180deg, rgba(200, 217, 104, 0.7) 0%, rgba(200, 217, 104, 0.2) 50%, transparent 100%);
-}
-
-.state-card[data-glow-color="#c8d968"] .state-glow::before {
-  background: linear-gradient(180deg, rgba(200, 217, 104, 0.9) 0%, transparent 100%);
-}
-
-.state-card[data-glow-color="#b8d370"] .state-glow {
-  background: linear-gradient(180deg, rgba(184, 211, 112, 0.7) 0%, rgba(184, 211, 112, 0.2) 50%, transparent 100%);
-}
-
-.state-card[data-glow-color="#b8d370"] .state-glow::before {
-  background: linear-gradient(180deg, rgba(184, 211, 112, 0.9) 0%, transparent 100%);
-}
-
-.state-card[data-glow-color="#a8cd74"] .state-glow {
-  background: linear-gradient(180deg, rgba(168, 205, 116, 0.7) 0%, rgba(168, 205, 116, 0.2) 50%, transparent 100%);
-}
-
-.state-card[data-glow-color="#a8cd74"] .state-glow::before {
-  background: linear-gradient(180deg, rgba(168, 205, 116, 0.9) 0%, transparent 100%);
-}
-
-.state-card[data-glow-color="#98c379"] .state-glow {
-  background: linear-gradient(180deg, rgba(152, 195, 121, 0.7) 0%, rgba(152, 195, 121, 0.2) 50%, transparent 100%);
-}
-
-.state-card[data-glow-color="#98c379"] .state-glow::before {
-  background: linear-gradient(180deg, rgba(152, 195, 121, 0.9) 0%, transparent 100%);
-}
-
-.state-card[data-glow-color="#8cc47e"] .state-glow {
-  background: linear-gradient(180deg, rgba(140, 196, 126, 0.7) 0%, rgba(140, 196, 126, 0.2) 50%, transparent 100%);
-}
-
-.state-card[data-glow-color="#8cc47e"] .state-glow::before {
-  background: linear-gradient(180deg, rgba(140, 196, 126, 0.9) 0%, transparent 100%);
-}
-
-.state-card[data-glow-color="#80c583"] .state-glow {
-  background: linear-gradient(180deg, rgba(128, 197, 131, 0.7) 0%, rgba(128, 197, 131, 0.2) 50%, transparent 100%);
-}
-
-.state-card[data-glow-color="#80c583"] .state-glow::before {
-  background: linear-gradient(180deg, rgba(128, 197, 131, 0.9) 0%, transparent 100%);
-}
-
-.state-card[data-glow-color="#7fb3d3"] .state-glow {
-  background: linear-gradient(180deg, rgba(127, 179, 211, 0.7) 0%, rgba(127, 179, 211, 0.2) 50%, transparent 100%);
-}
-
-.state-card[data-glow-color="#7fb3d3"] .state-glow::before {
-  background: linear-gradient(180deg, rgba(127, 179, 211, 0.9) 0%, transparent 100%);
-}
-
-/* Animated glow effect on hover */
-.state-card:hover .state-glow {
-  opacity: 0.7;
-  animation: glowPulse 2s ease-in-out infinite;
-}
-
-.state-card:hover .state-glow::before {
-  opacity: 1;
-  animation: glowPulseIntense 2s ease-in-out infinite;
-}
-
-@keyframes glowPulse {
-  0%, 100% {
-    opacity: 0.7;
-    filter: blur(0.5px);
-  }
-  50% {
-    opacity: 0.9;
-    filter: blur(1px);
-  }
-}
-
-@keyframes glowPulseIntense {
-  0%, 100% {
-    opacity: 1;
-    filter: blur(1px);
-  }
-  50% {
-    opacity: 1.2;
-    filter: blur(1.5px);
-  }
-}
-
-/* State card content positioning to account for glow */
-.state-card .state-header {
-  position: relative;
+.state-card[data-glow-color="#7fb3d3"]:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 0 20px rgba(127, 179, 211, 0.4), 0 0 40px rgba(127, 179, 211, 0.2);
 } 
