@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="GameMode v2.0 - Personal development gamification platform">
+    <title>GameMode v2.0</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 512'%3E%3Cpath fill='%23e2b714' d='M192 64C86 64 0 150 0 256S86 448 192 448H448c106 0 192-86 192-192s-86-192-192-192H192zM496 168a40 40 0 1 1 0 80 40 40 0 1 1 0-80zM392 304a40 40 0 1 1 80 0 40 40 0 1 1 -80 0zM168 200c0-13.3 10.7-24 24-24s24 10.7 24 24v32h32c13.3 0 24 10.7 24 24s-10.7 24-24 24H216v32c0 13.3-10.7 24-24 24s-24-10.7-24-24V280H136c-13.3 0-24-10.7-24-24s10.7-24 24-24h32V200z'/%3E%3C/svg%3E">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="src/styles/main.css">
+</head>
+<body>
+    <!-- Auth Container -->
+    <div id="authContainer" class="auth-container">
+        <div class="auth-content">
+            <div class="auth-logo">
+                <i class="fas fa-gamepad"></i>
+                <h1>GameMode <span class="version">v2.0</span></h1>
+                <p class="tagline">Level up your life</p>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="loginFormElement" class="auth-form">
+                <h2>Sign In</h2>
+                
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" required placeholder="player@gamemode.dev">
+                    <div id="loginEmailTooltip" class="validation-tooltip">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Please enter a valid email address
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" required placeholder="••••••••">
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block">Enter Game</button>
+                
+                <div class="auth-divider">
+                    <span>or</span>
+                </div>
+                
+                <button type="button" id="googleSignIn" class="btn btn-google btn-block">
+                    <i class="fab fa-google"></i>
+                    Continue with Google
+                </button>
+                
+                <p class="auth-switch">
+                    New player? <a href="#" id="showRegister">Create account</a>
+                </p>
+            </form>
+            
+            <!-- Register Form -->
+            <form id="registerFormElement" class="auth-form hidden">
+                <h2>Create Account</h2>
+                
+                <div class="form-group">
+                    <label for="registerName">Player Name</label>
+                    <input type="text" id="registerName" required placeholder="Your game alias">
+                </div>
+                
+                <div class="form-group">
+                    <label for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" required placeholder="player@gamemode.dev">
+                    <div id="registerEmailTooltip" class="validation-tooltip">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Please enter a valid email address
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="registerPassword">Password</label>
+                    <input type="password" id="registerPassword" required placeholder="Min 6 characters">
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block">Start Journey</button>
+                
+                <p class="auth-switch">
+                    Already have account? <a href="#" id="showLogin">Sign in</a>
+                </p>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Main App Container -->
+    <div id="appContainer" class="app-container hidden">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-brand">
+                <i class="fas fa-gamepad"></i>
+                <span>GameMode</span>
+            </div>
+            
+            <nav class="header-nav">
+                <a href="#" data-navigate="dashboard" class="nav-link active">
+                    <i class="fas fa-th-large"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" data-navigate="protocols" class="nav-link">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span>Protocols</span>
+                </a>
+                <a href="#" data-navigate="innerfaces" class="nav-link">
+                    <i class="fas fa-star"></i>
+                    <span>Innerfaces</span>
+                </a>
+                <a href="#" data-navigate="states" class="nav-link">
+                    <i class="fas fa-layer-group"></i>
+                    <span>States</span>
+                </a>
+                <a href="#" data-navigate="history" class="nav-link">
+                    <i class="fas fa-history"></i>
+                    <span>History</span>
+                </a>
+            </nav>
+            
+            <div class="header-actions">
+                <button class="btn-icon" data-action="export" title="Export data">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button class="btn-icon" data-action="import" title="Import data">
+                    <i class="fas fa-upload"></i>
+                </button>
+                <div class="header-user">
+                    <span id="username">Player</span>
+                    <button id="signOutBtn" class="btn-icon" title="Sign out">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main Content -->
+        <main class="app-main">
+            <!-- Dashboard Page -->
+            <div id="dashboardPage" class="page-container">
+                <div class="page-header">
+                    <h1>Dashboard</h1>
+                    <div class="stats-bar">
+                        <div class="stat-item">
+                            <span class="stat-label">Today</span>
+                            <span class="stat-value" id="todayActions">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Total</span>
+                            <span class="stat-value" id="totalActions">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Avg Level</span>
+                            <span class="stat-value" id="avgLevel">0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <section class="dashboard-section">
+                    <h2>Quick Actions</h2>
+                    <div id="quickActionsContainer" class="quick-actions-container">
+                        <div id="quickActionsGrid" class="quick-actions-grid"></div>
+                    </div>
+                </section>
+                
+                <!-- Innerfaces -->
+                <section class="dashboard-section">
+                    <h2>Innerfaces</h2>
+                    <div id="innerfacesGrid" class="cards-grid"></div>
+                </section>
+                
+                <!-- States -->
+                <section class="dashboard-section">
+                    <h2>States</h2>
+                    <div id="statesGrid" class="cards-grid"></div>
+                </section>
+            </div>
+            
+            <!-- Protocols Page -->
+            <div id="protocolsPage" class="page-container hidden">
+                <div class="page-header">
+                    <h1>Protocols</h1>
+                    <button id="addProtocolBtn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Protocol
+                    </button>
+                </div>
+                
+                <div class="filters-bar">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="protocolSearch" placeholder="Search protocols...">
+                    </div>
+                    
+                    <div class="filter-chips">
+                        <button class="filter-chip active" data-protocol-group="all">All</button>
+                        <button class="filter-chip" data-protocol-group="physical">Physical</button>
+                        <button class="filter-chip" data-protocol-group="mental">Mental</button>
+                        <button class="filter-chip" data-protocol-group="social">Social</button>
+                        <button class="filter-chip" data-protocol-group="professional">Professional</button>
+                    </div>
+                </div>
+                
+                <div id="protocolsGrid" class="cards-grid"></div>
+                <div id="protocolsPagination" class="pagination"></div>
+            </div>
+            
+            <!-- Innerfaces Page -->
+            <div id="innerfacesPage" class="page-container hidden">
+                <div class="page-header">
+                    <h1>Manage Innerfaces</h1>
+                </div>
+                
+                <div id="innerfacesManageGrid" class="cards-grid"></div>
+            </div>
+            
+            <!-- States Page -->
+            <div id="statesPage" class="page-container hidden">
+                <div class="page-header">
+                    <h1>Manage States</h1>
+                </div>
+                
+                <div id="statesManageGrid" class="cards-grid"></div>
+            </div>
+            
+            <!-- History Page -->
+            <div id="historyPage" class="page-container hidden">
+                <div class="page-header">
+                    <h1>History</h1>
+                    <span id="historyStats" class="history-stats"></span>
+                </div>
+                
+                <div class="filters-bar">
+                    <select id="historyTimeFilter" class="filter-select">
+                        <option value="all">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                    </select>
+                    
+                    <select id="historyTypeFilter" class="filter-select">
+                        <option value="all">All Types</option>
+                        <option value="protocol">Protocols</option>
+                        <option value="quick_action">Quick Actions</option>
+                        <option value="manual_edit">Manual Edits</option>
+                    </select>
+                    
+                    <select id="historyProtocolFilter" class="filter-select">
+                        <option value="all">All Protocols</option>
+                    </select>
+                    
+                    <select id="historyInnerfaceFilter" class="filter-select">
+                        <option value="all">All Innerfaces</option>
+                    </select>
+                    
+                    <select id="historyEffectFilter" class="filter-select">
+                        <option value="all">All Effects</option>
+                        <option value="positive">Positive</option>
+                        <option value="negative">Negative</option>
+                    </select>
+                </div>
+                
+                <div id="historyList" class="history-list"></div>
+                <div id="historyPagination" class="pagination"></div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    
+    <!-- Firebase Config -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/auth.js"></script>
+    
+    <!-- App -->
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>
