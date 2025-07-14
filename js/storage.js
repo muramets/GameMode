@@ -1670,6 +1670,12 @@ class Storage {
         lastModified: Date.now()
       };
       this.set(this.KEYS.PROTOCOL_GROUPS, groups);
+      
+      // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ ОБНОВЛЕНИЯ ГРУППЫ
+      this.syncWithBackend().catch(error => {
+        console.warn('⚠️ Background sync after protocol group update failed:', error);
+      });
+      
       return groups[existingIndex];
     } else {
       // Add new group
@@ -1683,6 +1689,12 @@ class Storage {
       };
       groups.push(newGroup);
       this.set(this.KEYS.PROTOCOL_GROUPS, groups);
+      
+      // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ СОЗДАНИЯ ГРУППЫ
+      this.syncWithBackend().catch(error => {
+        console.warn('⚠️ Background sync after protocol group creation failed:', error);
+      });
+      
       return newGroup;
     }
   }
@@ -1708,6 +1720,11 @@ class Storage {
       return protocol;
     });
     this.set(this.KEYS.PROTOCOLS, updatedProtocols);
+    
+    // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ УДАЛЕНИЯ ГРУППЫ
+    this.syncWithBackend().catch(error => {
+      console.warn('⚠️ Background sync after protocol group deletion failed:', error);
+    });
     
     return true;
   }
@@ -2184,6 +2201,7 @@ class Storage {
       'innerfaces': 'INNERFACES',
       'states': 'STATES',
       'history': 'HISTORY',
+      'protocolGroups': 'PROTOCOL_GROUPS', // 🔧 НОВОЕ: Маппинг для групп протоколов
       'deletedCheckins': 'deletedCheckins', // Special case - not in KEYS object
       'deletedProtocols': 'deletedProtocols', // Special case - not in KEYS object
       'deletedInnerfaces': 'deletedInnerfaces', // Special case - not in KEYS object
@@ -3807,7 +3825,8 @@ class Storage {
         quickActionOrder: localData.quickActionOrder.length,
         protocolOrder: localData.protocolOrder.length,
         innerfaceOrder: localData.innerfaceOrder.length,
-        stateOrder: localData.stateOrder.length
+        stateOrder: localData.stateOrder.length,
+        protocolGroups: localData.protocolGroups.length
       });
       
       const token = await this.currentUser.getIdToken();
@@ -4711,7 +4730,8 @@ class Storage {
           quickActionOrder: (serverData.quickActionOrder || []).length,
           protocolOrder: (serverData.protocolOrder || []).length,
           innerfaceOrder: (serverData.innerfaceOrder || []).length,
-          stateOrder: (serverData.stateOrder || []).length
+          stateOrder: (serverData.stateOrder || []).length,
+          protocolGroups: (serverData.protocolGroups || []).length
         });
         
         // 🔧 КРИТИЧНО: Полностью очищаем локальные данные и флаги удаления
@@ -4733,6 +4753,7 @@ class Storage {
         this.set(this.KEYS.STATES, serverData.states || []);
         this.set(this.KEYS.HISTORY, serverData.history || []);
         this.set(this.KEYS.QUICK_ACTIONS, serverData.quickActions || []);
+        this.set(this.KEYS.PROTOCOL_GROUPS, serverData.protocolGroups || []);
         
         // Заменяем порядки
         this.set(this.KEYS.QUICK_ACTION_ORDER, serverData.quickActionOrder || []);
@@ -4762,6 +4783,7 @@ class Storage {
           states: (serverData.states || []).length,
           history: (serverData.history || []).length,
           quickActions: (serverData.quickActions || []).length,
+          protocolGroups: (serverData.protocolGroups || []).length,
           localDataCleared: true,
           deletionFlagsCleared: true
         });
