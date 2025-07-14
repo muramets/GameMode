@@ -1886,6 +1886,20 @@ const Modals = {
       const groupColor = group.color || '#7fb3d3';
       badge.style.setProperty('--group-color', groupColor);
       
+      // Convert hex color to RGB for CSS custom properties
+      const hexToRgb = (hex) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16)
+        } : null;
+      };
+      
+      const rgb = hexToRgb(groupColor);
+      const rgbString = rgb ? `${rgb.r}, ${rgb.g}, ${rgb.b}` : '127, 179, 211';
+      badge.style.setProperty('--group-color-rgb', rgbString);
+      
       // Use UI renderIcon for proper FontAwesome support
       // For awesome icons, use default text color; for emoji, use group color
       const icon = group.icon || '📁';

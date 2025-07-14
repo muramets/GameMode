@@ -1623,6 +1623,8 @@
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.5rem;
+  overflow: visible; /* Allow hover effects to show */
+  padding: 0.2rem 0; /* Add padding for hover lift effect */
 }
 
 .protocol-group-badge {
@@ -1631,9 +1633,9 @@
   gap: 0.6rem;
   padding: 0.5rem 2.2rem 0.5rem 0.8rem;
   border-radius: 0.6rem;
-  background: var(--bg-secondary);
+  background: var(--sub-alt-color);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.2, 0.0, 0.2, 1);
   border: 1px solid transparent;
   position: relative;
   margin-right: 0.6rem;
@@ -1645,7 +1647,9 @@
 }
 
 .protocol-group-badge:hover {
-  background: var(--hover-color);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  background: rgba(var(--group-color-rgb, 127, 179, 211), 0.1);
   border-color: transparent;
 }
 
@@ -1658,39 +1662,43 @@
 }
 
 .protocol-group-badge.selected {
-  background: var(--group-color, var(--primary-color));
-  border-color: var(--group-color, var(--primary-color));
+  background: rgba(var(--group-color-rgb, 127, 179, 211), 0.1);
+  border-color: transparent;
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .protocol-group-badge.selected .protocol-group-name {
-  color: white;
+  color: var(--group-color, var(--text-color));
 }
 
 .protocol-group-badge.selected .protocol-group-icon {
-  color: white;
+  color: var(--group-color, var(--text-color));
 }
 
 .protocol-group-badge.selected .protocol-group-icon i {
-  color: white !important;
+  color: var(--group-color, var(--text-color)) !important;
 }
 
 .protocol-group-badge.new-group-badge {
   padding: 0.5rem 0.8rem;
-  background: var(--bg-secondary);
-  border: 1px dashed var(--border-color);
+  background: var(--sub-alt-color);
+  border: 1px dashed var(--sub-color);
 }
 
 .protocol-group-badge.new-group-badge:hover {
-  background: var(--hover-color);
-  border-color: var(--primary-color);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  background: var(--sub-alt-color);
+  border-color: var(--main-color);
 }
 
 .protocol-group-badge.new-group-badge:hover .protocol-group-icon {
-  color: var(--text-color);
+  color: var(--main-color);
 }
 
 .protocol-group-badge.new-group-badge:hover .protocol-group-icon i {
-  color: var(--text-color);
+  color: var(--main-color);
 }
 
 .protocol-group-badge .protocol-group-icon {
@@ -1714,20 +1722,17 @@
   font-size: 0.65rem;
   color: var(--sub-color);
   padding: 0.25rem;
-  border-radius: 0.3rem;
-  transition: all 0.2s ease;
+  border-radius: 0;
+  transition: all 0.125s;
   transform: scale(0.9);
   background: none;
   border: none;
+  outline: none;
 }
 
 .protocol-group-badge .protocol-group-settings:hover {
-  color: #e2b714;
-  transform: scale(1);
-}
-
-.protocol-group-badge.selected .protocol-group-settings:hover {
-  color: white;
+  color: var(--main-color);
+  background: none;
   transform: scale(1);
 }
 
