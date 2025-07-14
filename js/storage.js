@@ -262,7 +262,8 @@ class Storage {
     INNERFACE_ORDER: 'innerfaceOrder',
     STATE_ORDER: 'stateOrder',
     INNERFACE_MIGRATION: 'innerfaceMigration',
-    PROTOCOL_GROUPS: 'protocolGroups'
+    PROTOCOL_GROUPS: 'protocolGroups',
+    PROTOCOL_FILTER_ORDERS: 'protocolFilterOrders'
   };
 
   // Initialize app data
@@ -393,9 +394,18 @@ class Storage {
       this.set(this.KEYS.PROTOCOL_GROUPS, []);
     }
     
+    if (!this.get(this.KEYS.PROTOCOL_FILTER_ORDERS)) {
+      this.set(this.KEYS.PROTOCOL_FILTER_ORDERS, {});
+    }
+    
     if (!this.get(this.KEYS.INNERFACE_MIGRATION)) {
       this.set(this.KEYS.INNERFACE_MIGRATION, false);
     }
+    
+    // 🆕 НОВОЕ: Настройка cross-tab синхронизации для реального времени
+    this.setupCrossTabSync();
+    
+    console.log('✅ Storage initialized successfully with real-time sync');
   }
 
   // Get data from localStorage
@@ -598,14 +608,23 @@ class Storage {
       changes: {}
     };
 
+    // 🛡️ ЗАЩИТА: Валидация и авто-исправление весов перед созданием чекина
+    this.validateAndFixProtocolWeights(protocol);
+
     // Calculate innerface changes only if protocol has targets
     if (protocol.targets && protocol.targets.length > 0) {
-      const changeValue = action === '+' ? protocol.weight : -protocol.weight;
-      
       protocol.targets.forEach(innerfaceId => {
+        // 🛡️ ЗАЩИТА: Используем правильные веса для каждого innerface
+        const correctWeight = this.getExpectedWeight(protocol, innerfaceId);
+        const changeValue = action === '+' ? correctWeight : -correctWeight;
         checkin.changes[innerfaceId] = changeValue;
+        
+        console.log(`🔧 CHECKIN WEIGHT: Protocol ${protocolId} -> Innerface ${innerfaceId} = ${changeValue} (${action}${correctWeight})`);
       });
     }
+
+    // 🛡️ ЗАЩИТА: Проверяем, что чекин создан правильно
+    this.validateCheckinIntegrity(checkin, protocol);
 
     // Save checkin
     const checkins = this.getCheckins();
@@ -725,23 +744,10 @@ class Storage {
       this.set(this.KEYS.HISTORY, checkins);
       console.log(`✅ RECALCULATION COMPLETE: Updated ${affectedCheckins} checkins for protocol ${protocolId}`);
       
-      // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ПОСЛЕ ПЕРЕСЧЕТА ИСТОРИИ
-      // 🔧 НО ТОЛЬКО ЕСЛИ НЕ ВЫПОЛНЯЕТСЯ Clear All
+      // 🔧 УМНАЯ СИНХРОНИЗАЦИЯ: Не синхронизируем после каждого пересчета, только помечаем
       if (!this.clearAllInProgress && !isRealClearAllAftermath) {
-        // 🔧 НОВОЕ: Проверяем не идет ли уже синхронизация
-        if (!this.syncInProgress) {
-          console.log('🚀 SCHEDULING BACKGROUND SYNC: Protocol history recalculation completed');
-          // Небольшая задержка чтобы избежать конфликтов с другими синхронизациями
-          setTimeout(() => {
-            if (!this.syncInProgress) { // Двойная проверка
-              this.syncWithBackend().catch(error => {
-                console.warn('⚠️ Background sync after recalculation failed:', error);
-              });
-            }
-          }, 500);
-        } else {
-          console.log('🚫 BACKGROUND SYNC SKIPPED: Another sync already in progress');
-        }
+        console.log('📝 MARKING FOR FUTURE SYNC: Protocol history recalculation completed');
+        this.markForSync();
       } else {
         console.log('🚫 SYNC BLOCKED: Clear All protection preventing sync after protocol recalculation');
       }
@@ -752,8 +758,86 @@ class Storage {
     return hasChanges;
   }
 
+  // Force recalculate protocol history with current weights (for weight changes)
+  forceRecalculateProtocolHistory(protocolId) {
+    console.log('🔄 FORCE RECALCULATING PROTOCOL HISTORY WITH CURRENT WEIGHTS:', {
+      protocolId,
+      timestamp: new Date().toISOString()
+    });
+    
+    const checkins = this.getCheckins();
+    const protocol = this.getProtocolById(protocolId);
+    if (!protocol) {
+      console.warn('❌ Protocol not found for recalculation:', protocolId);
+      return false;
+    }
+
+    console.log('📋 Protocol info:', {
+      id: protocol.id,
+      name: protocol.name,
+      weight: protocol.weight,
+      weights: protocol.weights,
+      targets: protocol.targets
+    });
+
+    let hasChanges = false;
+    let affectedCheckins = 0;
+
+    checkins.forEach(checkin => {
+      if (checkin.type === 'protocol' && checkin.protocolId === protocolId) {
+        // Use the saved action if available, otherwise try to determine from changes
+        let originalAction = '+'; // default
+        
+        if (checkin.action) {
+          // Use the explicitly saved action (new format)
+          originalAction = checkin.action;
+        } else if (checkin.changes && Object.keys(checkin.changes).length > 0) {
+          // Fallback: try to determine action from existing changes (legacy format)
+          const firstChange = Object.values(checkin.changes)[0];
+          originalAction = firstChange >= 0 ? '+' : '-';
+        }
+        
+        console.log(`📋 Processing checkin ${checkin.id}: action=${originalAction}`);
+        
+        // Clear all existing changes for this checkin
+        checkin.changes = {};
+        
+        // Apply current protocol weights to all targets
+        if (protocol.targets && protocol.targets.length > 0) {
+          protocol.targets.forEach(innerfaceId => {
+            // Use weights object if available, otherwise fallback to weight
+            let changeValue;
+            if (protocol.weights && protocol.weights[innerfaceId] !== undefined) {
+              changeValue = originalAction === '+' ? protocol.weights[innerfaceId] : -protocol.weights[innerfaceId];
+            } else {
+              changeValue = originalAction === '+' ? protocol.weight : -protocol.weight;
+            }
+            
+            console.log(`📋 Adding effect for innerface ${innerfaceId} to checkin ${checkin.id}: ${changeValue}`);
+            checkin.changes[innerfaceId] = changeValue;
+            hasChanges = true;
+          });
+        }
+        
+        affectedCheckins++;
+      }
+    });
+
+    if (hasChanges) {
+      this.set(this.KEYS.HISTORY, checkins);
+      console.log(`✅ FORCE RECALCULATION COMPLETE: Updated ${affectedCheckins} checkins for protocol ${protocolId}`);
+      
+      // Mark for sync
+      this.markForSync();
+    } else {
+      console.log(`ℹ️ FORCE RECALCULATION SKIPPED: No checkins found for protocol ${protocolId}`);
+    }
+
+    return hasChanges;
+  }
+
   // Add drag & drop operation to history
-  addDragDropOperation(type, itemId, itemName, itemIcon, oldOrder, newOrder) {
+  addDragDropOperation(type, itemId, itemName, itemIcon, oldOrder, newOrder, filterInfo = null) {
     const oldPosition = oldOrder.indexOf(itemId) + 1;
     const newPosition = newOrder.indexOf(itemId) + 1;
     
@@ -791,6 +875,7 @@ class Storage {
       newPosition: newPosition,
       oldOrder: oldOrder,
       newOrder: newOrder,
+      filterInfo: filterInfo, // 🔧 НОВОЕ: Информация о фильтре
       changes: {}
     };
 
@@ -1278,6 +1363,134 @@ class Storage {
     return ordered;
   }
 
+  // 🔧 НОВОЕ: Управление порядками фильтров протоколов
+  getProtocolFilterOrders() {
+    return this.get(this.KEYS.PROTOCOL_FILTER_ORDERS) || {};
+  }
+
+  setProtocolFilterOrders(filterOrders) {
+    this.set(this.KEYS.PROTOCOL_FILTER_ORDERS, filterOrders);
+    console.log('🔄 PROTOCOL FILTER ORDERS SAVED:', {
+      filterOrders,
+      saved: true,
+      keyUsed: this.KEYS.PROTOCOL_FILTER_ORDERS,
+      verification: this.get(this.KEYS.PROTOCOL_FILTER_ORDERS)
+    });
+    
+    // 🔧 НОВОЕ: Сохраняем timestamp изменения для cross-device синхронизации
+    const orderTimestamp = Date.now();
+    this.set('protocolFilterOrders_timestamp', orderTimestamp);
+    console.log('⏰ PROTOCOL FILTER ORDERS TIMESTAMP SAVED:', orderTimestamp);
+    
+    // 🚀 АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ при изменении порядка фильтров
+    if (!this.syncInProgress) {
+      this.syncWithBackend().catch(error => {
+        console.warn('⚠️ Background sync after protocol filter order change failed:', error);
+      });
+    } else {
+      this.markForSync();
+    }
+  }
+
+  // Получить порядок протоколов для конкретного фильтра
+  getProtocolOrderForFilter(selectedGroups) {
+    const filterKey = this.getFilterKey(selectedGroups);
+    const filterOrders = this.getProtocolFilterOrders();
+    return filterOrders[filterKey] || null;
+  }
+
+  // Установить порядок протоколов для конкретного фильтра
+  setProtocolOrderForFilter(selectedGroups, protocolOrder) {
+    const filterKey = this.getFilterKey(selectedGroups);
+    const filterOrders = this.getProtocolFilterOrders();
+    filterOrders[filterKey] = protocolOrder;
+    this.setProtocolFilterOrders(filterOrders);
+    
+    console.log('🔄 PROTOCOL ORDER FOR FILTER SAVED:', {
+      filterKey,
+      protocolOrder,
+      filterOrders
+    });
+  }
+
+  // Получить отфильтрованные и отсортированные протоколы
+  getProtocolsInOrderForFilter(selectedGroups, filteredProtocols) {
+    const filterKey = this.getFilterKey(selectedGroups);
+    
+    // Если фильтр "all", используем основной порядок
+    if (filterKey === 'all') {
+      return this.getProtocolsInOrder();
+    }
+    
+    // Проверяем есть ли сохраненный порядок для этого фильтра
+    const filterOrder = this.getProtocolOrderForFilter(selectedGroups);
+    
+    if (!filterOrder || filterOrder.length === 0) {
+      // Если нет сохраненного порядка, используем основной порядок для фильтрованных протоколов
+      const mainOrder = this.getProtocolOrder();
+      if (mainOrder.length === 0) {
+        return filteredProtocols;
+      }
+      
+      // Сортируем отфильтрованные протоколы по основному порядку
+      const ordered = [];
+      const used = new Set();
+      
+      // Добавляем протоколы в основном порядке
+      mainOrder.forEach(id => {
+        const targetId = typeof id === 'string' ? parseInt(id) : id;
+        const protocol = filteredProtocols.find(p => p.id === targetId);
+        if (protocol) {
+          ordered.push(protocol);
+          used.add(protocol.id);
+        }
+      });
+      
+      // Добавляем новые протоколы которых нет в основном порядке
+      filteredProtocols.forEach(protocol => {
+        if (!used.has(protocol.id)) {
+          ordered.push(protocol);
+        }
+      });
+      
+      return ordered;
+    }
+    
+    // Применяем сохраненный порядок для фильтра
+    const ordered = [];
+    const used = new Set();
+    
+    // Добавляем протоколы в сохраненном порядке
+    filterOrder.forEach(id => {
+      const targetId = typeof id === 'string' ? parseInt(id) : id;
+      const protocol = filteredProtocols.find(p => p.id === targetId);
+      if (protocol) {
+        ordered.push(protocol);
+        used.add(protocol.id);
+      }
+    });
+    
+    // Добавляем новые протоколы которых нет в сохраненном порядке
+    filteredProtocols.forEach(protocol => {
+      if (!used.has(protocol.id)) {
+        ordered.push(protocol);
+      }
+    });
+    
+    return ordered;
+  }
+
+  // Создать ключ фильтра из выбранных групп
+  getFilterKey(selectedGroups) {
+    if (!selectedGroups || selectedGroups.length === 0 || selectedGroups.includes('all')) {
+      return 'all';
+    }
+    
+    // Сортируем группы для консистентности
+    const sortedGroups = [...selectedGroups].sort();
+    return sortedGroups.join(',');
+  }
+
   // Innerface Order Management
   getInnerfaceOrder() {
     return this.get(this.KEYS.INNERFACE_ORDER) || [];
@@ -1563,6 +1776,31 @@ class Storage {
     this.syncWithBackend().catch(error => {
       console.warn('⚠️ Background sync after protocol update failed:', error);
     });
+    
+    // 🔧 УМНАЯ КРИТИЧЕСКАЯ СИНХРОНИЗАЦИЯ: Только для значимых изменений пользователя
+    if (targetsChanged || weightChanged) {
+      console.log('🔄 USER PROTOCOL CHANGE: Scheduling enhanced sync for protocol weight/targets change');
+      
+      // Менее агрессивная синхронизация - просто помечаем для приоритетной синхронизации
+      this.markForSync();
+      
+      // Отправляем событие для других вкладок
+      this.broadcastCriticalChange('protocol_updated', {
+        protocolId,
+        targetsChanged,
+        weightChanged,
+        timestamp: Date.now()
+      });
+      
+      // Планируем синхронизацию через небольшую задержку, но не мгновенно
+      setTimeout(() => {
+        if (!this.syncInProgress) {
+          this.syncWithBackend().catch(error => {
+            console.warn('⚠️ Enhanced sync after protocol change failed:', error);
+          });
+        }
+      }, 3000); // 3 секунды задержки
+    }
     
     return protocols[index];
   }
@@ -2189,11 +2427,14 @@ class Storage {
       'deletedInnerfaces': 'deletedInnerfaces', // Special case - not in KEYS object
       'deletedStates': 'deletedStates', // Special case - not in KEYS object
       'deletedQuickActions': 'deletedQuickActions', // Special case - not in KEYS object
+      'protocolGroups': 'PROTOCOL_GROUPS',
+      'protocolFilterOrders': 'PROTOCOL_FILTER_ORDERS',
       // 🔧 НОВОЕ: timestamp ключи для order массивов
       'protocolOrder_timestamp': 'protocolOrder_timestamp',
       'innerfaceOrder_timestamp': 'innerfaceOrder_timestamp', 
       'stateOrder_timestamp': 'stateOrder_timestamp',
-      'quickActionOrder_timestamp': 'quickActionOrder_timestamp'
+      'quickActionOrder_timestamp': 'quickActionOrder_timestamp',
+      'protocolFilterOrders_timestamp': 'protocolFilterOrders_timestamp'
     };
     
     const mappedKey = keyMap[serverKey];
@@ -2255,6 +2496,7 @@ class Storage {
         innerfaceOrder: this.get(this.KEYS.INNERFACE_ORDER),
         stateOrder: this.get(this.KEYS.STATE_ORDER),
         protocolGroups: this.get(this.KEYS.PROTOCOL_GROUPS),
+        protocolFilterOrders: this.get(this.KEYS.PROTOCOL_FILTER_ORDERS),
         deletedCheckins: this.get('deletedCheckins') || [],
         deletedProtocols: this.get('deletedProtocols') || [],
         deletedInnerfaces: this.get('deletedInnerfaces') || [],
@@ -2264,19 +2506,22 @@ class Storage {
         protocolOrder_timestamp: this.get('protocolOrder_timestamp') || 0,
         innerfaceOrder_timestamp: this.get('innerfaceOrder_timestamp') || 0,
         stateOrder_timestamp: this.get('stateOrder_timestamp') || 0,
-        quickActionOrder_timestamp: this.get('quickActionOrder_timestamp') || 0
+        quickActionOrder_timestamp: this.get('quickActionOrder_timestamp') || 0,
+        protocolFilterOrders_timestamp: this.get('protocolFilterOrders_timestamp') || 0
       };
       
-      // 🐞 DEBUG: Логируем отправляемые данные Quick Actions
-      console.log('🐞 DEBUG SENDING TO SERVER:', {
-        quickActionsCount: userData.quickActions?.length || 0,
-        quickActionsData: userData.quickActions,
-        quickActionOrderCount: userData.quickActionOrder?.length || 0,
-        quickActionOrderData: userData.quickActionOrder,
-        historyCount: userData.history?.length || 0,
-        userEmail: this.currentUser?.email,
-        lastSyncTime: this.lastSyncTime
-      });
+              // 🐞 DEBUG: Логируем отправляемые данные Quick Actions
+        console.log('🐞 DEBUG SENDING TO SERVER:', {
+          quickActionsCount: userData.quickActions?.length || 0,
+          quickActionsData: userData.quickActions,
+          quickActionOrderCount: userData.quickActionOrder?.length || 0,
+          quickActionOrderData: userData.quickActionOrder,
+          historyCount: userData.history?.length || 0,
+          protocolFilterOrdersCount: Object.keys(userData.protocolFilterOrders || {}).length,
+          protocolFilterOrdersData: userData.protocolFilterOrders,
+          userEmail: this.currentUser?.email,
+          lastSyncTime: this.lastSyncTime
+        });
       
       // 🔇 ЛОГИ ОТКЛЮЧЕНЫ - слишком шумные (повторяются при каждой синхронизации)
       // console.log('📤 SYNC DATA TO SEND:', {
@@ -2350,10 +2595,12 @@ class Storage {
         
         this.lastSyncTime = new Date().toISOString();
         
+        // 🔧 ИСПРАВЛЕНИЕ: Инициализируем mergeResults заранее чтобы избежать ошибки "not defined"
+        let mergeResults = {};
+        let hasUpdates = false;
+        
         // Update local data with server data using true merge strategy
         if (serverData.data) {
-          let mergeResults = {};
-          let hasUpdates = false;
           
           Object.keys(serverData.data).forEach(key => {
             if (serverData.data[key]) {
@@ -2638,18 +2885,24 @@ class Storage {
                                     const newTargets = [...serverTargets];
                                     mergedData[index] = { ...serverItem };
                                     
-                                    // Запускаем пересчет истории
-                                    setTimeout(() => {
-                                        console.log(`⏰ EXECUTING SMART RECALCULATION for protocol ${serverItem.id}`);
+                                    // 🔧 УМНЫЙ ПЕРЕСЧЕТ: Избегаем бесконечного цикла пересчетов
+                                    const lastRecalcTime = this.get(`lastRecalc_${serverItem.id}`) || 0;
+                                    const timeSinceLastRecalc = Date.now() - lastRecalcTime;
+                                    const minRecalcInterval = 60000; // 1 минута между пересчетами одного протокола
+                                    
+                                    if (timeSinceLastRecalc > minRecalcInterval) {
+                                        console.log(`🔄 SMART PROTOCOL SYNC: Recalculating protocol ${serverItem.id} (last: ${Math.round(timeSinceLastRecalc/1000)}s ago)`);
+                                        
+                                        // Записываем время пересчета ПЕРЕД выполнением
+                                        this.set(`lastRecalc_${serverItem.id}`, Date.now());
+                                        
                                         const recalcResult = this.recalculateProtocolHistory(serverItem.id, oldTargets, newTargets);
-                                        if (recalcResult && window.App && window.App.showToast && !this._hasShownRecalcToast) {
-                                          window.App.showToast('История ретроспективно пересчиталась', 'success');
-                                          this._hasShownRecalcToast = true;
-                                          setTimeout(() => {
-                                            this._hasShownRecalcToast = false;
-                                          }, 30000);
+                                        if (recalcResult) {
+                                            console.log(`✅ SMART RECALC SUCCESS: Protocol ${serverItem.id} history updated`);
                                         }
-                                    }, 100);
+                                    } else {
+                                        console.log(`⏰ SKIP RECALC: Protocol ${serverItem.id} was recalculated ${Math.round(timeSinceLastRecalc/1000)}s ago, skipping to avoid loops`);
+                                    }
                                     hasUpdates = true;
                                 }
                             } else {
@@ -3626,6 +3879,17 @@ class Storage {
         // (we need to keep track of deletions permanently until they're processed by server)
         // this.set('deletedCheckins', []);
         
+                  // 🆕 НОВОЕ: Проверяем, есть ли критические изменения для других устройств
+        this.checkForCriticalChangesFromOtherDevices(mergeResults);
+        
+        // 🔧 УМНАЯ ВАЛИДАЦИЯ: Проверяем консистентность только если есть реальные изменения в протоколах
+        if (mergeResults.protocols && mergeResults.protocols.action && mergeResults.protocols.action.includes('server')) {
+          setTimeout(() => {
+            console.log('🔍 POST-SYNC VALIDATION: Protocol changes detected, checking history consistency...');
+            this.validateHistoryConsistency();
+          }, 2000);
+        }
+        
         // Update UI after successful sync
         if (window.App && window.App.renderPage) {
           console.log('🖥️ Refreshing UI after sync...');
@@ -3795,7 +4059,8 @@ class Storage {
         protocolOrder: this.get(this.KEYS.PROTOCOL_ORDER) || [],
         innerfaceOrder: this.get(this.KEYS.INNERFACE_ORDER) || [],
         stateOrder: this.get(this.KEYS.STATE_ORDER) || [],
-        protocolGroups: this.get(this.KEYS.PROTOCOL_GROUPS) || []
+        protocolGroups: this.get(this.KEYS.PROTOCOL_GROUPS) || [],
+        protocolFilterOrders: this.get(this.KEYS.PROTOCOL_FILTER_ORDERS) || {}
       };
       
       console.log('📤 FORCE UPLOAD DATA:', {
@@ -3807,7 +4072,8 @@ class Storage {
         quickActionOrder: localData.quickActionOrder.length,
         protocolOrder: localData.protocolOrder.length,
         innerfaceOrder: localData.innerfaceOrder.length,
-        stateOrder: localData.stateOrder.length
+        stateOrder: localData.stateOrder.length,
+        protocolFilterOrders: Object.keys(localData.protocolFilterOrders).length
       });
       
       const token = await this.currentUser.getIdToken();
@@ -4711,7 +4977,8 @@ class Storage {
           quickActionOrder: (serverData.quickActionOrder || []).length,
           protocolOrder: (serverData.protocolOrder || []).length,
           innerfaceOrder: (serverData.innerfaceOrder || []).length,
-          stateOrder: (serverData.stateOrder || []).length
+          stateOrder: (serverData.stateOrder || []).length,
+          protocolFilterOrders: Object.keys(serverData.protocolFilterOrders || {}).length
         });
         
         // 🔧 КРИТИЧНО: Полностью очищаем локальные данные и флаги удаления
@@ -4739,6 +5006,7 @@ class Storage {
         this.set(this.KEYS.PROTOCOL_ORDER, serverData.protocolOrder || []);
         this.set(this.KEYS.INNERFACE_ORDER, serverData.innerfaceOrder || []);
         this.set(this.KEYS.STATE_ORDER, serverData.stateOrder || []);
+        this.set(this.KEYS.PROTOCOL_FILTER_ORDERS, serverData.protocolFilterOrders || {});
         
         // Обновляем метки времени
         if (serverData.protocolOrder_timestamp) {
@@ -4753,6 +5021,9 @@ class Storage {
         if (serverData.quickActionOrder_timestamp) {
           this.set('quickActionOrder_timestamp', serverData.quickActionOrder_timestamp);
         }
+        if (serverData.protocolFilterOrders_timestamp) {
+          this.set('protocolFilterOrders_timestamp', serverData.protocolFilterOrders_timestamp);
+        }
         
         this.lastSyncTime = new Date().toISOString();
         
@@ -4762,6 +5033,7 @@ class Storage {
           states: (serverData.states || []).length,
           history: (serverData.history || []).length,
           quickActions: (serverData.quickActions || []).length,
+          protocolFilterOrders: Object.keys(serverData.protocolFilterOrders || {}).length,
           localDataCleared: true,
           deletionFlagsCleared: true
         });
@@ -5059,6 +5331,510 @@ class Storage {
     // Fallback to default color if no changes found
     console.log('🔄 RETURNING NULL (no color found)');
     return null;
+  }
+
+  // 🆕 НОВОЕ: Агрессивная синхронизация в реальном времени для критических изменений
+  async forceCriticalSync(reason, itemId) {
+    console.log('🚨 FORCE CRITICAL SYNC:', { reason, itemId, timestamp: Date.now() });
+    
+    // Блокируем обычную синхронизацию во время критической
+    const originalSyncInProgress = this.syncInProgress;
+    this.syncInProgress = true;
+    
+    try {
+      // Немедленная отправка данных на сервер
+      await this.syncWithBackend();
+      
+      // Планируем еще одну синхронизацию через 5 секунд для подтягивания изменений
+      setTimeout(async () => {
+        if (!this.syncInProgress) {
+          console.log('🔄 CRITICAL SYNC FOLLOWUP: Checking for updates from other devices');
+          await this.syncWithBackend();
+        }
+      }, 5000);
+      
+      // Еще одна через 15 секунд для надежности
+      setTimeout(async () => {
+        if (!this.syncInProgress) {
+          console.log('🔄 CRITICAL SYNC FINAL: Final check for cross-device updates');
+          await this.syncWithBackend();
+        }
+      }, 15000);
+      
+    } catch (error) {
+      console.error('❌ CRITICAL SYNC FAILED:', error);
+    } finally {
+      // Восстанавливаем оригинальный флаг
+      this.syncInProgress = originalSyncInProgress;
+    }
+  }
+
+  // 🆕 НОВОЕ: Трансляция критических изменений другим вкладкам
+  broadcastCriticalChange(eventType, data) {
+    try {
+      const event = {
+        type: 'rpg_therapy_critical_change',
+        eventType,
+        data,
+        timestamp: Date.now(),
+        userId: this.currentUser?.uid
+      };
+      
+      // Отправляем событие через localStorage для других вкладок
+      localStorage.setItem('rpg_therapy_broadcast', JSON.stringify(event));
+      
+      // Удаляем событие через 1 секунду
+      setTimeout(() => {
+        localStorage.removeItem('rpg_therapy_broadcast');
+      }, 1000);
+      
+      console.log('📡 CRITICAL CHANGE BROADCAST:', event);
+    } catch (error) {
+      console.error('❌ BROADCAST FAILED:', error);
+    }
+  }
+
+  // 🆕 НОВОЕ: Проверка критических изменений от других устройств
+  checkForCriticalChangesFromOtherDevices(mergeResults) {
+    if (!mergeResults || !mergeResults.protocols) return;
+    
+    const protocolChanges = mergeResults.protocols;
+    
+    // Проверяем, были ли изменения в протоколах с сервера
+    if (protocolChanges.action && protocolChanges.action.includes('server')) {
+      console.log('🔄 CRITICAL CHANGES FROM SERVER DETECTED:', protocolChanges);
+      
+      // Если есть изменения в протоколах, запускаем дополнительную проверку
+      setTimeout(() => {
+        this.validateHistoryConsistency();
+      }, 2000);
+    }
+  }
+
+  // 🆕 НОВОЕ: Валидация консистентности истории
+  validateHistoryConsistency() {
+    const protocols = this.getProtocols();
+    const history = this.getCheckins();
+    
+    let needsRecalculation = false;
+    
+    // Проверяем каждый чекин на соответствие текущим весам протоколов
+    history.forEach(checkin => {
+      if (checkin.type === 'protocol') {
+        const protocol = protocols.find(p => p.id === checkin.protocolId);
+        if (protocol && checkin.changes) {
+          // Проверяем, соответствуют ли изменения текущему весу
+          const expectedChange = checkin.action === '+' ? protocol.weight : -protocol.weight;
+          const actualChanges = Object.values(checkin.changes);
+          
+          if (actualChanges.length > 0 && Math.abs(actualChanges[0] - expectedChange) > 0.001) {
+            console.log('🔍 HISTORY INCONSISTENCY DETECTED:', {
+              checkinId: checkin.id,
+              protocolId: protocol.id,
+              expectedChange,
+              actualChange: actualChanges[0],
+              action: checkin.action
+            });
+            needsRecalculation = true;
+          }
+        }
+      }
+    });
+    
+    if (needsRecalculation) {
+      console.log('🔄 TRIGGERING HISTORY RECALCULATION DUE TO INCONSISTENCY');
+      this.recalculateAllProtocolHistory();
+    }
+  }
+
+  // 🆕 НОВОЕ: Пересчет всей истории протоколов
+  recalculateAllProtocolHistory() {
+    const protocols = this.getProtocols();
+    let totalRecalculated = 0;
+    
+    protocols.forEach(protocol => {
+      const wasRecalculated = this.recalculateProtocolHistory(
+        protocol.id, 
+        protocol.targets || [], 
+        protocol.targets || []
+      );
+      if (wasRecalculated) {
+        totalRecalculated++;
+      }
+    });
+    
+    if (totalRecalculated > 0) {
+      console.log(`✅ RECALCULATED ALL HISTORY: ${totalRecalculated} protocols updated`);
+      
+      // 🔧 АНТИСПАМ: Показываем уведомление только если прошло более 5 минут с последнего
+      const lastToastTime = this.get('lastRecalcToastTime') || 0;
+      const timeSinceLastToast = Date.now() - lastToastTime;
+      
+      if (timeSinceLastToast > 300000 && window.App) { // 5 минут
+        window.App.showToast(`История синхронизирована (${totalRecalculated} протоколов)`, 'success');
+        this.set('lastRecalcToastTime', Date.now());
+      } else {
+        console.log(`🔇 TOAST SUPPRESSED: Last shown ${Math.round(timeSinceLastToast/1000)}s ago (need 300s)`);
+      }
+    }
+  }
+
+  // 🆕 НОВОЕ: Принудительный пересчет всей истории протоколов с текущими весами
+  forceRecalculateAllProtocolHistory() {
+    console.log('🔄 FORCE RECALCULATING ALL PROTOCOL HISTORY WITH CURRENT WEIGHTS');
+    const protocols = this.getProtocols();
+    let totalRecalculated = 0;
+    
+    protocols.forEach(protocol => {
+      const wasRecalculated = this.forceRecalculateProtocolHistory(protocol.id);
+      if (wasRecalculated) {
+        totalRecalculated++;
+        console.log(`✅ Force recalculated protocol ${protocol.id} (${protocol.name})`);
+      }
+    });
+    
+    if (totalRecalculated > 0) {
+      console.log(`✅ FORCE RECALCULATED ALL HISTORY: ${totalRecalculated} protocols updated`);
+      
+      // 🔧 АНТИСПАМ: Показываем уведомление только если прошло более 5 минут с последнего
+      const lastToastTime = this.get('lastRecalcToastTime') || 0;
+      const timeSinceLastToast = Date.now() - lastToastTime;
+      
+      if (timeSinceLastToast > 300000 && window.App) { // 5 минут
+        window.App.showToast(`История пересчитана с текущими весами (${totalRecalculated} протоколов)`, 'success');
+        this.set('lastRecalcToastTime', Date.now());
+      } else {
+        console.log(`🔇 TOAST SUPPRESSED: Last shown ${Math.round(timeSinceLastToast/1000)}s ago (need 300s)`);
+      }
+    } else {
+      console.log('ℹ️ FORCE RECALCULATION SKIPPED: No protocols found or no changes needed');
+    }
+    
+    return totalRecalculated;
+  }
+
+  // 🛡️ ЗАЩИТА: Автоматическая проверка и исправление целостности данных
+  async autoFixDataIntegrity() {
+    console.log('🛡️ AUTO-FIX: Starting automatic data integrity check and repair...');
+    
+    let issuesFound = 0;
+    let issuesFixed = 0;
+    
+    try {
+      // 1. Проверяем weight vs weights миграцию
+      const protocolsNeedingMigration = this.detectWeightMigrationIssues();
+      if (protocolsNeedingMigration.length > 0) {
+        console.log(`🚨 MIGRATION ISSUE: Found ${protocolsNeedingMigration.length} protocols needing weight migration`);
+        issuesFound += protocolsNeedingMigration.length;
+        
+        const migrated = this.migrateProtocolWeights();
+        if (migrated > 0) {
+          issuesFixed += migrated;
+          console.log(`✅ MIGRATION FIX: Migrated ${migrated} protocols`);
+        }
+      }
+
+      // 2. Проверяем консистентность чекинов
+      const inconsistentCheckins = this.detectCheckinInconsistencies();
+      if (inconsistentCheckins.length > 0) {
+        console.log(`🚨 CHECKIN ISSUE: Found ${inconsistentCheckins.length} inconsistent checkins`);
+        issuesFound += inconsistentCheckins.length;
+        
+        const recalculated = this.forceRecalculateAllProtocolHistory();
+        if (recalculated > 0) {
+          issuesFixed += inconsistentCheckins.length;
+          console.log(`✅ CHECKIN FIX: Recalculated ${recalculated} protocols, fixed ${inconsistentCheckins.length} checkins`);
+        }
+      }
+
+      // 3. Записываем статистику для мониторинга
+      this.set('lastIntegrityCheck', {
+        timestamp: Date.now(),
+        issuesFound,
+        issuesFixed,
+        status: issuesFound === 0 ? 'clean' : (issuesFixed === issuesFound ? 'fixed' : 'partial')
+      });
+
+      if (issuesFound === 0) {
+        console.log('🛡️ AUTO-FIX: No issues found, data integrity is good');
+      } else if (issuesFixed === issuesFound) {
+        console.log(`🛡️ AUTO-FIX: Fixed all ${issuesFixed} issues found`);
+        if (window.App && window.App.showToast) {
+          window.App.showToast(`Автоматически исправлено ${issuesFixed} проблем с данными`, 'success');
+        }
+      } else {
+        console.warn(`🛡️ AUTO-FIX: Fixed ${issuesFixed} of ${issuesFound} issues`);
+        if (window.App && window.App.showToast) {
+          window.App.showToast(`Исправлено ${issuesFixed} из ${issuesFound} проблем`, 'warning');
+        }
+      }
+
+      return { issuesFound, issuesFixed };
+    } catch (error) {
+      console.error('🚨 AUTO-FIX ERROR:', error);
+      return { issuesFound: 0, issuesFixed: 0, error };
+    } finally {
+      // Обновляем UI индикатор
+      this.updateIntegrityStatusIndicator();
+    }
+  }
+
+  // 🛡️ UI: Обновление индикатора статуса целостности данных
+  updateIntegrityStatusIndicator() {
+    const lastCheck = this.get('lastIntegrityCheck');
+    const indicator = document.getElementById('integrity-status');
+    const icon = document.getElementById('integrity-icon');
+    const count = document.getElementById('integrity-count');
+    
+    if (!indicator || !lastCheck) return;
+    
+    // Очищаем предыдущие классы
+    indicator.className = 'integrity-indicator';
+    
+    if (lastCheck.status === 'clean') {
+      indicator.classList.add('status-clean');
+      indicator.title = 'Data integrity: All good';
+      icon.className = 'fas fa-shield-check';
+      count.textContent = '✓';
+      count.style.display = 'inline';
+    } else if (lastCheck.status === 'fixed') {
+      indicator.classList.add('status-fixed');
+      indicator.title = `Data integrity: Fixed ${lastCheck.issuesFixed} issues`;
+      icon.className = 'fas fa-shield-alt';
+      count.textContent = lastCheck.issuesFixed;
+      count.style.display = 'inline';
+    } else if (lastCheck.status === 'partial') {
+      indicator.classList.add('status-issues');
+      indicator.title = `Data integrity: ${lastCheck.issuesFound - lastCheck.issuesFixed} issues remain`;
+      icon.className = 'fas fa-shield-slash';
+      count.textContent = lastCheck.issuesFound - lastCheck.issuesFixed;
+      count.style.display = 'inline';
+    }
+    
+    // Показываем индикатор
+    indicator.style.display = 'flex';
+    
+    // Добавляем обработчик клика для показа деталей
+    indicator.onclick = () => {
+      this.showIntegrityDetails();
+    };
+  }
+
+  // 🛡️ UI: Показать детали статуса целостности данных
+  showIntegrityDetails() {
+    const lastCheck = this.get('lastIntegrityCheck');
+    if (!lastCheck) return;
+    
+    let message = `Последняя проверка: ${new Date(lastCheck.timestamp).toLocaleString()}\n`;
+    message += `Статус: ${lastCheck.status}\n`;
+    message += `Найдено проблем: ${lastCheck.issuesFound}\n`;
+    message += `Исправлено: ${lastCheck.issuesFixed}`;
+    
+    if (window.App && window.App.showToast) {
+      window.App.showToast(message, lastCheck.status === 'clean' ? 'success' : 'info');
+    } else {
+      alert(message);
+    }
+  }
+
+  // 🔍 Обнаружение проблем с миграцией весов
+  detectWeightMigrationIssues() {
+    const protocols = this.getProtocols();
+    const issueProtocols = [];
+    
+    protocols.forEach(protocol => {
+      // Проверяем есть ли старое поле weight но нет нового weights
+      if (protocol.weight !== undefined && (!protocol.weights || Object.keys(protocol.weights).length === 0)) {
+        issueProtocols.push({
+          id: protocol.id,
+          name: protocol.name,
+          issue: 'missing_weights_object',
+          hasWeight: protocol.weight,
+          hasWeights: !!protocol.weights
+        });
+      }
+      
+      // Проверяем консистентность между weight и weights для одинаковых innerface
+      if (protocol.weight !== undefined && protocol.weights && protocol.targets) {
+        protocol.targets.forEach(innerfaceId => {
+          if (protocol.weights[innerfaceId] !== undefined && 
+              Math.abs(protocol.weights[innerfaceId] - protocol.weight) > 0.001) {
+            issueProtocols.push({
+              id: protocol.id,
+              name: protocol.name,
+              issue: 'weight_mismatch',
+              innerfaceId,
+              weight: protocol.weight,
+              weightForInnerface: protocol.weights[innerfaceId]
+            });
+          }
+        });
+      }
+    });
+    
+    return issueProtocols;
+  }
+
+  // 🔍 Обнаружение несоответствий в чекинах
+  detectCheckinInconsistencies() {
+    const protocols = this.getProtocols();
+    const checkins = this.getCheckins();
+    const inconsistentCheckins = [];
+    
+    checkins.forEach(checkin => {
+      if (checkin.type === 'protocol') {
+        const protocol = protocols.find(p => p.id === checkin.protocolId);
+        if (protocol && checkin.changes) {
+          // Проверяем каждый innerface в changes
+          Object.keys(checkin.changes).forEach(innerfaceId => {
+            const changeValue = checkin.changes[innerfaceId];
+            const expectedWeight = this.getExpectedWeight(protocol, parseInt(innerfaceId));
+            const expectedChange = checkin.action === '+' ? expectedWeight : -expectedWeight;
+            
+            if (Math.abs(changeValue - expectedChange) > 0.001) {
+              inconsistentCheckins.push({
+                checkinId: checkin.id,
+                protocolId: protocol.id,
+                innerfaceId: parseInt(innerfaceId),
+                actualChange: changeValue,
+                expectedChange,
+                issue: 'incorrect_weight_in_checkin'
+              });
+            }
+          });
+        }
+      }
+    });
+    
+    return inconsistentCheckins;
+  }
+
+  // 🔧 Получение ожидаемого веса для innerface в протоколе
+  getExpectedWeight(protocol, innerfaceId) {
+    // Приоритет: protocol.weights[innerfaceId] > protocol.weight > 0.1 (дефолт)
+    if (protocol.weights && protocol.weights[innerfaceId] !== undefined) {
+      return protocol.weights[innerfaceId];
+    }
+    if (protocol.weight !== undefined) {
+      return protocol.weight;
+    }
+    return 0.1; // дефолтный вес
+  }
+
+  // 🔧 Миграция весов протоколов
+  migrateProtocolWeights() {
+    const protocols = this.getProtocols();
+    let migratedCount = 0;
+    
+    protocols.forEach(protocol => {
+      if (protocol.weight !== undefined && (!protocol.weights || Object.keys(protocol.weights).length === 0)) {
+        if (!protocol.weights) {
+          protocol.weights = {};
+        }
+        
+        // Мигрируем weight в weights для всех targets
+        if (protocol.targets && protocol.targets.length > 0) {
+          protocol.targets.forEach(innerfaceId => {
+            protocol.weights[innerfaceId] = protocol.weight;
+          });
+          migratedCount++;
+          console.log(`🔄 MIGRATED: Protocol ${protocol.id} weight ${protocol.weight} to weights object`);
+        }
+      }
+    });
+    
+    if (migratedCount > 0) {
+      this.set(this.KEYS.PROTOCOLS, protocols);
+      console.log(`✅ MIGRATION COMPLETE: ${migratedCount} protocols migrated`);
+    }
+    
+    return migratedCount;
+  }
+
+  // 🛡️ ЗАЩИТА: Валидация и исправление весов протокола
+  validateAndFixProtocolWeights(protocol) {
+    let needsUpdate = false;
+    
+    // Если нет weights объекта, но есть weight и targets - создаем
+    if (protocol.weight !== undefined && (!protocol.weights || Object.keys(protocol.weights).length === 0) && protocol.targets) {
+      if (!protocol.weights) {
+        protocol.weights = {};
+      }
+      
+      protocol.targets.forEach(innerfaceId => {
+        if (protocol.weights[innerfaceId] === undefined) {
+          protocol.weights[innerfaceId] = protocol.weight;
+          needsUpdate = true;
+          console.log(`🔧 AUTO-FIX: Set weight ${protocol.weight} for innerface ${innerfaceId} in protocol ${protocol.id}`);
+        }
+      });
+    }
+    
+    if (needsUpdate) {
+      const protocols = this.getProtocols();
+      const index = protocols.findIndex(p => p.id === protocol.id);
+      if (index !== -1) {
+        protocols[index] = protocol;
+        this.set(this.KEYS.PROTOCOLS, protocols);
+        console.log(`✅ AUTO-FIX: Updated protocol ${protocol.id} weights`);
+      }
+    }
+  }
+
+  // 🛡️ ЗАЩИТА: Валидация целостности созданного чекина
+  validateCheckinIntegrity(checkin, protocol) {
+    let hasIssues = false;
+    
+    Object.keys(checkin.changes).forEach(innerfaceId => {
+      const actualChange = checkin.changes[innerfaceId];
+      const expectedWeight = this.getExpectedWeight(protocol, parseInt(innerfaceId));
+      const expectedChange = checkin.action === '+' ? expectedWeight : -expectedWeight;
+      
+      if (Math.abs(actualChange - expectedChange) > 0.001) {
+        console.error(`🚨 CHECKIN VALIDATION ERROR: Protocol ${protocol.id}, Innerface ${innerfaceId}`, {
+          actual: actualChange,
+          expected: expectedChange,
+          action: checkin.action,
+          weight: expectedWeight
+        });
+        hasIssues = true;
+      }
+    });
+    
+    if (hasIssues) {
+      console.error('🚨 CHECKIN VALIDATION FAILED:', checkin);
+    } else {
+      console.log('✅ CHECKIN VALIDATION PASSED:', checkin.id);
+    }
+    
+    return !hasIssues;
+  }
+
+  // 🆕 НОВОЕ: Слушатель событий от других вкладок
+  setupCrossTabSync() {
+    // Слушаем изменения в localStorage от других вкладок
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'rpg_therapy_broadcast' && event.newValue) {
+        try {
+          const broadcastEvent = JSON.parse(event.newValue);
+          
+          // Игнорируем события от той же вкладки
+          if (broadcastEvent.userId === this.currentUser?.uid) {
+            console.log('📨 RECEIVED CRITICAL CHANGE FROM OTHER TAB:', broadcastEvent);
+            
+            // Запускаем синхронизацию через короткую задержку
+            setTimeout(async () => {
+              if (!this.syncInProgress) {
+                console.log('🔄 SYNCING DUE TO CHANGE FROM OTHER TAB');
+                await this.syncWithBackend();
+              }
+            }, 5000); // Увеличена задержка до 5 секунд
+          }
+        } catch (error) {
+          console.error('❌ FAILED TO PROCESS BROADCAST EVENT:', error);
+        }
+      }
+    });
   }
 }
 

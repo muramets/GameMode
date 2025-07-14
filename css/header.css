@@ -187,4 +187,64 @@
 
 #logout-btn:hover i {
   color: var(--error-color) !important;
-} 
+}
+
+/* 🛡️ Data Integrity Status Indicator */
+.integrity-indicator {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.integrity-indicator.status-clean {
+    background: rgba(76, 175, 80, 0.1);
+    color: #4CAF50;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.integrity-indicator.status-fixed {
+    background: rgba(255, 193, 7, 0.1);
+    color: #FFC107;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    animation: pulse-warning 2s infinite;
+}
+
+.integrity-indicator.status-issues {
+    background: rgba(244, 67, 54, 0.1);
+    color: #F44336;
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    animation: pulse-error 1s infinite;
+}
+
+.integrity-indicator:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.status-count {
+    font-size: 10px;
+    background: currentColor;
+    color: white;
+    border-radius: 8px;
+    padding: 1px 5px;
+    min-width: 14px;
+    text-align: center;
+    line-height: 1.2;
+}
+
+@keyframes pulse-warning {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+@keyframes pulse-error {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}

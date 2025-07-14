@@ -79,7 +79,7 @@ function showApp(user) {
     
     // 🚀 ЕДИНСТВЕННАЯ начальная синхронизация + периодическая 
     syncUserData();
-    setupPeriodicSync();
+                window.setupPeriodicSync();
 }
 
 function updateUsername(user) {
@@ -111,25 +111,34 @@ async function syncUserData() {
         } else {
             console.log('✅ Startup integrity check: all data consistent');
         }
+
+        // 🛡️ ЗАЩИТА: Автоматическое исправление проблем с данными
+        console.log('🛡️ Running automatic data integrity repair...');
+        const fixResult = await window.Storage.autoFixDataIntegrity();
+        if (fixResult.issuesFound > 0) {
+            console.log(`🛡️ Auto-repair completed: ${fixResult.issuesFixed}/${fixResult.issuesFound} issues fixed`);
+        } else {
+            console.log('🛡️ Auto-repair: No issues found, data integrity is good');
+        }
     } catch (error) {
         console.error('❌ Automatic sync failed:', error);
     }
 }
 
 // 🚀 НОВАЯ ФУНКЦИЯ: Периодическая синхронизация
-let syncIntervalId = null;
-function setupPeriodicSync() {
+window.syncIntervalId = null;
+window.setupPeriodicSync = function() {
     console.log('⏰ Setting up periodic sync every 2 minutes...');
     
     // Очистить существующий интервал если есть
-    if (syncIntervalId) {
-        clearInterval(syncIntervalId);
+    if (window.syncIntervalId) {
+        clearInterval(window.syncIntervalId);
     }
     
     let periodicSyncCount = 0; // Счетчик для ограничения проверки целостности
     
-    // Синхронизация каждые 2 минуты (120000 ms)
-    syncIntervalId = setInterval(async () => {
+    // 🆕 НОВОЕ: Агрессивная синхронизация каждые 30 секунд для быстрого подтягивания изменений
+    window.syncIntervalId = setInterval(async () => {
         if (window.firebaseAuth?.currentUser && window.Storage) {
             console.log('⏰ Periodic sync starting...');
             
@@ -151,8 +160,8 @@ function setupPeriodicSync() {
                 console.warn('⚠️ Periodic sync failed:', error);
             }
         }
-    }, 120000); // 2 минуты вместо 30 секунд
-}
+    }, 120000); // 🔧 ИСПРАВЛЕНИЕ: Возвращаем 2 минуты, критические изменения синхронизируются мгновенно
+};
 
 // Очистить интервал при выходе
 window.addEventListener('beforeunload', () => {
