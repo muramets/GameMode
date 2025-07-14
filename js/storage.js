@@ -2273,6 +2273,7 @@ class Storage {
         innerfaceOrder: this.get(this.KEYS.INNERFACE_ORDER),
         stateOrder: this.get(this.KEYS.STATE_ORDER),
         protocolGroups: this.get(this.KEYS.PROTOCOL_GROUPS),
+        protocolFilterOrders: this.get('protocolFilterOrders') || {},
         deletedCheckins: this.get('deletedCheckins') || [],
         deletedProtocols: this.get('deletedProtocols') || [],
         deletedInnerfaces: this.get('deletedInnerfaces') || [],
@@ -3813,7 +3814,8 @@ class Storage {
         protocolOrder: this.get(this.KEYS.PROTOCOL_ORDER) || [],
         innerfaceOrder: this.get(this.KEYS.INNERFACE_ORDER) || [],
         stateOrder: this.get(this.KEYS.STATE_ORDER) || [],
-        protocolGroups: this.get(this.KEYS.PROTOCOL_GROUPS) || []
+        protocolGroups: this.get(this.KEYS.PROTOCOL_GROUPS) || [],
+        protocolFilterOrders: this.get('protocolFilterOrders') || {}
       };
       
       console.log('📤 FORCE UPLOAD DATA:', {
