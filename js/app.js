@@ -502,6 +502,8 @@ function initMainApp() {
                     // Setup protocol group filters after rendering
                     setTimeout(() => {
                         this.setupProtocolGroupFilters();
+                        // Ensure badges are rendered after setup
+                        this.renderActiveFilterBadges();
                     }, 0);
                     break;
                 case 'innerfaces':
@@ -702,29 +704,51 @@ function initMainApp() {
                         if (window.DEBUG_PROTOCOL_FILTERS) {
                             console.log('Checkbox checked - setting up filters');
                         }
-                        // Uncheck all other checkboxes - only one group can be selected
-                        filterCheckboxes.forEach(cb => {
-                            if (cb !== e.target) {
-                                cb.checked = false;
-                            }
-                        });
                         
-                        // Set selected group
                         if (filterValue === 'all') {
+                            // If "all" is selected, uncheck all other checkboxes
+                            filterCheckboxes.forEach(cb => {
+                                if (cb !== e.target) {
+                                    cb.checked = false;
+                                }
+                            });
                             this.protocolGroupFilters.selectedGroups = ['all'];
                         } else {
-                            this.protocolGroupFilters.selectedGroups = [filterValue];
+                            // If a specific group is selected, uncheck "all" and add to selected groups
+                            const allCheckbox = document.querySelector('.group-filter-checkbox[data-value="all"]');
+                            if (allCheckbox) {
+                                allCheckbox.checked = false;
+                            }
+                            
+                            // Add to selected groups (multiple selection)
+                            if (!this.protocolGroupFilters.selectedGroups.includes(filterValue)) {
+                                // Remove 'all' if it exists
+                                this.protocolGroupFilters.selectedGroups = this.protocolGroupFilters.selectedGroups.filter(g => g !== 'all');
+                                this.protocolGroupFilters.selectedGroups.push(filterValue);
+                            }
                         }
                     } else {
                         if (window.DEBUG_PROTOCOL_FILTERS) {
-                            console.log('Checkbox unchecked - reverting to all');
+                            console.log('Checkbox unchecked - removing from filters');
                         }
-                        // If unchecked, default to "all"
-                        const allCheckbox = document.querySelector('.group-filter-checkbox[data-value="all"]');
-                        if (allCheckbox) {
-                            allCheckbox.checked = true;
+                        
+                        if (filterValue === 'all') {
+                            // Prevent unchecking "all" if it's the only one checked
+                            e.target.checked = true;
+                            return;
+                        } else {
+                            // Remove from selected groups
+                            this.protocolGroupFilters.selectedGroups = this.protocolGroupFilters.selectedGroups.filter(g => g !== filterValue);
+                            
+                            // If no groups are selected, default to "all"
+                            if (this.protocolGroupFilters.selectedGroups.length === 0) {
+                                const allCheckbox = document.querySelector('.group-filter-checkbox[data-value="all"]');
+                                if (allCheckbox) {
+                                    allCheckbox.checked = true;
+                                }
+                                this.protocolGroupFilters.selectedGroups = ['all'];
+                            }
                         }
-                        this.protocolGroupFilters.selectedGroups = ['all'];
                     }
                     
                     if (window.DEBUG_PROTOCOL_FILTERS) {
@@ -824,6 +848,120 @@ function initMainApp() {
             } else {
                 protocolsFiltersIcon.classList.remove('active');
             }
+            
+            // Update active filter badges
+            this.renderActiveFilterBadges();
+        },
+
+        // Render active filter badges
+        renderActiveFilterBadges() {
+            const badgesContainer = document.getElementById('protocols-active-filters');
+            
+            if (!badgesContainer) return;
+            
+            const hasActiveFilters = !this.protocolGroupFilters.selectedGroups.includes('all');
+            
+            // Show badges only if there are active filters
+            if (!hasActiveFilters) {
+                badgesContainer.classList.add('hidden');
+                return;
+            }
+            
+            // Show badges and render them
+            badgesContainer.classList.remove('hidden');
+            
+            const badges = [];
+            
+            // Generate badges for each active filter
+            this.protocolGroupFilters.selectedGroups.forEach(groupId => {
+                if (groupId === 'all') return; // Skip 'all' filter
+                
+                let badgeHtml = '';
+                
+                if (groupId === 'ungrouped') {
+                    // Special case for ungrouped filter
+                    badgeHtml = `
+                        <div class="protocol-filter-badge ungrouped-badge" data-group-id="ungrouped">
+                            <span class="filter-badge-icon">
+                                <i class="fas fa-folder-open"></i>
+                            </span>
+                            <span class="filter-badge-name">Ungrouped</span>
+                            <button class="protocol-filter-badge-delete" onclick="removeActiveFilter('ungrouped')" title="Remove filter">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    // Regular group filter
+                    const groups = window.Storage.getProtocolGroups();
+                    const group = groups.find(g => g.id.toString() === groupId);
+                    
+                    if (group) {
+                        const groupColor = group.color || '#7fb3d3';
+                        let iconHtml;
+                        
+                        if (window.UI) {
+                            iconHtml = window.UI.renderIcon(group.icon, groupColor);
+                        } else {
+                            iconHtml = group.icon || '📁';
+                        }
+                        
+                        // Convert hex color to RGB for CSS custom properties
+                        const hexToRgb = (hex) => {
+                            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                            return result ? {
+                                r: parseInt(result[1], 16),
+                                g: parseInt(result[2], 16),
+                                b: parseInt(result[3], 16)
+                            } : null;
+                        };
+                        
+                        const rgb = hexToRgb(groupColor);
+                        const rgbString = rgb ? `${rgb.r}, ${rgb.g}, ${rgb.b}` : '127, 179, 211';
+                        
+                        badgeHtml = `
+                            <div class="protocol-filter-badge group-badge" data-group-id="${group.id}" style="--group-color: ${groupColor}; --group-color-rgb: ${rgbString};">
+                                <span class="filter-badge-icon">${iconHtml}</span>
+                                <span class="filter-badge-name">${group.name}</span>
+                                <button class="protocol-filter-badge-delete" onclick="removeActiveFilter('${group.id}')" title="Remove filter">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+                
+                if (badgeHtml) {
+                    badges.push(badgeHtml);
+                }
+            });
+            
+            badgesContainer.innerHTML = badges.join('');
+        },
+
+        // Remove active filter (called by badge delete button)
+        removeActiveFilter(groupId) {
+            // Remove specific group from selected groups
+            this.protocolGroupFilters.selectedGroups = this.protocolGroupFilters.selectedGroups.filter(g => g !== groupId);
+            
+            // If no groups are selected, default to 'all'
+            if (this.protocolGroupFilters.selectedGroups.length === 0) {
+                this.protocolGroupFilters.selectedGroups = ['all'];
+            }
+            
+            // Update checkboxes in the dropdown
+            const filterCheckboxes = document.querySelectorAll('.group-filter-checkbox');
+            filterCheckboxes.forEach(checkbox => {
+                if (checkbox.dataset.value === 'all') {
+                    checkbox.checked = this.protocolGroupFilters.selectedGroups.includes('all');
+                } else {
+                    checkbox.checked = this.protocolGroupFilters.selectedGroups.includes(checkbox.dataset.value);
+                }
+            });
+            
+            // Update UI
+            this.updateGroupFilterIcon();
+            this.applyProtocolGroupFilters();
         },
 
         // Apply protocol group filters
@@ -921,6 +1059,26 @@ function initMainApp() {
             }
             
             this.filteredProtocols = filteredProtocols;
+            
+            // 🔧 НОВОЕ: Применяем правильный порядок для текущего фильтра
+            if (window.DEBUG_PROTOCOL_FILTERS) {
+                console.log('🔧 APPLYING FILTER ORDER:', {
+                    selectedGroups: this.protocolGroupFilters.selectedGroups,
+                    filteredProtocolsBeforeOrder: this.filteredProtocols.map(p => p.id),
+                    filterKey: window.Storage.getFilterKey(this.protocolGroupFilters.selectedGroups)
+                });
+            }
+            
+            this.filteredProtocols = window.Storage.getProtocolsInOrderForFilter(
+                this.protocolGroupFilters.selectedGroups,
+                this.filteredProtocols
+            );
+            
+            if (window.DEBUG_PROTOCOL_FILTERS) {
+                console.log('🔧 FILTER ORDER APPLIED:', {
+                    filteredProtocolsAfterOrder: this.filteredProtocols.map(p => p.id)
+                });
+            }
             
             // 🔧 ИСПРАВЛЕНИЕ: Сбрасываем страницу только при фильтрации, не при reordering
             if (resetPage) {
@@ -2307,6 +2465,13 @@ function initMainApp() {
     // Make App globally available
     window.App = App;
     
+    // Make removeActiveFilter globally accessible for onclick handlers
+    window.removeActiveFilter = (groupId) => {
+        if (window.App && window.App.removeActiveFilter) {
+            window.App.removeActiveFilter(groupId);
+        }
+    };
+    
     // Initialize app
     App.init();
     
@@ -3089,6 +3254,42 @@ window.debugSync = {
   }
 };
 
+// 🔧 НОВОЕ: Функция для отладки фильтров протоколов
+window.debugProtocolFilters = {
+  // Включить отладку фильтров
+  enableDebug() {
+    window.DEBUG_PROTOCOL_FILTERS = true;
+    console.log('🔧 Protocol filters debugging enabled');
+  },
+  
+  // Выключить отладку фильтров
+  disableDebug() {
+    window.DEBUG_PROTOCOL_FILTERS = false;
+    console.log('🔧 Protocol filters debugging disabled');
+  },
+  
+  // Показать текущие порядки фильтров
+  showFilterOrders() {
+    console.log('🔧 CURRENT PROTOCOL FILTER ORDERS:', {
+      filterOrders: window.Storage.getProtocolFilterOrders(),
+      currentFilter: window.App.protocolGroupFilters.selectedGroups,
+      currentFilterKey: window.Storage.getFilterKey(window.App.protocolGroupFilters.selectedGroups)
+    });
+  },
+  
+  // Очистить все порядки фильтров
+  clearFilterOrders() {
+    window.Storage.setProtocolFilterOrders({});
+    console.log('🔧 All protocol filter orders cleared');
+  },
+  
+  // Показать порядок для конкретного фильтра
+  showFilterOrder(filterKey) {
+    const filterOrders = window.Storage.getProtocolFilterOrders();
+    console.log(`🔧 FILTER ORDER FOR "${filterKey}":`, filterOrders[filterKey] || 'Not found');
+  }
+};
+
 console.log('🐛 DEBUG: Sync debugging functions available:');
 console.log('  - debugSync.sync() - Manual sync trigger');
 console.log('  - debugSync.forceUpload() - Force upload local data to server');
@@ -3111,3 +3312,10 @@ console.log('  - debugSync.clearDeletedCheckins() - Clean undefined elements fro
 console.log('  - debugSync.clearDeletedStates() - Clear deleted states list (for debugging)');
 console.log('  - debugSync.cleanDeletedStates() - Clean undefined values from deletedStates (fix sync issues)');
 console.log('  - debugSync.smartSync() - Safer sync debugging');
+
+console.log('🔧 DEBUG: Protocol filters debugging functions available:');
+console.log('  - debugProtocolFilters.enableDebug() - Enable protocol filters debugging');
+console.log('  - debugProtocolFilters.disableDebug() - Disable protocol filters debugging');
+console.log('  - debugProtocolFilters.showFilterOrders() - Show all filter orders');
+console.log('  - debugProtocolFilters.clearFilterOrders() - Clear all filter orders');
+console.log('  - debugProtocolFilters.showFilterOrder(filterKey) - Show order for specific filter');

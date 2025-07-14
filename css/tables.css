@@ -1182,6 +1182,125 @@
   background: var(--sub-alt-color);
 }
 
+/* ===== ACTIVE FILTER BADGES ===== */
+.protocols-active-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 0.5rem;
+  flex: 1;
+  overflow: visible; /* Allow hover effects to show */
+  padding: 0.2rem 0; /* Add padding for hover lift effect */
+  transition: all 0.2s ease;
+}
+
+.protocols-active-filters.hidden {
+  display: none;
+}
+
+.protocol-filter-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 2rem 0.5rem 0.75rem; /* Extra right padding for delete button */
+  background-color: var(--sub-alt-color);
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 400;
+  color: var(--sub-color);
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0.0, 0.2, 1);
+  border: 1px solid transparent;
+  flex-shrink: 0; /* Prevent badges from shrinking */
+}
+
+.protocol-filter-badge:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.protocol-filter-badge .filter-badge-icon {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.protocol-filter-badge .filter-badge-name {
+  font-size: 0.8rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.protocol-filter-badge-delete {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  background: none;
+  border: none;
+  color: var(--sub-alt-color);
+  cursor: pointer;
+  padding: 0.125rem;
+  border-radius: 0.25rem;
+  transition: all 0.125s;
+  opacity: 0;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  outline: none;
+  user-select: none;
+}
+
+.protocol-filter-badge-delete:hover {
+  color: var(--error-color) !important;
+}
+
+.protocol-filter-badge-delete:focus {
+  outline: none;
+}
+
+.protocol-filter-badge:hover .protocol-filter-badge-delete {
+  opacity: 1;
+}
+
+
+
+/* Badge hover effects like quick actions */
+.protocol-filter-badge.ungrouped-badge .filter-badge-icon {
+  color: var(--sub-color);
+}
+
+.protocol-filter-badge.ungrouped-badge:hover .filter-badge-icon {
+  color: var(--text-color);
+}
+
+.protocol-filter-badge.ungrouped-badge:hover .filter-badge-name {
+  color: var(--text-color);
+}
+
+/* For group badges with custom colors */
+.protocol-filter-badge.group-badge .filter-badge-icon {
+  color: var(--group-color, var(--sub-color));
+}
+
+.protocol-filter-badge.group-badge:hover .filter-badge-icon {
+  color: var(--group-color, var(--text-color));
+}
+
+.protocol-filter-badge.group-badge:hover .filter-badge-name {
+  color: var(--group-color, var(--text-color));
+}
+
+.protocol-filter-badge.group-badge:hover {
+  background-color: rgba(var(--group-color-rgb, 127, 179, 211), 0.1);
+}
+
 .protocols-filters-menu {
   pointer-events: none;
   z-index: 2000;
@@ -1212,7 +1331,7 @@
 .protocols-filters-container:focus-within .protocols-filters-menu {
   pointer-events: all;
   opacity: 1;
-} 
+}
 
 /* Protocol Filter Group Headers */
 .protocols-filters-menu .filter-group-header {
@@ -1290,16 +1409,19 @@
   font-size: 0.7rem;
   color: var(--sub-color);
   padding: 0.2rem;
-  border-radius: 0.2rem;
-  transition: all 0.2s ease;
+  border-radius: 0;
+  transition: all 0.125s;
   transform: scale(0.9);
   cursor: pointer;
   margin-left: 0.5rem;
+  background: none;
+  border: none;
+  outline: none;
 }
 
 .protocols-filters-menu .filter-group-settings:hover {
-  color: var(--text-color);
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--main-color);
+  background: none;
   transform: scale(1);
 }
 
@@ -1329,28 +1451,13 @@
   will-change: transform, box-shadow !important; /* Оптимизация для композитного слоя */
 }
 
-/* Иконки внутри кнопок пагинации тоже должны быть поверх */
-#prev-page.drag-hover i,
-#next-page.drag-hover i {
-  position: relative !important;
-  z-index: 2147483647 !important;
-}
-
-/* Анимация пульсации для кнопок пагинации - чистая и быстрая */
 @keyframes pagination-pulse {
-  0% { 
-    box-shadow: 0 0 15px #ffc107;
-    transform: scale(1.2) translateZ(1000px);
-    background: #ffc107;
+  0% {
+    transform: scale(1.2);
+    box-shadow: 0 0 20px #ffc107;
   }
-  100% { 
-    box-shadow: 0 0 25px #ffeb3b;
-    transform: scale(1.25) translateZ(1000px);
-    background: #ffeb3b;
+  100% {
+    transform: scale(1.25);
+    box-shadow: 0 0 30px #ffc107;
   }
-}
-
-@keyframes bounce {
-  0% { transform: translateX(-50%) translateY(0px); }
-  100% { transform: translateX(-50%) translateY(-3px); }
 } 
