@@ -236,8 +236,9 @@ const DragDrop = {
    * @param {Function} updateDisplayFn - Function to update display
    * @param {string} itemType - Type of item for logging
    * @param {string} successMessage - Success toast message
+   * @param {Object} filterInfo - Information about current filter (optional)
    */
-  reorderItems(items, draggedId, targetId, saveOrderFn, updateDisplayFn, itemType, successMessage) {
+  reorderItems(items, draggedId, targetId, saveOrderFn, updateDisplayFn, itemType, successMessage, filterInfo = null) {
     console.log(`🔄 REORDER ITEMS DEBUG for ${itemType}:`, {
       itemsCount: items.length,
       draggedId,
@@ -283,7 +284,8 @@ const DragDrop = {
           draggedItem.name.split('.')[0],
           draggedItem.icon,
           oldOrder,
-          currentOrder
+          currentOrder,
+          filterInfo
         );
       }
       
@@ -303,19 +305,91 @@ const DragDrop = {
   },
 
   reorderProtocols(draggedId, targetId) {
+    // 🔧 НОВОЕ: Определяем текущий активный фильтр
+    const currentSelectedGroups = App.protocolGroupFilters.selectedGroups;
+    const isMainOrder = currentSelectedGroups.includes('all');
+    
+    console.log('🔧 REORDER PROTOCOLS DEBUG:', {
+      draggedId,
+      targetId,
+      currentSelectedGroups,
+      isMainOrder,
+      filteredProtocolsCount: App.filteredProtocols.length
+    });
+    
+    // 🔧 НОВОЕ: Подготавливаем информацию о фильтре для истории
+    const filterInfo = isMainOrder ? null : {
+      isFilterSpecific: true,
+      selectedGroups: currentSelectedGroups,
+      filterName: this.getFilterDisplayName(currentSelectedGroups)
+    };
+    
     this.reorderItems(
       App.filteredProtocols,
       draggedId,
       targetId,
-      (order) => window.Storage.setProtocolOrder(order),
+      (order) => {
+        if (isMainOrder) {
+          // Если фильтр "all", сохраняем в основной порядок
+          console.log('🔧 Saving to main protocol order:', order);
+          window.Storage.setProtocolOrder(order);
+        } else {
+          // Если активен фильтр, сохраняем порядок для этого фильтра
+          console.log('🔧 Saving to filter order:', {
+            selectedGroups: currentSelectedGroups,
+            order
+          });
+          window.Storage.setProtocolOrderForFilter(currentSelectedGroups, order);
+        }
+      },
       () => {
-        App.filteredProtocols = window.Storage.getProtocolsInOrder();
         // 🔧 ИСПРАВЛЕНИЕ: Применяем фильтры БЕЗ сброса страницы
         App.applyProtocolGroupFilters(false);
       },
       'protocol',
-      'Protocol order updated'
+      isMainOrder ? 'Protocol order updated' : 'Protocol filter order updated',
+      filterInfo
     );
+  },
+
+  // 🔧 НОВОЕ: Получить отображаемое имя фильтра
+  getFilterDisplayName(selectedGroups) {
+    if (!selectedGroups || selectedGroups.length === 0 || selectedGroups.includes('all')) {
+      return null;
+    }
+    
+    const protocolGroups = window.Storage.getProtocolGroups();
+    const groupNames = [];
+    
+    // Обрабатываем каждую выбранную группу
+    selectedGroups.forEach(groupId => {
+      if (groupId === 'ungrouped') {
+        groupNames.push('Ungrouped');
+      } else if (groupId !== 'all') {
+        // Ищем группу по ID
+        let group = protocolGroups.find(g => g.id === groupId);
+        if (!group) {
+          // Если не нашли, пытаемся найти по числовому ID
+          group = protocolGroups.find(g => g.id == groupId);
+        }
+        if (!group) {
+          // Если не нашли, пытаемся найти по строковому ID
+          group = protocolGroups.find(g => g.id.toString() === groupId.toString());
+        }
+        
+        if (group) {
+          groupNames.push(group.name);
+        }
+      }
+    });
+    
+    // Если не нашли ни одной группы, возвращаем 'Custom filter'
+    if (groupNames.length === 0) {
+      return 'Custom filter';
+    }
+    
+    // Соединяем имена групп через " + "
+    return groupNames.join(' + ');
   },
 
   reorderInnerfaces(draggedId, targetId) {
