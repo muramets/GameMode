@@ -827,12 +827,18 @@ const UI = {
       console.log('🎨 RENDER PROTOCOLS DEBUG');
     }
     // Don't override App.filteredProtocols here - it should be managed by App.applyProtocolGroupFilters()
-    // If filteredProtocols is empty, initialize it with all protocols
-    if (!App.filteredProtocols || App.filteredProtocols.length === 0) {
+    // If filteredProtocols is empty or undefined, initialize it with all protocols
+    if (!App.filteredProtocols || App.filteredProtocols.length === 0 || App.filteredProtocols === undefined) {
       if (window.DEBUG_PROTOCOL_FILTERS) {
-        console.log('Initializing filteredProtocols with all protocols');
+        console.log('🔧 FALLBACK: Initializing filteredProtocols with all protocols');
       }
       App.filteredProtocols = window.Storage.getProtocolsInOrder();
+      
+      // 🔧 ДОПОЛНИТЕЛЬНАЯ ЗАЩИТА: Если все еще пусто, показываем предупреждение
+      if (!App.filteredProtocols || App.filteredProtocols.length === 0) {
+        console.warn('⚠️ PROTOCOLS FALLBACK FAILED: No protocols found in storage');
+        App.filteredProtocols = [];
+      }
     }
     
     // Get all protocols and innerfaces for display

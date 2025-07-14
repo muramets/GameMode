@@ -200,6 +200,12 @@ function initMainApp() {
             // Initialize filtered protocols
             this.filteredProtocols = window.Storage.getProtocolsInOrder();
             
+            // 🔧 ДОПОЛНИТЕЛЬНАЯ ЗАЩИТА: Убеждаемся, что filteredProtocols не undefined
+            if (!this.filteredProtocols || this.filteredProtocols === undefined) {
+                console.warn('⚠️ INIT: filteredProtocols is undefined, setting to empty array');
+                this.filteredProtocols = [];
+            }
+            
             // Setup navigation
             this.setupNavigation();
             

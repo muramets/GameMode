@@ -5060,6 +5060,82 @@ class Storage {
     console.log('🔄 RETURNING NULL (no color found)');
     return null;
   }
+
+  // Protocol Filter Order Management
+  getProtocolFilterOrders() {
+    return this.get('protocolFilterOrders') || {};
+  }
+
+  setProtocolFilterOrders(orders) {
+    this.set('protocolFilterOrders', orders);
+    console.log('🔄 PROTOCOL FILTER ORDERS SAVED:', orders);
+  }
+
+  getFilterKey(selectedGroups) {
+    if (!selectedGroups || selectedGroups.length === 0) {
+      return 'all';
+    }
+    if (selectedGroups.includes('all')) {
+      return 'all';
+    }
+    return selectedGroups.sort().join(',');
+  }
+
+  setProtocolOrderForFilter(selectedGroups, order) {
+    const filterKey = this.getFilterKey(selectedGroups);
+    const filterOrders = this.getProtocolFilterOrders();
+    filterOrders[filterKey] = order;
+    this.setProtocolFilterOrders(filterOrders);
+    console.log('🔄 PROTOCOL ORDER FOR FILTER SAVED:', {
+      filterKey,
+      order,
+      selectedGroups
+    });
+  }
+
+  getProtocolsInOrderForFilter(selectedGroups, protocolsToOrder = null) {
+    const filterKey = this.getFilterKey(selectedGroups);
+    
+    // If it's the "all" filter, use regular getProtocolsInOrder
+    if (filterKey === 'all') {
+      return protocolsToOrder || this.getProtocolsInOrder();
+    }
+    
+    // Get the specific filter order
+    const filterOrders = this.getProtocolFilterOrders();
+    const customOrder = filterOrders[filterKey] || [];
+    
+    // Use provided protocols or get all protocols
+    const protocols = protocolsToOrder || this.getProtocols();
+    
+    if (customOrder.length === 0) {
+      return protocols;
+    }
+    
+    // Sort by custom order, then by original order for new items
+    const ordered = [];
+    const used = new Set();
+    
+    // Add items in custom order
+    customOrder.forEach(id => {
+      // Convert ID to number for comparison
+      const targetId = typeof id === 'string' ? parseInt(id) : id;
+      const protocol = protocols.find(p => p.id === targetId);
+      if (protocol) {
+        ordered.push(protocol);
+        used.add(protocol.id);
+      }
+    });
+    
+    // Add any new items not in custom order
+    protocols.forEach(protocol => {
+      if (!used.has(protocol.id)) {
+        ordered.push(protocol);
+      }
+    });
+    
+    return ordered;
+  }
 }
 
 // Create global instance
