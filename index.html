@@ -252,9 +252,41 @@
                 
                 <!-- Search and Controls -->
                 <div class="protocols-controls">
-                    <div class="search-container">
-                        <input type="text" id="protocol-search" placeholder="Search protocols..." class="search-input">
-                        <i class="fas fa-search search-icon"></i>
+                    <div class="protocols-search-filters-group">
+                        <div class="search-container">
+                            <input type="text" id="protocol-search" placeholder="Search protocols..." class="search-input">
+                            <i class="fas fa-search search-icon"></i>
+                        </div>
+                        
+                        <!-- Filters Icon -->
+                        <div class="protocols-filters-container">
+                            <i class="fas fa-filter protocols-filters-icon" id="protocols-filters-icon" title="Group Filters"></i>
+                            <div class="protocols-filters-menu">
+                                <div class="spacer"></div>
+                                <div class="items">
+                                    <!-- Protocol Groups Filters -->
+                                    <div class="filter-group-header">
+                                        <i class="fas fa-layer-group"></i>
+                                        <span>Protocol Groups</span>
+                                    </div>
+                                    <label class="filter-option">
+                                        <input type="checkbox" class="group-filter-checkbox" data-filter="group" data-value="all" checked>
+                                        <i class="fas fa-check filter-check-icon"></i>
+                                        <span class="filter-label">All groups</span>
+                                    </label>
+                                    <label class="filter-option">
+                                        <input type="checkbox" class="group-filter-checkbox" data-filter="group" data-value="ungrouped">
+                                        <i class="fas fa-check filter-check-icon"></i>
+                                        <span class="filter-label">Ungrouped</span>
+                                    </label>
+                                    
+                                    <!-- Dynamic Groups (populated by JS) -->
+                                    <div id="protocol-group-filter-options">
+                                        <!-- Dynamic protocol groups will be inserted here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <button class="btn btn-primary" id="add-protocol-btn">
                         <i class="fas fa-plus"></i>
@@ -685,6 +717,66 @@
                             <div class="protocol-innerfaces-container">
                                 <div class="dependency-grid" id="protocol-innerfaces-grid">
                                     <!-- Innerfaces будут генерироваться JS -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Protocol Group (Optional)</label>
+                            <p class="form-help-text">Assign this protocol to a group for better organization and filtering.</p>
+                            
+                            <div class="protocol-groups-badges-container">
+                                <!-- Dynamic Groups (populated by JS) -->
+                                <div id="protocol-groups-badges-list">
+                                    <!-- Dynamic protocol group badges will be inserted here -->
+                                </div>
+                                
+                                <!-- Create New Group Badge -->
+                                <div class="protocol-group-badge new-group-badge" id="new-group-badge">
+                                    <span class="protocol-group-icon"><i class="fas fa-plus"></i></span>
+                                    <span class="protocol-group-name">New Group</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Group Settings Modal (hidden by default) -->
+                            <div class="group-settings-modal" id="group-settings-modal" style="display: none;">
+                                <div class="group-settings-content">
+                                    <h4 id="group-settings-title">Group Settings</h4>
+                                    
+                                    <div class="form-row">
+                                        <label for="group-settings-name">Group Name</label>
+                                        <input type="text" id="group-settings-name" placeholder="Group name..." class="form-input" maxlength="50">
+                                    </div>
+                                    
+                                    <div class="form-row">
+                                        <label for="group-settings-icon">Group Icon</label>
+                                        <input type="text" id="group-settings-icon" placeholder="🔶" class="form-input group-icon-input" maxlength="2">
+                                    </div>
+                                    
+                                    <div class="form-row">
+                                        <label>Group Color</label>
+                                        <div class="group-color-picker">
+                                            <div class="color-option group-color-option" data-color="#7fb3d3" style="background-color: #7fb3d3;" title="Blue"></div>
+                                            <div class="color-option group-color-option" data-color="#98c379" style="background-color: #98c379;" title="Green"></div>
+                                            <div class="color-option group-color-option" data-color="#e2b714" style="background-color: #e2b714;" title="Yellow"></div>
+                                            <div class="color-option group-color-option" data-color="#e6934a" style="background-color: #e6934a;" title="Orange"></div>
+                                            <div class="color-option group-color-option" data-color="#ca4754" style="background-color: #ca4754;" title="Red"></div>
+                                            <div class="color-option group-color-option" data-color="#c882c8" style="background-color: #c882c8;" title="Purple"></div>
+                                            <div class="color-option group-color-option" data-color="#e394b3" style="background-color: #e394b3;" title="Pink"></div>
+                                            <div class="color-option group-color-option" data-color="#6fbdb3" style="background-color: #6fbdb3;" title="Teal"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="modal-actions">
+                                        <button type="button" class="btn btn-danger" id="delete-group-settings" style="display: none;">
+                                            <i class="fas fa-trash"></i>
+                                            Delete Group
+                                        </button>
+                                        <div class="modal-actions-right">
+                                            <button type="button" class="btn btn-secondary" id="cancel-group-settings">Cancel</button>
+                                            <button type="button" class="btn btn-primary" id="save-group-settings">Save Group</button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -1145,3 +1145,212 @@
   visibility: visible;
   transition-delay: 0s;
 } 
+
+/* Protocol Groups Filters Dropdown */
+.protocols-search-filters-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: flex-start;
+}
+
+.protocols-filters-container {
+  position: relative;
+  display: inline-block;
+}
+
+.protocols-filters-icon {
+  color: var(--sub-color);
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: all 0.125s;
+  font-size: 1rem;
+  border-radius: var(--roundness);
+}
+
+.protocols-filters-icon:hover {
+  color: var(--text-color);
+  background: var(--sub-alt-color);
+}
+
+.protocols-filters-icon.active {
+  color: var(--main-color);
+}
+
+.protocols-filters-icon.active:hover {
+  color: var(--main-color);
+  background: var(--sub-alt-color);
+}
+
+.protocols-filters-menu {
+  pointer-events: none;
+  z-index: 2000;
+  opacity: 0;
+  position: absolute;
+  top: 99%;
+  left: 0;
+  font-size: 0.75rem;
+  min-width: 200px;
+  width: max-content;
+  transition: opacity 0.125s;
+}
+
+.protocols-filters-menu .spacer {
+  width: 100%;
+  height: 0.5em;
+  background: transparent;
+}
+
+.protocols-filters-menu .items {
+  box-shadow: 0 0 0 0.5em var(--bg-color);
+  background: var(--sub-alt-color);
+  border-radius: var(--roundness);
+  padding: 0.5em 0;
+}
+
+.protocols-filters-container:hover .protocols-filters-menu,
+.protocols-filters-container:focus-within .protocols-filters-menu {
+  pointer-events: all;
+  opacity: 1;
+} 
+
+/* Protocol Filter Group Headers */
+.protocols-filters-menu .filter-group-header {
+  display: flex;
+  align-items: center;
+  padding: 0.6em 1em;
+  color: var(--text-color);
+  font-weight: 500;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--bg-color);
+  margin-bottom: 0.25em;
+}
+
+.protocols-filters-menu .filter-group-header i {
+  font-size: 0.7rem;
+  margin-right: 0.5em;
+  color: var(--main-color);
+}
+
+/* Protocol Filter Options */
+.protocols-filters-menu .filter-option {
+  display: flex;
+  align-items: center;
+  padding: 0.4em 1em;
+  cursor: pointer;
+  transition: all 0.125s;
+  color: var(--sub-color);
+  font-size: 0.75rem;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.protocols-filters-menu .filter-option:hover {
+  background: var(--bg-color);
+  color: var(--text-color);
+}
+
+.protocols-filters-menu .filter-option:hover .filter-check-icon {
+  color: var(--text-color);
+}
+
+/* Hidden Checkbox */
+.protocols-filters-menu .group-filter-checkbox {
+  display: none;
+}
+
+/* FontAwesome Check Icon */
+.protocols-filters-menu .filter-check-icon {
+  font-size: 0.75rem;
+  color: var(--sub-color);
+  margin-right: 0.7em;
+  transition: all 0.125s;
+  opacity: 0.3;
+}
+
+.protocols-filters-menu .group-filter-checkbox:checked + .filter-check-icon {
+  color: var(--main-color);
+  opacity: 1;
+}
+
+.protocols-filters-menu .filter-option:hover .group-filter-checkbox:checked + .filter-check-icon {
+  color: var(--main-color);
+}
+
+/* Filter Label */
+.protocols-filters-menu .filter-label {
+  flex: 1;
+  user-select: none;
+}
+
+/* Filter Group Settings Gear Icon */
+.protocols-filters-menu .filter-group-settings {
+  opacity: 0;
+  font-size: 0.7rem;
+  color: var(--sub-color);
+  padding: 0.2rem;
+  border-radius: 0.2rem;
+  transition: all 0.2s ease;
+  transform: scale(0.9);
+  cursor: pointer;
+  margin-left: 0.5rem;
+}
+
+.protocols-filters-menu .filter-group-settings:hover {
+  color: var(--text-color);
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1);
+}
+
+.protocols-filters-menu .filter-group-option:hover .filter-group-settings {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.protocols-filters-menu .filter-group-option {
+  position: relative;
+}
+
+/* 🔧 НОВОЕ: Стили для drag&drop навигации между страницами */
+#prev-page.drag-hover,
+#next-page.drag-hover {
+  background: #ffc107 !important; /* Чистый желтый без прозрачности */
+  border-color: #ffb300 !important;
+  color: #212529 !important; /* Темный текст для контраста */
+  transform: scale(1.2) translateZ(1000px) !important; /* Поднимаем на композитный слой */
+  box-shadow: 0 0 20px #ffc107 !important; /* Одно чистое свечение */
+  transition: all 0.1s ease !important;
+  animation: pagination-pulse 0.4s ease-in-out infinite alternate !important;
+  position: relative !important;
+  z-index: 2147483647 !important; /* Максимально возможный z-index в CSS */
+  border-width: 2px !important;
+  font-weight: bold !important;
+  will-change: transform, box-shadow !important; /* Оптимизация для композитного слоя */
+}
+
+/* Иконки внутри кнопок пагинации тоже должны быть поверх */
+#prev-page.drag-hover i,
+#next-page.drag-hover i {
+  position: relative !important;
+  z-index: 2147483647 !important;
+}
+
+/* Анимация пульсации для кнопок пагинации - чистая и быстрая */
+@keyframes pagination-pulse {
+  0% { 
+    box-shadow: 0 0 15px #ffc107;
+    transform: scale(1.2) translateZ(1000px);
+    background: #ffc107;
+  }
+  100% { 
+    box-shadow: 0 0 25px #ffeb3b;
+    transform: scale(1.25) translateZ(1000px);
+    background: #ffeb3b;
+  }
+}
+
+@keyframes bounce {
+  0% { transform: translateX(-50%) translateY(0px); }
+  100% { transform: translateX(-50%) translateY(-3px); }
+} 

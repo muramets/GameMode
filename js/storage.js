@@ -261,7 +261,8 @@ class Storage {
     PROTOCOL_ORDER: 'protocolOrder',
     INNERFACE_ORDER: 'innerfaceOrder',
     STATE_ORDER: 'stateOrder',
-    INNERFACE_MIGRATION: 'innerfaceMigration'
+    INNERFACE_MIGRATION: 'innerfaceMigration',
+    PROTOCOL_GROUPS: 'protocolGroups'
   };
 
   // Initialize app data
@@ -386,6 +387,10 @@ class Storage {
     
     if (!this.get(this.KEYS.STATE_ORDER)) {
       this.set(this.KEYS.STATE_ORDER, []);
+    }
+    
+    if (!this.get(this.KEYS.PROTOCOL_GROUPS)) {
+      this.set(this.KEYS.PROTOCOL_GROUPS, []);
     }
     
     if (!this.get(this.KEYS.INNERFACE_MIGRATION)) {
@@ -1480,6 +1485,7 @@ class Storage {
       weight: protocolData.weight,
       targets: protocolData.targets || [],
       color: protocolData.color || null, // Не задаем дефолтный цвет
+      groupId: protocolData.groupId && protocolData.groupId !== '' ? protocolData.groupId : null, // 🔧 ИСПРАВЛЕНИЕ: Правильно обрабатываем groupId
       // 🔧 НОВОЕ: Добавляем timestamp создания для timestamp-based удалений
       createdAt: Date.now(),
       lastModified: Date.now()
@@ -1524,7 +1530,8 @@ class Storage {
       hover: protocolData.hover || '',
       weight: protocolData.weight,
       targets: newTargets,
-      color: protocolData.color || oldProtocol.color || null, // Сохраняем существующий или null
+      color: protocolData.color || null, // 🔧 ИСПРАВЛЕНИЕ: Правильно сбрасываем цвет в null для дефолтного
+      groupId: protocolData.groupId && protocolData.groupId !== '' ? protocolData.groupId : null, // 🔧 ИСПРАВЛЕНИЕ: Правильно обрабатываем groupId
       // 🔧 НОВОЕ: Обновляем timestamp изменения
       createdAt: oldProtocol.createdAt || Date.now(),
       lastModified: Date.now()
@@ -1633,6 +1640,74 @@ class Storage {
     this.syncWithBackend().catch(error => {
       console.warn('⚠️ Background sync after protocol deletion failed:', error);
     });
+    
+    return true;
+  }
+
+  // Protocol Groups CRUD operations
+  
+  // Get all protocol groups
+  getProtocolGroups() {
+    try {
+      const groups = this.get(this.KEYS.PROTOCOL_GROUPS);
+      return Array.isArray(groups) ? groups : [];
+    } catch (error) {
+      console.warn('Error getting protocol groups:', error);
+      return [];
+    }
+  }
+  
+  // Add or update protocol group
+  addOrUpdateProtocolGroup(groupData) {
+    const groups = this.getProtocolGroups();
+    const existingIndex = groups.findIndex(g => g.id === groupData.id);
+    
+    if (existingIndex >= 0) {
+      // Update existing group
+      groups[existingIndex] = {
+        ...groups[existingIndex],
+        ...groupData,
+        lastModified: Date.now()
+      };
+      this.set(this.KEYS.PROTOCOL_GROUPS, groups);
+      return groups[existingIndex];
+    } else {
+      // Add new group
+      const newGroup = {
+        id: groupData.id || Date.now(),
+        name: groupData.name,
+        icon: groupData.icon || '📁',
+        color: groupData.color || '#7fb3d3',
+        createdAt: Date.now(),
+        lastModified: Date.now()
+      };
+      groups.push(newGroup);
+      this.set(this.KEYS.PROTOCOL_GROUPS, groups);
+      return newGroup;
+    }
+  }
+  
+  // Get group by ID
+  getProtocolGroupById(groupId) {
+    const groups = this.getProtocolGroups();
+    return groups.find(g => g.id === groupId || g.id == groupId);
+  }
+  
+  // Delete protocol group
+  deleteProtocolGroup(groupId) {
+    const groups = this.getProtocolGroups();
+    const filteredGroups = groups.filter(g => g.id !== groupId);
+    this.set(this.KEYS.PROTOCOL_GROUPS, filteredGroups);
+    
+    // Remove group from all protocols
+    const protocols = this.getProtocols();
+    const updatedProtocols = protocols.map(protocol => {
+      if (protocol.groupId === groupId) {
+        return { ...protocol, groupId: null };
+      }
+      return protocol;
+    });
+    this.set(this.KEYS.PROTOCOLS, updatedProtocols);
     
     return true;
   }
@@ -2179,6 +2254,7 @@ class Storage {
         protocolOrder: this.get(this.KEYS.PROTOCOL_ORDER),
         innerfaceOrder: this.get(this.KEYS.INNERFACE_ORDER),
         stateOrder: this.get(this.KEYS.STATE_ORDER),
+        protocolGroups: this.get(this.KEYS.PROTOCOL_GROUPS),
         deletedCheckins: this.get('deletedCheckins') || [],
         deletedProtocols: this.get('deletedProtocols') || [],
         deletedInnerfaces: this.get('deletedInnerfaces') || [],
@@ -3571,8 +3647,15 @@ class Storage {
           console.log('Current page:', currentPage);
           
           if (currentPage) {
-            window.App.renderPage(currentPage);
-            console.log(`📄 ${currentPage} page refreshed via renderPage`);
+            // 🔧 ИСПРАВЛЕНИЕ: Для страницы протоколов используем applyProtocolGroupFilters БЕЗ сброса страницы
+            if (currentPage === 'protocols') {
+              console.log('📄 Refreshing protocols page WITHOUT resetting pagination...');
+              window.App.applyProtocolGroupFilters(false); // false = не сбрасывать страницу
+              console.log(`📄 ${currentPage} page refreshed preserving pagination`);
+            } else {
+              window.App.renderPage(currentPage);
+              console.log(`📄 ${currentPage} page refreshed via renderPage`);
+            }
             
             // Additional update for dashboard page to ensure stats are current
             if (currentPage === 'history') {
@@ -3711,7 +3794,8 @@ class Storage {
         quickActionOrder: this.get(this.KEYS.QUICK_ACTION_ORDER) || [],
         protocolOrder: this.get(this.KEYS.PROTOCOL_ORDER) || [],
         innerfaceOrder: this.get(this.KEYS.INNERFACE_ORDER) || [],
-        stateOrder: this.get(this.KEYS.STATE_ORDER) || []
+        stateOrder: this.get(this.KEYS.STATE_ORDER) || [],
+        protocolGroups: this.get(this.KEYS.PROTOCOL_GROUPS) || []
       };
       
       console.log('📤 FORCE UPLOAD DATA:', {
@@ -4600,6 +4684,7 @@ class Storage {
           protocolOrder: [],
           innerfaceOrder: [],
           stateOrder: [],
+          protocolGroups: [],
           deletedCheckins: []
         })
       });

@@ -184,10 +184,21 @@ function initMainApp() {
             customDateFrom: '',
             customDateTo: ''
         },
+        protocolGroupFilters: {
+            selectedGroups: ['all']
+        },
 
         init() {
             // Initialize data
             this.states = window.Storage.getStatesInOrder();
+            
+            // Initialize protocol group filters
+            this.protocolGroupFilters = {
+                selectedGroups: ['all']
+            };
+            
+            // Initialize filtered protocols
+            this.filteredProtocols = window.Storage.getProtocolsInOrder();
             
             // Setup navigation
             this.setupNavigation();
@@ -483,9 +494,15 @@ function initMainApp() {
                     this.setupTooltips();
                     break;
                 case 'protocols':
-                    UI.renderProtocols();
+                    // Apply protocol group filters first, then render
+                    this.applyProtocolGroupFilters();
                     DragDrop.setupProtocols();
                     this.setupTooltips();
+                    
+                    // Setup protocol group filters after rendering
+                    setTimeout(() => {
+                        this.setupProtocolGroupFilters();
+                    }, 0);
                     break;
                 case 'innerfaces':
                     UI.renderInnerfaces();
@@ -582,34 +599,8 @@ function initMainApp() {
         },
 
         filterProtocols(query) {
-            const allProtocols = window.Storage.getProtocolsInOrder();
-            const innerfaces = window.Storage.getInnerfaces();
-            
-            if (!query.trim()) {
-                this.filteredProtocols = allProtocols;
-            } else {
-                const searchTerm = query.toLowerCase();
-                this.filteredProtocols = allProtocols.filter(protocol => {
-                    // Search in protocol name
-                    if (protocol.name.toLowerCase().includes(searchTerm)) {
-                        return true;
-                    }
-                    
-                    // Search in target innerfaces
-                    const targetNames = protocol.targets.map(targetId => {
-                        const innerface = innerfaces.find(s => s.id === targetId);
-                        return innerface ? innerface.name.toLowerCase() : targetId;
-                    });
-                    
-                    return targetNames.some(name => name.includes(searchTerm));
-                });
-            }
-            
-            // Reset to first page when filtering
-            this.protocolsPage = 1;
-            UI.renderProtocols();
-            DragDrop.setupProtocols();
-            this.setupTooltips();
+            // Use applyProtocolGroupFilters which handles both search and group filters
+            this.applyProtocolGroupFilters();
         },
 
         updatePagination() {
@@ -676,6 +667,270 @@ function initMainApp() {
         filterHistory(query) {
             // Just trigger the main filter function which handles both search and filters
             this.applyHistoryFilters();
+        },
+
+        // Setup protocol group filters
+        setupProtocolGroupFilters() {
+            if (window.DEBUG_PROTOCOL_FILTERS) {
+                console.log('🔧 SETUP PROTOCOL GROUP FILTERS DEBUG');
+            }
+            this.populateProtocolGroupFilters();
+            
+            const filterCheckboxes = document.querySelectorAll('.group-filter-checkbox');
+            const protocolsFiltersIcon = document.getElementById('protocols-filters-icon');
+            
+            if (window.DEBUG_PROTOCOL_FILTERS) {
+                console.log('Found filter checkboxes:', filterCheckboxes.length);
+                console.log('Filter checkboxes:', Array.from(filterCheckboxes).map(cb => ({
+                    value: cb.dataset.value,
+                    checked: cb.checked
+                })));
+            }
+            
+            filterCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => {
+                    if (window.DEBUG_PROTOCOL_FILTERS) {
+                        console.log('📋 CHECKBOX CHANGE EVENT');
+                    }
+                    const filterValue = e.target.dataset.value;
+                    if (window.DEBUG_PROTOCOL_FILTERS) {
+                        console.log('Filter value:', filterValue);
+                        console.log('Checked:', e.target.checked);
+                    }
+                    
+                    if (e.target.checked) {
+                        if (window.DEBUG_PROTOCOL_FILTERS) {
+                            console.log('Checkbox checked - setting up filters');
+                        }
+                        // Uncheck all other checkboxes - only one group can be selected
+                        filterCheckboxes.forEach(cb => {
+                            if (cb !== e.target) {
+                                cb.checked = false;
+                            }
+                        });
+                        
+                        // Set selected group
+                        if (filterValue === 'all') {
+                            this.protocolGroupFilters.selectedGroups = ['all'];
+                        } else {
+                            this.protocolGroupFilters.selectedGroups = [filterValue];
+                        }
+                    } else {
+                        if (window.DEBUG_PROTOCOL_FILTERS) {
+                            console.log('Checkbox unchecked - reverting to all');
+                        }
+                        // If unchecked, default to "all"
+                        const allCheckbox = document.querySelector('.group-filter-checkbox[data-value="all"]');
+                        if (allCheckbox) {
+                            allCheckbox.checked = true;
+                        }
+                        this.protocolGroupFilters.selectedGroups = ['all'];
+                    }
+                    
+                    if (window.DEBUG_PROTOCOL_FILTERS) {
+                        console.log('New selectedGroups:', this.protocolGroupFilters.selectedGroups);
+                    }
+                    this.updateGroupFilterIcon();
+                    this.applyProtocolGroupFilters();
+                });
+            });
+            
+            this.updateGroupFilterIcon();
+        },
+
+        // Populate protocol group filter options
+        populateProtocolGroupFilters() {
+            if (window.DEBUG_PROTOCOL_FILTERS) {
+                console.log('🏗️ POPULATE PROTOCOL GROUP FILTERS DEBUG');
+            }
+            const container = document.getElementById('protocol-group-filter-options');
+            if (!container) {
+                if (window.DEBUG_PROTOCOL_FILTERS) {
+                    console.log('❌ Container not found: protocol-group-filter-options');
+                }
+                return;
+            }
+            if (window.DEBUG_PROTOCOL_FILTERS) {
+                console.log('✅ Container found');
+            }
+
+            const groups = window.Storage.getProtocolGroups();
+            if (window.DEBUG_PROTOCOL_FILTERS) {
+                console.log('Available groups:', groups);
+            }
+            
+            // Build filter options - only add custom groups (ungrouped is already in HTML)
+            const filterOptions = [];
+            
+            // Add custom groups
+            groups.forEach(group => {
+                // Use UI renderIcon for proper FontAwesome support with group color
+                const icon = group.icon || '📁';
+                const groupColor = group.color || '#7fb3d3';
+                let iconHtml;
+                if (window.UI) {
+                    iconHtml = window.UI.renderIcon(icon, groupColor);
+                } else {
+                    iconHtml = icon;
+                }
+                
+                filterOptions.push(`
+                    <label class="filter-option filter-group-option" data-group-id="${group.id}">
+                        <input type="checkbox" class="group-filter-checkbox" data-filter="group" data-value="${group.id}">
+                        <i class="fas fa-check filter-check-icon"></i>
+                        <span class="filter-label">${iconHtml} ${group.name}</span>
+                        <span class="filter-group-settings" data-group-id="${group.id}">
+                            <i class="fas fa-cog"></i>
+                        </span>
+                    </label>
+                `);
+            });
+            
+            container.innerHTML = filterOptions.join('');
+            if (window.DEBUG_PROTOCOL_FILTERS) {
+                console.log('Generated filter options HTML:', filterOptions.join(''));
+            }
+            
+            // Setup gear icon click handlers
+            this.setupFilterGroupSettingsHandlers();
+        },
+
+        // Setup filter group settings handlers
+        setupFilterGroupSettingsHandlers() {
+            const settingsIcons = document.querySelectorAll('.filter-group-settings');
+            
+            settingsIcons.forEach(icon => {
+                icon.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const groupId = e.currentTarget.dataset.groupId;
+                    if (groupId && Modals) {
+                        Modals.openGroupSettings(groupId);
+                    }
+                });
+            });
+        },
+
+        // Update group filter icon state
+        updateGroupFilterIcon() {
+            const protocolsFiltersIcon = document.getElementById('protocols-filters-icon');
+            if (!protocolsFiltersIcon) return;
+            
+            const hasActiveFilters = !this.protocolGroupFilters.selectedGroups.includes('all');
+            
+            if (hasActiveFilters) {
+                protocolsFiltersIcon.classList.add('active');
+            } else {
+                protocolsFiltersIcon.classList.remove('active');
+            }
+        },
+
+        // Apply protocol group filters
+        applyProtocolGroupFilters(resetPage = true) {
+            // Debug logging (can be enabled via window.DEBUG_PROTOCOL_FILTERS = true)
+            if (window.DEBUG_PROTOCOL_FILTERS) {
+                console.log('🔍 APPLY PROTOCOL GROUP FILTERS DEBUG');
+                console.log('Selected groups:', this.protocolGroupFilters.selectedGroups);
+                console.log('Reset page:', resetPage);
+            }
+            
+            const searchInput = document.getElementById('protocol-search');
+            const searchQuery = searchInput ? searchInput.value : '';
+            
+            if (window.DEBUG_PROTOCOL_FILTERS) {
+                console.log('Search query:', searchQuery);
+            }
+            
+            // Start with all protocols
+            const allProtocols = window.Storage.getProtocolsInOrder();
+            const innerfaces = window.Storage.getInnerfaces();
+            
+            if (window.DEBUG_PROTOCOL_FILTERS) {
+                console.log('All protocols:', allProtocols.map(p => ({
+                    id: p.id, 
+                    name: p.name.split('. ')[0], 
+                    groupId: p.groupId
+                })));
+            }
+            
+            let filteredProtocols = allProtocols;
+            
+            // Apply group filters
+            if (!this.protocolGroupFilters.selectedGroups.includes('all')) {
+                if (window.DEBUG_PROTOCOL_FILTERS) {
+                    console.log('Applying group filters...');
+                }
+                filteredProtocols = allProtocols.filter(protocol => {
+                    // Check if ungrouped is selected and protocol has no groupId
+                    if (this.protocolGroupFilters.selectedGroups.includes('ungrouped') && !protocol.groupId) {
+                        if (window.DEBUG_PROTOCOL_FILTERS) {
+                            console.log(`Protocol ${protocol.name} matches ungrouped filter`);
+                        }
+                        return true;
+                    }
+                    
+                    // Check if protocol's groupId matches any selected group
+                    if (protocol.groupId) {
+                        const matches = this.protocolGroupFilters.selectedGroups.includes(protocol.groupId.toString());
+                        if (window.DEBUG_PROTOCOL_FILTERS) {
+                            console.log(`Protocol ${protocol.name} (groupId: ${protocol.groupId}) matches: ${matches}`);
+                        }
+                        return matches;
+                    }
+                    
+                    if (window.DEBUG_PROTOCOL_FILTERS) {
+                        console.log(`Protocol ${protocol.name} filtered out (no groupId, ungrouped not selected)`);
+                    }
+                    return false;
+                });
+            } else {
+                if (window.DEBUG_PROTOCOL_FILTERS) {
+                    console.log('Showing all protocols (no group filter)');
+                }
+            }
+            
+            // Apply search filter
+            if (searchQuery.trim()) {
+                if (window.DEBUG_PROTOCOL_FILTERS) {
+                    console.log('Applying search filter...');
+                }
+                const searchTerm = searchQuery.toLowerCase();
+                filteredProtocols = filteredProtocols.filter(protocol => {
+                    // Search in protocol name
+                    if (protocol.name.toLowerCase().includes(searchTerm)) {
+                        return true;
+                    }
+                    
+                    // Search in target innerfaces
+                    const targetNames = protocol.targets.map(targetId => {
+                        const innerface = innerfaces.find(s => s.id === targetId);
+                        return innerface ? innerface.name.toLowerCase() : targetId;
+                    });
+                    
+                    return targetNames.some(name => name.includes(searchTerm));
+                });
+            }
+            
+            if (window.DEBUG_PROTOCOL_FILTERS) {
+                console.log('Final filtered protocols:', filteredProtocols.map(p => ({
+                    id: p.id, 
+                    name: p.name.split('. ')[0], 
+                    groupId: p.groupId
+                })));
+            }
+            
+            this.filteredProtocols = filteredProtocols;
+            
+            // 🔧 ИСПРАВЛЕНИЕ: Сбрасываем страницу только при фильтрации, не при reordering
+            if (resetPage) {
+                this.protocolsPage = 1; // Reset to first page
+            }
+            
+            UI.renderProtocols();
+            DragDrop.setupProtocols();
+            this.setupTooltips();
+            this.updatePagination(); // 🔧 ИСПРАВЛЕНИЕ: Обновляем пагинацию после фильтрации
         },
 
         // Setup history filters
@@ -1180,11 +1435,12 @@ function initMainApp() {
             const protocols = window.Storage.getProtocols();
             protocolContainer.innerHTML = protocols.map(protocol => {
                 const protocolName = protocol.name.split('. ')[0]; // Get main name part
+                const finalColor = UI.getProtocolColor(protocol);
                 return `
                     <label class="filter-option">
                         <input type="checkbox" class="filter-checkbox" data-filter="protocol" data-value="${protocol.id}">
                         <i class="fas fa-check filter-check-icon"></i>
-                        <span class="filter-label">${UI.renderIcon(protocol.icon)} ${protocolName}</span>
+                        <span class="filter-label">${UI.renderIcon(protocol.icon, finalColor)} ${protocolName}</span>
                     </label>
                 `;
             }).join('');
@@ -1489,7 +1745,7 @@ function initMainApp() {
                     isProgramExpanded = expanded;
                     if (expanded) {
                         navExpandBtn.classList.add('expanded');
-                        navHistory.classList.add('program-expanded');
+                        navHistory.classList.add('expanded');
                         navHistory.classList.remove('expanded');
                         navInnerfacesGroup.classList.add('expanded');
                     } else {

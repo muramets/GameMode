@@ -341,6 +341,7 @@ const Modals = {
       document.body.style.overflow = '';
       this.currentProtocolId = null;
       this.resetProtocolTargets();
+      this.resetProtocolGroups();
       form.reset();
       
       // Reset modal to "Add" mode
@@ -400,7 +401,8 @@ const Modals = {
         hover: formData.get('protocol-hover'),
         weight: parseFloat(formData.get('protocol-weight')),
         targets: selectedInnerfaceIds,
-        color: formData.get('protocol-color') || null // НЕ устанавливаем дефолтный цвет
+        color: formData.get('protocol-color') || null, // НЕ устанавливаем дефолтный цвет
+        groupId: this.getSelectedProtocolGroup()
       };
       
       // 🐛 DEBUG: Detailed logging for production debugging
@@ -449,6 +451,7 @@ const Modals = {
             UI.renderProtocols();
             DragDrop.setupProtocols();
             App.setupTooltips();
+            App.setupProtocolGroupFilters();
           }
           
           // Update history in real-time if we're on the history page or need to refresh it
@@ -484,6 +487,7 @@ const Modals = {
             UI.renderProtocols();
             DragDrop.setupProtocols();
             App.setupTooltips();
+            App.setupProtocolGroupFilters();
           }
           
           // Update history in real-time if we're on the history page or need to refresh it
@@ -644,9 +648,15 @@ const Modals = {
       this.resetProtocolTargets();
       this.populateProtocolInnerfaces();
       
-      // 🔧 ИСПРАВЛЕНИЕ: Сбрасываем цвет только если это новый элемент
+      // Only populate groups if we're not editing (editProtocol will handle it)
+      if (!this.currentProtocolId) {
+        this.populateProtocolGroups();
+      }
+      
+      // 🔧 ИСПРАВЛЕНИЕ: Сбрасываем цвет и группы только если это новый элемент
       if (!this.currentProtocolId) {
         this.resetColorPicker('protocol');
+        this.resetProtocolGroups();
         
         // Reset modal for create mode
         document.getElementById('protocol-modal-title').textContent = 'Add New Protocol';
@@ -708,12 +718,21 @@ const Modals = {
     // Open modal first
     this.openProtocolModal();
     
-    // 🔧 НОВОЕ: Загружаем выбранные innerfaces в grid после открытия модалки
+    // 🔧 ИСПРАВЛЕНИЕ: Загружаем группы и устанавливаем выбранную группу после загрузки
     setTimeout(() => {
+      // First populate groups
+      this.populateProtocolGroups();
+      
+      // Then set selected group
+      if (protocol.groupId) {
+        this.setSelectedProtocolGroup(protocol.groupId);
+      }
+      
+      // Finally set selected innerfaces
       if (protocol.targets && protocol.targets.length > 0) {
         this.setSelectedProtocolInnerfaces(protocol.targets);
       }
-    }, 100);
+    }, 150);
   },
 
   deleteCurrentProtocol(protocolId) {
@@ -1844,6 +1863,313 @@ const Modals = {
     });
     
     // 🔧 ИСПРАВЛЕНИЕ: НЕ сбрасываем ID здесь, это делается при открытии новой модалки
+  },
+
+  // Protocol Group Functions
+  populateProtocolGroups() {
+    const groupsList = document.getElementById('protocol-groups-badges-list');
+    const newGroupBadge = document.getElementById('new-group-badge');
+    
+    if (!groupsList || !newGroupBadge) return;
+    
+    // Clear existing groups
+    groupsList.innerHTML = '';
+    
+    // Add existing groups
+    const groups = window.Storage.getProtocolGroups();
+    groups.forEach(group => {
+      const badge = document.createElement('div');
+      badge.className = 'protocol-group-badge';
+      badge.dataset.groupId = group.id;
+      
+      // Apply group color to text and selected state
+      const groupColor = group.color || '#7fb3d3';
+      badge.style.setProperty('--group-color', groupColor);
+      
+      // Use UI renderIcon for proper FontAwesome support
+      // For awesome icons, use default text color; for emoji, use group color
+      const icon = group.icon || '📁';
+      let iconHtml;
+      if (window.UI && icon.startsWith('fas ')) {
+        // FontAwesome icon - use default text color
+        iconHtml = window.UI.renderIcon(icon);
+      } else if (window.UI) {
+        // Emoji - use group color  
+        iconHtml = window.UI.renderIcon(icon, groupColor);
+      } else {
+        // Fallback
+        iconHtml = icon;
+      }
+      
+      badge.innerHTML = `
+        <span class="protocol-group-icon">${iconHtml}</span>
+        <span class="protocol-group-name">${group.name}</span>
+        <span class="protocol-group-settings">
+          <i class="fas fa-cog"></i>
+        </span>
+      `;
+      
+      // Add click handler for settings icon
+      const settingsIcon = badge.querySelector('.protocol-group-settings');
+      settingsIcon.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.openGroupSettings(group.id);
+      });
+      
+      groupsList.appendChild(badge);
+    });
+    
+    // Setup click handlers for group selection
+    this.setupGroupSelectionHandlers();
+    
+    // Setup "New Group" click handler (only if not already set)
+    if (!newGroupBadge.dataset.handlerSet) {
+      newGroupBadge.addEventListener('click', () => {
+        this.openGroupSettings(null); // null means create new group
+      });
+      newGroupBadge.dataset.handlerSet = 'true';
+    }
+    
+    // Setup group settings modal (only if not already set)
+    if (!this.groupSettingsHandlersSet) {
+      this.setupGroupSettingsHandlers();
+      this.groupSettingsHandlersSet = true;
+    }
+  },
+
+  setupGroupSelectionHandlers() {
+    const groupBadges = document.querySelectorAll('.protocol-group-badge:not(.new-group-badge)');
+    
+    groupBadges.forEach(badge => {
+      // Remove existing handler
+      badge.removeEventListener('click', badge._groupClickHandler);
+      
+      // Add new handler
+      badge._groupClickHandler = (e) => {
+        // Don't handle settings icon clicks
+        if (e.target.closest('.protocol-group-settings')) return;
+        
+        // Check if this badge is already selected
+        const isCurrentlySelected = badge.classList.contains('selected');
+        
+        // Clear all selections first
+        document.querySelectorAll('.protocol-group-badge').forEach(b => {
+          b.classList.remove('selected');
+        });
+        
+        // If it wasn't selected, select it now (toggle behavior)
+        if (!isCurrentlySelected) {
+          badge.classList.add('selected');
+        }
+        // If it was selected, leave it unselected (ungrouped state)
+      };
+      
+      badge.addEventListener('click', badge._groupClickHandler);
+    });
+  },
+
+  openGroupSettings(groupId) {
+    const modal = document.getElementById('group-settings-modal');
+    const title = document.getElementById('group-settings-title');
+    const nameInput = document.getElementById('group-settings-name');
+    const iconInput = document.getElementById('group-settings-icon');
+    const deleteBtn = document.getElementById('delete-group-settings');
+    
+    if (!modal) return;
+    
+    // Store current group ID
+    this.currentGroupId = groupId;
+    
+    if (groupId) {
+      // Edit existing group
+      const group = window.Storage.getProtocolGroupById(groupId);
+      if (!group) return;
+      
+      title.textContent = 'Edit Group';
+      nameInput.value = group.name;
+      iconInput.value = group.icon || '📁';
+      this.selectedGroupColor = group.color;
+      deleteBtn.style.display = 'block';
+      
+      // Select the group's color
+      const colorOptions = document.querySelectorAll('.group-color-option');
+      colorOptions.forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.color === group.color);
+      });
+    } else {
+      // Create new group
+      title.textContent = 'Create New Group';
+      nameInput.value = '';
+      iconInput.value = '';
+      this.selectedGroupColor = '#7fb3d3';
+      deleteBtn.style.display = 'none';
+      
+      // Select default color
+      const colorOptions = document.querySelectorAll('.group-color-option');
+      colorOptions.forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.color === '#7fb3d3');
+      });
+    }
+    
+    // Show modal
+    modal.style.display = 'flex';
+    nameInput.focus();
+  },
+
+  setupGroupSettingsHandlers() {
+    const modal = document.getElementById('group-settings-modal');
+    const cancelBtn = document.getElementById('cancel-group-settings');
+    const saveBtn = document.getElementById('save-group-settings');
+    const deleteBtn = document.getElementById('delete-group-settings');
+    const colorOptions = document.querySelectorAll('.group-color-option');
+    
+    if (!modal || !cancelBtn || !saveBtn || !deleteBtn) return;
+    
+    // Initialize selectedColor property
+    this.selectedGroupColor = '#7fb3d3';
+    
+    // Color selection
+    colorOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        colorOptions.forEach(opt => opt.classList.remove('selected'));
+        option.classList.add('selected');
+        this.selectedGroupColor = option.dataset.color;
+      });
+    });
+    
+    // Cancel button
+    cancelBtn.addEventListener('click', () => {
+      modal.style.display = 'none';
+      this.currentGroupId = null;
+    });
+    
+    // Save button
+    saveBtn.addEventListener('click', () => {
+      const groupName = document.getElementById('group-settings-name').value.trim();
+      const groupIcon = document.getElementById('group-settings-icon').value.trim();
+      
+      if (!groupName) {
+        App.showToast('Please enter a group name', 'error');
+        return;
+      }
+      
+      // Use default FontAwesome icon if empty or use user's input
+      const finalIcon = groupIcon || 'fas fa-folder';
+      
+      const groupData = {
+        name: groupName,
+        icon: finalIcon,
+        color: this.selectedGroupColor || '#7fb3d3'
+      };
+      
+      if (this.currentGroupId) {
+        // Update existing group
+        groupData.id = this.currentGroupId;
+      }
+      
+      const savedGroup = window.Storage.addOrUpdateProtocolGroup(groupData);
+      
+      if (savedGroup) {
+        const message = this.currentGroupId ? 'Group updated successfully!' : 'Group created successfully!';
+        App.showToast(message, 'success');
+        this.populateProtocolGroups();
+        
+        // Update protocol group filters
+        if (App && App.populateProtocolGroupFilters) {
+          App.populateProtocolGroupFilters();
+        }
+        
+        modal.style.display = 'none';
+        this.currentGroupId = null;
+        
+        // Select the saved group
+        setTimeout(() => {
+          const groupElement = document.querySelector(`[data-group-id="${savedGroup.id}"]`);
+          if (groupElement) {
+            groupElement.click();
+          }
+        }, 100);
+      } else {
+        App.showToast('Failed to save group', 'error');
+      }
+    });
+    
+    // Delete button
+    deleteBtn.addEventListener('click', () => {
+      if (!this.currentGroupId) return;
+      
+      if (confirm('Are you sure you want to delete this group? Protocols in this group will become ungrouped.')) {
+        const success = window.Storage.deleteProtocolGroup(this.currentGroupId);
+        
+        if (success) {
+          App.showToast('Group deleted successfully!', 'success');
+          this.populateProtocolGroups();
+          
+          // Update protocol group filters
+          if (App && App.populateProtocolGroupFilters) {
+            App.populateProtocolGroupFilters();
+          }
+          
+          modal.style.display = 'none';
+          this.currentGroupId = null;
+        } else {
+          App.showToast('Failed to delete group', 'error');
+        }
+      }
+    });
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.style.display = 'none';
+        this.currentGroupId = null;
+      }
+    });
+  },
+
+  getSelectedProtocolGroup() {
+    const selectedGroup = document.querySelector('.protocol-group-badge.selected');
+    
+    if (!selectedGroup) {
+      // No group selected means ungrouped
+      return null;
+    }
+    
+    // Return the selected group ID
+    return selectedGroup.dataset.groupId || null;
+  },
+
+  setSelectedProtocolGroup(groupId) {
+    // Clear all selections
+    document.querySelectorAll('.protocol-group-badge').forEach(badge => {
+      badge.classList.remove('selected');
+    });
+    
+    // Select the appropriate group
+    if (groupId) {
+      // Select specific group
+      const targetElement = document.querySelector(`.protocol-group-badge[data-group-id="${groupId}"]`);
+      if (targetElement) {
+        targetElement.classList.add('selected');
+      }
+    }
+    // If no groupId, nothing is selected (ungrouped state)
+  },
+
+  resetProtocolGroups() {
+    // Clear all selections
+    document.querySelectorAll('.protocol-group-badge').forEach(badge => {
+      badge.classList.remove('selected');
+    });
+    
+    // Hide group settings modal
+    const groupSettingsModal = document.getElementById('group-settings-modal');
+    if (groupSettingsModal) {
+      groupSettingsModal.style.display = 'none';
+    }
+    
+    // Reset current group ID
+    this.currentGroupId = null;
   }
 }; 
 

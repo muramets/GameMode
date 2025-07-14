@@ -153,30 +153,63 @@ function debugProtocolColors() {
   console.log('🎨 PROTOCOL COLORS DEBUG REPORT:');
   
   const protocols = window.Storage.getProtocols();
+  const groups = window.Storage.getProtocolGroups();
   
   console.log(`📊 Total protocols: ${protocols.length}`);
+  console.log(`📊 Total groups: ${groups.length}`);
+  
+  // 🔧 НОВОЕ: Детальная информация о группах
+  console.log('\n📋 ALL GROUPS:');
+  groups.forEach(group => {
+    console.log(`  Group ${group.id} (${typeof group.id}): ${group.name} - ${group.color} (${group.icon})`);
+  });
   
   const protocolsWithColors = protocols.filter(p => p.color);
   const protocolsWithoutColors = protocols.filter(p => !p.color);
+  const protocolsWithGroups = protocols.filter(p => p.groupId);
   
-  console.log(`🎨 Protocols with colors: ${protocolsWithColors.length}`);
-  console.log(`⚪ Protocols without colors: ${protocolsWithoutColors.length}`);
+  console.log(`🎨 Protocols with individual colors: ${protocolsWithColors.length}`);
+  console.log(`⚪ Protocols without individual colors: ${protocolsWithoutColors.length}`);
+  console.log(`🏷️ Protocols with groups: ${protocolsWithGroups.length}`);
   
-  console.log('\n🎨 PROTOCOLS WITH COLORS:');
-  protocolsWithColors.forEach(protocol => {
-    console.log(`  ${protocol.id}: ${protocol.name.split('. ')[0]} - ${protocol.color} (${protocol.icon})`);
+  // 🔧 НОВОЕ: Детальная информация о протоколах с группами
+  console.log('\n🏷️ PROTOCOLS WITH GROUPS:');
+  protocolsWithGroups.forEach(protocol => {
+    console.log(`  Protocol ${protocol.id}: ${protocol.name.split('. ')[0]} - groupId: ${protocol.groupId} (${typeof protocol.groupId})`);
+    const group = window.Storage.getProtocolGroupById(protocol.groupId);
+    console.log(`    Found group: ${group ? group.name : 'NOT FOUND'}`);
   });
   
-  console.log('\n⚪ PROTOCOLS WITHOUT COLORS:');
+  console.log('\n🎨 PROTOCOLS WITH INDIVIDUAL COLORS:');
+  protocolsWithColors.forEach(protocol => {
+    const group = protocol.groupId ? groups.find(g => g.id === protocol.groupId || g.id == protocol.groupId) : null;
+    const finalColor = window.UI.getProtocolColor(protocol);
+    console.log(`  ${protocol.id}: ${protocol.name.split('. ')[0]} - individual: ${protocol.color}, group: ${group?.name || 'none'} (${group?.color || 'none'}), final: ${finalColor}`);
+    
+    // 🔧 НОВОЕ: Проверка типов для группы
+    if (protocol.groupId) {
+      console.log(`    groupId: ${protocol.groupId} (${typeof protocol.groupId}), group lookup result:`, group);
+    }
+  });
+  
+  console.log('\n⚪ PROTOCOLS WITHOUT INDIVIDUAL COLORS:');
   protocolsWithoutColors.forEach(protocol => {
-    console.log(`  ${protocol.id}: ${protocol.name.split('. ')[0]} - no color (${protocol.icon})`);
+    const group = protocol.groupId ? groups.find(g => g.id === protocol.groupId || g.id == protocol.groupId) : null;
+    const finalColor = window.UI.getProtocolColor(protocol);
+    console.log(`  ${protocol.id}: ${protocol.name.split('. ')[0]} - individual: none, group: ${group?.name || 'none'} (${group?.color || 'none'}), final: ${finalColor}`);
+    
+    // 🔧 НОВОЕ: Проверка типов для группы
+    if (protocol.groupId) {
+      console.log(`    groupId: ${protocol.groupId} (${typeof protocol.groupId}), group lookup result:`, group);
+    }
   });
   
   // Test renderIcon function
   console.log('\n🧪 TESTING RENDER ICON FUNCTION:');
-  protocolsWithColors.slice(0, 3).forEach(protocol => {
-    const result = window.UI.renderIcon(protocol.icon, protocol.color);
-    console.log(`  Protocol ${protocol.id} (${protocol.icon}) with color ${protocol.color}:`);
+  protocols.slice(0, 5).forEach(protocol => {
+    const finalColor = window.UI.getProtocolColor(protocol);
+    const result = window.UI.renderIcon(protocol.icon, finalColor);
+    console.log(`  Protocol ${protocol.id} (${protocol.icon}) with final color ${finalColor}:`);
     console.log(`  Result: ${result}`);
   });
   
@@ -184,8 +217,10 @@ function debugProtocolColors() {
     total: protocols.length,
     withColors: protocolsWithColors.length,
     withoutColors: protocolsWithoutColors.length,
+    withGroups: protocolsWithGroups.length,
     protocolsWithColors,
-    protocolsWithoutColors
+    protocolsWithoutColors,
+    protocolsWithGroups
   };
 }
 
@@ -252,6 +287,32 @@ function forceRefreshProtocols() {
   }
 }
 
+function testProtocolFilters() {
+  console.log('🧪 TESTING PROTOCOL FILTERS');
+  
+  // Enable filter debugging
+  window.DEBUG_PROTOCOL_FILTERS = true;
+  console.log('✅ Filter debugging enabled');
+  
+  // Check current filter state
+  if (typeof App !== 'undefined' && App.protocolGroupFilters) {
+    console.log('Current filter state:', App.protocolGroupFilters);
+  }
+  
+  // Check if we're on protocols page
+  if (typeof App !== 'undefined' && App.currentPage === 'protocols') {
+    console.log('✅ Already on protocols page, ready to test filters');
+  } else {
+    console.log('🔄 Navigating to protocols page...');
+    if (typeof App !== 'undefined' && App.navigateTo) {
+      App.navigateTo('protocols');
+    }
+  }
+  
+  console.log('💡 Now try clicking on group filters to see debug output');
+  console.log('💡 Use disableDebugFilters() to stop debug output');
+}
+
 console.log('🧪 CLEAR ALL DEBUG: Functions available:');
 console.log('1. clearAllDataCompletely() - Full reset');
 console.log('2. clearAllHistoryOnly() - Clear history only');
@@ -265,6 +326,7 @@ console.log('1. debugProtocolColors() - Check protocol color data');
 console.log('2. debugInnerfaceColors() - Check innerface color data');
 console.log('3. testColorRendering() - Test color rendering with sample data');
 console.log('4. forceRefreshProtocols() - Force refresh protocol display');
+console.log('5. testProtocolFilters() - Test protocol group filters with debug output');
 console.log('💡 Use these functions in console to fix issues and debug color issues!');
 
 // 🔧 DEBUG CONTROL FUNCTIONS
@@ -290,9 +352,21 @@ function disableDebugModals() {
   console.log('❌ Modals Debug logging DISABLED');
 }
 
+function enableDebugFilters() {
+  window.DEBUG_PROTOCOL_FILTERS = true;
+  console.log('✅ Protocol Filter Debug logging ENABLED');
+  console.log('🔧 Use protocol group filters to see debug output');
+}
+
+function disableDebugFilters() {
+  window.DEBUG_PROTOCOL_FILTERS = false;
+  console.log('❌ Protocol Filter Debug logging DISABLED');
+}
+
 function enableAllDebug() {
   window.DEBUG_UI = true;
   window.DEBUG_MODALS = true;
+  window.DEBUG_PROTOCOL_FILTERS = true;
   console.log('✅ ALL Debug logging ENABLED');
   console.log('🔧 Restart operations to see debug output');
 }
@@ -300,6 +374,7 @@ function enableAllDebug() {
 function disableAllDebug() {
   window.DEBUG_UI = false;
   window.DEBUG_MODALS = false;
+  window.DEBUG_PROTOCOL_FILTERS = false;
   console.log('❌ ALL Debug logging DISABLED');
 }
 
@@ -308,6 +383,8 @@ window.enableDebugUI = enableDebugUI;
 window.disableDebugUI = disableDebugUI;
 window.enableDebugModals = enableDebugModals;
 window.disableDebugModals = disableDebugModals;
+window.enableDebugFilters = enableDebugFilters;
+window.disableDebugFilters = disableDebugFilters;
 window.enableAllDebug = enableAllDebug;
 window.disableAllDebug = disableAllDebug;
 window.fixProtocolDeletionIssue = fixProtocolDeletionIssue;
@@ -317,10 +394,12 @@ window.debugProtocolColors = debugProtocolColors;
 window.debugInnerfaceColors = debugInnerfaceColors;
 window.testColorRendering = testColorRendering;
 window.forceRefreshProtocols = forceRefreshProtocols;
+window.testProtocolFilters = testProtocolFilters;
 
 console.log('🔧 DEBUG CONTROL: Functions available:');
 console.log('- enableDebugUI() / disableDebugUI() - UI debug logs');
 console.log('- enableDebugModals() / disableDebugModals() - Modal debug logs');
+console.log('- enableDebugFilters() / disableDebugFilters() - Protocol filter debug logs');
 console.log('- enableAllDebug() / disableAllDebug() - All debug logs'); 
 console.log('🎨 COLOR DEBUG: All functions now globally available in console!');
-console.log('💡 Try: disableAllDebug() or debugProtocolColors()'); 
+console.log('💡 Try: disableAllDebug(), debugProtocolColors(), or testProtocolFilters()'); 

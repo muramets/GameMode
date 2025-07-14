@@ -1,6 +1,17 @@
 // ===== dragdrop.js - Drag & Drop Functionality =====
 
 const DragDrop = {
+  // Initialize pagination timer
+  paginationTimer: null,
+  
+  // 🔧 НОВОЕ: Состояние для cross-page drag операций
+  crossPageDrag: {
+    isActive: false,
+    protocolId: null,
+    protocol: null, // Объект протокола
+    originalGlobalIndex: null // Исходная позиция в глобальном списке
+  },
+  
   /**
    * Create a semi-transparent copy of the dragged element for custom drag image
    * @param {HTMLElement} element - The element to clone
@@ -99,10 +110,28 @@ const DragDrop = {
       e.dataTransfer.setDragImage(dragImage, dragImage.offsetWidth / 2, dragImage.offsetHeight / 2);
     });
     
-    element.addEventListener('dragend', () => {
+    element.addEventListener('dragend', (e) => {
+      // Remove dragging class from the element
       element.classList.remove('dragging');
+      
       // Remove all drag-over classes from container elements
       document.querySelectorAll(containerSelector).forEach(el => el.classList.remove('drag-over'));
+      // Clear pagination timer on dragend
+      if (this.paginationTimer) {
+        clearTimeout(this.paginationTimer);
+        this.paginationTimer = null;
+      }
+      
+      // Clear drag-hover classes from pagination buttons
+      document.querySelectorAll('.pagination-btn').forEach(btn => {
+        btn.classList.remove('drag-hover');
+      });
+      
+      // 🔧 НОВОЕ: Очищаем cross-page drag состояние при обычном завершении
+      if (this.crossPageDrag.isActive && !e.target.classList.contains('cross-page-ghost')) {
+        // Если это не ghost элемент, но cross-page активен, значит операция была отменена
+        this.clearCrossPageDrag();
+      }
     });
     
     element.addEventListener('dragover', (e) => {
@@ -135,7 +164,10 @@ const DragDrop = {
   },
 
   setupProtocols() {
+    console.log('🔧 DragDrop.setupProtocols() called');
+    
     const protocolRows = document.querySelectorAll('.protocol-row');
+    console.log(`🔧 Found ${protocolRows.length} protocol rows`);
     
     protocolRows.forEach((row) => {
       this.setupDragHandlers(
@@ -145,6 +177,15 @@ const DragDrop = {
         (draggedId, targetId) => this.reorderProtocols(parseInt(draggedId), parseInt(targetId))
       );
     });
+    
+    // 🔧 НОВОЕ: Настраиваем drag&drop навигацию между страницами
+    console.log('🔧 About to call setupPaginationDragNavigation()');
+    try {
+      this.setupPaginationDragNavigation();
+      console.log('🔧 setupPaginationDragNavigation() completed successfully');
+    } catch (error) {
+      console.error('🔧 Error in setupPaginationDragNavigation():', error);
+    }
   },
 
   setupInnerfaces() {
@@ -269,9 +310,8 @@ const DragDrop = {
       (order) => window.Storage.setProtocolOrder(order),
       () => {
         App.filteredProtocols = window.Storage.getProtocolsInOrder();
-        UI.renderProtocols();
-        DragDrop.setupProtocols();
-        App.setupTooltips();
+        // 🔧 ИСПРАВЛЕНИЕ: Применяем фильтры БЕЗ сброса страницы
+        App.applyProtocolGroupFilters(false);
       },
       'protocol',
       'Protocol order updated'
@@ -390,5 +430,329 @@ const DragDrop = {
       
       App.showToast('Quick Actions order updated', 'success');
     }
+  },
+
+  // 🔧 НОВОЕ: Настройка навигации между страницами во время drag&drop
+  setupPaginationDragNavigation() {
+    console.log('🔧 Setting up pagination drag navigation...');
+    
+    // Проверяем, на какой странице мы находимся
+    const currentPage = document.getElementById('current-page');
+    console.log('🔧 Current page element:', currentPage);
+    console.log('🔧 Current page content:', currentPage ? currentPage.textContent : 'not found');
+    
+    const prevBtn = document.getElementById('prev-page');
+    const nextBtn = document.getElementById('next-page');
+    
+    console.log('🔧 Found pagination buttons:', { 
+      prevBtn: !!prevBtn, 
+      nextBtn: !!nextBtn,
+      prevDisabled: prevBtn?.disabled,
+      nextDisabled: nextBtn?.disabled
+    });
+    
+    // Дополнительная проверка: ищем все элементы с ID, содержащим 'page'
+    const allPageElements = document.querySelectorAll('[id*="page"]');
+    console.log('🔧 All elements with "page" in ID:', Array.from(allPageElements).map(el => el.id));
+    
+    // Проверяем, есть ли элементы пагинации вообще
+    const protocolsContainer = document.querySelector('.protocols-container, #protocols-container, .protocols, #protocols');
+    console.log('🔧 Protocols container found:', !!protocolsContainer);
+    
+    if (!prevBtn && !nextBtn) {
+      console.log('🔧 No pagination buttons found, skipping setup');
+      return;
+    }
+    
+    // Очищаем предыдущие обработчики, если они есть
+    if (prevBtn) {
+      // Удаляем старые обработчики, если они существуют
+      if (prevBtn._dragEnterHandler) {
+        prevBtn.removeEventListener('dragenter', prevBtn._dragEnterHandler);
+      }
+      if (prevBtn._dragLeaveHandler) {
+        prevBtn.removeEventListener('dragleave', prevBtn._dragLeaveHandler);
+      }
+      if (prevBtn._dragOverHandler) {
+        prevBtn.removeEventListener('dragover', prevBtn._dragOverHandler);
+      }
+    }
+    
+    if (nextBtn) {
+      // Удаляем старые обработчики, если они существуют
+      if (nextBtn._dragEnterHandler) {
+        nextBtn.removeEventListener('dragenter', nextBtn._dragEnterHandler);
+      }
+      if (nextBtn._dragLeaveHandler) {
+        nextBtn.removeEventListener('dragleave', nextBtn._dragLeaveHandler);
+      }
+      if (nextBtn._dragOverHandler) {
+        nextBtn.removeEventListener('dragover', nextBtn._dragOverHandler);
+      }
+    }
+
+    // Добавляем новые обработчики (даже для disabled кнопок)
+    if (prevBtn) {
+      console.log('🔧 Adding drag handlers to prev button (disabled:', prevBtn.disabled, ')');
+      
+      // Создаем обработчики и сохраняем их для последующего удаления
+      prevBtn._dragEnterHandler = (e) => this.handlePaginationDragEnter(e, 'prev');
+      prevBtn._dragLeaveHandler = (e) => this.handlePaginationDragLeave(e);
+      prevBtn._dragOverHandler = (e) => this.handlePaginationDragOver(e);
+      
+      prevBtn.addEventListener('dragenter', prevBtn._dragEnterHandler);
+      prevBtn.addEventListener('dragleave', prevBtn._dragLeaveHandler);
+      prevBtn.addEventListener('dragover', prevBtn._dragOverHandler);
+    }
+    
+    if (nextBtn) {
+      console.log('🔧 Adding drag handlers to next button (disabled:', nextBtn.disabled, ')');
+      
+      // Создаем обработчики и сохраняем их для последующего удаления
+      nextBtn._dragEnterHandler = (e) => this.handlePaginationDragEnter(e, 'next');
+      nextBtn._dragLeaveHandler = (e) => this.handlePaginationDragLeave(e);
+      nextBtn._dragOverHandler = (e) => this.handlePaginationDragOver(e);
+      
+      nextBtn.addEventListener('dragenter', nextBtn._dragEnterHandler);
+      nextBtn.addEventListener('dragleave', nextBtn._dragLeaveHandler);
+      nextBtn.addEventListener('dragover', nextBtn._dragOverHandler);
+    }
+  },
+
+  // Обработчик dragenter для кнопок пагинации
+  handlePaginationDragEnter(e, direction) {
+    console.log('🔧 Pagination drag enter:', direction, e.target);
+    e.preventDefault();
+    
+    // Проверяем, что идет drag operation с протоколом
+    const draggingProtocol = document.querySelector('.protocol-row.dragging');
+    console.log('🔧 Dragging protocol found:', !!draggingProtocol);
+    
+    if (!draggingProtocol) {
+      return;
+    }
+    
+    console.log('🔧 Adding drag-hover class to button');
+    e.target.classList.add('drag-hover');
+    
+    // Устанавливаем таймер для переключения страницы только если его еще нет
+    if (this.paginationTimer) {
+      console.log('🔧 Timer already exists, clearing it');
+      clearTimeout(this.paginationTimer);
+    }
+    
+    console.log('🔧 Setting pagination timer for direction:', direction);
+    this.paginationTimer = setTimeout(() => {
+      console.log('🔧 Timer fired! Direction:', direction, 'Current page:', App.protocolsPage);
+      
+      // Проверяем, что протокол все еще перетаскивается
+      if (!document.querySelector('.protocol-row.dragging')) {
+        console.log('🔧 No dragging protocol found, aborting navigation');
+        return;
+      }
+      
+      // 🔧 НОВОЕ: Сохраняем состояние drag операции
+      this.saveCrossPageDragState(draggingProtocol);
+      
+      const totalPages = Math.ceil(App.filteredProtocols.length / App.protocolsPerPage);
+      console.log('🔧 Page check:', { currentPage: App.protocolsPage, totalPages, direction });
+      
+      // Дополнительная проверка: не переключаемся на ту же страницу
+      let shouldNavigate = false;
+      let newPage = App.protocolsPage;
+      
+      if (direction === 'prev' && App.protocolsPage > 1) {
+        newPage = App.protocolsPage - 1;
+        shouldNavigate = true;
+      } else if (direction === 'next' && App.protocolsPage < totalPages) {
+        newPage = App.protocolsPage + 1;
+        shouldNavigate = true;
+      }
+      
+      if (shouldNavigate) {
+        console.log(`🔄 Moving to ${direction === 'prev' ? 'previous' : 'next'} page (${newPage})...`);
+        App.protocolsPage = newPage;
+        UI.renderProtocols();
+        DragDrop.setupProtocols();
+        
+        // 🔧 НОВОЕ: Восстанавливаем drag состояние на новой странице
+        setTimeout(() => {
+          this.restoreCrossPageDragState();
+        }, 100);
+        
+        App.setupTooltips();
+        App.updatePagination();
+        console.log('✅ Moved to page', App.protocolsPage);
+      } else {
+        console.log('🚫 Navigation not possible:', { direction, currentPage: App.protocolsPage, totalPages });
+      }
+      
+      // Очищаем таймер после выполнения
+      this.paginationTimer = null;
+    }, 800); // 800ms задержка для переключения страницы
+  },
+
+  // Обработчик dragleave для кнопок пагинации  
+  handlePaginationDragLeave(e) {
+    console.log('🔧 Pagination drag leave:', e.target);
+    
+    // Проверяем, что мы действительно покидаем кнопку, а не переходим к дочернему элементу
+    const rect = e.target.getBoundingClientRect();
+    const isStillInside = e.clientX >= rect.left && e.clientX <= rect.right &&
+                          e.clientY >= rect.top && e.clientY <= rect.bottom;
+    
+    if (!isStillInside) {
+      e.target.classList.remove('drag-hover');
+      
+      // Отменяем таймер, если курсор действительно ушел с кнопки
+      if (this.paginationTimer) {
+        console.log('🔧 Clearing pagination timer on leave');
+        clearTimeout(this.paginationTimer);
+        this.paginationTimer = null;
+      }
+    }
+  },
+
+  // Обработчик dragover для кнопок пагинации
+  handlePaginationDragOver(e) {
+    // Уменьшаем количество логов для dragover, так как он вызывается очень часто
+    if (Math.random() < 0.01) { // Логируем только 1% вызовов
+      console.log('🔧 Pagination drag over:', e.target);
+    }
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  },
+
+  // 🔧 НОВОЕ: Сохраняем состояние drag операции для cross-page перемещения
+  saveCrossPageDragState(draggingElement) {
+    const protocolId = parseInt(draggingElement.dataset.protocolId);
+    const protocol = App.filteredProtocols.find(p => p.id === protocolId);
+    
+    if (!protocol) {
+      console.log('🔧 Protocol not found for cross-page drag');
+      return;
+    }
+    
+    this.crossPageDrag.isActive = true;
+    this.crossPageDrag.protocolId = protocolId;
+    this.crossPageDrag.protocol = protocol;
+    this.crossPageDrag.originalGlobalIndex = App.filteredProtocols.findIndex(p => p.id === protocolId);
+    
+    console.log('🔧 Cross-page drag state saved:', {
+      protocolId,
+      protocolName: protocol.name,
+      originalGlobalIndex: this.crossPageDrag.originalGlobalIndex
+    });
+  },
+
+  // 🔧 НОВОЕ: Восстанавливаем состояние drag операции после переключения страницы
+  restoreCrossPageDragState() {
+    if (!this.crossPageDrag.isActive) {
+      return;
+    }
+    
+    console.log('🔧 Restoring cross-page drag state...');
+    
+    // Настраиваем обработчики для drop на новой странице
+    this.setupCrossPageDropHandlers();
+  },
+
+   
+  // 🔧 НОВОЕ: Настраиваем drop обработчики для новой страницы
+  setupCrossPageDropHandlers() {
+    const protocolRows = document.querySelectorAll('.protocol-row:not(.cross-page-ghost)');
+    
+    protocolRows.forEach(row => {
+      // Удаляем существующие обработчики если есть
+      row.removeEventListener('dragover', this.handleCrossPageDragOver);
+      row.removeEventListener('dragleave', this.handleCrossPageDragLeave);
+      row.removeEventListener('drop', this.handleCrossPageDrop);
+      
+      // Добавляем новые обработчики
+      row.addEventListener('dragover', (e) => this.handleCrossPageDragOver(e));
+      row.addEventListener('dragleave', (e) => this.handleCrossPageDragLeave(e));
+      row.addEventListener('drop', (e) => this.handleCrossPageDrop(e, row));
+    });
+  },
+   
+  // 🔧 НОВОЕ: Обработчик dragover для cross-page операций
+  handleCrossPageDragOver(e) {
+    if (!this.crossPageDrag.isActive) return;
+    
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    
+    // Убираем подсветку с других элементов
+    document.querySelectorAll('.protocol-row.drag-over').forEach(row => {
+      if (row !== e.currentTarget) {
+        row.classList.remove('drag-over');
+      }
+    });
+    
+    // Добавляем визуальную подсветку
+    const target = e.currentTarget;
+    if (!target.classList.contains('cross-page-ghost')) {
+      target.classList.add('drag-over');
+    }
+  },
+   
+  // 🔧 НОВОЕ: Обработчик dragleave для cross-page операций
+  handleCrossPageDragLeave(e) {
+    if (!this.crossPageDrag.isActive) return;
+    
+    // Проверяем, что мы действительно покидаем элемент
+    const rect = e.currentTarget.getBoundingClientRect();
+    const isStillInside = e.clientX >= rect.left && e.clientX <= rect.right &&
+                          e.clientY >= rect.top && e.clientY <= rect.bottom;
+    
+    if (!isStillInside) {
+      e.currentTarget.classList.remove('drag-over');
+    }
+  },
+   
+  // 🔧 НОВОЕ: Обработчик drop для cross-page операций
+  handleCrossPageDrop(e, targetRow) {
+    e.preventDefault();
+    
+    if (!this.crossPageDrag.isActive) return;
+    
+    const targetProtocolId = parseInt(targetRow.dataset.protocolId);
+    const draggedProtocolId = this.crossPageDrag.protocolId;
+    
+    console.log('�� Cross-page drop:', {
+      draggedProtocolId,
+      targetProtocolId,
+      originalGlobalIndex: this.crossPageDrag.originalGlobalIndex
+    });
+    
+    // Вычисляем новую позицию
+    const targetGlobalIndex = App.filteredProtocols.findIndex(p => p.id === targetProtocolId);
+    const currentGlobalIndex = this.crossPageDrag.originalGlobalIndex;
+    
+    if (targetGlobalIndex !== -1 && currentGlobalIndex !== -1 && targetGlobalIndex !== currentGlobalIndex) {
+      // Выполняем перестановку в глобальном списке
+      this.reorderProtocols(draggedProtocolId, targetProtocolId);
+    }
+    
+    // Очищаем состояние
+    this.clearCrossPageDrag();
+  },
+   
+  // 🔧 НОВОЕ: Очищаем состояние cross-page drag операции
+  clearCrossPageDrag() {
+    // Убираем drag-over классы
+    document.querySelectorAll('.protocol-row.drag-over').forEach(row => {
+      row.classList.remove('drag-over');
+    });
+    
+    // Очищаем состояние
+    this.crossPageDrag = {
+      isActive: false,
+      protocolId: null,
+      protocol: null,
+      originalGlobalIndex: null
+    };
+    
+    console.log('🔧 Cross-page drag state cleared');
   }
 }; 

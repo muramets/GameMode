@@ -98,6 +98,26 @@ const UI = {
     return emojiMap[emoji] || emoji;
   },
 
+  // Get protocol final color with group priority
+  // 🎨 COLOR PRIORITY: Group Color > Individual Protocol Color > Default
+  getProtocolColor(protocol) {
+    // Priority 1: Group color (if protocol belongs to a group)
+    if (protocol.groupId) {
+      const group = window.Storage.getProtocolGroupById(protocol.groupId);
+      if (group && group.color) {
+        return group.color;
+      }
+    }
+    
+    // Priority 2: Protocol individual color
+    if (protocol.color) {
+      return protocol.color;
+    }
+    
+    // Priority 3: Default (null)
+    return null;
+  },
+
   // Render icon properly - either as FontAwesome or emoji
   renderIcon(emoji, customColor = null) {
     const iconClass = this.emojiToFontAwesome(emoji);
@@ -300,7 +320,8 @@ const UI = {
     }
     
     container.innerHTML = protocols.map(protocol => {
-      const icon = this.renderIcon(protocol.icon, protocol.color);
+      const finalColor = this.getProtocolColor(protocol);
+      const icon = this.renderIcon(protocol.icon, finalColor);
       const hasHover = protocol.hover && protocol.hover.trim();
       
       return `
@@ -372,35 +393,29 @@ const UI = {
 
   // Protocols
   renderProtocols() {
-    App.filteredProtocols = window.Storage.getProtocolsInOrder();
+    if (window.DEBUG_PROTOCOL_FILTERS) {
+      console.log('🎨 RENDER PROTOCOLS DEBUG');
+    }
+    // Don't override App.filteredProtocols here - it should be managed by App.applyProtocolGroupFilters()
+    // If filteredProtocols is empty, initialize it with all protocols
+    if (!App.filteredProtocols || App.filteredProtocols.length === 0) {
+      if (window.DEBUG_PROTOCOL_FILTERS) {
+        console.log('Initializing filteredProtocols with all protocols');
+      }
+      App.filteredProtocols = window.Storage.getProtocolsInOrder();
+    }
     
     // Get all protocols and innerfaces for display
     const innerfaces = window.Storage.getInnerfaces();
     
-    // Apply current search filter if any
-    const searchInput = document.getElementById('protocol-search');
-    if (searchInput && searchInput.value.trim()) {
-      // Apply filter locally without calling App.filterProtocols to avoid recursion
-      const allProtocols = window.Storage.getProtocolsInOrder();
-      const searchTerm = searchInput.value.toLowerCase();
-      
-      App.filteredProtocols = allProtocols.filter(protocol => {
-        // Search in protocol name
-        if (protocol.name.toLowerCase().includes(searchTerm)) {
-          return true;
-        }
-        
-        // Search in target innerfaces
-        const targetNames = protocol.targets.map(targetId => {
-          const innerface = innerfaces.find(s => s.id === targetId);
-          return innerface ? innerface.name.toLowerCase() : targetId;
-        });
-        
-        return targetNames.some(name => name.includes(searchTerm));
-      });
-    }
-    
     const protocols = App.filteredProtocols;
+    if (window.DEBUG_PROTOCOL_FILTERS) {
+      console.log('Rendering protocols:', protocols.map(p => ({
+        id: p.id, 
+        name: p.name.split('. ')[0], 
+        groupId: p.groupId
+      })));
+    }
     const startIndex = (App.protocolsPage - 1) * App.protocolsPerPage;
     const endIndex = startIndex + App.protocolsPerPage;
     const pageProtocols = protocols.slice(startIndex, endIndex);
@@ -449,17 +464,20 @@ const UI = {
       const globalIndex = startIndex + index + 1;
       
       // 🔧 ДЕБАГ: Логируем информацию о цвете протокола только если дебаг включен
+      const finalColor = this.getProtocolColor(protocol);
       if (window.DEBUG_UI) {
         console.log(`🎨 PROTOCOL RENDER DEBUG for ID ${protocol.id}:`, {
           name: protocol.name.split('. ')[0],
           icon: protocol.icon,
-          color: protocol.color,
-          hasColor: !!protocol.color,
-          colorType: typeof protocol.color
+          protocolColor: protocol.color,
+          groupId: protocol.groupId,
+          finalColor: finalColor,
+          hasFinalColor: !!finalColor,
+          colorType: typeof finalColor
         });
       }
       
-      const icon = this.renderIcon(protocol.icon, protocol.color);
+      const icon = this.renderIcon(protocol.icon, finalColor);
       
       // Get target innerface names
       const targetNames = protocol.targets.map(targetId => {
@@ -509,6 +527,11 @@ const UI = {
         </div>
       `;
     }).join('');
+    
+    // 🔧 ИСПРАВЛЕНИЕ: Обновляем пагинацию после рендеринга
+    if (App && App.updatePagination) {
+      App.updatePagination();
+    }
   },
 
   // Innerfaces
@@ -701,7 +724,7 @@ const UI = {
         let itemColor = null;
         if (checkin.subType === 'protocol') {
           const protocol = protocols.find(p => p.id == checkin.itemId);
-          itemColor = protocol?.color;
+          itemColor = protocol ? this.getProtocolColor(protocol) : null;
         } else if (checkin.subType === 'innerface') {
           const innerface = innerfaces.find(i => i.id == checkin.itemId);
           itemColor = innerface?.color;
@@ -741,7 +764,7 @@ const UI = {
         
         // Get protocol color
         const protocol = protocols.find(p => p.id == checkin.protocolId);
-        const protocolColor = protocol?.color;
+        const protocolColor = protocol ? this.getProtocolColor(protocol) : null;
         const coloredIcon = this.renderIcon(checkin.protocolIcon, protocolColor);
         const titleStyle = protocolColor ? `style="color: ${protocolColor};"` : '';
         
@@ -773,7 +796,7 @@ const UI = {
       } else {
         // Regular protocol check-in
         const protocol = protocols.find(p => p.id == checkin.protocolId);
-        const protocolColor = protocol?.color;
+        const protocolColor = protocol ? this.getProtocolColor(protocol) : null;
         const coloredProtocolIcon = this.renderIcon(checkin.protocolIcon, protocolColor);
         const protocolTitleStyle = protocolColor ? `style="color: ${protocolColor};"` : '';
         

@@ -1615,3 +1615,213 @@
   margin-top: 1rem;
   margin-bottom: 1rem;
 } 
+
+/* ===== PROTOCOL GROUPS BADGES ===== */
+/* Protocol Groups Badges - компактный стиль как target tags */
+.protocol-groups-badges-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.protocol-group-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 2.2rem 0.5rem 0.8rem;
+  border-radius: 0.6rem;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  position: relative;
+  margin-right: 0.6rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--sub-color);
+}
+
+.protocol-group-badge:hover {
+  background: var(--hover-color);
+  border-color: transparent;
+}
+
+.protocol-group-badge:hover .protocol-group-name {
+  color: var(--group-color, var(--text-color));
+}
+
+.protocol-group-badge:hover .protocol-group-icon {
+  color: var(--group-color, var(--text-color));
+}
+
+.protocol-group-badge.selected {
+  background: var(--group-color, var(--primary-color));
+  border-color: var(--group-color, var(--primary-color));
+}
+
+.protocol-group-badge.selected .protocol-group-name {
+  color: white;
+}
+
+.protocol-group-badge.selected .protocol-group-icon {
+  color: white;
+}
+
+.protocol-group-badge.selected .protocol-group-icon i {
+  color: white !important;
+}
+
+.protocol-group-badge.new-group-badge {
+  padding: 0.5rem 0.8rem;
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border-color);
+}
+
+.protocol-group-badge.new-group-badge:hover {
+  background: var(--hover-color);
+  border-color: var(--primary-color);
+}
+
+.protocol-group-badge.new-group-badge:hover .protocol-group-icon {
+  color: var(--text-color);
+}
+
+.protocol-group-badge.new-group-badge:hover .protocol-group-icon i {
+  color: var(--text-color);
+}
+
+.protocol-group-badge .protocol-group-icon {
+  font-size: 0.8rem;
+  color: var(--sub-color);
+  transition: all 0.2s ease;
+}
+
+.protocol-group-badge .protocol-group-name {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--sub-color);
+  transition: all 0.2s ease;
+}
+
+.protocol-group-badge .protocol-group-settings {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.3rem;
+  opacity: 0;
+  font-size: 0.65rem;
+  color: var(--sub-color);
+  padding: 0.25rem;
+  border-radius: 0.3rem;
+  transition: all 0.2s ease;
+  transform: scale(0.9);
+  background: none;
+  border: none;
+}
+
+.protocol-group-badge .protocol-group-settings:hover {
+  color: #e2b714;
+  transform: scale(1);
+}
+
+.protocol-group-badge.selected .protocol-group-settings:hover {
+  color: white;
+  transform: scale(1);
+}
+
+.protocol-group-badge:hover .protocol-group-settings {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Group Settings Modal */
+.group-settings-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.group-settings-content {
+  background: var(--bg-color);
+  border-radius: 8px;
+  padding: 1.25rem;
+  width: 90%;
+  max-width: 360px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  position: relative;
+  box-sizing: border-box;
+}
+
+.group-settings-content h4 {
+  margin: 0 0 1rem 0;
+  color: var(--text-color);
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.5rem;
+}
+
+.group-settings-content .modal-actions {
+  margin-top: 1rem;
+  gap: 0.5rem;
+}
+
+.group-settings-content .modal-actions .btn {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  min-width: auto;
+  white-space: nowrap;
+}
+
+.group-settings-content .modal-actions .btn-danger {
+  padding: 0.5rem 0.6rem;
+}
+
+.group-settings-content .modal-actions .btn-danger i {
+  margin-right: 0.3rem;
+}
+
+.group-settings-content .modal-actions-right {
+  gap: 0.4rem;
+}
+
+.group-color-picker {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.group-color-option {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.group-color-option:hover {
+  transform: scale(1.1);
+}
+
+.group-color-option.selected {
+  border-color: var(--text-color);
+  transform: scale(1.1);
+}
+
+.group-icon-input {
+  text-align: center;
+  font-size: 1.2rem;
+} 
