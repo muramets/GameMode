@@ -1193,11 +1193,12 @@
   gap: 0.5rem;
   margin-left: 0.5rem;
   flex: 0 0 auto; /* Don't grow or shrink */
-  overflow: hidden; /* Hide badges that don't fit */
+  overflow: visible; /* Allow proper hover effects */
   padding: 0.2rem 0; /* Add padding for hover lift effect */
   position: relative; /* For proper hover effects */
   transition: all 0.2s ease;
   white-space: nowrap; /* Keep badges in one line */
+  width: calc(100% - 320px); /* Fixed width: total minus search width and gaps */
   max-width: 400px; /* Limit width to prevent expansion */
 }
 
@@ -1224,8 +1225,8 @@
 }
 
 .protocol-filter-badge:hover {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+  background-color: var(--bg-color);
   z-index: 10; /* Ensure hover effect is visible above overflow */
 }
 

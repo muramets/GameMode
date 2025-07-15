@@ -3,7 +3,8 @@
 /* Search Container Styles */
 .search-container {
   position: relative;
-  max-width: 300px;
+  width: 300px; /* Fixed width to prevent shrinking */
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 /* Modal search containers should take full width */
