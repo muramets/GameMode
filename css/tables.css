@@ -1193,13 +1193,13 @@
   gap: 0.5rem;
   margin-left: 0.5rem;
   flex: 0 0 auto; /* Don't grow or shrink */
-  overflow: hidden; /* Hide badges that don't fit */
+  overflow: visible; /* JavaScript controls which badges to show */
   padding: 0.2rem 0; /* Add padding for hover lift effect */
   position: relative; /* For proper hover effects */
   transition: all 0.2s ease;
   white-space: nowrap; /* Keep badges in one line */
-  width: calc(100% - 380px); /* Fixed width: total minus search width, gaps, and button */
-  max-width: 600px; /* Increased limit for more badges */
+  width: 450px; /* Fixed width to fit exactly 3 badges */
+  max-width: 450px; /* Ensure consistent width */
 }
 
 .protocols-active-filters.hidden {

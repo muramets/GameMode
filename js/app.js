@@ -942,9 +942,42 @@ function initMainApp() {
                 }
             });
             
-            // For now, simply show all badges - the CSS will handle overflow
-            // TODO: Implement proper width measurement later if needed
-            badgesContainer.innerHTML = badgeData.join('');
+            // Measure available width and add only badges that fit completely
+            const availableWidth = 450; // Fixed width from CSS
+            
+            // Add badges one by one and check if they fit
+            let currentWidth = 0;
+            const fittingBadges = [];
+            
+            for (let i = 0; i < badgeData.length; i++) {
+                // Create temporary element to measure badge width
+                const tempContainer = document.createElement('div');
+                tempContainer.style.position = 'absolute';
+                tempContainer.style.visibility = 'hidden';
+                tempContainer.style.whiteSpace = 'nowrap';
+                tempContainer.style.display = 'flex';
+                tempContainer.style.alignItems = 'center';
+                tempContainer.style.gap = '0.5rem';
+                tempContainer.innerHTML = badgeData[i];
+                document.body.appendChild(tempContainer);
+                
+                const badgeWidth = tempContainer.offsetWidth;
+                document.body.removeChild(tempContainer);
+                
+                // Add gap width (0.5rem = 8px) if not first badge
+                const gapWidth = i > 0 ? 8 : 0;
+                const totalWidth = currentWidth + badgeWidth + gapWidth;
+                
+                if (totalWidth <= availableWidth) {
+                    fittingBadges.push(badgeData[i]);
+                    currentWidth = totalWidth;
+                } else {
+                    // Badge doesn't fit completely, stop adding more
+                    break;
+                }
+            }
+            
+            badgesContainer.innerHTML = fittingBadges.join('');
         },
 
         // Remove active filter (called by badge delete button)
