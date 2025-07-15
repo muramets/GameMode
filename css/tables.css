@@ -1152,6 +1152,8 @@
   align-items: center;
   gap: 0.5rem;
   justify-content: flex-start;
+  flex-wrap: nowrap; /* Prevent wrapping to new line */
+  overflow: hidden; /* Hide overflow */
 }
 
 .protocols-filters-container {
@@ -1189,9 +1191,10 @@
   gap: 0.5rem;
   margin-left: 0.5rem;
   flex: 1;
-  overflow: visible; /* Allow hover effects to show */
+  overflow: hidden; /* Hide badges that don't fit */
   padding: 0.2rem 0; /* Add padding for hover lift effect */
   transition: all 0.2s ease;
+  white-space: nowrap; /* Keep badges in one line */
 }
 
 .protocols-active-filters.hidden {
