@@ -1193,7 +1193,7 @@
   gap: 0.5rem;
   margin-left: 0.5rem;
   flex: 0 0 auto; /* Don't grow or shrink */
-  overflow: visible; /* Allow proper hover effects */
+  overflow: hidden; /* Hide badges that don't fit */
   padding: 0.2rem 0; /* Add padding for hover lift effect */
   position: relative; /* For proper hover effects */
   transition: all 0.2s ease;

@@ -942,40 +942,9 @@ function initMainApp() {
                 }
             });
             
-            // Clear container and measure available width
-            badgesContainer.innerHTML = '';
-            const availableWidth = badgesContainer.offsetWidth;
-            
-            // Add badges one by one and check if they fit
-            let currentWidth = 0;
-            const fittingBadges = [];
-            
-            for (let i = 0; i < badgeData.length; i++) {
-                // Create temporary element to measure badge width
-                const tempDiv = document.createElement('div');
-                tempDiv.style.position = 'absolute';
-                tempDiv.style.visibility = 'hidden';
-                tempDiv.style.whiteSpace = 'nowrap';
-                tempDiv.innerHTML = badgeData[i];
-                document.body.appendChild(tempDiv);
-                
-                const badgeWidth = tempDiv.offsetWidth;
-                document.body.removeChild(tempDiv);
-                
-                // Add gap width (0.5rem = 8px) if not first badge
-                const gapWidth = i > 0 ? 8 : 0;
-                const totalWidth = currentWidth + badgeWidth + gapWidth;
-                
-                if (totalWidth <= availableWidth) {
-                    fittingBadges.push(badgeData[i]);
-                    currentWidth = totalWidth;
-                } else {
-                    // Badge doesn't fit, stop adding more
-                    break;
-                }
-            }
-            
-            badgesContainer.innerHTML = fittingBadges.join('');
+            // For now, simply show all badges - the CSS will handle overflow
+            // TODO: Implement proper width measurement later if needed
+            badgesContainer.innerHTML = badgeData.join('');
         },
 
         // Remove active filter (called by badge delete button)
