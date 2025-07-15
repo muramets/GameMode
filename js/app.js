@@ -1095,6 +1095,7 @@ function initMainApp() {
             DragDrop.setupProtocols();
             this.setupTooltips();
             this.updatePagination(); // 🔧 ИСПРАВЛЕНИЕ: Обновляем пагинацию после фильтрации
+            this.renderActiveFilterBadges(); // 🔧 ИСПРАВЛЕНИЕ: Отображаем бейджи групп протоколов
         },
 
         // Setup history filters
