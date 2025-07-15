@@ -1153,7 +1153,9 @@
   gap: 0.5rem;
   justify-content: flex-start;
   flex-wrap: nowrap; /* Prevent wrapping to new line */
-  overflow: hidden; /* Hide overflow */
+  overflow: visible; /* Allow hover effects */
+  width: fit-content; /* Don't expand beyond content */
+  max-width: 70%; /* Limit width to leave space for add-protocol button */
 }
 
 .protocols-filters-container {
@@ -1190,11 +1192,13 @@
   align-items: center;
   gap: 0.5rem;
   margin-left: 0.5rem;
-  flex: 1;
+  flex: 0 0 auto; /* Don't grow or shrink */
   overflow: hidden; /* Hide badges that don't fit */
   padding: 0.2rem 0; /* Add padding for hover lift effect */
+  position: relative; /* For proper hover effects */
   transition: all 0.2s ease;
   white-space: nowrap; /* Keep badges in one line */
+  max-width: 400px; /* Limit width to prevent expansion */
 }
 
 .protocols-active-filters.hidden {
@@ -1222,6 +1226,7 @@
 .protocol-filter-badge:hover {
   transform: translateY(-2px) scale(1.02);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  z-index: 10; /* Ensure hover effect is visible above overflow */
 }
 
 .protocol-filter-badge .filter-badge-icon {
