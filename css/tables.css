@@ -1198,8 +1198,8 @@
   position: relative; /* For proper hover effects */
   transition: all 0.2s ease;
   white-space: nowrap; /* Keep badges in one line */
-  width: calc(100% - 320px); /* Fixed width: total minus search width and gaps */
-  max-width: 400px; /* Limit width to prevent expansion */
+  width: calc(100% - 380px); /* Fixed width: total minus search width, gaps, and button */
+  max-width: 600px; /* Increased limit for more badges */
 }
 
 .protocols-active-filters.hidden {
