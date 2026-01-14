@@ -1,0 +1,142 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@100..900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  font-size: 16px !important;
+}
+
+:root {
+  /* Legacy Color Palette - MonkeyType themed */
+  --bg-color: #323437;
+  --main-color: #e2b714;
+  --caret-color: #e2b714;
+  --sub-color: #646669;
+  --sub-alt-color: #2c2e31;
+  --text-color: #d1d0c5;
+  --error-color: #ca4754;
+  --error-extra-color: #7e2a33;
+  --colorful-error-color: #ca4754;
+  --colorful-error-extra-color: #7e2a33;
+  --correct-color: #98c379;
+
+  /* UI Colors mapped to Tailwind vars */
+  --bg-primary: var(--bg-color);
+  --bg-secondary: var(--sub-alt-color);
+  --text-primary: var(--text-color);
+  --text-secondary: var(--sub-color);
+  --border: var(--sub-color);
+
+  --card-bg: var(--sub-alt-color);
+  --input-bg: var(--sub-alt-color);
+  --button-secondary-bg: var(--sub-alt-color);
+  --button-secondary-hover: #3c3e41;
+  --button-secondary-text: var(--text-color);
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-primary);
+}
+
+body {
+  color: var(--text-primary);
+  font-family: "Roboto Mono", monospace;
+  overflow-y: scroll;
+}
+
+/* Ensure Lexend Deca is available as a utility */
+.font-lexend {
+  font-family: "Lexend Deca", sans-serif;
+}
+
+/* 
+  MonkeyType #app Logic
+*/
+#app {
+  min-height: 100vh;
+  grid-template-rows: auto 1fr auto;
+  overflow: hidden;
+  row-gap: 2rem;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+  width: 100%;
+}
+
+.content-grid {
+  --padding-inline: 2rem;
+  --content-max-width: 1536px;
+
+  @media only screen and (max-width: 1616px) {
+    --content-max-width: 1280px;
+  }
+
+  @media only screen and (max-width: 1360px) {
+    --content-max-width: 1024px;
+  }
+
+  @media only screen and (max-width: 1104px) {
+    --content-max-width: 768px;
+  }
+
+  @media only screen and (max-width: 848px) {
+    --content-max-width: 640px;
+  }
+
+  @media only screen and (max-width: 720px) {
+    --content-max-width: 100%;
+    --padding-inline: 1rem;
+  }
+
+  --breakout-size: calc((calc(var(--content-max-width) + 12rem) - var(--content-max-width)) / 2);
+  justify-content: center;
+  display: grid;
+  grid-template-columns: [full-width-start] var(--padding-inline) [full-width-padding-start] minmax(0, 1fr) [breakout-start] minmax(0, var(--breakout-size)) [content-start] min(100% - (var(--padding-inline) * 2), var(--content-max-width)) [content-end] minmax(0, var(--breakout-size)) [breakout-end] minmax(0, 1fr) [full-width-padding-end] var(--padding-inline) [full-width-end];
+  width: 100%;
+}
+
+.content-grid> :not(.breakout, .full-width, .full-width-padding) {
+  grid-column: content;
+}
+
+.content-grid>.breakout {
+  grid-column: breakout;
+}
+
+.content-grid>.full-width {
+  grid-column: full-width;
+}
+
+.content-grid>.full-width-padding {
+  grid-column: full-width-padding;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 0.5rem;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--sub-color);
+  border-radius: 0.25rem;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-color);
+}
+
+/* Firefox Scrollbar Support */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sub-color) transparent;
+}
