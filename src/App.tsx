@@ -2,10 +2,15 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './contexts/AuthProvider';
 import { QueryProvider } from './contexts/QueryProvider';
 import { Layout } from './components/layout/Layout';
+import { ScoreProvider } from './contexts/ScoreProvider';
+import { StoreSync } from './stores/StoreSync';
 
-// Pages (to be implemented)
-import Dashboard from './pages/Dashboard';
-import { ProtocolsList } from './features/protocols';
+// Pages
+import Dashboard from './pages/dashboard/DashboardPage';
+import { ProtocolsList } from './pages/protocols';
+import InnerfacesPage from './pages/innerfaces/InnerfacesPage';
+import HistoryPage from './pages/history/HistoryPage';
+
 const Login = () => {
   const { signInWithGoogle, user } = useAuth();
 
@@ -40,26 +45,43 @@ function App() {
   return (
     <QueryProvider>
       <AuthProvider>
-        <Router>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/" element={
-              <PrivateRoute>
-                <Layout>
-                  <Dashboard />
-                </Layout>
-              </PrivateRoute>
-            } />
-            <Route path="/protocols" element={
-              <PrivateRoute>
-                <Layout>
-                  <ProtocolsList />
-                </Layout>
-              </PrivateRoute>
-            } />
-            {/* Add more routes here */}
-          </Routes>
-        </Router>
+        <ScoreProvider>
+          <StoreSync />
+          <Router>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={
+                <PrivateRoute>
+                  <Layout>
+                    <Dashboard />
+                  </Layout>
+                </PrivateRoute>
+              } />
+              <Route path="/protocols" element={
+                <PrivateRoute>
+                  <Layout>
+                    <ProtocolsList />
+                  </Layout>
+                </PrivateRoute>
+              } />
+              <Route path="/innerfaces" element={
+                <PrivateRoute>
+                  <Layout>
+                    <InnerfacesPage />
+                  </Layout>
+                </PrivateRoute>
+              } />
+              <Route path="/history" element={
+                <PrivateRoute>
+                  <Layout>
+                    <HistoryPage />
+                  </Layout>
+                </PrivateRoute>
+              } />
+              {/* Add more routes here */}
+            </Routes>
+          </Router>
+        </ScoreProvider>
       </AuthProvider>
     </QueryProvider>
   );

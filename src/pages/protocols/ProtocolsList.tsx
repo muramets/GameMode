@@ -1,32 +1,21 @@
 import { useState, useMemo } from 'react';
-import { MOCK_PROTOCOLS, MOCK_INNERFACES } from './mockData';
+import { MOCK_PROTOCOLS } from './mockData';
 import { ProtocolRow } from './ProtocolRow';
+
+import { useScoreContext } from '../../contexts/ScoreProvider';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
+
     faSearch,
     faPlus,
     faFilter,
-    faDumbbell,
-    faBrain,
-    faBath,
-    faMugHot,
-    faBookOpen,
-    faLeaf,
-    faXmark,
     faCircle
 } from '@fortawesome/free-solid-svg-icons';
-
-const GROUP_CONFIG: Record<string, { icon: any; color: string }> = {
-    Physical: { icon: faDumbbell, color: '#98c379' },
-    Mental: { icon: faBrain, color: '#ca4754' },
-    Recovery: { icon: faBath, color: '#7fb3d3' },
-    Work: { icon: faMugHot, color: '#e2b714' },
-    Learning: { icon: faBookOpen, color: '#e2b714' },
-    Substances: { icon: faLeaf, color: '#ca4754' },
-    ungrouped: { icon: faCircle, color: '#666666' },
-};
+import { ActiveFiltersList } from '../../components/ui/molecules/ActiveFiltersList';
+import { GROUP_CONFIG } from './constants';
 
 export function ProtocolsList() {
+    const { applyProtocol, innerfaces } = useScoreContext();
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilters, setActiveFilters] = useState<string[]>([]);
 
@@ -59,7 +48,7 @@ export function ProtocolsList() {
             if (protocol.group?.toLowerCase().includes(query)) return true;
             // Match target innerface names
             const targetNames = protocol.targets.map(id =>
-                MOCK_INNERFACES.find(i => i.id === id)?.name.toLowerCase()
+                innerfaces.find(i => i.id === id)?.name.toLowerCase()
             );
             if (targetNames.some(name => name?.includes(query))) return true;
 
@@ -67,11 +56,6 @@ export function ProtocolsList() {
         });
     }, [searchQuery, activeFilters]);
 
-    // Handlers
-    const handleLevelUp = (id: string | number) => console.log('Level Up:', id);
-    const handleLevelDown = (id: string | number) => console.log('Level Down:', id);
-    const handleEdit = (id: string | number) => console.log('Edit:', id);
-    const handleViewHistory = (id: string | number) => console.log('View History:', id);
     const handleAddProtocol = () => console.log('Add Protocol Clicked');
 
     const toggleFilter = (filter: string) => {
@@ -82,7 +66,7 @@ export function ProtocolsList() {
 
         setActiveFilters(prev => {
             if (prev.includes(filter)) {
-                return prev.filter(f => f !== filter);
+                return prev.filter((f: string) => f !== filter);
             } else {
                 return [...prev, filter];
             }
@@ -90,7 +74,7 @@ export function ProtocolsList() {
     };
 
     const removeFilter = (filter: string) => {
-        setActiveFilters(prev => prev.filter(f => f !== filter));
+        setActiveFilters((prev: string[]) => prev.filter((f: string) => f !== filter));
     };
 
     return (
@@ -218,36 +202,17 @@ export function ProtocolsList() {
                 </div>
 
                 {/* Active Filter Chips */}
-                {activeFilters.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <span className="text-sub font-mono text-[10px] px-1 lowercase">filtering by:</span>
-                        {activeFilters.map(filter => (
-                            <div key={filter} className="flex items-center gap-2 bg-sub-alt px-3 py-1 rounded-full text-text-primary font-mono text-[10px] lowercase shadow-sm">
-                                {GROUP_CONFIG[filter] && (
-                                    <FontAwesomeIcon
-                                        icon={GROUP_CONFIG[filter].icon}
-                                        style={{ color: GROUP_CONFIG[filter].color }}
-                                        className="text-[9px]"
-                                    />
-                                )}
-                                <span>{filter}</span>
-                                <button
-                                    onClick={() => removeFilter(filter)}
-                                    className="ml-1 text-sub hover:text-[#ca4754] transition-colors cursor-pointer"
-                                    title={`Remove ${filter} filter`}
-                                >
-                                    <FontAwesomeIcon icon={faXmark} className="text-[10px]" />
-                                </button>
-                            </div>
-                        ))}
-                        <button
-                            onClick={() => setActiveFilters([])}
-                            className="text-sub hover:text-main font-mono text-[10px] lowercase px-2 transition-colors"
-                        >
-                            clear all
-                        </button>
-                    </div>
-                )}
+                <ActiveFiltersList
+                    label="filtering by:"
+                    filters={activeFilters.map(filter => ({
+                        id: filter,
+                        label: filter,
+                        icon: GROUP_CONFIG[filter]?.icon,
+                        color: GROUP_CONFIG[filter]?.color,
+                        onRemove: () => removeFilter(filter)
+                    }))}
+                    onClearAll={() => setActiveFilters([])}
+                />
             </div>
 
             {/* List */}
@@ -257,11 +222,11 @@ export function ProtocolsList() {
                         <ProtocolRow
                             key={protocol.id}
                             protocol={protocol}
-                            innerfaces={MOCK_INNERFACES}
-                            onLevelUp={handleLevelUp}
-                            onLevelDown={handleLevelDown}
-                            onEdit={handleEdit}
-                            onViewHistory={handleViewHistory}
+                            innerfaces={innerfaces}
+                            onLevelUp={(id) => applyProtocol(id, '+')}
+                            onLevelDown={(id) => applyProtocol(id, '-')}
+                            onEdit={() => { }}
+                            onViewHistory={() => { }}
                         />
                     ))
                 ) : (
@@ -294,6 +259,8 @@ export function ProtocolsList() {
                     </div>
                 )}
             </div>
-        </div >
+
+
+        </div>
     );
 }

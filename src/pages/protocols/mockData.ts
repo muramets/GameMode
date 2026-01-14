@@ -4,7 +4,7 @@ export const MOCK_INNERFACES: Innerface[] = [
     {
         id: 1,
         name: "Focus. Attentional control",
-        icon: "🧘🏻",
+        icon: "focus",
         hover: "Ability to sustain attention and think deeply.",
         initialScore: 5.20,
         color: "#ca4754"
@@ -12,7 +12,7 @@ export const MOCK_INNERFACES: Innerface[] = [
     {
         id: 2,
         name: "Energy. Cognitive stamina",
-        icon: "🔋",
+        icon: "energy",
         hover: "Mental fuel to start and stay engaged.",
         initialScore: 5.50,
         color: "#e6934a"
@@ -20,7 +20,7 @@ export const MOCK_INNERFACES: Innerface[] = [
     {
         id: 3,
         name: "Engagement. Impulse",
-        icon: "⚡",
+        icon: "engagement",
         hover: "It pulls you forward - without force.",
         initialScore: 5.90,
         color: "#e2b714"
@@ -28,7 +28,7 @@ export const MOCK_INNERFACES: Innerface[] = [
     {
         id: 4,
         name: "Body Sync. Body-driven confidence",
-        icon: "🏃🏻‍♂️",
+        icon: "body-sync",
         hover: "When the body leads, the mind follows.",
         initialScore: 5.90,
         color: "#98c379"
@@ -36,7 +36,7 @@ export const MOCK_INNERFACES: Innerface[] = [
     {
         id: 5,
         name: "Business Insight. Strategic understanding",
-        icon: "📊",
+        icon: "strategic",
         hover: "The mental model of how things work and where value flows.",
         initialScore: 5.30,
         color: "#7fb3d3"
@@ -44,28 +44,28 @@ export const MOCK_INNERFACES: Innerface[] = [
     {
         id: 6,
         name: "Execution Speed. Learn and apply fast",
-        icon: "🚄",
+        icon: "execution",
         hover: "Respond to change with flexible execution.",
         initialScore: 6.50
     },
     {
         id: 7,
         name: "Relationship. What lives between you",
-        icon: "❤️",
+        icon: "relationship",
         hover: "",
         initialScore: 6.00
     },
     {
         id: 8,
         name: "Family. What matters most",
-        icon: "👨‍👩‍👧‍👦",
+        icon: "family",
         hover: "The one bond that doesn't care who you are at work.",
         initialScore: 6.30
     },
     {
         id: 9,
         name: "Community. Not the crowd - the circle",
-        icon: "🧩",
+        icon: "community",
         hover: "Other minds run deep too. Find them.",
         initialScore: 5.20
     }
@@ -76,7 +76,7 @@ export const MOCK_PROTOCOLS: Protocol[] = [
         id: 1,
         title: "Warm Up",
         description: "Turn the body on",
-        icon: "🧍‍♂️",
+        icon: "warm-up",
         hover: "Wake the system.",
         action: "+",
         weight: 0.05,
@@ -88,7 +88,7 @@ export const MOCK_PROTOCOLS: Protocol[] = [
         id: 2,
         title: "Meditation",
         description: "Engage with yourself",
-        icon: "🧘‍♂️",
+        icon: "meditation",
         hover: "Build presence through attention.",
         action: "+",
         weight: 0.05,

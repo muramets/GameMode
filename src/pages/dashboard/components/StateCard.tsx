@@ -1,8 +1,9 @@
 import { useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faQuestion, faCog, faHistory, faArrowUp, faArrowDown } from '@fortawesome/free-solid-svg-icons';
-import { OverflowTooltip } from '../../components/ui/OverflowTooltip';
+import { OverflowTooltip } from '../../../components/ui/atoms/OverflowTooltip';
 import type { StateData } from './types';
+import { renderIcon } from '../../../utils/iconMapper';
 
 interface StateCardProps {
     state: StateData;
@@ -70,7 +71,7 @@ export function StateCard({
                     <div
                         className="w-10 h-10 rounded-xl flex items-center justify-center text-[1.2rem] bg-black/20 shrink-0"
                     >
-                        <span className="leading-none">{state.emoji}</span>
+                        {renderIcon(state.icon || '')}
                     </div>
 
                     {/* Name & Subtext Container */}

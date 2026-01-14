@@ -1,13 +1,14 @@
 export interface StateData {
     id: string;
     name: string;
-    emoji: string;
+    icon?: string;
     subtext?: string;
     description?: string;
     score?: number; // 0-10 or similar
     yesterdayScore?: number;
     color?: string;
-    dependencies?: { innerfaces: number; states: number };
+    innerfaceIds?: (number | string)[];
+    stateIds?: string[];
 }
 
 export interface LevelInfo {

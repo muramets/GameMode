@@ -2,7 +2,7 @@ import { useState, useRef, type MouseEvent } from 'react';
 import type { Protocol, Innerface } from './types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faMinus, faCog, faHistory } from '@fortawesome/free-solid-svg-icons';
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../components/ui/Tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../components/ui/atoms/Tooltip';
 import { renderIcon } from '../../utils/iconMapper';
 
 interface ProtocolRowProps {
@@ -134,8 +134,11 @@ export function ProtocolRow({ protocol, innerfaces, onLevelUp, onLevelDown, onEd
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <div
-                                            className="px-2 py-0.5 rounded-md bg-bg-primary border border-sub-alt flex items-center justify-center transition-transform hover:scale-105 cursor-help"
+                                            className="px-2 py-0.5 rounded-md bg-bg-primary border border-sub-alt flex items-center gap-1.5 transition-transform hover:scale-105 cursor-help"
                                         >
+                                            <div className="text-[0.7rem]" style={{ color: innerface.color }}>
+                                                {renderIcon(innerface.icon)}
+                                            </div>
                                             <span
                                                 className="uppercase font-mono text-[0.6rem] font-bold tracking-wider"
                                                 style={{ color: innerface.color || 'var(--sub-color)' }}

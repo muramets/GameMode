@@ -1,24 +1,46 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faBrain, faRecordVinyl, faDumbbell, faMugHot, faScaleBalanced,
-    faHandPeace, faCloudArrowUp, faCertificate, faPersonWalking,
-    faPersonRunning, faBath, faBox, faHeadphones, faArrowsRotate,
-    faHeart, faHand, faBookOpen, faUtensils, faBullseye, faRobot,
-    faFileContract, faSliders, faGlobe, faBed, faLeaf, faGlassWhiskey,
-    faPhone, faDrumstickBite, faMasksTheater, faPause, faYinYang,
-    faBatteryFull, faBolt, faChartLine, faGaugeHigh, faHouseUser,
-    faPuzzlePiece, faUsersGear, faQuestion
+    faHandPeace, faPersonWalking, faPersonRunning, faBath, faBox,
+    faHeadphones, faArrowsRotate, faHeart, faHand, faBookOpen,
+    faUtensils, faBullseye, faRobot, faFileContract, faSliders,
+    faGlobe, faBed, faLeaf, faGlassWhiskey, faPhone, faDrumstickBite,
+    faMasksTheater, faPause, faYinYang, faBatteryFull, faBolt,
+    faChartLine, faGaugeHigh, faHouseUser, faPuzzlePiece, faUsersGear,
+    faQuestion
 } from '@fortawesome/free-solid-svg-icons';
 
 const EMOJI_MAP: Record<string, any> = {
+    // Descriptive Names (Preferred)
+    'brain': faBrain,
+    'physical': faDumbbell,
+    'mental': faBrain,
+    'recovery': faBath,
+    'work': faMugHot,
+    'learning': faBookOpen,
+    'substances': faLeaf,
+    'energy': faBatteryFull,
+    'engagement': faBolt,
+    'body-sync': faPersonRunning,
+    'strategic': faChartLine,
+    'execution': faGaugeHigh,
+    'relationship': faHeart,
+    'family': faHouseUser,
+    'community': faPuzzlePiece,
+    'harmony': faScaleBalanced,
+    'meditation': faYinYang,
+    'warm-up': faPersonRunning,
+    'focus': faBrain,
+
+    // Legacy Emojis (Mapping to FA)
     '🧠': faBrain,
     '🪝': faRecordVinyl,
     '🔹': faDumbbell,
     '🚀': faMugHot,
     '🎼': faScaleBalanced,
     '🌅': faHandPeace,
-    '🧍‍♂️': faCloudArrowUp,
-    '🧘‍♂️': faCertificate,
+    '🧍‍♂️': faPersonRunning,
+    '🧘‍♂️': faYinYang,
     '🚶‍♂️': faPersonWalking,
     '👟': faPersonRunning,
     '🧖‍♂️': faBath,

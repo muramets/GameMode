@@ -5,6 +5,7 @@ export interface Innerface {
     description?: string; // Derived from name or added separately
     hover?: string; // Tooltip text
     initialScore: number;
+    currentScore?: number;
     color?: string; // Hex code
 }
 

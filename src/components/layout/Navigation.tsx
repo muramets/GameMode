@@ -100,7 +100,7 @@ export function Navigation() {
                             bg-transparent border-none text-sub px-2 h-full cursor-pointer transition-all duration-250
                             flex items-center justify-center outline-none opacity-50 z-20 relative
                             hover:text-text-primary hover:opacity-100
-                            ${isInnerfacesExpanded ? 'text-main opacity-100' : ''}
+                            ${(isInnerfacesExpanded || isActive('/history')) ? 'text-main opacity-100' : ''}
                         `}
                         onMouseEnter={handleMouseEnter}
                         title="Show history"
@@ -119,17 +119,17 @@ export function Navigation() {
                             transition-all duration-300 ease-[cubic-bezier(0.4,0.0,0.2,1)]
                         `}
                         style={{
-                            width: isInnerfacesExpanded ? 'auto' : '0px',
-                            minWidth: isInnerfacesExpanded ? '100px' : '0px',
-                            padding: isInnerfacesExpanded ? '0 1rem' : '0',
-                            opacity: isInnerfacesExpanded ? 1 : 0,
-                            transform: isInnerfacesExpanded ? 'translateX(0)' : 'translateX(-10px)',
-                            pointerEvents: isInnerfacesExpanded ? 'auto' : 'none',
+                            width: (isInnerfacesExpanded || isActive('/history')) ? 'auto' : '0px',
+                            minWidth: (isInnerfacesExpanded || isActive('/history')) ? '100px' : '0px',
+                            padding: (isInnerfacesExpanded || isActive('/history')) ? '0 1rem' : '0',
+                            opacity: (isInnerfacesExpanded || isActive('/history')) ? 1 : 0,
+                            transform: (isInnerfacesExpanded || isActive('/history')) ? 'translateX(0)' : 'translateX(-10px)',
+                            pointerEvents: (isInnerfacesExpanded || isActive('/history')) ? 'auto' : 'none',
                         }}
                     >
                         <Clock
                             className="w-3.5 h-3.5"
-                            fill={isActive('/history') ? "currentColor" : "none"}
+                            strokeWidth={isActive('/history') ? 3 : 2}
                         />
                         <span>history</span>
                     </Link>
@@ -142,9 +142,9 @@ export function Navigation() {
                             z-0 shadow-sm
                         `}
                         style={{
-                            width: isInnerfacesExpanded ? '120px' : '0px',
-                            opacity: isInnerfacesExpanded ? 1 : 0,
-                            visibility: isInnerfacesExpanded ? 'visible' : 'hidden'
+                            width: (isInnerfacesExpanded || isActive('/history')) ? '120px' : '0px',
+                            opacity: (isInnerfacesExpanded || isActive('/history')) ? 1 : 0,
+                            visibility: (isInnerfacesExpanded || isActive('/history')) ? 'visible' : 'hidden'
                         }}
                     />
                 </div>

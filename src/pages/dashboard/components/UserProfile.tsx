@@ -1,6 +1,7 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser } from '@fortawesome/free-solid-svg-icons';
-import { Card } from '../../components/ui/Card';
+import { Card } from '../../../components/ui/atoms/Card';
+import { ProgressBar } from '../../../components/ui/atoms/ProgressBar';
 
 
 interface UserProfileProps {

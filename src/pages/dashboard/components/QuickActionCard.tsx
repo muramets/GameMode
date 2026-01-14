@@ -3,7 +3,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
 import type { IconProp } from '@fortawesome/fontawesome-svg-core';
 import type { QuickAction } from './types';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, TooltipPortal } from '../../components/ui/Tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, TooltipPortal } from '../../../components/ui/atoms/Tooltip';
+
 
 interface QuickActionCardProps {
     action: QuickAction;
