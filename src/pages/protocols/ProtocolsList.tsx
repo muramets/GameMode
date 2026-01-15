@@ -14,6 +14,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { ActiveFiltersList } from '../../components/ui/molecules/ActiveFiltersList';
 import { GROUP_CONFIG } from '../../constants/common';
+import { CollapsibleSection } from '../../components/ui/molecules/CollapsibleSection';
 // Optimization: Isolated heavy rendering component
 const ProtocolsContent = React.memo(({
     protocols,
@@ -75,6 +76,30 @@ const ProtocolsContent = React.memo(({
         return result;
     }, [protocols, searchQuery, activeFilters, innerfaceMap]);
 
+    // Grouping Logic
+    const groupedProtocols = useMemo(() => {
+        const groups: Record<string, Protocol[]> = {};
+        const sortOrder = Object.keys(GROUP_CONFIG); // Use defined order from config
+
+        filteredProtocols.forEach(p => {
+            const groupName = p.group || 'ungrouped';
+            if (!groups[groupName]) groups[groupName] = [];
+            groups[groupName].push(p);
+        });
+
+        // Sort groups based on config, putting unknown groups at the end
+        const sortedGroups = Object.entries(groups).sort(([keyA], [keyB]) => {
+            const indexA = sortOrder.indexOf(keyA);
+            const indexB = sortOrder.indexOf(keyB);
+            if (indexA === -1 && indexB === -1) return keyA.localeCompare(keyB);
+            if (indexA === -1) return 1;
+            if (indexB === -1) return -1;
+            return indexA - indexB;
+        });
+
+        return sortedGroups;
+    }, [filteredProtocols]);
+
     // 3. Progressive Batching
     // Render first 20 items immediately, then the rest.
     const [renderedCount, setRenderedCount] = useState(20);
@@ -94,11 +119,10 @@ const ProtocolsContent = React.memo(({
         }
     }, [renderedCount, filteredProtocols.length]);
 
-    const visibleProtocols = filteredProtocols.slice(0, renderedCount);
 
     useLayoutEffect(() => {
         const now = performance.now();
-        console.log(`[PERF][6] ProtocolsContent: Painted ${visibleProtocols.length} items at ${now.toFixed(2)}ms`);
+        console.log(`[PERF][6] ProtocolsContent: Painted items at ${now.toFixed(2)}ms`);
     });
 
     if (filteredProtocols.length === 0) {
@@ -124,24 +148,57 @@ const ProtocolsContent = React.memo(({
         );
     }
 
+    let currentRenderCount = 0;
+
     return (
-        <>
-            {visibleProtocols.map((protocol: Protocol) => (
-                <ProtocolRow
-                    key={protocol.id}
-                    protocol={protocol}
-                    innerfaces={innerfaces}
-                    onLevelUp={(id: string | number) => applyProtocol(id, '+')}
-                    onLevelDown={(id: string | number) => applyProtocol(id, '-')}
-                    onEdit={handleEditProtocol}
-                />
-            ))}
+        <div className="flex flex-col gap-8 pb-20">
+            {groupedProtocols.map(([groupName, groupProtocols]) => {
+                // progressive rendering check per group
+                if (currentRenderCount >= renderedCount) return null;
+                const protocolsToShow = groupProtocols.slice(0, renderedCount - currentRenderCount);
+                currentRenderCount += protocolsToShow.length;
+
+                if (protocolsToShow.length === 0) return null;
+
+                const config = GROUP_CONFIG[groupName] || GROUP_CONFIG['ungrouped'];
+
+                return (
+                    <CollapsibleSection
+                        key={groupName}
+                        defaultOpen={true}
+                        title={
+                            <div className="flex items-center gap-3">
+                                {config && <FontAwesomeIcon icon={config.icon} style={{ color: config.color }} className="text-lg opacity-80" />}
+                                <span className={groupName === 'ungrouped' ? 'opacity-50' : ''}>{groupName}</span>
+                                <span className="text-xs font-mono font-normal opacity-40 bg-sub/20 px-2 py-0.5 rounded-full ml-auto md:ml-0">
+                                    {groupProtocols.length}
+                                </span>
+                            </div>
+                        }
+                        className="animate-in fade-in slide-in-from-bottom-2 duration-500"
+                    >
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {protocolsToShow.map((protocol) => (
+                                <ProtocolRow
+                                    key={protocol.id}
+                                    protocol={protocol}
+                                    innerfaces={innerfaces}
+                                    onLevelUp={(id: string | number) => applyProtocol(id, '+')}
+                                    onLevelDown={(id: string | number) => applyProtocol(id, '-')}
+                                    onEdit={handleEditProtocol}
+                                />
+                            ))}
+                        </div>
+                    </CollapsibleSection>
+                );
+            })}
+
             {filteredProtocols.length > renderedCount && (
                 <div className="py-4 text-center text-xs text-sub opacity-50">
                     Loading rest...
                 </div>
             )}
-        </>
+        </div>
     );
 });
 
