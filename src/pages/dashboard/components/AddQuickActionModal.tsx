@@ -8,6 +8,7 @@ import { renderIcon } from '../../../utils/iconMapper';
 import { Input } from '../../../components/ui/molecules/Input';
 import { Button } from '../../../components/ui/atoms/Button';
 import { Modal } from '../../../components/ui/molecules/Modal';
+import { CollapsibleSection } from '../../../components/ui/molecules/CollapsibleSection';
 
 interface AddQuickActionModalProps {
     isOpen: boolean;
@@ -38,6 +39,7 @@ export function AddQuickActionModal({ isOpen, onClose }: AddQuickActionModalProp
             isOpen={isOpen}
             onClose={onClose}
             title="Add Quick Action"
+            className="!bg-bg-primary"
         >
             <div className="flex flex-col h-[60vh]">
                 <p className="text-sm text-sub font-mono -mt-2 mb-4">Pin your most used protocols for quick access.</p>
@@ -51,76 +53,76 @@ export function AddQuickActionModal({ isOpen, onClose }: AddQuickActionModalProp
                         icon={faSearch}
                         fullWidth
                         autoFocus
+                        className="!bg-transparent !border-sub-alt/20 focus:!border-sub-alt/50"
                     />
                 </div>
 
                 {/* List */}
-                <div className="overflow-y-auto flex-1 space-y-2 custom-scrollbar pr-1 pb-2">
+                <div className="overflow-y-auto flex-1 space-y-4 custom-scrollbar pr-1 pb-2">
                     {filteredProtocols.length === 0 ? (
                         <div className="py-12 text-center text-sub/50 font-mono text-xs italic">
                             No protocols found matching "{searchQuery}"
                         </div>
                     ) : (
-                        filteredProtocols.map(protocol => {
-                            const isPinned = pinnedProtocolIds.includes(protocol.id.toString());
-                            const baseColor = protocol.color || '#98c379';
+                        (() => {
+                            // Group protocols
+                            const groups: Record<string, typeof protocols> = {};
+                            const noGroup: typeof protocols = [];
+
+                            filteredProtocols.forEach(p => {
+                                if (p.group) {
+                                    if (!groups[p.group]) groups[p.group] = [];
+                                    groups[p.group].push(p);
+                                } else {
+                                    noGroup.push(p);
+                                }
+                            });
+
+                            const sortedGroupNames = Object.keys(groups).sort();
 
                             return (
-                                <div
-                                    key={protocol.id}
-                                    className={`flex items-center justify-between p-3 rounded-xl transition-all group border ${isPinned
-                                        ? 'bg-sub-alt/30 border-transparent'
-                                        : 'hover:bg-sub-alt border-transparent'
-                                        }`}
-                                >
-                                    {/* Left: Icon + Info */}
-                                    <div className="flex items-center gap-4 min-w-0">
-                                        {/* Icon Box */}
-                                        <div
-                                            className="w-10 h-10 rounded-lg flex items-center justify-center text-lg shadow-sm"
-                                            style={{
-                                                backgroundColor: `${baseColor}15`,
-                                                color: baseColor
-                                            }}
+                                <>
+                                    {/* Render Groups */}
+                                    {sortedGroupNames.map(groupName => (
+                                        <CollapsibleSection
+                                            key={groupName}
+                                            title={<span className="text-sm font-mono font-bold text-sub uppercase tracking-wider">{groupName}</span>}
+                                            defaultOpen={true}
                                         >
-                                            <span className="flex items-center justify-center opacity-90 text-sm">
-                                                {renderIcon(protocol.icon)}
-                                            </span>
-                                        </div>
-
-                                        {/* Text Info */}
-                                        <div className="flex flex-col min-w-0 gap-0.5">
-                                            <div className="flex items-center gap-2">
-                                                <span className={`font-bold font-mono text-sm tracking-tight ${isPinned ? 'text-main' : 'text-text-primary'}`}>
-                                                    {protocol.title}
-                                                </span>
-                                                {protocol.group && (
-                                                    <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/5 text-sub font-mono font-bold">
-                                                        {protocol.group}
-                                                    </span>
-                                                )}
+                                            <div className="flex flex-col gap-2">
+                                                {groups[groupName].map(protocol => (
+                                                    <ProtocolItem
+                                                        key={protocol.id}
+                                                        protocol={protocol}
+                                                        isPinned={pinnedProtocolIds.includes(protocol.id.toString())}
+                                                        onToggle={() => handleTogglePin(protocol.id)}
+                                                    />
+                                                ))}
                                             </div>
-                                            <div className="text-[10px] text-sub truncate font-mono">
-                                                {protocol.description || protocol.hover || "No description"}
-                                            </div>
-                                        </div>
-                                    </div>
+                                        </CollapsibleSection>
+                                    ))}
 
-                                    {/* Right: Action Button */}
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        onClick={() => handleTogglePin(protocol.id)}
-                                        variant="primary"
-                                        className={`min-w-[80px] h-[32px] text-[10px] uppercase font-bold tracking-wider transition-all duration-200 !focus:ring-0 !focus:outline-none ${!isPinned && 'opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0'
-                                            }`}
-                                        leftIcon={<FontAwesomeIcon icon={isPinned ? faCheck : faThumbtack} />}
-                                    >
-                                        {isPinned ? 'Added' : 'Add'}
-                                    </Button>
-                                </div>
+                                    {/* Render No Group */}
+                                    {noGroup.length > 0 && (
+                                        <CollapsibleSection
+                                            title={<span className="text-sm font-mono font-bold text-sub uppercase tracking-wider">Uncategorized</span>}
+                                            defaultOpen={true}
+                                        >
+                                            <div className="flex flex-col gap-2">
+                                                {noGroup.map(protocol => (
+                                                    <ProtocolItem
+                                                        key={protocol.id}
+                                                        protocol={protocol}
+                                                        isPinned={pinnedProtocolIds.includes(protocol.id.toString())}
+                                                        onToggle={() => handleTogglePin(protocol.id)}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </CollapsibleSection>
+                                    )}
+                                </>
                             );
-                        })
+                        })()
                     )}
                 </div>
 
@@ -130,5 +132,61 @@ export function AddQuickActionModal({ isOpen, onClose }: AddQuickActionModalProp
                 </div>
             </div>
         </Modal>
+    );
+}
+
+// Helper Component for Item Rendering
+function ProtocolItem({ protocol, isPinned, onToggle }: { protocol: any, isPinned: boolean, onToggle: () => void }) {
+    const baseColor = protocol.color || '#98c379';
+
+    return (
+        <div
+            className={`flex items-center justify-between p-3 rounded-xl transition-all group border ${isPinned
+                ? 'bg-sub-alt border-transparent'
+                : 'hover:bg-sub-alt border-transparent'
+                }`}
+        >
+            {/* Left: Icon + Info */}
+            <div className="flex items-center gap-4 min-w-0">
+                {/* Icon Box */}
+                <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-lg shadow-sm"
+                    style={{
+                        backgroundColor: `${baseColor}15`,
+                        color: baseColor
+                    }}
+                >
+                    <span className="flex items-center justify-center opacity-90 text-sm">
+                        {renderIcon(protocol.icon)}
+                    </span>
+                </div>
+
+                {/* Text Info */}
+                <div className="flex flex-col min-w-0 gap-0.5">
+                    <div className="flex items-center gap-2">
+                        <span className={`font-bold font-mono text-sm tracking-tight ${isPinned ? 'text-main' : 'text-text-primary'}`}>
+                            {protocol.title}
+                        </span>
+                        {/* Removed Group Badge as requested */}
+                    </div>
+                    <div className="text-[10px] text-sub truncate font-mono">
+                        {protocol.description || protocol.hover || "No description"}
+                    </div>
+                </div>
+            </div>
+
+            {/* Right: Action Button */}
+            <Button
+                type="button"
+                size="sm"
+                onClick={onToggle}
+                variant="primary"
+                className={`min-w-[80px] h-[32px] text-[10px] uppercase font-bold tracking-wider transition-all duration-200 !focus:ring-0 !focus:outline-none ${!isPinned && 'opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0'
+                    }`}
+                leftIcon={<FontAwesomeIcon icon={isPinned ? faCheck : faThumbtack} />}
+            >
+                {isPinned ? 'Added' : 'Add'}
+            </Button>
+        </div>
     );
 }
