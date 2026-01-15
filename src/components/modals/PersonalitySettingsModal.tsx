@@ -7,6 +7,7 @@ import { usePersonalityStore } from '../../stores/personalityStore';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 import { PRESET_COLORS } from '../../constants/common';
+import * as Popover from '@radix-ui/react-popover';
 
 interface PersonalitySettingsModalProps {
     isOpen: boolean;
@@ -151,41 +152,44 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
                     {/* Color */}
                     <div className="w-[60px] flex flex-col gap-1.5 relative">
                         <InputLabel label="Color" />
-                        <button
-                            type="button"
-                            onClick={() => setIsColorPickerOpen(!isColorPickerOpen)}
-                            className="h-[42px] w-full bg-sub-alt rounded-lg border border-transparent hover:bg-sub focus:border-white/5 transition-colors flex items-center justify-center relative"
-                        >
-                            <div
-                                className="w-5 h-5 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.3)] transition-transform duration-200 active:scale-90"
-                                style={{ backgroundColor: color }}
-                            />
-                        </button>
+                        <Popover.Root open={isColorPickerOpen} onOpenChange={setIsColorPickerOpen}>
+                            <Popover.Trigger asChild>
+                                <button
+                                    type="button"
+                                    className="h-[42px] w-full bg-sub-alt rounded-lg border border-transparent hover:bg-sub focus:border-white/5 transition-colors flex items-center justify-center relative"
+                                >
+                                    <div
+                                        className="w-5 h-5 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.3)] transition-transform duration-200 active:scale-90"
+                                        style={{ backgroundColor: color }}
+                                    />
+                                </button>
+                            </Popover.Trigger>
 
-                        {/* Color Dropdown */}
-                        {isColorPickerOpen && (
-                            <div className="absolute top-[calc(100%+8px)] left-0 w-[180px] z-50 py-2 bg-bg-secondary border border-white/5 rounded-xl shadow-2xl flex flex-wrap justify-center gap-2 animate-in fade-in zoom-in-95 duration-200 p-2 max-h-[160px] overflow-y-auto custom-scrollbar">
-                                {PRESET_COLORS.map((preset: string) => (
-                                    <button
-                                        key={preset}
-                                        type="button"
-                                        onClick={() => {
-                                            setColor(preset);
-                                            setIsColorPickerOpen(false);
-                                        }}
-                                        className="w-6 h-6 rounded-full hover:scale-110 transition-transform shadow-sm relative group shrink-0"
-                                        style={{ backgroundColor: preset }}
-                                    >
-                                        {color === preset && (
-                                            <div className="absolute inset-0 rounded-full border-2 border-white/50" />
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                        {isColorPickerOpen && (
-                            <div className="fixed inset-0 z-40" onClick={() => setIsColorPickerOpen(false)} />
-                        )}
+                            <Popover.Portal>
+                                <Popover.Content
+                                    className="z-[100] p-2 bg-bg-secondary border border-white/5 rounded-xl shadow-2xl flex flex-wrap justify-center gap-2 animate-in fade-in zoom-in-95 duration-200 w-[180px] max-h-[160px] overflow-y-auto custom-scrollbar"
+                                    sideOffset={8}
+                                >
+                                    {PRESET_COLORS.map((preset: string) => (
+                                        <button
+                                            key={preset}
+                                            type="button"
+                                            onClick={() => {
+                                                setColor(preset);
+                                                setIsColorPickerOpen(false);
+                                            }}
+                                            className="w-6 h-6 rounded-full hover:scale-110 transition-transform shadow-sm relative group shrink-0"
+                                            style={{ backgroundColor: preset }}
+                                        >
+                                            {color === preset && (
+                                                <div className="absolute inset-0 rounded-full border-2 border-white/50" />
+                                            )}
+                                        </button>
+                                    ))}
+                                    <Popover.Arrow className="fill-current text-white/5" />
+                                </Popover.Content>
+                            </Popover.Portal>
+                        </Popover.Root>
                     </div>
 
                     {/* Avatar URL (Optional) */}
