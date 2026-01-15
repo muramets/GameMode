@@ -2,6 +2,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import { QuickActionCard } from './QuickActionCard';
 import type { Protocol } from '../../protocols/types';
+import { CollapsibleSection } from '../../../components/ui/molecules/CollapsibleSection';
 
 interface QuickActionsGridProps {
     actions: Protocol[];
@@ -12,18 +13,21 @@ interface QuickActionsGridProps {
 
 export function QuickActionsGrid({ actions, onAddAction, onActionClick, onDeleteAction }: QuickActionsGridProps) {
     return (
-        <div className="w-full">
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-text-primary">Quick Actions</h2>
+        <CollapsibleSection
+            title="Quick Actions"
+            trailing={
                 <button
-                    onClick={onAddAction}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onAddAction?.();
+                    }}
                     title="Add protocol to quick actions"
                     className="w-8 h-8 flex items-center justify-center rounded-lg text-sub hover:text-text-primary transition-colors duration-200"
                 >
                     <FontAwesomeIcon icon={faPlus} className="text-sm" />
                 </button>
-            </div>
-
+            }
+        >
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {actions.map((action) => (
                     <QuickActionCard
@@ -45,6 +49,6 @@ export function QuickActionsGrid({ actions, onAddAction, onActionClick, onDelete
                     </button>
                 )}
             </div>
-        </div>
+        </CollapsibleSection>
     );
 }

@@ -1,6 +1,7 @@
 import { StateCard } from './StateCard';
 import type { StateData } from './types';
 import { Plus } from 'lucide-react';
+import { CollapsibleSection } from '../../../components/ui/molecules/CollapsibleSection';
 
 interface StatesGridProps {
     states: StateData[];
@@ -11,18 +12,21 @@ interface StatesGridProps {
 
 export function StatesGrid({ states, onAddState, onEdit, onHistory }: StatesGridProps) {
     return (
-        <div className="w-full">
-            <div className="flex items-center justify-between mb-4">
-                <h1 className="text-2xl font-bold text-text-primary">Character Stats</h1>
+        <CollapsibleSection
+            title="Character Stats"
+            trailing={
                 <button
-                    onClick={onAddState}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onAddState?.();
+                    }}
                     title="Add new state"
                     className="w-10 h-10 flex items-center justify-center rounded-lg text-sub hover:text-text-primary transition-colors duration-200"
                 >
                     <Plus className="w-5 h-5" />
                 </button>
-            </div>
-
+            }
+        >
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {states.map((state) => (
                     <StateCard
@@ -43,6 +47,6 @@ export function StatesGrid({ states, onAddState, onEdit, onHistory }: StatesGrid
                     </div>
                 )}
             </div>
-        </div>
+        </CollapsibleSection>
     );
 }
