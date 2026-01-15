@@ -22,6 +22,7 @@ import type { HistoryRecord } from '../types/history';
  * - Records are appended-only (log).
  * - Queries are ordered by timestamp (newest first).
  * - Real-time sync ensures that if a user checks in on mobile, the web dashboard updates instantly.
+ * - Scoped by PERSONALITY ({uid}/personalities/{pid}/history).
  */
 interface HistoryState {
     history: HistoryRecord[];
@@ -29,9 +30,9 @@ interface HistoryState {
     error: string | null;
 
     // Actions
-    addCheckin: (uid: string, record: Omit<HistoryRecord, 'id'>) => Promise<void>;
-    deleteCheckin: (uid: string, id: string) => Promise<void>;
-    subscribeToHistory: (uid: string) => () => void;
+    addCheckin: (uid: string, pid: string, record: Omit<HistoryRecord, 'id'>) => Promise<void>;
+    deleteCheckin: (uid: string, pid: string, id: string) => Promise<void>;
+    subscribeToHistory: (uid: string, pid: string) => () => void;
 }
 
 export const useHistoryStore = create<HistoryState>((set) => ({
@@ -39,9 +40,9 @@ export const useHistoryStore = create<HistoryState>((set) => ({
     isLoading: true,
     error: null,
 
-    addCheckin: async (uid, record) => {
+    addCheckin: async (uid, pid, record) => {
         try {
-            const historyRef = collection(db, 'users', uid, 'history');
+            const historyRef = collection(db, 'users', uid, 'personalities', pid, 'history');
             await addDoc(historyRef, {
                 ...record,
                 // Server timestamp is crucial for correct ordering across devices with different system clocks
@@ -53,9 +54,9 @@ export const useHistoryStore = create<HistoryState>((set) => ({
         }
     },
 
-    deleteCheckin: async (uid, id) => {
+    deleteCheckin: async (uid, pid, id) => {
         try {
-            const docRef = doc(db, 'users', uid, 'history', id);
+            const docRef = doc(db, 'users', uid, 'personalities', pid, 'history', id);
             await deleteDoc(docRef);
         } catch (err: any) {
             console.error('Error deleting checkin:', err);
@@ -63,9 +64,9 @@ export const useHistoryStore = create<HistoryState>((set) => ({
         }
     },
 
-    subscribeToHistory: (uid) => {
+    subscribeToHistory: (uid, pid) => {
         set({ isLoading: true });
-        const historyRef = collection(db, 'users', uid, 'history');
+        const historyRef = collection(db, 'users', uid, 'personalities', pid, 'history');
         const q = query(historyRef, orderBy('timestamp', 'desc'));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {

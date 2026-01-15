@@ -57,7 +57,7 @@ export function StateCard({
     return (
         <div
             ref={cardRef}
-            className="group relative overflow-hidden rounded-2xl bg-sub-alt p-6 min-h-[180px] flex flex-col justify-between transition-all duration-300 cursor-pointer hover:-translate-y-[2px] hover:shadow-lg"
+            className="group relative overflow-hidden rounded-2xl bg-sub-alt p-6 min-h-[180px] flex flex-col justify-between transition-all duration-300 cursor-pointer hover:-translate-y-[2px] hover:shadow-lg border border-transparent"
             onClick={onClick}
         >
             {/* Ambient Top Gradient - Anchors the color */}

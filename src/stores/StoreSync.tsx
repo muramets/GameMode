@@ -2,27 +2,40 @@ import { useEffect } from 'react';
 import { useAuth } from '../contexts/AuthProvider';
 import { useHistoryStore } from './historyStore';
 import { useMetadataStore } from './metadataStore';
+import { usePersonalityStore } from './personalityStore';
 
 export function StoreSync() {
     const { user } = useAuth();
     const subscribeToHistory = useHistoryStore(state => state.subscribeToHistory);
     const subscribeToMetadata = useMetadataStore(state => state.subscribeToMetadata);
+
+    const {
+        ensureDefaultPersonality,
+        activePersonalityId
+    } = usePersonalityStore();
+
+    // 1. Initialize Personalities (and migrate if needed)
     useEffect(() => {
         if (user) {
-            console.log('Syncing data for user:', user.uid);
+            ensureDefaultPersonality(user.uid);
+        }
+    }, [user, ensureDefaultPersonality]);
 
-            // 1. Subscribe to history
-            const unsubHistory = subscribeToHistory(user.uid);
+    // 2. Sync Data when Personality is Active
+    useEffect(() => {
+        if (user && activePersonalityId) {
+            console.log(`[StoreSync] Syncing data for user: ${user.uid}, personality: ${activePersonalityId}`);
 
-            // 2. Subscribe to metadata (Innerfaces, Protocols, States)
-            const unsubMetadata = subscribeToMetadata(user.uid);
+            const unsubHistory = subscribeToHistory(user.uid, activePersonalityId);
+            const unsubMetadata = subscribeToMetadata(user.uid, activePersonalityId);
 
             return () => {
+                console.log('[StoreSync] Unsubscribing from current personality...');
                 unsubHistory();
                 unsubMetadata();
             };
         }
-    }, [user, subscribeToHistory, subscribeToMetadata]);
+    }, [user, activePersonalityId, subscribeToHistory, subscribeToMetadata]);
 
     return null;
 }

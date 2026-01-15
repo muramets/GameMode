@@ -7,7 +7,7 @@ import {
     faGlobe, faBed, faLeaf, faGlassWhiskey, faPhone, faDrumstickBite,
     faMasksTheater, faPause, faYinYang, faBatteryFull, faBolt,
     faChartLine, faGaugeHigh, faHouseUser, faPuzzlePiece, faUsersGear,
-    faQuestion
+    faQuestion, faUser
 } from '@fortawesome/free-solid-svg-icons';
 
 const EMOJI_MAP: Record<string, any> = {
@@ -74,7 +74,8 @@ const EMOJI_MAP: Record<string, any> = {
     '🚄': faGaugeHigh,
     '👨‍👩‍👧‍👦': faHouseUser,
     '🧩': faPuzzlePiece,
-    '🏗': faUsersGear
+    '🏗': faUsersGear,
+    'user': faUser
 };
 
 export function renderIcon(iconStr: string, className?: string) {

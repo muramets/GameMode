@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthProvider';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser } from '@fortawesome/free-solid-svg-icons';
+import { PersonalityDropdown } from './PersonalityDropdown';
 // import { faKeyboard, faCrown, faInfo, faCog } from '@fortawesome/free-solid-svg-icons';
 import { LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -54,23 +55,11 @@ export function Header() {
                 {/* Layout Note: gap-2 (8px) is standard, but gap-4 (16px) is used here to match user preference for wider spacing. */}
                 <div className="flex items-center gap-2">
                     {/* Navigation Icons - Commented out for now, preserving grid for future use */}
-                    {/* 
-                    <Link title="start test" to="/" className="hover:text-text-primary transition-colors w-9 h-9 flex items-center justify-center -ml-2">
-                        <FontAwesomeIcon icon={faKeyboard} className="text-lg" />
-                    </Link>
-                    <Link title="leaderboards" to="/leaderboards" className="hover:text-text-primary transition-colors w-9 h-9 flex items-center justify-center">
-                        <FontAwesomeIcon icon={faCrown} className="text-base" />
-                    </Link>
-                    <Link title="about" to="/about" className="hover:text-text-primary transition-colors w-9 h-9 flex items-center justify-center">
-                        <FontAwesomeIcon icon={faInfo} className="text-base" />
-                    </Link>
-                    <Link title="settings" to="/settings" className="hover:text-text-primary transition-colors w-9 h-9 flex items-center justify-center">
-                        <FontAwesomeIcon icon={faCog} className="text-lg" />
-                    </Link> 
-                    */}
                 </div>
 
-                <div className="flex items-center gap-2 relative">
+                <div className="flex items-center gap-4 relative">
+                    <PersonalityDropdown />
+
                     <div
                         className="relative"
                         onMouseEnter={() => setIsDropdownOpen(true)}
