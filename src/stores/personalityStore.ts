@@ -122,7 +122,7 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
     },
 
     ensureDefaultPersonality: async (uid) => {
-        const { personalities, loadPersonalities, addPersonality, switchPersonality } = get();
+        const { personalities, loadPersonalities, switchPersonality } = get();
 
         // If not loaded yet, try loading
         if (personalities.length === 0) {

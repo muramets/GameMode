@@ -21,7 +21,7 @@ export function Button({
     ...props
 }: ButtonProps) {
 
-    const baseStyles = "inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed";
+    const baseStyles = "inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed";
 
     const variants = {
         primary: "bg-main text-bg-primary hover:bg-text-primary hover:text-bg-primary active:bg-sub active:text-bg-primary transition-colors duration-150",

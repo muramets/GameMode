@@ -24,13 +24,11 @@ export function ScoreProvider({ children }: { children: React.ReactNode }) {
     const [displayProgress, setDisplayProgress] = useState(0);
 
     useEffect(() => {
-        let interval: NodeJS.Timeout;
-        let currentProgress = 0;
+        let interval: ReturnType<typeof setInterval>;
 
         // Start filling smoothly
         interval = setInterval(() => {
             setDisplayProgress(prev => {
-                currentProgress = prev;
 
                 // If real data is loaded, we accelerate to 100
                 if (!scoreData.isLoading) {

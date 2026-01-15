@@ -4,6 +4,7 @@ import { Input } from '../../../components/ui/molecules/Input';
 import { Button } from '../../../components/ui/atoms/Button';
 import { useAuth } from '../../../contexts/AuthProvider';
 import { useMetadataStore } from '../../../stores/metadataStore';
+import { usePersonalityStore } from '../../../stores/personalityStore';
 import { renderIcon, getMappedIcon } from '../../../utils/iconMapper';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faExclamationTriangle, faPlus, faMinus, faChevronDown, faTimes } from '@fortawesome/free-solid-svg-icons';
@@ -24,6 +25,7 @@ interface ProtocolSettingsModalProps {
 export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolSettingsModalProps) {
     const { user } = useAuth();
     const { innerfaces, protocols, groupsMetadata, addProtocol, updateProtocol, deleteProtocol, updateGroupMetadata } = useMetadataStore();
+    const { activePersonalityId } = usePersonalityStore();
 
     // Form State
     const [title, setTitle] = useState('');
@@ -89,7 +91,7 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user) return;
+        if (!user || !activePersonalityId) return;
 
         const data = {
             title,
@@ -104,15 +106,15 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
         };
 
         if (protocolId) {
-            await updateProtocol(user.uid, protocolId, data);
+            await updateProtocol(user.uid, activePersonalityId, protocolId, data);
         } else {
-            await addProtocol(user.uid, data);
+            await addProtocol(user.uid, activePersonalityId, data);
         }
         onClose();
     };
 
     const handleDelete = async () => {
-        if (!protocolId || !user) return;
+        if (!protocolId || !user || !activePersonalityId) return;
 
         if (!isConfirmingDelete) {
             setIsConfirmingDelete(true);
@@ -120,19 +122,19 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
             return;
         }
 
-        await deleteProtocol(user.uid, protocolId);
+        await deleteProtocol(user.uid, activePersonalityId, protocolId);
         onClose();
     };
 
     const handleUpdateGroupIcon = async (groupName: string, icon: string) => {
-        if (!user) return;
-        await updateGroupMetadata(user.uid, groupName, { icon });
+        if (!user || !activePersonalityId) return;
+        await updateGroupMetadata(user.uid, activePersonalityId, groupName, { icon });
         setEditingGroupIcon(null);
     };
 
     const handleUpdateGroupColor = async (groupName: string, color: string) => {
-        if (!user) return;
-        await updateGroupMetadata(user.uid, groupName, { color });
+        if (!user || !activePersonalityId) return;
+        await updateGroupMetadata(user.uid, activePersonalityId, groupName, { color });
         setEditingGroupColor(null);
         setIsGroupColorPickerOpen(false);
     };

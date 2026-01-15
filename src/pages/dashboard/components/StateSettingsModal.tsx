@@ -3,7 +3,9 @@ import { Modal } from '../../../components/ui/molecules/Modal';
 import { Input } from '../../../components/ui/molecules/Input';
 import { Button } from '../../../components/ui/atoms/Button';
 import { useAuth } from '../../../contexts/AuthProvider';
+
 import { useMetadataStore } from '../../../stores/metadataStore';
+import { usePersonalityStore } from '../../../stores/personalityStore';
 import { getMappedIcon, renderIcon } from '../../../utils/iconMapper';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faExclamationTriangle, faTimes, faSearch } from '@fortawesome/free-solid-svg-icons';
@@ -20,6 +22,7 @@ interface StateSettingsModalProps {
 export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsModalProps) {
     const { user } = useAuth();
     const { states, innerfaces, protocols, addState, updateState, deleteState } = useMetadataStore();
+    const { activePersonalityId } = usePersonalityStore();
 
     // Form State
     const [name, setName] = useState('');
@@ -64,7 +67,7 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user) return;
+        if (!user || !activePersonalityId) return;
 
         const data = {
             name,
@@ -76,15 +79,15 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
         };
 
         if (stateId) {
-            await updateState(user.uid, stateId, data);
+            await updateState(user.uid, activePersonalityId, stateId, data);
         } else {
-            await addState(user.uid, data);
+            await addState(user.uid, activePersonalityId, data);
         }
         onClose();
     };
 
     const handleDelete = async () => {
-        if (!stateId || !user) return;
+        if (!stateId || !user || !activePersonalityId) return;
 
         if (!isConfirmingDelete) {
             setIsConfirmingDelete(true);
@@ -92,7 +95,7 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
             return;
         }
 
-        await deleteState(user.uid, stateId);
+        await deleteState(user.uid, activePersonalityId, stateId);
         onClose();
     };
 

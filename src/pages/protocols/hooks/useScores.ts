@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useAuth } from '../../../contexts/AuthProvider';
 import { useHistoryStore } from '../../../stores/historyStore';
 import { useMetadataStore } from '../../../stores/metadataStore';
+import { usePersonalityStore } from '../../../stores/personalityStore';
 import type { HistoryRecord } from '../../../types/history';
 
 export type { HistoryRecord as Checkin };
@@ -10,6 +11,7 @@ export function useScores() {
     const { user } = useAuth();
     const { history, addCheckin, deleteCheckin, isLoading: isHistoryLoading } = useHistoryStore();
     const { innerfaces, protocols, states, isLoading: isMetadataLoading, loadedCount: metadataLoadedCount } = useMetadataStore();
+    const { activePersonalityId } = usePersonalityStore();
 
     const isLoading = isHistoryLoading || isMetadataLoading;
 
@@ -22,8 +24,8 @@ export function useScores() {
         const protocol = protocols.find(p => p.id === protocolId);
         if (!protocol) return;
 
-        if (!user) {
-            console.warn('Cannot apply protocol: No user logged in');
+        if (!user || !activePersonalityId) {
+            console.warn('Cannot apply protocol: No user logged in or no active personality');
             return;
         }
 
@@ -45,8 +47,8 @@ export function useScores() {
             action: direction
         };
 
-        await addCheckin(user.uid, newRecord);
-    }, [user, protocols, addCheckin]);
+        await addCheckin(user.uid, activePersonalityId, newRecord);
+    }, [user, activePersonalityId, protocols, addCheckin]);
 
     const calculateInnerfaceScore = useCallback((innerfaceId: number | string) => {
         // Use loose equality or string conversion to match mixed types (string vs number)
@@ -180,9 +182,9 @@ export function useScores() {
     }, [states, innerfaces, protocols, calculateStateScore, calculateStateScoreAtDate]);
 
     const deleteEvent = useCallback(async (id: string) => {
-        if (!user) return;
-        await deleteCheckin(user.uid, id);
-    }, [user, deleteCheckin]);
+        if (!user || !activePersonalityId) return;
+        await deleteCheckin(user.uid, activePersonalityId, id);
+    }, [user, activePersonalityId, deleteCheckin]);
 
     return useMemo(() => ({
         history,

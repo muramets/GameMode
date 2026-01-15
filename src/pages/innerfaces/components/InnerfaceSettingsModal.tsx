@@ -4,6 +4,7 @@ import { Input } from '../../../components/ui/molecules/Input';
 import { Button } from '../../../components/ui/atoms/Button';
 import { useAuth } from '../../../contexts/AuthProvider';
 import { useMetadataStore } from '../../../stores/metadataStore';
+import { usePersonalityStore } from '../../../stores/personalityStore';
 import { getMappedIcon } from '../../../utils/iconMapper';
 // import type { Innerface } from '../../../pages/protocols/types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -20,6 +21,7 @@ interface InnerfaceSettingsModalProps {
 export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: InnerfaceSettingsModalProps) {
     const { user } = useAuth();
     const { innerfaces, addInnerface, updateInnerface, deleteInnerface } = useMetadataStore();
+    const { activePersonalityId } = usePersonalityStore();
 
     // Form State
     const [name, setName] = useState('');
@@ -59,7 +61,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user) return;
+        if (!user || !activePersonalityId) return;
 
         const fullName = description ? `${name}. ${description}` : name;
         const newInitialScore = Number(initialScore);
@@ -77,17 +79,17 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
             if (existing && existing.initialScore !== newInitialScore) {
                 data.versionTimestamp = new Date().toISOString();
             }
-            await updateInnerface(user.uid, innerfaceId, data);
+            await updateInnerface(user.uid, activePersonalityId, innerfaceId, data);
         } else {
             // For new ones, set versionTimestamp to current time 
             data.versionTimestamp = new Date().toISOString();
-            await addInnerface(user.uid, data);
+            await addInnerface(user.uid, activePersonalityId, data);
         }
         onClose();
     };
 
     const handleDelete = async () => {
-        if (!innerfaceId || !user) return;
+        if (!innerfaceId || !user || !activePersonalityId) return;
 
         if (!isConfirmingDelete) {
             setIsConfirmingDelete(true);
@@ -98,7 +100,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
             return;
         }
 
-        await deleteInnerface(user.uid, innerfaceId);
+        await deleteInnerface(user.uid, activePersonalityId, innerfaceId);
         onClose();
     };
 

@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faThumbtack, faCheck } from '@fortawesome/free-solid-svg-icons';
 import { useMetadataStore } from '../../../stores/metadataStore';
+import { usePersonalityStore } from '../../../stores/personalityStore';
 import { useAuth } from '../../../contexts/AuthProvider';
 import { renderIcon } from '../../../utils/iconMapper';
 import { Input } from '../../../components/ui/molecules/Input';
@@ -16,6 +17,7 @@ interface AddQuickActionModalProps {
 export function AddQuickActionModal({ isOpen, onClose }: AddQuickActionModalProps) {
     const { user } = useAuth();
     const { protocols, pinnedProtocolIds, togglePinnedProtocol } = useMetadataStore();
+    const { activePersonalityId } = usePersonalityStore();
     const [searchQuery, setSearchQuery] = useState('');
 
     const filteredProtocols = useMemo(() => {
@@ -27,8 +29,8 @@ export function AddQuickActionModal({ isOpen, onClose }: AddQuickActionModalProp
     }, [protocols, searchQuery]);
 
     const handleTogglePin = (protocolId: string | number) => {
-        if (!user?.uid) return;
-        togglePinnedProtocol(user.uid, protocolId.toString());
+        if (!user?.uid || !activePersonalityId) return;
+        togglePinnedProtocol(user.uid, activePersonalityId, protocolId.toString());
     };
 
     return (
@@ -67,7 +69,7 @@ export function AddQuickActionModal({ isOpen, onClose }: AddQuickActionModalProp
                                 <div
                                     key={protocol.id}
                                     className={`flex items-center justify-between p-3 rounded-xl transition-all group border ${isPinned
-                                        ? 'bg-sub-alt/30 border-main/20'
+                                        ? 'bg-sub-alt/30 border-transparent'
                                         : 'hover:bg-sub-alt border-transparent'
                                         }`}
                                 >
@@ -110,7 +112,7 @@ export function AddQuickActionModal({ isOpen, onClose }: AddQuickActionModalProp
                                         size="sm"
                                         onClick={() => handleTogglePin(protocol.id)}
                                         variant="primary"
-                                        className={`min-w-[80px] h-[32px] text-[10px] uppercase font-bold tracking-wider transition-all duration-200 focus:ring-0 ${!isPinned && 'opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0'
+                                        className={`min-w-[80px] h-[32px] text-[10px] uppercase font-bold tracking-wider transition-all duration-200 !focus:ring-0 !focus:outline-none ${!isPinned && 'opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0'
                                             }`}
                                         leftIcon={<FontAwesomeIcon icon={isPinned ? faCheck : faThumbtack} />}
                                     >

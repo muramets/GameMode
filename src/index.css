@@ -60,6 +60,11 @@ body {
   font-family: "Lexend Deca", sans-serif;
 }
 
+*:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 /* 
   MonkeyType #app Logic
 */
