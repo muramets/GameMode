@@ -8,6 +8,7 @@ export interface Innerface {
     currentScore?: number;
     color?: string; // Hex code
     versionTimestamp?: string; // ISO string for hard reset
+    order?: number;
 }
 
 export interface Protocol {

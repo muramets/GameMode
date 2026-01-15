@@ -65,6 +65,9 @@ interface MetadataState {
     // State Ordering
     reorderStates: (uid: string, pid: string, orderedIds: string[]) => Promise<void>;
 
+    // Innerface Ordering
+    reorderInnerfaces: (uid: string, pid: string, orderedIds: string[]) => Promise<void>;
+
     // --- Subscriptions ---
     subscribeToMetadata: (uid: string, pid: string) => () => void;
 }
@@ -264,6 +267,48 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             console.error("Failed to reorder states:", err);
             set({ error: err.message });
             // Revert checks would happen on next snapshot update naturally
+        }
+    },
+
+    reorderInnerfaces: async (uid, pid, orderedIds) => {
+        try {
+            // Optimistically update local state immediately
+            const currentInnerfaces = get().innerfaces;
+            const ifaceMap = new Map(currentInnerfaces.map(i => [i.id.toString(), i]));
+
+            const reorderedInnerfaces = orderedIds
+                .map((id, index) => {
+                    const iface = ifaceMap.get(id);
+                    return iface ? { ...iface, order: index } : null;
+                })
+                .filter(Boolean) as Innerface[];
+
+            // Add any missing ones
+            const missingInnerfaces = currentInnerfaces
+                .filter(i => !orderedIds.includes(i.id.toString()))
+                .map((i, idx) => ({ ...i, order: orderedIds.length + idx }));
+
+            set({ innerfaces: [...reorderedInnerfaces, ...missingInnerfaces] });
+
+            // Batch update Firestore
+            const { writeBatch } = await import('firebase/firestore');
+            const batch = writeBatch(db);
+
+            orderedIds.forEach((id, index) => {
+                const docRef = doc(db, 'users', uid, 'personalities', pid, 'innerfaces', id);
+                batch.update(docRef, { order: index });
+            });
+
+            // Also update any missing ones to logical ends
+            missingInnerfaces.forEach(i => {
+                const docRef = doc(db, 'users', uid, 'personalities', pid, 'innerfaces', i.id.toString());
+                batch.update(docRef, { order: i.order });
+            });
+
+            await batch.commit();
+        } catch (err: any) {
+            console.error("Failed to reorder innerfaces:", err);
+            set({ error: err.message });
         }
     },
 
