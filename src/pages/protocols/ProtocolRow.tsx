@@ -1,10 +1,91 @@
-import React, { useState, useRef, useMemo, type MouseEvent } from 'react';
+import React, { useState, useRef, useMemo, useEffect, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Protocol, Innerface } from './types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faMinus, faCog, faHistory } from '@fortawesome/free-solid-svg-icons';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/atoms/Tooltip';
 import { renderIcon } from '../../utils/iconMapper';
+import { motion } from 'framer-motion';
+
+// Set to true to visualize layout containers during development/debugging
+const DEBUG_LAYOUT = false;
+
+// Helper component to show tooltip only if text is truncated
+const TruncatedTooltip = ({ text, className, as: Component = 'div' }: { text: string, className?: string, as?: any }) => {
+    const [hasTruncated, setHasTruncated] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        if (isHovered) {
+            setIsMounted(true);
+        } else {
+            const timer = setTimeout(() => {
+                setIsMounted(false);
+            }, 300); // Wait for exit animation to finish
+            return () => clearTimeout(timer);
+        }
+    }, [isHovered]);
+
+    const handleMouseEnter = (e: React.MouseEvent<HTMLElement>) => {
+        const element = e.currentTarget;
+        const isCurrentlyTruncated = element.scrollWidth > element.clientWidth;
+
+        if (isCurrentlyTruncated) {
+            setHasTruncated(true);
+            setIsHovered(true);
+        }
+    };
+
+    const handleMouseLeave = () => {
+        setIsHovered(false);
+    };
+
+    const content = (
+        <Component
+            className={`${className} pointer-events-auto`}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+        >
+            {text}
+        </Component>
+    );
+
+    if (hasTruncated) {
+        return (
+            <Tooltip open={isMounted} delayDuration={0}>
+                <TooltipTrigger asChild>
+                    {content}
+                </TooltipTrigger>
+                <TooltipContent
+                    side="top"
+                    align="start"
+                    className="p-0 border-none bg-transparent shadow-none"
+                    sideOffset={10}
+                    // ensure we don't block clicks while animating out
+                    style={{ pointerEvents: isHovered ? 'auto' : 'none' }}
+                >
+                    <motion.div
+                        initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                        animate={{
+                            opacity: isHovered ? 1 : 0,
+                            y: isHovered ? 0 : 8,
+                            scale: isHovered ? 1 : 0.96
+                        }}
+                        transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                        className="bg-[#1e1e1e] px-3 py-1.5 rounded-md shadow-2xl border border-white/5"
+                    >
+                        <span className="font-lexend text-xs text-text-primary max-w-[300px] break-words block">
+                            {text}
+                        </span>
+                    </motion.div>
+                </TooltipContent>
+            </Tooltip>
+        );
+    }
+
+    return content;
+};
 
 interface ProtocolRowProps {
     protocol: Protocol;
@@ -21,6 +102,7 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
     const [feedbackType, setFeedbackType] = useState<'plus' | 'minus' | null>(null);
     const [shake, setShake] = useState<'left' | 'right' | null>(null);
     const rowRef = useRef<HTMLDivElement>(null);
+    const [isHovered, setIsHovered] = useState(false);
 
     // Derived states to avoid double-renders on drag start
     const effectiveHoverSide = isDisabled ? null : hoverSide;
@@ -57,7 +139,15 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
         else setHoverSide(null);
     };
 
-    const handleMouseLeave = () => setHoverSide(null);
+    const handleMouseLeave = () => {
+        setHoverSide(null);
+        setIsHovered(false);
+    };
+
+    const handleMouseEnter = () => {
+        if (!isDisabled) setIsHovered(true);
+    };
+
     const handleClick = () => {
         if (isDisabled) return;
         if (hoverSide === 'left') handleAction('-');
@@ -65,14 +155,22 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
     };
 
     return (
-        <div
+        <motion.div
+            layout
             ref={rowRef}
             onMouseMove={handleMouseMove}
+            onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             onClick={handleClick}
             className={`group relative min-h-[72px] bg-sub-alt border border-transparent rounded-xl overflow-hidden select-none 
-                ${isDisabled ? 'cursor-default opacity-90 transition-none' : 'hover:scale-[1.005] cursor-pointer transition-all duration-300'} 
-                ${effectiveShake === 'left' ? 'animate-tilt-left' : effectiveShake === 'right' ? 'animate-tilt-right' : ''}`}
+                ${isDisabled ? 'cursor-default opacity-90' : 'cursor-pointer'} 
+                ${effectiveShake === 'left' ? 'animate-tilt-left' : effectiveShake === 'right' ? 'animate-tilt-right' : ''}
+                ${DEBUG_LAYOUT ? 'border-dashed border-red-500' : ''}`}
+            whileHover={!isDisabled ? { scale: 1.002, backgroundColor: 'var(--sub-alt-color)' } : {}}
+            transition={{
+                layout: { duration: 0.3, type: "spring", stiffness: 400, damping: 40 },
+                scale: { duration: 0.2 }
+            }}
         >
             <style>{`
                 @keyframes tilt-left { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-1deg); } 75% { transform: rotate(0.5deg); } }
@@ -93,51 +191,82 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
                 </>
             )}
 
-            <div className="relative z-10 grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 h-full py-2">
-                <div className="flex items-center gap-3 min-w-0 pointer-events-none">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg text-xl shrink-0 transition-[margin] duration-300 ml-0 group-hover:ml-4"
-                        style={{ backgroundColor: `${protocol.color || '#ffffff'}33`, color: protocol.color || 'var(--text-color)', boxShadow: `0 0 15px ${protocol.color || '#ffffff'}15` }}>
+            <motion.div layout className="relative z-10 grid grid-cols-[1.2fr_auto_1fr] items-center gap-4 px-4 h-full py-2">
+                <motion.div layout className={`flex items-center gap-3 min-w-0 pointer-events-none ${DEBUG_LAYOUT ? 'border border-blue-500' : ''}`}>
+                    <motion.div layout
+                        className="flex items-center justify-center w-10 h-10 rounded-lg text-xl shrink-0"
+                        animate={{ marginLeft: isHovered ? 16 : 0 }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        style={{
+                            backgroundColor: `${protocol.color || '#ffffff'}33`,
+                            color: protocol.color || 'var(--text-color)',
+                            boxShadow: `0 0 15px ${protocol.color || '#ffffff'}15`
+                        }}
+                    >
                         {renderIcon(protocol.icon)}
-                    </div>
-                    <div className="flex flex-col min-w-0 flex-grow mr-4">
-                        <div className="flex items-center gap-2">
-                            <h3 className={`font-lexend text-base font-medium truncate transition-colors duration-300 ${effectiveFeedbackType === 'plus' ? 'text-[#98c379]' : effectiveFeedbackType === 'minus' ? 'text-[#ca4754]' : effectiveHoverSide === 'right' ? 'text-[#98c379]' : effectiveHoverSide === 'left' ? 'text-[#ca4754]' : 'text-text-primary'}`}>
-                                {protocol.title}
-                            </h3>
+                    </motion.div>
+                    <div className="flex flex-col min-w-0 flex-grow mr-2 overflow-hidden">
+                        <div className="flex items-center gap-2 max-w-full">
+                            <TruncatedTooltip
+                                as="h3"
+                                text={protocol.title}
+                                className={`font-lexend text-base font-medium truncate transition-colors duration-300 ${effectiveFeedbackType === 'plus' ? 'text-[#98c379]' : effectiveFeedbackType === 'minus' ? 'text-[#ca4754]' : effectiveHoverSide === 'right' ? 'text-[#98c379]' : effectiveHoverSide === 'left' ? 'text-[#ca4754]' : 'text-text-primary'}`}
+                            />
                         </div>
                         {protocol.description && (
-                            <p className="text-[10px] text-text-secondary truncate font-mono opacity-60 group-hover:opacity-100 transition-opacity">
-                                {protocol.description}
-                            </p>
+                            <TruncatedTooltip
+                                as="p"
+                                text={protocol.description}
+                                className="text-[10px] text-text-secondary truncate font-mono opacity-60 group-hover:opacity-100 transition-opacity block"
+                            />
                         )}
                     </div>
-                </div>
+                </motion.div>
 
-                <div className="flex items-center justify-center pointer-events-none">
+                <motion.div layout className={`flex items-center justify-center pointer-events-none ${DEBUG_LAYOUT ? 'border border-yellow-500' : ''}`}>
                     <span className={`font-lexend text-xs font-bold tracking-wider transition-all duration-300 ${effectiveFeedbackType === 'plus' ? 'text-[#98c379] opacity-100 scale-125' : effectiveFeedbackType === 'minus' ? 'text-[#ca4754] opacity-100 scale-125' : effectiveHoverSide === 'right' ? 'text-[#98c379] opacity-100 scale-110' : effectiveHoverSide === 'left' ? 'text-[#ca4754] opacity-100 scale-110' : 'text-sub opacity-30 group-hover:text-text-primary group-hover:opacity-100'}`}>
                         {protocol.weight} XP
                     </span>
-                </div>
+                </motion.div>
 
-                <div className="flex items-center justify-end gap-3 pointer-events-none w-full pl-2">
-                    <div className="flex flex-wrap justify-end gap-1.5 content-center pointer-events-auto">
+                <motion.div layout className={`flex items-center justify-end gap-3 pointer-events-none w-full ${DEBUG_LAYOUT ? 'border border-green-500' : ''}`}>
+                    <motion.div layout className="flex flex-wrap justify-end gap-1.5 content-center pointer-events-auto min-w-0">
                         {targetInnerfaces.map((innerface: Innerface) => {
                             const InnerfaceIcon = (
-                                <div className="w-6 h-6 rounded-md bg-bg-primary/40 flex items-center justify-center shrink-0 transition-colors hover:bg-bg-primary">
+                                <div className="w-6 h-6 rounded-md bg-bg-primary/40 flex items-center justify-center shrink-0 transition-colors hover:bg-bg-primary pointer-events-auto">
                                     <div className="text-[0.7rem] opacity-80" style={{ color: innerface.color }}> {renderIcon(innerface.icon)} </div>
                                 </div>
                             );
-                            if (isDisabled) return <div key={innerface.id}>{InnerfaceIcon}</div>;
+
                             return (
-                                <Tooltip key={innerface.id}>
-                                    <TooltipTrigger asChild>{InnerfaceIcon}</TooltipTrigger>
-                                    <TooltipContent side="top"> <span className="font-lexend text-xs">{innerface.name}</span> </TooltipContent>
-                                </Tooltip>
+                                <motion.div
+                                    layout
+                                    key={innerface.id}
+                                    className="pointer-events-none"
+                                >
+                                    {isDisabled ? (
+                                        <div>{InnerfaceIcon}</div>
+                                    ) : (
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>{InnerfaceIcon}</TooltipTrigger>
+                                            <TooltipContent side="top"> <span className="font-lexend text-xs">{innerface.name}</span> </TooltipContent>
+                                        </Tooltip>
+                                    )}
+                                </motion.div>
                             );
                         })}
-                    </div>
+                    </motion.div>
 
-                    <div className="flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-auto pl-2 border-l border-white/5 mr-0 group-hover:mr-4">
+                    <motion.div
+                        layout
+                        className="flex flex-col items-center gap-1 pointer-events-auto pl-2 border-l border-white/5 overflow-hidden shrink-0"
+                        style={{
+                            opacity: isHovered ? 1 : 0,
+                            width: isHovered ? 32 : 0,
+                            marginRight: isHovered ? 8 : 0,
+                            pointerEvents: isHovered ? 'auto' : 'none'
+                        }}
+                    >
                         <button onClick={(e) => { e.stopPropagation(); navigate(`/history?protocolId=${protocol.id}`); }}
                             className="w-6 h-6 flex items-center justify-center rounded text-sub hover:text-main transition-colors cursor-pointer" title="History">
                             <FontAwesomeIcon icon={faHistory} className="text-[10px]" />
@@ -146,9 +275,9 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
                             className="w-6 h-6 flex items-center justify-center rounded text-sub hover:text-main transition-colors cursor-pointer" title="Edit">
                             <FontAwesomeIcon icon={faCog} className="text-[10px]" />
                         </button>
-                    </div>
-                </div>
-            </div>
+                    </motion.div>
+                </motion.div>
+            </motion.div>
 
             <div className="absolute inset-y-0 left-0 w-8 flex items-center justify-center pointer-events-none z-20">
                 <FontAwesomeIcon icon={faMinus} className={`transition-all duration-300 ${effectiveFeedbackType === 'minus' ? 'opacity-100 text-[#ca4754] scale-150' : effectiveHoverSide === 'left' ? 'opacity-100 -translate-x-0 text-[#ca4754]' : 'opacity-0 -translate-x-4'}`} />
@@ -156,6 +285,6 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
             <div className="absolute inset-y-0 right-0 w-8 flex items-center justify-center pointer-events-none z-20">
                 <FontAwesomeIcon icon={faPlus} className={`transition-all duration-300 ${effectiveFeedbackType === 'plus' ? 'opacity-100 text-[#98c379] scale-150' : effectiveHoverSide === 'right' ? 'opacity-100 translate-x-0 text-[#98c379]' : 'opacity-0 translate-x-4'}`} />
             </div>
-        </div>
+        </motion.div>
     );
 });
