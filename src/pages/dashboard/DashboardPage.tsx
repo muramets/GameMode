@@ -7,24 +7,6 @@ import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { AddQuickActionModal } from './components/AddQuickActionModal';
 import { useMetadataStore } from '../../stores/metadataStore';
-// import type { QuickAction } from './components/types'; // Legacy types no longer needed
-
-const DEFAULT_LEVEL_INFO = {
-    level: 5,
-    currentXP: 350,
-    maxXP: 1000,
-    percentage: 35,
-    note: "padawan"
-};
-
-const DEFAULT_USER_STATS = {
-    checkinsToday: 3,
-    xpToday: 150,
-    checkinsMonth: 24,
-    xpMonth: 1200
-};
-
-// Mock data removed. Pinned protocols are now fetched from store.
 
 import { useScoreContext } from '../../contexts/ScoreProvider';
 
@@ -32,7 +14,6 @@ export function Dashboard() {
     const { user } = useAuth();
     const { states, protocols, applyProtocol, isLoading } = useScoreContext();
     const { pinnedProtocolIds, togglePinnedProtocol } = useMetadataStore();
-    const displayName = user?.displayName || user?.email?.split('@')[0] || "Player";
     const navigate = useNavigate();
 
     const [isStateModalOpen, setIsStateModalOpen] = useState(false);
@@ -40,7 +21,6 @@ export function Dashboard() {
     const [selectedStateId, setSelectedStateId] = useState<string | null>(null);
 
     // Filter pinned protocols
-    // We assume protocols are already loaded via ScoreProvider -> GlobalLoader
     const quickActions = protocols.filter(p => pinnedProtocolIds.includes(p.id.toString()));
 
     // Handle Quick Action Click -> Execute Protocol
@@ -50,12 +30,11 @@ export function Dashboard() {
 
     // Handle Quick Action Delete -> Unpin
     const handleUnpinAction = (id: string | number) => {
-        if (user) {
-            togglePinnedProtocol(user.uid, id.toString());
+        const activePersonalityId = localStorage.getItem('active_personality_id');
+        if (user && activePersonalityId) {
+            togglePinnedProtocol(user.uid, activePersonalityId, id.toString());
         }
     };
-
-
 
     const handleAddState = () => {
         setSelectedStateId(null);
@@ -81,12 +60,7 @@ export function Dashboard() {
 
     return (
         <div className="flex flex-col gap-12 w-full pb-12">
-            {/* Welcome / Dashboard - mirroring legacy structure */}
-            <UserProfile
-                username={displayName}
-                levelInfo={DEFAULT_LEVEL_INFO}
-                stats={DEFAULT_USER_STATS}
-            />
+            <UserProfile />
 
             <StatesGrid
                 states={states}
@@ -107,7 +81,6 @@ export function Dashboard() {
                 onClose={() => setIsQuickActionModalOpen(false)}
             />
 
-
             <StateSettingsModal
                 isOpen={isStateModalOpen}
                 onClose={() => setIsStateModalOpen(false)}
@@ -117,5 +90,4 @@ export function Dashboard() {
     );
 }
 
-// Default export for route lazy loading if needed, or just standard export
 export default Dashboard;

@@ -33,6 +33,7 @@ export default function HistoryPage() {
         const protocolId = params.get('protocolId');
         const innerfaceId = params.get('innerfaceId') || location.state?.filterInnerfaceId;
         const stateId = location.state?.filterStateId;
+        const filterTime = location.state?.filterTime;
 
         if (protocolId) {
             setSelectedProtocolIds([protocolId]);
@@ -42,6 +43,9 @@ export default function HistoryPage() {
         }
         if (stateId) {
             setSelectedStateIds([stateId]);
+        }
+        if (filterTime) {
+            setTimeFilter(filterTime);
         }
 
         // Clean up URL/State
