@@ -7,6 +7,7 @@ export interface Innerface {
     initialScore: number;
     currentScore?: number;
     color?: string; // Hex code
+    versionTimestamp?: string; // ISO string for hard reset
 }
 
 export interface Protocol {
@@ -17,7 +18,7 @@ export interface Protocol {
     color?: string; // Hex code for tinting
     group?: string; // e.g. "Physical", "Mental", "Core" - inferred or explicit
     weight: number; // 0.05, 0.1 etc
-    targets: number[]; // IDs of Innerfaces affected
+    targets: (number | string)[]; // IDs of Innerfaces affected
     hover?: string; // Tooltip text
     action?: '+' | '-'; // Default direction
 }

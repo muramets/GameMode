@@ -1,0 +1,80 @@
+
+import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTimes } from '@fortawesome/free-solid-svg-icons';
+
+interface ModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    title: string;
+    children: React.ReactNode;
+    footer?: React.ReactNode;
+    onSubmit?: (e: React.FormEvent) => void;
+    className?: string;
+}
+
+export function Modal({ isOpen, onClose, title, children, footer, onSubmit, className = '' }: ModalProps) {
+    const overlayRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+
+        if (isOpen) {
+            document.addEventListener('keydown', handleEscape);
+            document.body.style.overflow = 'hidden';
+        }
+
+        return () => {
+            document.removeEventListener('keydown', handleEscape);
+            document.body.style.overflow = '';
+        };
+    }, [isOpen, onClose]);
+
+    if (!isOpen) return null;
+
+    return createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-bg-primary/60 backdrop-blur-[4px] animate-fade-in">
+            <div
+                ref={overlayRef}
+                className="absolute inset-0 transition-opacity"
+                onClick={onClose}
+            />
+            <div className={`relative bg-bg-primary/95 backdrop-blur-2xl border border-white/5 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] w-full max-w-md overflow-hidden animate-slide-in-bottom ${className}`}>
+                <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+                    <h2 className="text-xs font-mono font-bold uppercase tracking-widest text-text-primary opacity-90">{title}</h2>
+                    <button
+                        onClick={onClose}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg text-sub hover:text-text-primary hover:bg-white/5 transition-colors"
+                    >
+                        <FontAwesomeIcon icon={faTimes} className="text-xs" />
+                    </button>
+                </div>
+                <div className="p-6">
+                    {onSubmit ? (
+                        <form onSubmit={onSubmit}>
+                            {children}
+                            {footer && (
+                                <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/5">
+                                    {footer}
+                                </div>
+                            )}
+                        </form>
+                    ) : (
+                        <>
+                            {children}
+                            {footer && (
+                                <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/5">
+                                    {footer}
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
+            </div>
+        </div>,
+        document.body
+    );
+}

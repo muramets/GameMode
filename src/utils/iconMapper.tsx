@@ -68,6 +68,8 @@ const EMOJI_MAP: Record<string, any> = {
     '🔋': faBatteryFull,
     '⚡': faBolt,
     '🏃🏻‍♂️': faPersonRunning,
+    '🏃🏻‍♂': faPersonRunning, // Variant
+    '🏃': faPersonRunning,
     '📊': faChartLine,
     '🚄': faGaugeHigh,
     '👨‍👩‍👧‍👦': faHouseUser,
@@ -89,4 +91,8 @@ export function renderIcon(iconStr: string, className?: string) {
 
 export function getIconDefinition(iconStr: string) {
     return EMOJI_MAP[iconStr] || faQuestion;
+}
+
+export function getMappedIcon(iconStr: string) {
+    return EMOJI_MAP[iconStr];
 }

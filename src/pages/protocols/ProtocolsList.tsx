@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
-import { MOCK_PROTOCOLS } from './mockData';
+import type { Protocol, Innerface } from './types';
 import { ProtocolRow } from './ProtocolRow';
+import { ProtocolSettingsModal } from './components/ProtocolSettingsModal';
 
 import { useScoreContext } from '../../contexts/ScoreProvider';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -12,26 +13,27 @@ import {
     faCircle
 } from '@fortawesome/free-solid-svg-icons';
 import { ActiveFiltersList } from '../../components/ui/molecules/ActiveFiltersList';
-import { GROUP_CONFIG } from './constants';
-
+import { GROUP_CONFIG } from '../../constants/common';
 export function ProtocolsList() {
-    const { applyProtocol, innerfaces } = useScoreContext();
+    const { applyProtocol, innerfaces, protocols, isLoading } = useScoreContext();
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilters, setActiveFilters] = useState<string[]>([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedProtocolId, setSelectedProtocolId] = useState<string | number | null>(null);
 
     // Extract unique groups
     const protocolGroups = useMemo(() => {
-        const groups = new Set(MOCK_PROTOCOLS.map(p => p.group).filter(Boolean));
+        const groups = new Set(protocols.map((p: Protocol) => p.group).filter(Boolean));
         return Array.from(groups).sort();
-    }, []);
+    }, [protocols]);
 
     // Filter protocols based on search query and active filters
     const filteredProtocols = useMemo(() => {
-        let filtered = MOCK_PROTOCOLS;
+        let filtered = protocols;
 
         // Apply group filters
         if (activeFilters.length > 0) {
-            filtered = filtered.filter(p => {
+            filtered = filtered.filter((p: Protocol) => {
                 if (activeFilters.includes('ungrouped') && !p.group) return true;
                 if (p.group && activeFilters.includes(p.group)) return true;
                 return false;
@@ -41,22 +43,38 @@ export function ProtocolsList() {
         if (!searchQuery.trim()) return filtered;
 
         const query = searchQuery.toLowerCase();
-        return filtered.filter(protocol => {
+        return filtered.filter((protocol: Protocol) => {
             // Match title
             if (protocol.title.toLowerCase().includes(query)) return true;
             // Match group
             if (protocol.group?.toLowerCase().includes(query)) return true;
             // Match target innerface names
-            const targetNames = protocol.targets.map(id =>
-                innerfaces.find(i => i.id === id)?.name.toLowerCase()
+            const targetNames = protocol.targets.map((id: string | number) =>
+                innerfaces.find((i: Innerface) => i.id === id)?.name.toLowerCase()
             );
-            if (targetNames.some(name => name?.includes(query))) return true;
+            if (targetNames.some((name: string | undefined) => name?.includes(query))) return true;
 
             return false;
         });
-    }, [searchQuery, activeFilters]);
+    }, [protocols, searchQuery, activeFilters, innerfaces]);
 
-    const handleAddProtocol = () => console.log('Add Protocol Clicked');
+    if (isLoading && protocols.length === 0) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="text-sub font-mono animate-pulse uppercase tracking-widest text-xs">Loading Protocols...</div>
+            </div>
+        );
+    }
+
+    const handleAddProtocol = () => {
+        setSelectedProtocolId(null);
+        setIsModalOpen(true);
+    };
+
+    const handleEditProtocol = (id: string | number) => {
+        setSelectedProtocolId(id);
+        setIsModalOpen(true);
+    };
 
     const toggleFilter = (filter: string) => {
         if (filter === 'all') {
@@ -98,14 +116,14 @@ export function ProtocolsList() {
                                 className="h-[46px] w-[36px] flex items-center justify-center rounded-lg text-sub hover:text-main transition-all cursor-pointer"
                                 title="Add Protocol"
                             >
-                                <FontAwesomeIcon icon={faPlus} className="text-sm" />
+                                <FontAwesomeIcon icon={faPlus} className="text-xl" />
                             </button>
 
                             {/* Filter Button with Dropdown */}
                             <div className="relative group">
                                 <button className={`h-[46px] w-[36px] flex items-center justify-center rounded-lg transition-colors cursor-pointer ${activeFilters.length > 0 ? 'text-text-primary' : 'text-sub hover:text-text-primary'}`}>
                                     <div className="relative">
-                                        <FontAwesomeIcon icon={faFilter} className="text-sm" />
+                                        <FontAwesomeIcon icon={faFilter} className="text-xl" />
                                         {activeFilters.length > 0 && (
                                             <div className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-main rounded-full flex items-center justify-center text-[9px] text-bg-primary font-bold border border-bg-primary">
                                                 {activeFilters.length}
@@ -218,15 +236,14 @@ export function ProtocolsList() {
             {/* List */}
             <div className="flex flex-col gap-3">
                 {filteredProtocols.length > 0 ? (
-                    filteredProtocols.map(protocol => (
+                    filteredProtocols.map((protocol: Protocol) => (
                         <ProtocolRow
                             key={protocol.id}
                             protocol={protocol}
                             innerfaces={innerfaces}
-                            onLevelUp={(id) => applyProtocol(id, '+')}
-                            onLevelDown={(id) => applyProtocol(id, '-')}
-                            onEdit={() => { }}
-                            onViewHistory={() => { }}
+                            onLevelUp={(id: string | number) => applyProtocol(id, '+')}
+                            onLevelDown={(id: string | number) => applyProtocol(id, '-')}
+                            onEdit={handleEditProtocol}
                         />
                     ))
                 ) : (
@@ -260,7 +277,11 @@ export function ProtocolsList() {
                 )}
             </div>
 
-
+            <ProtocolSettingsModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                protocolId={selectedProtocolId}
+            />
         </div>
     );
 }

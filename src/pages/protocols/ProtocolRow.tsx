@@ -1,4 +1,5 @@
 import { useState, useRef, type MouseEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { Protocol, Innerface } from './types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faMinus, faCog, faHistory } from '@fortawesome/free-solid-svg-icons';
@@ -11,10 +12,10 @@ interface ProtocolRowProps {
     onLevelUp: (id: string | number) => void;
     onLevelDown: (id: string | number) => void;
     onEdit: (id: string | number) => void;
-    onViewHistory: (id: string | number) => void;
 }
 
-export function ProtocolRow({ protocol, innerfaces, onLevelUp, onLevelDown, onEdit, onViewHistory }: ProtocolRowProps) {
+export function ProtocolRow({ protocol, innerfaces, onLevelUp, onLevelDown, onEdit }: ProtocolRowProps) {
+    const navigate = useNavigate();
     const [hoverSide, setHoverSide] = useState<'left' | 'right' | null>(null);
     const rowRef = useRef<HTMLDivElement>(null);
 
@@ -158,7 +159,10 @@ export function ProtocolRow({ protocol, innerfaces, onLevelUp, onLevelDown, onEd
                     {/* Secondary Actions */}
                     <div className="flex items-center gap-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                         <button
-                            onClick={(e) => { e.stopPropagation(); onViewHistory(protocol.id); }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/history?protocolId=${protocol.id}`);
+                            }}
                             className="w-8 h-8 flex items-center justify-center rounded text-sub hover:text-main transition-colors cursor-pointer"
                             title="History"
                         >

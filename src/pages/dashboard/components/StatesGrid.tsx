@@ -5,9 +5,11 @@ import { Plus } from 'lucide-react';
 interface StatesGridProps {
     states: StateData[];
     onAddState?: () => void;
+    onEdit?: (id: string) => void;
+    onHistory?: (id: string) => void;
 }
 
-export function StatesGrid({ states, onAddState }: StatesGridProps) {
+export function StatesGrid({ states, onAddState, onEdit, onHistory }: StatesGridProps) {
     return (
         <div className="w-full">
             <div className="flex items-center justify-between mb-4">
@@ -28,7 +30,9 @@ export function StatesGrid({ states, onAddState }: StatesGridProps) {
                         state={state}
                         // Spread extended properties (score, color, etc) from mock data
                         {...state}
-                        onClick={() => console.log('Clicked state', state.id)}
+                        onClick={() => onEdit?.(state.id)}
+                        onEdit={() => onEdit?.(state.id)}
+                        onHistory={() => onHistory?.(state.id)}
                     />
                 ))}
 

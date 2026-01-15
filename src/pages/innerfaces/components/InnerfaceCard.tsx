@@ -1,68 +1,135 @@
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../../../components/ui/atoms/Card';
 import type { Innerface } from '../../../pages/protocols/types';
-
 import { renderIcon } from '../../../utils/iconMapper';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCog, faHistory, faArrowUp, faArrowDown } from '@fortawesome/free-solid-svg-icons';
+import { ProgressBar } from '../../../components/ui/atoms/ProgressBar';
+import { getScoreColor } from '../../../utils/colorUtils';
 
 interface InnerfaceCardProps {
     innerface: Innerface;
+    onEdit?: () => void;
 }
 
-export function InnerfaceCard({ innerface }: InnerfaceCardProps) {
+export function InnerfaceCard({ innerface, onEdit }: InnerfaceCardProps) {
+    const navigate = useNavigate();
     const score = innerface.currentScore || innerface.initialScore;
-    const progress = (score / 10) * 100;
+    const dynamicColor = getScoreColor(score);
+
+    const handleHistory = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        navigate('/history', { state: { filterInnerfaceId: String(innerface.id) } });
+    };
+
+    const handleEdit = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onEdit?.();
+    };
 
     return (
-        <Card className="p-4 hover:translate-y-[-2px] transition-all duration-300 group overflow-hidden relative">
-            {/* Background accent */}
+        <Card className="group relative overflow-hidden p-4 flex flex-col justify-between min-h-[120px] hover:-translate-y-[2px] transition-all duration-300 hover:shadow-lg border border-transparent text-left select-none cursor-default">
+            {/* 1. Dynamic Gradient from Score (Radiates from bottom right where score usually is, or center) */}
+            {/* Positioning it roughly behind the score area */}
             <div
-                className="absolute top-0 right-0 w-24 h-24 opacity-[0.03] transition-opacity group-hover:opacity-[0.05]"
+                className="absolute -right-10 -bottom-10 w-48 h-48 blur-[60px] transition-opacity duration-500 opacity-[0.15] group-hover:opacity-[0.25]"
                 style={{
-                    background: `radial-gradient(circle at top right, ${innerface.color || '#e2b714'}, transparent)`
+                    background: `radial-gradient(circle, ${dynamicColor} 0%, transparent 70%)`
                 }}
             />
 
-            <div className="flex items-start justify-between mb-3 relative z-10">
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-black/20 text-xl shadow-inner shrink-0 group-hover:bg-black/30 transition-colors duration-300">
+            {/* Focused Glow -  Ambient top light */}
+            <div
+                className="absolute inset-x-0 top-0 h-24 opacity-0 group-hover:opacity-[0.05] transition-all duration-500 ease-out pointer-events-none"
+                style={{
+                    background: `linear-gradient(to bottom, ${dynamicColor}, transparent)`
+                }}
+            />
+
+            {/* Header: Icon & Title & Actions */}
+            <div className="flex items-start justify-between relative z-10">
+                <div className="flex items-start gap-3">
+                    {/* Icon */}
+                    <div
+                        className="w-10 h-10 rounded-xl bg-black/20 flex items-center justify-center text-lg shrink-0 group-hover:scale-105 transition-transform duration-300"
+                        style={{ color: innerface.color }}
+                    >
                         {renderIcon(innerface.icon)}
                     </div>
-                    <div>
-                        <h3 className="text-text-primary font-medium text-sm leading-tight">
+
+                    {/* Title */}
+                    <div className="flex flex-col min-w-0 pt-0.5">
+                        <h3 className="font-lexend font-medium text-sm leading-tight text-text-primary truncate">
                             {innerface.name.split('.')[0]}
                         </h3>
                         {innerface.name.split('.')[1] && (
-                            <p className="text-sub text-[10px] font-mono mt-0.5">
+                            <p className="text-[10px] text-sub font-mono uppercase tracking-wider opacity-60 truncate mt-0.5 group-hover:opacity-100 group-hover:text-text-primary transition-all duration-300">
                                 {innerface.name.split('.')[1].trim()}
                             </p>
                         )}
                     </div>
                 </div>
-                <div className="text-right">
-                    <div className="text-lg font-mono font-bold leading-none" style={{ color: innerface.color }}>
-                        {score.toFixed(2)}
-                    </div>
+
+                {/* Actions (Only visible on hover) */}
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <button
+                        onClick={handleHistory}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-sub hover:text-main transition-colors"
+                        title="View History"
+                    >
+                        <FontAwesomeIcon icon={faHistory} className="text-xs" />
+                    </button>
+                    <button
+                        onClick={handleEdit}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-sub hover:text-main transition-colors"
+                        title="Settings"
+                    >
+                        <FontAwesomeIcon icon={faCog} className="text-xs" />
+                    </button>
                 </div>
             </div>
 
-            {/* Score Bar */}
-            <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden mt-2 relative z-10">
-                <div
-                    className="h-full transition-all duration-500 ease-out rounded-full"
-                    style={{
-                        width: `${Math.min(100, progress)}%`,
-                        backgroundColor: innerface.color || '#e2b714',
-                        boxShadow: `0 0 10px ${innerface.color || '#e2b714'}40`
-                    }}
+            {/* Middle: Score */}
+            <div className="relative z-10 mt-auto mb-2 text-right">
+                <div className="flex flex-col items-end">
+                    <div className="flex items-center gap-2">
+                        {/* Trend Indicator */}
+                        {(() => {
+                            const score = innerface.currentScore || innerface.initialScore;
+                            const initial = innerface.initialScore || 0;
+                            const delta = score - initial;
+
+                            if (Math.abs(delta) <= 0.01) return null;
+
+                            return (
+                                <div className={`text-base ${delta > 0 ? 'text-[#98c379]' : 'text-[#ca4754]'} opacity-80 flex items-center`}>
+                                    <FontAwesomeIcon icon={delta > 0 ? faArrowUp : faArrowDown} className="text-xs" />
+                                </div>
+                            );
+                        })()}
+                        <div
+                            className="text-[2rem] font-light font-mono leading-none tracking-tight transition-colors duration-300"
+                            style={{ color: dynamicColor }}
+                        >
+                            {score.toFixed(2)}
+                        </div>
+                    </div>
+                    <span className="text-[9px] font-mono text-sub uppercase tracking-widest opacity-40 mt-1 group-hover:opacity-100 group-hover:text-text-primary transition-all duration-300">
+                        Starting Point: {innerface.initialScore}
+                    </span>
+                </div>
+            </div>
+
+            {/* Bottom: Progress Bar */}
+            <div className="relative z-10 w-full">
+                <ProgressBar
+                    current={score}
+                    max={10}
+                    customColor={dynamicColor}
+                    heightClass="h-[4px]"
+                    trackColorClass="bg-bg-primary/50"
                 />
             </div>
-
-            {innerface.hover && (
-                <div className="mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <p className="text-sub text-[10px] leading-relaxed italic">
-                        "{innerface.hover}"
-                    </p>
-                </div>
-            )}
         </Card>
     );
 }

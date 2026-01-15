@@ -41,7 +41,16 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   return user ? <>{children}</> : <Navigate to="/login" />;
 }
 
+import { applyTheme } from './utils/themeManager';
+import { themes } from './styles/themes';
+import { useEffect } from 'react';
+
 function App() {
+  useEffect(() => {
+    // Initialize default theme (matches MonkeyType serika_dark)
+    applyTheme(themes.serika_dark);
+  }, []);
+
   return (
     <QueryProvider>
       <AuthProvider>

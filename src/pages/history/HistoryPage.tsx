@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useScoreContext } from '../../contexts/ScoreProvider';
 import { useMetadataStore } from '../../stores/metadataStore';
 import { format, isToday, isYesterday, parseISO, isWithinInterval, startOfWeek, startOfMonth } from 'date-fns';
@@ -7,6 +8,7 @@ import {
     faSearch
 } from '@fortawesome/free-solid-svg-icons';
 import { HistoryFilter } from './components/HistoryFilter';
+import { Input } from '../../components/ui/molecules/Input';
 import { ActiveFiltersList } from '../../components/ui/molecules/ActiveFiltersList';
 import { HistoryEvent } from './components/HistoryEvent';
 import type { TimeFilter, TypeFilter, EffectFilter } from './components/HistoryFilter';
@@ -14,7 +16,8 @@ import type { HistoryRecord } from '../../types/history';
 
 export default function HistoryPage() {
     const { history, deleteEvent } = useScoreContext();
-    const { innerfaces, protocols } = useMetadataStore();
+    const { innerfaces, protocols, states } = useMetadataStore();
+    const location = useLocation();
 
     // Filters state
     const [searchQuery, setSearchQuery] = useState('');
@@ -23,6 +26,29 @@ export default function HistoryPage() {
     const [effectFilter, setEffectFilter] = useState<EffectFilter>('All effects');
     const [selectedProtocolIds, setSelectedProtocolIds] = useState<string[]>([]);
     const [selectedInnerfaceIds, setSelectedInnerfaceIds] = useState<string[]>([]);
+    const [selectedStateIds, setSelectedStateIds] = useState<string[]>([]);
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const protocolId = params.get('protocolId');
+        const innerfaceId = params.get('innerfaceId') || location.state?.filterInnerfaceId;
+        const stateId = location.state?.filterStateId;
+
+        if (protocolId) {
+            setSelectedProtocolIds([protocolId]);
+        }
+        if (innerfaceId) {
+            setSelectedInnerfaceIds([innerfaceId.toString()]);
+        }
+        if (stateId) {
+            setSelectedStateIds([stateId]);
+        }
+
+        // Clean up URL/State
+        if (protocolId || innerfaceId || location.state) {
+            window.history.replaceState({}, document.title, location.pathname);
+        }
+    }, [location, states]);
 
     const filteredHistory = useMemo(() => {
         return history.filter(event => {
@@ -69,9 +95,30 @@ export default function HistoryPage() {
                 if (!hasMatchingInnerface) return false;
             }
 
+            // State filter (Multi-select OR logic)
+            if (selectedStateIds.length > 0) {
+                const relatedStates = states.filter(s => selectedStateIds.includes(s.id));
+
+                // Collect all valid protocol and innerface IDs from the selected states
+                const validProtocolIds = relatedStates
+                    .flatMap(s => s.protocolIds || [])
+                    .map(id => id.toString());
+
+                const validInnerfaceIds = relatedStates
+                    .flatMap(s => s.innerfaceIds || [])
+                    .map(id => id.toString());
+
+                // Check if event matches either protocol OR innerface
+                const matchesProtocol = validProtocolIds.includes(event.protocolId.toString());
+                const eventInnerfaces = Object.keys(event.changes || {});
+                const matchesInnerface = eventInnerfaces.some(id => validInnerfaceIds.includes(id));
+
+                if (!matchesProtocol && !matchesInnerface) return false;
+            }
+
             return true;
         });
-    }, [history, searchQuery, timeFilter, typeFilter, effectFilter, selectedProtocolIds, selectedInnerfaceIds]);
+    }, [history, searchQuery, timeFilter, typeFilter, effectFilter, selectedProtocolIds, selectedInnerfaceIds, selectedStateIds, states]);
 
     const groupedHistory = useMemo(() => {
         const groups: Record<string, typeof filteredHistory> = {};
@@ -101,7 +148,8 @@ export default function HistoryPage() {
         typeFilter !== 'All types' ||
         effectFilter !== 'All effects' ||
         selectedProtocolIds.length > 0 ||
-        selectedInnerfaceIds.length > 0;
+        selectedInnerfaceIds.length > 0 ||
+        selectedStateIds.length > 0;
 
     const clearFilters = () => {
         setSearchQuery('');
@@ -110,6 +158,7 @@ export default function HistoryPage() {
         setEffectFilter('All effects');
         setSelectedProtocolIds([]);
         setSelectedInnerfaceIds([]);
+        setSelectedStateIds([]);
     };
 
     return (
@@ -125,16 +174,12 @@ export default function HistoryPage() {
 
                 <div className="flex items-stretch gap-2 w-full md:w-auto">
                     {/* Search Bar */}
-                    <div className="relative group flex-grow md:flex-grow-0 ml-1">
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-sub pointer-events-none group-focus-within:text-main transition-colors duration-200">
-                            <FontAwesomeIcon icon={faSearch} className="text-sm" />
-                        </div>
-                        <input
-                            type="text"
+                    <div className="flex-grow md:flex-grow-0 ml-1 md:w-64">
+                        <Input
+                            icon={faSearch}
                             placeholder="Search timeline..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full md:w-64 pl-10 pr-4 py-3 bg-sub-alt rounded-lg outline-none text-text-primary placeholder:text-sub font-mono text-sm transition-colors duration-150 focus:bg-sub"
                         />
                     </div>
 
@@ -149,8 +194,11 @@ export default function HistoryPage() {
                         setSelectedProtocolIds={setSelectedProtocolIds}
                         selectedInnerfaceIds={selectedInnerfaceIds}
                         setSelectedInnerfaceIds={setSelectedInnerfaceIds}
+                        selectedStateIds={selectedStateIds}
+                        setSelectedStateIds={setSelectedStateIds}
                         protocols={protocols}
                         innerfaces={innerfaces}
+                        states={states}
                         hasActiveFilters={hasActiveFilters}
                         clearFilters={clearFilters}
                     />
@@ -197,6 +245,12 @@ export default function HistoryPage() {
                         label: innerfaces.find(i => i.id.toString() === id)?.name.split('.')[0] || id,
                         icon: undefined,
                         onRemove: () => setSelectedInnerfaceIds(selectedInnerfaceIds.filter(iid => iid !== id))
+                    })),
+                    ...selectedStateIds.map(id => ({
+                        id: `state-${id}`,
+                        label: states.find(s => s.id === id)?.name || id,
+                        icon: undefined,
+                        onRemove: () => setSelectedStateIds(selectedStateIds.filter(sid => sid !== id))
                     }))
                 ]}
                 onClearAll={hasActiveFilters ? clearFilters : undefined}

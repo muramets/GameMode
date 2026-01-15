@@ -9,13 +9,24 @@ html {
 }
 
 :root {
-  /* Legacy Color Palette - MonkeyType themed */
-  --bg-color: #323437;
-  --main-color: #e2b714;
+  /* Default Theme: Serika Dark (Fallback) */
+  --bg-color-rgb: 50 52 55;
+  --bg-color: rgb(var(--bg-color-rgb));
+
+  --main-color-rgb: 226 183 20;
+  --main-color: rgb(var(--main-color-rgb));
+
   --caret-color: #e2b714;
-  --sub-color: #646669;
-  --sub-alt-color: #2c2e31;
-  --text-color: #d1d0c5;
+
+  --sub-color-rgb: 100 102 105;
+  --sub-color: rgb(var(--sub-color-rgb));
+
+  --sub-alt-color-rgb: 44 46 49;
+  --sub-alt-color: rgb(var(--sub-alt-color-rgb));
+
+  --text-color-rgb: 209 208 197;
+  --text-color: rgb(var(--text-color-rgb));
+
   --error-color: #ca4754;
   --error-extra-color: #7e2a33;
   --colorful-error-color: #ca4754;
@@ -23,17 +34,10 @@ html {
   --correct-color: #98c379;
 
   /* UI Colors mapped to Tailwind vars */
-  --bg-primary: var(--bg-color);
-  --bg-secondary: var(--sub-alt-color);
-  --text-primary: var(--text-color);
-  --text-secondary: var(--sub-color);
-  --border: var(--sub-color);
-
-  --card-bg: var(--sub-alt-color);
-  --input-bg: var(--sub-alt-color);
-  --button-secondary-bg: var(--sub-alt-color);
-  --button-secondary-hover: #3c3e41;
-  --button-secondary-text: var(--text-color);
+  --bg-primary: rgb(var(--bg-color-rgb));
+  --bg-secondary: rgb(var(--sub-alt-color-rgb));
+  --text-primary: rgb(var(--text-color-rgb));
+  --text-secondary: rgb(var(--sub-color-rgb));
 }
 
 html,
@@ -139,4 +143,22 @@ body {
 html {
   scrollbar-width: thin;
   scrollbar-color: var(--sub-color) transparent;
+}
+
+/* Custom Thinner Scrollbar for Dropdowns */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--sub-color);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--text-color);
 }

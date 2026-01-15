@@ -68,17 +68,20 @@ export function HistoryEvent({ event, innerfaces, onDelete, onFilterInnerface }:
                 <div className="hidden lg:flex flex-wrap justify-end gap-2 max-w-[50%]">
                     {Object.entries(event.changes).map(([innerfaceId, change]) => {
                         const iface = innerfaces.find(i => i.id == innerfaceId);
+                        const isHistorical = iface?.versionTimestamp && event.timestamp <= iface.versionTimestamp;
+
                         return (
                             <TooltipProvider key={innerfaceId} delayDuration={300}>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <button
                                             onClick={() => onFilterInnerface(innerfaceId)}
-                                            className="flex items-center gap-3 px-3 py-2 rounded-xl bg-black/20 hover:bg-black/40 transition-colors border border-transparent hover:border-white/5 group/iface cursor-pointer"
+                                            className={`flex items-center gap-3 px-3 py-2 rounded-xl bg-black/20 hover:bg-black/40 transition-all border border-transparent hover:border-white/5 group/iface cursor-pointer ${isHistorical ? 'opacity-30 grayscale-[0.5] hover:opacity-60 scale-[0.98]' : ''}`}
                                         >
                                             <div className="w-1.5 h-1.5 rounded-full shadow-sm" style={{ backgroundColor: iface?.color || 'gray' }} />
                                             <span className="text-[10px] font-mono font-bold text-text-primary uppercase tracking-tight opacity-70 group-hover/iface:opacity-100 transition-opacity">
                                                 {iface ? iface.name.split('.')[0] : innerfaceId}
+                                                {isHistorical && <span className="ml-2 opacity-50 text-[7px] font-black tracking-widest uppercase bg-white/5 px-1 rounded-sm">Archived</span>}
                                             </span>
                                             <div className="h-3 w-px bg-white/5" />
                                             <span className={`text-[10px] font-mono font-black ${change > 0 ? 'text-correct' : 'text-error'}`}>
@@ -87,7 +90,11 @@ export function HistoryEvent({ event, innerfaces, onDelete, onFilterInnerface }:
                                         </button>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                        <span className="font-mono text-xs">Filter by {iface?.name || innerfaceId}</span>
+                                        <span className="font-mono text-xs">
+                                            {isHistorical
+                                                ? `Archived: This entry belonged to a previous "Starting Point" and does not affect your current score.`
+                                                : `Filter by ${iface?.name || innerfaceId}`}
+                                        </span>
                                     </TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>

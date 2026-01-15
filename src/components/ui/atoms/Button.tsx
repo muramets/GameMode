@@ -2,7 +2,7 @@ import React from 'react';
 import { Loader2 } from 'lucide-react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+    variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'neutral';
     size?: 'sm' | 'md' | 'lg' | 'icon';
     isLoading?: boolean;
     leftIcon?: React.ReactNode;
@@ -24,10 +24,11 @@ export function Button({
     const baseStyles = "inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed";
 
     const variants = {
-        primary: "bg-main text-bg-primary hover:opacity-90 focus:ring-main/50",
-        secondary: "bg-bg-secondary text-text-primary hover:bg-hover active:bg-sub-alt focus:ring-sub-alt/50",
-        danger: "bg-error text-white hover:bg-error-extra focus:ring-error/50",
-        ghost: "bg-transparent text-text-secondary hover:text-text-primary hover:bg-bg-secondary/50",
+        primary: "bg-main text-bg-primary hover:bg-text-primary hover:text-bg-primary active:bg-sub active:text-bg-primary transition-colors duration-150",
+        secondary: "bg-sub-alt text-text-primary hover:bg-text-primary hover:text-bg-primary active:bg-sub active:text-bg-primary transition-colors duration-150",
+        danger: "bg-error text-bg-primary hover:bg-text-primary hover:text-bg-primary transition-colors duration-150",
+        ghost: "bg-transparent text-sub hover:text-text-primary transition-colors duration-150",
+        neutral: "bg-sub-alt text-text-primary hover:bg-text-primary hover:text-bg-primary active:bg-sub active:text-bg-primary transition-colors duration-150",
     };
 
     const sizes = {

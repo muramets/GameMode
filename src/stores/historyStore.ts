@@ -12,6 +12,17 @@ import {
 } from 'firebase/firestore';
 import type { HistoryRecord } from '../types/history';
 
+/**
+ * History Store
+ * 
+ * Manages the immutable log of user actions ("Check-ins").
+ * 
+ * Logic:
+ * - Each action (using a Protocol, completing a Quick Action) creates a record.
+ * - Records are appended-only (log).
+ * - Queries are ordered by timestamp (newest first).
+ * - Real-time sync ensures that if a user checks in on mobile, the web dashboard updates instantly.
+ */
 interface HistoryState {
     history: HistoryRecord[];
     isLoading: boolean;
@@ -33,7 +44,8 @@ export const useHistoryStore = create<HistoryState>((set) => ({
             const historyRef = collection(db, 'users', uid, 'history');
             await addDoc(historyRef, {
                 ...record,
-                serverTimestamp: Timestamp.now() // For sorting even if local clock is off
+                // Server timestamp is crucial for correct ordering across devices with different system clocks
+                serverTimestamp: Timestamp.now()
             });
         } catch (err: any) {
             console.error('Error adding checkin:', err);
