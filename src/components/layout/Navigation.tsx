@@ -47,10 +47,12 @@ export function Navigation() {
     return (
         <nav className="flex justify-center w-full select-none">
             {/* Main container: Fixed 39px height, gap-2 for spacing between items/spacers */}
+            {/* draggable={false} prevents the "ghost image" when dragging nav items, ensuring a native app feel */}
             <div className="flex items-stretch h-[39px] bg-sub-alt rounded-lg overflow-visible shadow-sm">
 
                 {/* Dashboard */}
                 <Link
+                    draggable={false}
                     to="/"
                     className={`${baseItemClasses} rounded-l-lg ${isActive('/') ? activeClasses : inactiveClasses}`}
                 >
@@ -65,7 +67,13 @@ export function Navigation() {
 
                 {/* Protocols */}
                 <Link
+                    draggable={false}
                     to="/protocols"
+                    onClick={() => {
+                        const now = performance.now();
+                        (window as any).__navStart = now;
+                        console.log(`[PERF][1] Navigation: Clicked protocols at ${now.toFixed(2)}ms`);
+                    }}
                     className={`${baseItemClasses} ${isActive('/protocols') ? activeClasses : inactiveClasses}`}
                 >
                     <List
@@ -84,6 +92,7 @@ export function Navigation() {
                 >
                     {/* Innerfaces Main Link */}
                     <Link
+                        draggable={false}
                         to="/innerfaces"
                         className={`${baseItemClasses} z-20 relative ${isActive('/innerfaces') ? activeClasses : inactiveClasses}`}
                     >
@@ -104,12 +113,14 @@ export function Navigation() {
                         `}
                         onMouseEnter={handleMouseEnter}
                         title="Show history"
+                        draggable={false}
                     >
                         <ChevronRight className="w-3 h-3" />
                     </button>
 
                     {/* History Link (Expandable Slide-out) */}
                     <Link
+                        draggable={false}
                         to="/history"
                         className={`
                             absolute top-0 left-full h-full flex items-center gap-2 whitespace-nowrap overflow-hidden

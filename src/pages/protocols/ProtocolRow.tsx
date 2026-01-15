@@ -1,9 +1,9 @@
-import { useState, useRef, type MouseEvent } from 'react';
+import React, { useState, useRef, useMemo, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Protocol, Innerface } from './types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faMinus, faCog, faHistory } from '@fortawesome/free-solid-svg-icons';
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../components/ui/atoms/Tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/atoms/Tooltip';
 import { renderIcon } from '../../utils/iconMapper';
 
 interface ProtocolRowProps {
@@ -14,13 +14,18 @@ interface ProtocolRowProps {
     onEdit: (id: string | number) => void;
 }
 
-export function ProtocolRow({ protocol, innerfaces, onLevelUp, onLevelDown, onEdit }: ProtocolRowProps) {
+export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerfaces, onLevelUp, onLevelDown, onEdit }: ProtocolRowProps) {
     const navigate = useNavigate();
     const [hoverSide, setHoverSide] = useState<'left' | 'right' | null>(null);
     const rowRef = useRef<HTMLDivElement>(null);
 
     // Resolve targets
-    const targetInnerfaces = protocol.targets.map(id => innerfaces.find(i => i.id === id)).filter(Boolean) as Innerface[];
+    // Resolve targets with memoization to avoid lookups on every hover/render
+    const targetInnerfaces = useMemo(() => {
+        return protocol.targets
+            .map(id => innerfaces.find(i => i.id.toString() === id.toString()))
+            .filter((i): i is Innerface => i !== undefined);
+    }, [protocol.targets, innerfaces]);
 
 
     const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
@@ -130,29 +135,27 @@ export function ProtocolRow({ protocol, innerfaces, onLevelUp, onLevelDown, onEd
                 <div className="flex items-center gap-3 mr-10 pointer-events-auto">
                     {/* Targets (Legacy Pill Style) */}
                     <div className="hidden md:flex items-center gap-1.5">
-                        {targetInnerfaces.map(innerface => (
-                            <TooltipProvider key={innerface.id} delayDuration={300}>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <div
-                                            className="px-2 py-0.5 rounded-md bg-bg-primary border border-sub-alt flex items-center gap-1.5 transition-transform hover:scale-105 cursor-help"
-                                        >
-                                            <div className="text-[0.7rem]" style={{ color: innerface.color }}>
-                                                {renderIcon(innerface.icon)}
-                                            </div>
-                                            <span
-                                                className="uppercase font-mono text-[0.6rem] font-bold tracking-wider"
-                                                style={{ color: innerface.color || 'var(--sub-color)' }}
-                                            >
-                                                {innerface.name.split('.')[0]}
-                                            </span>
+                        {targetInnerfaces.map((innerface: Innerface) => (
+                            <Tooltip key={innerface.id}>
+                                <TooltipTrigger asChild>
+                                    <div
+                                        className="px-2 py-0.5 rounded-md bg-bg-primary border border-sub-alt flex items-center gap-1.5 transition-transform hover:scale-105 cursor-help"
+                                    >
+                                        <div className="text-[0.7rem]" style={{ color: innerface.color }}>
+                                            {renderIcon(innerface.icon)}
                                         </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top">
-                                        <span className="font-mono text-xs">{innerface.name}</span>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
+                                        <span
+                                            className="uppercase font-mono text-[0.6rem] font-bold tracking-wider"
+                                            style={{ color: innerface.color || 'var(--sub-color)' }}
+                                        >
+                                            {innerface.name.split('.')[0]}
+                                        </span>
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                    <span className="font-mono text-xs">{innerface.name}</span>
+                                </TooltipContent>
+                            </Tooltip>
                         ))}
                     </div>
 
@@ -180,4 +183,4 @@ export function ProtocolRow({ protocol, innerfaces, onLevelUp, onLevelDown, onEd
             </div>
         </div>
     );
-}
+});

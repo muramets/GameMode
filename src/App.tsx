@@ -1,9 +1,14 @@
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthProvider';
 import { QueryProvider } from './contexts/QueryProvider';
 import { Layout } from './components/layout/Layout';
-import { ScoreProvider } from './contexts/ScoreProvider';
+import { ScoreProvider, useScoreContext } from './contexts/ScoreProvider';
 import { StoreSync } from './stores/StoreSync';
+import { TooltipProvider } from './components/ui/atoms/Tooltip';
+import { GlobalLoader } from './components/ui/molecules/GlobalLoader';
+import { applyTheme } from './utils/themeManager';
+import { themes } from './styles/themes';
 
 // Pages
 import Dashboard from './pages/dashboard/DashboardPage';
@@ -36,14 +41,66 @@ const Login = () => {
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  console.log("PrivateRoute check:", { user: user?.email, loading });
   if (loading) return <div>Loading...</div>;
   return user ? <>{children}</> : <Navigate to="/login" />;
 }
 
-import { applyTheme } from './utils/themeManager';
-import { themes } from './styles/themes';
-import { useEffect } from 'react';
+function AppContent() {
+  const { initialized } = useScoreContext();
+  const { user, loading: authLoading } = useAuth();
+
+  // Logic: 
+  // 1. Auth Loading -> Show Loader
+  // 2. No User -> Show Login (App handles routing)
+  // 3. User & !Initialized -> Show GlobalLoader
+  // 4. Always render StoreSync to ensure data fetching starts if user exists.
+
+  if (authLoading) return <GlobalLoader />;
+
+  return (
+    <TooltipProvider delayDuration={300}>
+      <StoreSync />
+      {(!initialized && user) ? (
+        <GlobalLoader />
+      ) : (
+        <Router>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/" element={
+              <PrivateRoute>
+                <Layout>
+                  <Dashboard />
+                </Layout>
+              </PrivateRoute>
+            } />
+            <Route path="/protocols" element={
+              <PrivateRoute>
+                <Layout>
+                  <ProtocolsList />
+                </Layout>
+              </PrivateRoute>
+            } />
+            <Route path="/innerfaces" element={
+              <PrivateRoute>
+                <Layout>
+                  <InnerfacesPage />
+                </Layout>
+              </PrivateRoute>
+            } />
+            <Route path="/history" element={
+              <PrivateRoute>
+                <Layout>
+                  <HistoryPage />
+                </Layout>
+              </PrivateRoute>
+            } />
+            {/* Add more routes here */}
+          </Routes>
+        </Router>
+      )}
+    </TooltipProvider>
+  );
+}
 
 function App() {
   useEffect(() => {
@@ -51,45 +108,16 @@ function App() {
     applyTheme(themes.serika_dark);
   }, []);
 
+  const navStart = (window as any).__navStart;
+  if (navStart) {
+    console.log(`[PERF][2] App: Rendering shell at ${performance.now().toFixed(2)}ms (Delta: ${(performance.now() - navStart).toFixed(2)}ms)`);
+  }
+
   return (
     <QueryProvider>
       <AuthProvider>
         <ScoreProvider>
-          <StoreSync />
-          <Router>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/" element={
-                <PrivateRoute>
-                  <Layout>
-                    <Dashboard />
-                  </Layout>
-                </PrivateRoute>
-              } />
-              <Route path="/protocols" element={
-                <PrivateRoute>
-                  <Layout>
-                    <ProtocolsList />
-                  </Layout>
-                </PrivateRoute>
-              } />
-              <Route path="/innerfaces" element={
-                <PrivateRoute>
-                  <Layout>
-                    <InnerfacesPage />
-                  </Layout>
-                </PrivateRoute>
-              } />
-              <Route path="/history" element={
-                <PrivateRoute>
-                  <Layout>
-                    <HistoryPage />
-                  </Layout>
-                </PrivateRoute>
-              } />
-              {/* Add more routes here */}
-            </Routes>
-          </Router>
+          <AppContent />
         </ScoreProvider>
       </AuthProvider>
     </QueryProvider>

@@ -148,10 +148,22 @@ export function StateCard({
                 </div>
             </div>
 
+            {/* Progress Bar */}
+            <div className="w-full h-[6px] bg-bg-primary/50 rounded-full overflow-hidden my-4 relative z-10">
+                <div
+                    className="h-full transition-all duration-500 ease-out rounded-full"
+                    style={{
+                        width: `${percentage}%`,
+                        backgroundColor: displayColor,
+                        boxShadow: `0 0 10px ${displayColor}40`
+                    }}
+                />
+            </div>
+
 
 
             {/* Details Footer */}
-            <div className="flex justify-between items-center text-[0.7rem] text-sub font-mono relative z-10 px-1 opacity-70 group-hover:opacity-100 transition-opacity mt-auto">
+            <div className="flex justify-between items-center text-[0.7rem] text-sub font-mono relative z-10 px-1 opacity-70 group-hover:opacity-100 transition-opacity">
                 <span>{depText}</span>
             </div>
         </div>

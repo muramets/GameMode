@@ -33,6 +33,7 @@ interface MetadataState {
     states: StateData[];
     groupsMetadata: Record<string, { icon: string; color?: string }>;
     isLoading: boolean;
+    loadedCount: number;
     error: string | null;
 
     // --- Actions ---
@@ -73,6 +74,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     states: [],
     groupsMetadata: {},
     isLoading: true,
+    loadedCount: 0,
     error: null,
 
     addInnerface: async (uid, data) => {
@@ -205,34 +207,62 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
 
 
     subscribeToMetadata: (uid) => {
-        set({ isLoading: true });
+        set({ isLoading: true, loadedCount: 0 });
 
-        const ifacesRef = collection(db, 'users', uid, 'innerfaces');
-        const unsubIfaces = onSnapshot(ifacesRef, (snap) => {
+        // Helper to check if all initial data is loaded
+        let localLoadedCount = 0;
+        const totalSources = 4;
+        const checkDone = (snap: any) => {
+            // We count a source as loaded when it fires first time, regardless of cache
+            // to ensure the UI progresses.
+            // (We use a local counter per closure to avoid race conditions with global state updates if we used get().loadedCount)
+            // However, to update the UI, we must set it.
+            // Note: onSnapshot fires immediately with cache or empty, then updates.
+            // We just want to know "did we get *something*".
+
+            // Simple logic: we have 4 subscriptions. Each time one fires for the FIRST time, we increment.
+            // But onSnapshot fires on every update. We need to track which *type* finished.
+            // Actually, the previous logic was: count fires.
+
+            // Better logic: use a set of loaded sources.
+        };
+
+        const loadedSources = new Set<string>();
+        const markLoaded = (source: string) => {
+            if (!loadedSources.has(source)) {
+                loadedSources.add(source);
+                set({ loadedCount: loadedSources.size });
+                if (loadedSources.size >= totalSources) {
+                    set({ isLoading: false });
+                }
+            }
+        };
+
+        const unsubIfaces = onSnapshot(collection(db, 'users', uid, 'innerfaces'), (snap) => {
             const innerfaces = snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Innerface));
             set({ innerfaces });
-            if (snap.metadata.fromCache === false) set({ isLoading: false });
+            markLoaded('innerfaces');
         });
 
-        const protocolsRef = collection(db, 'users', uid, 'protocols');
-        const unsubProtocols = onSnapshot(protocolsRef, (snap) => {
+        const unsubProtocols = onSnapshot(collection(db, 'users', uid, 'protocols'), (snap) => {
             const protocols = snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Protocol));
             set({ protocols });
+            markLoaded('protocols');
         });
 
-        const statesRef = collection(db, 'users', uid, 'states');
-        const unsubStates = onSnapshot(statesRef, (snap) => {
+        const unsubStates = onSnapshot(collection(db, 'users', uid, 'states'), (snap) => {
             const states = snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as StateData));
             set({ states });
+            markLoaded('states');
         });
 
-        const groupsRef = collection(db, 'users', uid, 'groups');
-        const unsubGroups = onSnapshot(groupsRef, (snap) => {
+        const unsubGroups = onSnapshot(collection(db, 'users', uid, 'groups'), (snap) => {
             const groupsMetadata: Record<string, { icon: string; color?: string }> = {};
             snap.docs.forEach(doc => {
                 groupsMetadata[doc.id] = doc.data() as { icon: string; color?: string };
             });
             set({ groupsMetadata });
+            markLoaded('groups');
         });
 
         return () => {

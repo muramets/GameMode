@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo, useLayoutEffect, useEffect } from 'react';
 import type { Protocol, Innerface } from './types';
 import { ProtocolRow } from './ProtocolRow';
 import { ProtocolSettingsModal } from './components/ProtocolSettingsModal';
@@ -14,21 +14,34 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { ActiveFiltersList } from '../../components/ui/molecules/ActiveFiltersList';
 import { GROUP_CONFIG } from '../../constants/common';
-export function ProtocolsList() {
-    const { applyProtocol, innerfaces, protocols, isLoading } = useScoreContext();
-    const [searchQuery, setSearchQuery] = useState('');
-    const [activeFilters, setActiveFilters] = useState<string[]>([]);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedProtocolId, setSelectedProtocolId] = useState<string | number | null>(null);
+// Optimization: Isolated heavy rendering component
+const ProtocolsContent = React.memo(({
+    protocols,
+    innerfaces,
+    searchQuery,
+    activeFilters,
+    applyProtocol,
+    handleEditProtocol
+}: {
+    protocols: Protocol[];
+    innerfaces: Innerface[];
+    searchQuery: string;
+    activeFilters: string[];
+    applyProtocol: (id: string | number, direction: '+' | '-') => void;
+    handleEditProtocol: (id: string | number) => void;
+}) => {
+    // 1. Heavy Calculation: Map Creation
+    const innerfaceMap = useMemo(() => {
+        const map = new Map<string, string>();
+        innerfaces.forEach((i: Innerface) => {
+            map.set(i.id.toString(), i.name.toLowerCase());
+        });
+        return map;
+    }, [innerfaces]);
 
-    // Extract unique groups
-    const protocolGroups = useMemo(() => {
-        const groups = new Set(protocols.map((p: Protocol) => p.group).filter(Boolean));
-        return Array.from(groups).sort();
-    }, [protocols]);
-
-    // Filter protocols based on search query and active filters
+    // 2. Heavy Calculation: Filtering O(N)
     const filteredProtocols = useMemo(() => {
+        // const start = performance.now();
         let filtered = protocols;
 
         // Apply group filters
@@ -40,31 +53,110 @@ export function ProtocolsList() {
             });
         }
 
-        if (!searchQuery.trim()) return filtered;
+        if (!searchQuery.trim()) {
+            return filtered;
+        }
 
         const query = searchQuery.toLowerCase();
-        return filtered.filter((protocol: Protocol) => {
-            // Match title
+        const result = filtered.filter((protocol: Protocol) => {
             if (protocol.title.toLowerCase().includes(query)) return true;
-            // Match group
             if (protocol.group?.toLowerCase().includes(query)) return true;
-            // Match target innerface names
-            const targetNames = protocol.targets.map((id: string | number) =>
-                innerfaces.find((i: Innerface) => i.id === id)?.name.toLowerCase()
-            );
-            if (targetNames.some((name: string | undefined) => name?.includes(query))) return true;
-
+            if (protocol.targets.some((id: string | number) => {
+                const name = innerfaceMap.get(id.toString());
+                return name?.includes(query);
+            })) {
+                return true;
+            }
             return false;
         });
-    }, [protocols, searchQuery, activeFilters, innerfaces]);
 
-    if (isLoading && protocols.length === 0) {
+        // Optional: log slow filters
+        // console.log(`[PERF] Filter took ${(end - start).toFixed(2)}ms`);
+        return result;
+    }, [protocols, searchQuery, activeFilters, innerfaceMap]);
+
+    // 3. Progressive Batching
+    // Render first 20 items immediately, then the rest.
+    const [renderedCount, setRenderedCount] = useState(20);
+
+    useEffect(() => {
+        // Reset to 20 when filters change to ensure fast response
+        setRenderedCount(20);
+    }, [filteredProtocols]);
+
+    useEffect(() => {
+        if (renderedCount < filteredProtocols.length) {
+            // Load the rest in the next frame/idle time
+            const timer = setTimeout(() => {
+                setRenderedCount(prev => Math.min(prev + 200, filteredProtocols.length));
+            }, 0);
+            return () => clearTimeout(timer);
+        }
+    }, [renderedCount, filteredProtocols.length]);
+
+    const visibleProtocols = filteredProtocols.slice(0, renderedCount);
+
+    useLayoutEffect(() => {
+        const now = performance.now();
+        console.log(`[PERF][6] ProtocolsContent: Painted ${visibleProtocols.length} items at ${now.toFixed(2)}ms`);
+    });
+
+    if (filteredProtocols.length === 0) {
         return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="text-sub font-mono animate-pulse uppercase tracking-widest text-xs">Loading Protocols...</div>
+            <div className="py-12 text-center flex flex-col items-center justify-center text-sub">
+                <div className="mb-4 text-4xl opacity-20">
+                    <FontAwesomeIcon icon={faSearch} />
+                </div>
+                <p>
+                    {!searchQuery.trim() && activeFilters.length === 1 && activeFilters[0] === 'ungrouped' ? (
+                        <>No <span className="text-text-primary">ungrouped</span> protocols</>
+                    ) : !searchQuery.trim() && activeFilters.length > 0 ? (
+                        <>No protocols found in <span className="text-text-primary">{activeFilters.join(', ')}</span></>
+                    ) : searchQuery.trim() && activeFilters.length > 0 ? (
+                        <>No protocols matching "<span className="text-text-primary">{searchQuery}</span>" in selected categories</>
+                    ) : searchQuery.trim() ? (
+                        <>No protocols found matching "<span className="text-text-primary">{searchQuery}</span>"</>
+                    ) : (
+                        "No protocols found"
+                    )}
+                </p>
             </div>
         );
     }
+
+    return (
+        <>
+            {visibleProtocols.map((protocol: Protocol) => (
+                <ProtocolRow
+                    key={protocol.id}
+                    protocol={protocol}
+                    innerfaces={innerfaces}
+                    onLevelUp={(id: string | number) => applyProtocol(id, '+')}
+                    onLevelDown={(id: string | number) => applyProtocol(id, '-')}
+                    onEdit={handleEditProtocol}
+                />
+            ))}
+            {filteredProtocols.length > renderedCount && (
+                <div className="py-4 text-center text-xs text-sub opacity-50">
+                    Loading rest...
+                </div>
+            )}
+        </>
+    );
+});
+
+export function ProtocolsList() {
+    const { applyProtocol, innerfaces, protocols } = useScoreContext();
+    const [searchQuery, setSearchQuery] = useState('');
+    const [activeFilters, setActiveFilters] = useState<string[]>([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedProtocolId, setSelectedProtocolId] = useState<string | number | null>(null);
+
+    // Extract unique groups
+    const protocolGroups = useMemo(() => {
+        const groups = new Set(protocols.map((p: Protocol) => p.group).filter(Boolean));
+        return Array.from(groups).sort();
+    }, [protocols]);
 
     const handleAddProtocol = () => {
         setSelectedProtocolId(null);
@@ -81,7 +173,6 @@ export function ProtocolsList() {
             setActiveFilters([]);
             return;
         }
-
         setActiveFilters(prev => {
             if (prev.includes(filter)) {
                 return prev.filter((f: string) => f !== filter);
@@ -94,6 +185,11 @@ export function ProtocolsList() {
     const removeFilter = (filter: string) => {
         setActiveFilters((prev: string[]) => prev.filter((f: string) => f !== filter));
     };
+
+    // If data is truly missing (e.g. error), we might want safe guards, 
+    // but GlobalLoader ensures we have initial data. 
+    // We can keep a minimal empty state check if needed, but not a "Loading..." spinner.
+    if (!protocols) return null;
 
     return (
         <div className="flex flex-col gap-6 w-full">
@@ -235,46 +331,14 @@ export function ProtocolsList() {
 
             {/* List */}
             <div className="flex flex-col gap-3">
-                {filteredProtocols.length > 0 ? (
-                    filteredProtocols.map((protocol: Protocol) => (
-                        <ProtocolRow
-                            key={protocol.id}
-                            protocol={protocol}
-                            innerfaces={innerfaces}
-                            onLevelUp={(id: string | number) => applyProtocol(id, '+')}
-                            onLevelDown={(id: string | number) => applyProtocol(id, '-')}
-                            onEdit={handleEditProtocol}
-                        />
-                    ))
-                ) : (
-                    <div className="py-12 text-center flex flex-col items-center justify-center text-sub">
-                        <div className="mb-4 text-4xl opacity-20">
-                            <FontAwesomeIcon icon={faSearch} />
-                        </div>
-                        <p>
-                            {!searchQuery.trim() && activeFilters.length === 1 && activeFilters[0] === 'ungrouped' ? (
-                                <>No <span className="text-text-primary">ungrouped</span> protocols</>
-                            ) : !searchQuery.trim() && activeFilters.length > 0 ? (
-                                <>No protocols found in <span className="text-text-primary">{activeFilters.join(', ')}</span></>
-                            ) : searchQuery.trim() && activeFilters.length > 0 ? (
-                                <>No protocols matching "<span className="text-text-primary">{searchQuery}</span>" in selected categories</>
-                            ) : searchQuery.trim() ? (
-                                <>No protocols found matching "<span className="text-text-primary">{searchQuery}</span>"</>
-                            ) : (
-                                "No protocols found"
-                            )}
-                        </p>
-                        <button
-                            onClick={() => {
-                                setSearchQuery('');
-                                setActiveFilters([]);
-                            }}
-                            className="mt-4 text-main hover:underline text-sm"
-                        >
-                            Clear all filters
-                        </button>
-                    </div>
-                )}
+                <ProtocolsContent
+                    protocols={protocols}
+                    innerfaces={innerfaces}
+                    searchQuery={searchQuery}
+                    activeFilters={activeFilters}
+                    applyProtocol={applyProtocol}
+                    handleEditProtocol={handleEditProtocol}
+                />
             </div>
 
             <ProtocolSettingsModal
