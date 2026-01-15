@@ -35,7 +35,10 @@ export function PersonalityDropdown() {
                 >
                     <div
                         className="flex items-center justify-center transition-colors duration-150 group-hover:text-[var(--text-color)]"
-                        style={{ width: '1.4em', height: '1.4em' }}
+                        style={{
+                            width: '1.4em',
+                            height: '1.4em'
+                        }}
                     >
                         {/* Avatar / Icon */}
                         {activePersonality?.avatar ? (
@@ -61,13 +64,12 @@ export function PersonalityDropdown() {
 
                     {/* Personality Count Badge (Styled as Level Badge) */}
                     <div
-                        className="flex items-center justify-center transition-colors duration-150 group-hover:bg-[var(--text-color)]"
+                        className="flex items-center justify-center transition-colors duration-150 bg-[var(--sub-color)] group-hover:bg-[var(--text-color)] group-hover:text-[var(--bg-color)]"
                         style={{
                             fontSize: '0.65em',
                             lineHeight: '0.65em',
                             padding: '0.3em 0.45em',
                             borderRadius: '4px',
-                            backgroundColor: 'var(--sub-color)',
                             color: 'var(--bg-color)',
                             alignSelf: 'center',
                             width: 'max-content'
@@ -78,7 +80,7 @@ export function PersonalityDropdown() {
                 </button>
 
                 {/* Dropdown Menu - Exact MonkeyType Replica */}
-                <div className="absolute top-[calc(100%+0.5rem)] right-0 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 min-w-[23ch] z-[100] text-[0.75rem]">
+                <div className="absolute top-full right-0 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 min-w-[23ch] z-[100] text-[0.75rem] pt-2">
                     <div
                         className="flex flex-col rounded-[0.5rem] overflow-hidden"
                         style={{
@@ -105,9 +107,9 @@ export function PersonalityDropdown() {
                                 >
                                     {/* Icon */}
                                     <div
-                                        className="w-[1em] h-[1em] flex items-center justify-center shrink-0 transition-colors opacity-80 group-hover/item:opacity-100"
+                                        className={`w-[1em] h-[1em] flex items-center justify-center shrink-0 transition-colors opacity-80 group-hover/item:opacity-100 ${!p.themeColor ? 'group-hover/item:text-inherit' : ''}`}
                                         style={{
-                                            color: 'inherit',
+                                            color: p.themeColor || 'inherit',
                                             marginLeft: '0.9em',
                                             marginRight: '0.7em'
                                         }}

@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthProvider';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUser } from '@fortawesome/free-solid-svg-icons';
 import { PersonalityDropdown } from './PersonalityDropdown';
 // import { faKeyboard, faCrown, faInfo, faCog } from '@fortawesome/free-solid-svg-icons';
 import { LogOut } from 'lucide-react';
@@ -68,7 +66,7 @@ export function Header() {
                         <button
                             className="bg-none border-none text-text-secondary p-0 w-9 h-9 flex items-center justify-center rounded cursor-pointer transition-colors hover:text-text-primary focus:outline-none"
                         >
-                            <FontAwesomeIcon icon={faUser} className="text-base" />
+                            <LogOut className="w-4 h-4" />
                         </button>
 
                         {/* Dropdown Menu */}

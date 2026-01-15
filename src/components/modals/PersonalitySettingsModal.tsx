@@ -4,7 +4,6 @@ import { Input } from '../ui/molecules/Input';
 import { Button } from '../ui/atoms/Button';
 import { useAuth } from '../../contexts/AuthProvider';
 import { usePersonalityStore } from '../../stores/personalityStore';
-import { getMappedIcon, renderIcon } from '../../utils/iconMapper';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 import { PRESET_COLORS } from '../../constants/common';
@@ -187,31 +186,6 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
                         {isColorPickerOpen && (
                             <div className="fixed inset-0 z-40" onClick={() => setIsColorPickerOpen(false)} />
                         )}
-                    </div>
-
-                    {/* Icon */}
-                    <div className="w-24 flex flex-col gap-1.5">
-                        <InputLabel label="Icon" />
-                        <div className="relative group/icon bg-sub-alt rounded-lg transition-colors duration-200 focus-within:bg-sub border border-transparent focus-within:border-white/5">
-                            {getMappedIcon(icon) && (
-                                <div
-                                    className="absolute inset-0 flex items-center justify-center pointer-events-none transition-colors duration-200"
-                                    style={{ color: color }}
-                                >
-                                    <FontAwesomeIcon icon={getMappedIcon(icon)} className="text-sm" />
-                                </div>
-                            )}
-                            <Input
-                                type="text"
-                                value={icon}
-                                onChange={e => {
-                                    const val = e.target.value;
-                                    setIcon(val);
-                                }}
-                                placeholder="fa-icon"
-                                className={`text-center text-sm p-0 h-[42px] relative z-10 ${getMappedIcon(icon) ? '!text-transparent !caret-text-primary' : ''} !bg-transparent focus:!bg-transparent !border-none outline-none`}
-                            />
-                        </div>
                     </div>
 
                     {/* Avatar URL (Optional) */}
