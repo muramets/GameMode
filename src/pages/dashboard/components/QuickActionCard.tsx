@@ -142,7 +142,7 @@ export function QuickActionCard({ action, onAction, onDelete }: { action: Protoc
                             className="text-[0.7rem] font-mono transition-colors duration-200 uppercase tracking-wide truncate max-w-[160px]"
                             style={{
                                 color: feedbackType === 'plus' ? '#98c379' : feedbackType === 'minus' ? '#ca4754' :
-                                    hoverSide === 'right' ? '#98c379' : hoverSide === 'left' ? '#ca4754' : 'var(--sub)'
+                                    hoverSide === 'right' ? '#98c379' : hoverSide === 'left' ? '#ca4754' : 'var(--text-secondary)'
                             }}
                         >
                             {/* Show description or group */}

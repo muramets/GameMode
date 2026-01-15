@@ -71,6 +71,7 @@ export function Dashboard() {
 
             <QuickActionsGrid
                 actions={quickActions}
+                totalProtocolCount={protocols.length}
                 onAddAction={() => setIsQuickActionModalOpen(true)}
                 onActionClick={handleQuickActionClick}
                 onDeleteAction={handleUnpinAction}

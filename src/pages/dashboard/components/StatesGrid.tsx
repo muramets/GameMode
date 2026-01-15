@@ -40,11 +40,15 @@ export function StatesGrid({ states, onAddState, onEdit, onHistory }: StatesGrid
                     />
                 ))}
 
-                {/* Empty state if no states? or just show grid. */}
+                {/* Empty State / Add Placeholder */}
                 {states.length === 0 && (
-                    <div className="col-span-full py-12 text-center text-text-secondary italic">
-                        No states defined yet. Add one to get started.
-                    </div>
+                    <button
+                        onClick={onAddState}
+                        className="col-span-full md:col-span-1 min-h-[180px] border border-dashed border-sub-alt rounded-2xl flex flex-col items-center justify-center text-sub hover:text-text-primary hover:border-sub transition-all group"
+                    >
+                        <Plus className="w-8 h-8 opacity-40 group-hover:opacity-100 transition-opacity duration-300" />
+                        <span className="text-sm font-mono mt-3 group-hover:opacity-100 transition-opacity duration-300">Add First State</span>
+                    </button>
                 )}
             </div>
         </CollapsibleSection>
