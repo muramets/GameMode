@@ -1,24 +1,13 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faBed, faMoon, faBook, faBolt } from '@fortawesome/free-solid-svg-icons'; // Example icons
+import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import { QuickActionCard } from './QuickActionCard';
-import type { QuickAction } from './types';
-
-// We need a map from string icon names to FontAwesome objects since DB/Mock usually stores strings.
-// For now, I'll mapping standard ones used in typical productivity apps.
-const ICON_MAP: Record<string, any> = {
-    'bed': faBed,
-    'moon': faMoon,
-    'book': faBook,
-    'bolt': faBolt,
-    // fallback
-    'default': faBolt
-};
+import type { Protocol } from '../../protocols/types';
 
 interface QuickActionsGridProps {
-    actions: QuickAction[];
+    actions: Protocol[];
     onAddAction?: () => void;
-    onActionClick?: (id: string) => void;
-    onDeleteAction?: (id: string) => void;
+    onActionClick?: (id: string | number, direction: '+' | '-') => void;
+    onDeleteAction?: (id: string | number) => void;
 }
 
 export function QuickActionsGrid({ actions, onAddAction, onActionClick, onDeleteAction }: QuickActionsGridProps) {
@@ -35,23 +24,25 @@ export function QuickActionsGrid({ actions, onAddAction, onActionClick, onDelete
                 </button>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {actions.map((action) => (
                     <QuickActionCard
                         key={action.id}
                         action={action}
-                        icon={ICON_MAP[action.icon] || ICON_MAP['default']}
-                        onClick={() => onActionClick?.(action.id)}
+                        onAction={(direction) => onActionClick?.(action.id, direction)}
                         onDelete={() => onDeleteAction?.(action.id)}
                     />
                 ))}
 
-                {/* Empty State / Add Placeholder if needed, but legacy just showed empty text if 0. 
-                    I'll implement the empty state from legacy if array is empty. */}
+                {/* Empty State / Add Placeholder */}
                 {actions.length === 0 && (
-                    <div className="col-span-full py-8 text-center text-text-secondary italic bg-sub-alt/20 rounded-lg border border-dashed border-sub-alt">
-                        No quick actions defined. Add one to get started.
-                    </div>
+                    <button
+                        onClick={onAddAction}
+                        className="col-span-full md:col-span-1 h-[70px] border border-dashed border-sub-alt rounded-lg flex flex-col items-center justify-center text-sub hover:text-text-primary hover:border-sub transition-all group"
+                    >
+                        <FontAwesomeIcon icon={faPlus} className="text-lg opacity-50 group-hover:opacity-100" />
+                        <span className="text-xs font-mono mt-1 opacity-70">Add Action</span>
+                    </button>
                 )}
             </div>
         </div>

@@ -18,7 +18,7 @@ html {
 
   --caret-color: #e2b714;
 
-  --sub-color-rgb: 100 102 105;
+  --sub-color-rgb: 101 102 105;
   --sub-color: rgb(var(--sub-color-rgb));
 
   --sub-alt-color-rgb: 44 46 49;

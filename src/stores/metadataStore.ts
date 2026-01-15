@@ -31,6 +31,7 @@ interface MetadataState {
     innerfaces: Innerface[];
     protocols: Protocol[];
     states: StateData[];
+    pinnedProtocolIds: string[];
     groupsMetadata: Record<string, { icon: string; color?: string }>;
     isLoading: boolean;
     loadedCount: number;
@@ -64,6 +65,9 @@ interface MetadataState {
 
     updateGroupMetadata: (uid: string, groupName: string, metadata: { icon?: string; color?: string }) => Promise<void>;
 
+    // Quick Actions
+    togglePinnedProtocol: (uid: string, protocolId: string) => Promise<void>;
+
     // --- Subscriptions ---
     subscribeToMetadata: (uid: string) => () => void;
 }
@@ -72,6 +76,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     innerfaces: [],
     protocols: [],
     states: [],
+    pinnedProtocolIds: [],
     groupsMetadata: {},
     isLoading: true,
     loadedCount: 0,
@@ -204,14 +209,27 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         }
     },
 
+    togglePinnedProtocol: async (uid, protocolId) => {
+        try {
+            const ids = get().pinnedProtocolIds;
+            const isPinned = ids.includes(protocolId);
+            const newIds = isPinned
+                ? ids.filter(id => id !== protocolId)
+                : [...ids, protocolId];
 
+            const docRef = doc(db, 'users', uid, 'settings', 'quickActions');
+            await setDoc(docRef, { ids: newIds }, { merge: true });
+        } catch (err: any) {
+            set({ error: err.message });
+        }
+    },
 
     subscribeToMetadata: (uid) => {
         set({ isLoading: true, loadedCount: 0 });
 
         // Helper to check if all initial data is loaded
         let localLoadedCount = 0;
-        const totalSources = 4;
+        const totalSources = 5; // Added Quick Actions
         const checkDone = (snap: any) => {
             // We count a source as loaded when it fires first time, regardless of cache
             // to ensure the UI progresses.
@@ -220,7 +238,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             // Note: onSnapshot fires immediately with cache or empty, then updates.
             // We just want to know "did we get *something*".
 
-            // Simple logic: we have 4 subscriptions. Each time one fires for the FIRST time, we increment.
+            // Simple logic: we have 5 subscriptions. Each time one fires for the FIRST time, we increment.
             // But onSnapshot fires on every update. We need to track which *type* finished.
             // Actually, the previous logic was: count fires.
 
@@ -265,11 +283,22 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             markLoaded('groups');
         });
 
+        const unsubQuickActions = onSnapshot(doc(db, 'users', uid, 'settings', 'quickActions'), (snap) => {
+            if (snap.exists()) {
+                const data = snap.data();
+                set({ pinnedProtocolIds: data.ids || [] });
+            } else {
+                set({ pinnedProtocolIds: [] });
+            }
+            markLoaded('quickActions');
+        });
+
         return () => {
             unsubIfaces();
             unsubProtocols();
             unsubStates();
             unsubGroups();
+            unsubQuickActions();
         };
     }
 }));

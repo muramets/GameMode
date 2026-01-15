@@ -28,6 +28,7 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
     // Form State
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
+    const [hover, setHover] = useState(''); // Added hover state
     const [group, setGroup] = useState('');
     const [icon, setIcon] = useState('🔹');
     const [action, setAction] = useState<'+' | '-'>('+');
@@ -58,6 +59,7 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
             if (protocol) {
                 setTitle(protocol.title);
                 setDescription(protocol.description);
+                setHover(protocol.hover || ''); // Initialize hover
                 setGroup(protocol.group || '');
                 setIcon(protocol.icon);
                 setAction(protocol.action || '+');
@@ -69,6 +71,7 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
             // Reset for new
             setTitle('');
             setDescription('');
+            setHover(''); // Reset hover
             setGroup('');
             setIcon('🔹');
             setAction('+');
@@ -91,6 +94,7 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
         const data = {
             title,
             description,
+            hover, // Include hover in submission
             group,
             icon,
             action,
@@ -227,6 +231,16 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                         value={description}
                         onChange={e => setDescription(e.target.value)}
                         placeholder="e.g. 10 minutes of mindfulness"
+                    />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                    <InputLabel label="Hover Text" />
+                    <Input
+                        type="text"
+                        value={hover}
+                        onChange={e => setHover(e.target.value)}
+                        placeholder="Tooltip text (optional)"
                     />
                 </div>
 

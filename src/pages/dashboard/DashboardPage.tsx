@@ -5,7 +5,9 @@ import { QuickActionsGrid } from './components/QuickActionsGrid';
 import { StateSettingsModal } from './components/StateSettingsModal';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import type { QuickAction } from './components/types';
+import { AddQuickActionModal } from './components/AddQuickActionModal';
+import { useMetadataStore } from '../../stores/metadataStore';
+// import type { QuickAction } from './components/types'; // Legacy types no longer needed
 
 const DEFAULT_LEVEL_INFO = {
     level: 5,
@@ -22,44 +24,36 @@ const DEFAULT_USER_STATS = {
     xpMonth: 1200
 };
 
-const DEFAULT_QUICK_ACTIONS: QuickAction[] = [
-    {
-        id: 'qa1',
-        title: 'Morning Read',
-        icon: 'book',
-        details: 'Education',
-        xp: 10,
-        color: 'positive',
-        hover: 'Read 10 pages of a non-fiction book'
-    },
-    {
-        id: 'qa2',
-        title: 'Power Nap',
-        icon: 'moon',
-        details: 'Restore Energy',
-        xp: 5,
-        color: 'neutral'
-    },
-    {
-        id: 'qa3',
-        title: 'Deep Work',
-        icon: 'bolt',
-        details: 'Focus Mode',
-        xp: 20,
-        color: 'neutral'
-    }
-];
+// Mock data removed. Pinned protocols are now fetched from store.
 
 import { useScoreContext } from '../../contexts/ScoreProvider';
 
 export function Dashboard() {
     const { user } = useAuth();
-    const { states, isLoading } = useScoreContext();
+    const { states, protocols, applyProtocol, isLoading } = useScoreContext();
+    const { pinnedProtocolIds, togglePinnedProtocol } = useMetadataStore();
     const displayName = user?.displayName || user?.email?.split('@')[0] || "Player";
     const navigate = useNavigate();
 
     const [isStateModalOpen, setIsStateModalOpen] = useState(false);
+    const [isQuickActionModalOpen, setIsQuickActionModalOpen] = useState(false);
     const [selectedStateId, setSelectedStateId] = useState<string | null>(null);
+
+    // Filter pinned protocols
+    // We assume protocols are already loaded via ScoreProvider -> GlobalLoader
+    const quickActions = protocols.filter(p => pinnedProtocolIds.includes(p.id.toString()));
+
+    // Handle Quick Action Click -> Execute Protocol
+    const handleQuickActionClick = (id: string | number, direction: '+' | '-') => {
+        applyProtocol(id, direction);
+    };
+
+    // Handle Quick Action Delete -> Unpin
+    const handleUnpinAction = (id: string | number) => {
+        if (user) {
+            togglePinnedProtocol(user.uid, id.toString());
+        }
+    };
 
 
 
@@ -102,10 +96,15 @@ export function Dashboard() {
             />
 
             <QuickActionsGrid
-                actions={DEFAULT_QUICK_ACTIONS}
-                onAddAction={() => console.log('Add quick action')}
-                onActionClick={(id) => console.log('Clicked action', id)}
-                onDeleteAction={(id) => console.log('Delete action', id)}
+                actions={quickActions}
+                onAddAction={() => setIsQuickActionModalOpen(true)}
+                onActionClick={handleQuickActionClick}
+                onDeleteAction={handleUnpinAction}
+            />
+
+            <AddQuickActionModal
+                isOpen={isQuickActionModalOpen}
+                onClose={() => setIsQuickActionModalOpen(false)}
             />
 
 
