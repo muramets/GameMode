@@ -50,11 +50,16 @@ export default {
                     '0%': { opacity: '0', transform: 'translateY(10px)' },
                     '100%': { opacity: '1', transform: 'translateY(0)' },
                 },
+                shimmer: {
+                    '0%': { backgroundPosition: '200% 0' },
+                    '100%': { backgroundPosition: '-200% 0' },
+                },
             },
             animation: {
                 'fade-in': 'fadeIn 0.25s ease-out',
                 'zoom-in': 'zoomIn 0.25s ease-out',
                 'slide-in-bottom': 'slideInBottom 0.25s ease-out',
+                'shimmer': 'shimmer 2s linear infinite',
             },
         },
     },

@@ -1,6 +1,7 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useLayoutEffect } from 'react';
 import type { Protocol, Innerface } from './types';
 import { ProtocolRow } from './ProtocolRow';
+import { ProtocolsSkeleton } from './ProtocolsSkeleton';
 import { ProtocolSettingsModal } from './components/ProtocolSettingsModal';
 import { useAuth } from '../../contexts/AuthProvider';
 import { usePersonalityStore } from '../../stores/personalityStore';
@@ -489,6 +490,17 @@ export function ProtocolsList() {
     const { activePersonalityId } = usePersonalityStore();
     const { reorderProtocols, reorderGroups, groupOrder } = useMetadataStore();
 
+    // Zero-Latancy Navigation: Use skeletons for the first frame
+    const [isReady, setIsReady] = useState(false);
+
+    useLayoutEffect(() => {
+        // Defer rendering of heavy content by one frame to allow instant navigation
+        const timer = requestAnimationFrame(() => {
+            setIsReady(true);
+        });
+        return () => cancelAnimationFrame(timer);
+    }, []);
+
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilters, setActiveFilters] = useState<string[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -584,8 +596,6 @@ export function ProtocolsList() {
     const removeFilter = (filter: string) => {
         setActiveFilters(prev => prev.filter(f => f !== filter));
     };
-
-    if (protocols === undefined) return null;
 
     return (
         <div className="flex flex-col gap-6 w-full">
@@ -698,7 +708,9 @@ export function ProtocolsList() {
                 />
             </div>
 
-            {filteredProtocols.length === 0 ? (
+            {(!protocols || !isReady) ? (
+                <ProtocolsSkeleton />
+            ) : filteredProtocols.length === 0 ? (
                 <div className="py-12 text-center text-sub"><FontAwesomeIcon icon={faSearch} className="text-4xl opacity-20 mb-4" /><p>No protocols found</p></div>
             ) : (
                 <ProtocolsDragContainer
