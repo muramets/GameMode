@@ -55,6 +55,10 @@ interface MetadataState {
 
     // Quick Actions
     togglePinnedProtocol: (uid: string, pid: string, protocolId: string) => Promise<void>;
+    reorderQuickActions: (uid: string, pid: string, orderedIds: string[]) => Promise<void>;
+
+    // State Ordering
+    reorderStates: (uid: string, pid: string, orderedIds: string[]) => Promise<void>;
 
     // --- Subscriptions ---
     subscribeToMetadata: (uid: string, pid: string) => () => void;
@@ -212,6 +216,63 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         }
     },
 
+    reorderStates: async (uid, pid, orderedIds) => {
+        try {
+            // Optimistically update local state immediately
+            const currentStates = get().states;
+            const stateMap = new Map(currentStates.map(s => [s.id, s]));
+
+            const reorderedStates = orderedIds
+                .map((id, index) => {
+                    const state = stateMap.get(id);
+                    return state ? { ...state, order: index } : null;
+                })
+                .filter(Boolean) as StateData[];
+
+            // Add any states that might have been missing from orderedIds (edge case safely)
+            const missingStates = currentStates
+                .filter(s => !orderedIds.includes(s.id))
+                .map((s, i) => ({ ...s, order: orderedIds.length + i }));
+
+            set({ states: [...reorderedStates, ...missingStates] });
+
+            // Batch update Firestore
+            // We use a WriteBatch to ensure atomicity
+            const { writeBatch } = await import('firebase/firestore');
+            const batch = writeBatch(db);
+
+            orderedIds.forEach((id, index) => {
+                const docRef = doc(db, 'users', uid, 'personalities', pid, 'states', id);
+                batch.update(docRef, { order: index });
+            });
+
+            // Also update any missing ones to logical ends
+            missingStates.forEach(s => {
+                const docRef = doc(db, 'users', uid, 'personalities', pid, 'states', s.id);
+                batch.update(docRef, { order: s.order });
+            });
+
+            await batch.commit();
+
+        } catch (err: any) {
+            console.error("Failed to reorder states:", err);
+            set({ error: err.message });
+            // Revert checks would happen on next snapshot update naturally
+        }
+    },
+
+    reorderQuickActions: async (uid, pid, orderedIds) => {
+        try {
+            // Optimistic update
+            set({ pinnedProtocolIds: orderedIds });
+
+            const docRef = doc(db, 'users', uid, 'personalities', pid, 'settings', 'quickActions');
+            await setDoc(docRef, { ids: orderedIds }, { merge: true });
+        } catch (err: any) {
+            set({ error: err.message });
+        }
+    },
+
     subscribeToMetadata: (uid, pid) => {
         set({ isLoading: true, loadedCount: 0 });
 
@@ -241,6 +302,12 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
 
         const unsubStates = onSnapshot(collection(db, 'users', uid, 'personalities', pid, 'states'), (snap) => {
             const states = snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as StateData));
+            // Sort by order field
+            states.sort((a, b) => {
+                const orderA = a.order ?? 9999;
+                const orderB = b.order ?? 9999;
+                return orderA - orderB;
+            });
             set({ states });
             markLoaded('states');
         });

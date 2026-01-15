@@ -10,6 +10,7 @@ export interface StateData {
     innerfaceIds?: (number | string)[];
     protocolIds?: (number | string)[];
     stateIds?: string[];
+    order?: number;
 }
 
 export interface LevelInfo {

@@ -20,8 +20,10 @@ export function Dashboard() {
     const [isQuickActionModalOpen, setIsQuickActionModalOpen] = useState(false);
     const [selectedStateId, setSelectedStateId] = useState<string | null>(null);
 
-    // Filter pinned protocols
-    const quickActions = protocols.filter(p => pinnedProtocolIds.includes(p.id.toString()));
+    // Filter and SORT pinned protocols based on the order in pinnedProtocolIds
+    const quickActions = pinnedProtocolIds
+        .map(id => protocols.find(p => p.id.toString() === id))
+        .filter((p): p is typeof p & object => p !== undefined);
 
     // Handle Quick Action Click -> Execute Protocol
     const handleQuickActionClick = (id: string | number, direction: '+' | '-') => {
