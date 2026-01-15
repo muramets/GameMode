@@ -30,6 +30,7 @@ interface MetadataState {
     states: StateData[];
     pinnedProtocolIds: string[];
     groupsMetadata: Record<string, { icon: string; color?: string }>;
+    groupOrder: string[]; // List of group names in order
     isLoading: boolean;
     loadedCount: number;
     error: string | null;
@@ -57,6 +58,10 @@ interface MetadataState {
     togglePinnedProtocol: (uid: string, pid: string, protocolId: string) => Promise<void>;
     reorderQuickActions: (uid: string, pid: string, orderedIds: string[]) => Promise<void>;
 
+    // Protocol Ordering
+    reorderProtocols: (uid: string, pid: string, orderedIds: string[]) => Promise<void>;
+    reorderGroups: (uid: string, pid: string, orderedGroups: string[]) => Promise<void>;
+
     // State Ordering
     reorderStates: (uid: string, pid: string, orderedIds: string[]) => Promise<void>;
 
@@ -70,6 +75,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     states: [],
     pinnedProtocolIds: [],
     groupsMetadata: {},
+    groupOrder: [],
     isLoading: true,
     loadedCount: 0,
     error: null,
@@ -273,10 +279,55 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         }
     },
 
+    reorderProtocols: async (uid, pid, orderedIds) => {
+        try {
+            // Optimistic update
+            const currentProtocols = get().protocols;
+            const protocolsMap = new Map(currentProtocols.map(p => [p.id, p]));
+
+            const reorderedProtocols = orderedIds
+                .map((id, index) => {
+                    const p = protocolsMap.get(id);
+                    return p ? { ...p, order: index } : null;
+                })
+                .filter(Boolean) as Protocol[];
+
+            // Keep protocols not involved in this reorder (e.g. other groups)
+            const otherProtocols = currentProtocols.filter(p => !orderedIds.includes(p.id.toString()));
+
+            set({ protocols: [...otherProtocols, ...reorderedProtocols] });
+
+            // Batch update
+            const { writeBatch } = await import('firebase/firestore');
+            const batch = writeBatch(db);
+
+            orderedIds.forEach((id, index) => {
+                const docRef = doc(db, 'users', uid, 'personalities', pid, 'protocols', id.toString());
+                batch.update(docRef, { order: index });
+            });
+
+            await batch.commit();
+        } catch (err: any) {
+            set({ error: err.message });
+        }
+    },
+
+    reorderGroups: async (uid, pid, orderedGroups) => {
+        try {
+            // Optimistic update
+            set({ groupOrder: orderedGroups });
+
+            const docRef = doc(db, 'users', uid, 'personalities', pid, 'settings', 'groups');
+            await setDoc(docRef, { order: orderedGroups }, { merge: true });
+        } catch (err: any) {
+            set({ error: err.message });
+        }
+    },
+
     subscribeToMetadata: (uid, pid) => {
         set({ isLoading: true, loadedCount: 0 });
 
-        const totalSources = 5;
+        const totalSources = 6;
         const loadedSources = new Set<string>();
         const markLoaded = (source: string) => {
             if (!loadedSources.has(source)) {
@@ -321,6 +372,16 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             markLoaded('groups');
         });
 
+        const unsubGroupSettings = onSnapshot(doc(db, 'users', uid, 'personalities', pid, 'settings', 'groups'), (snap) => {
+            if (snap.exists()) {
+                const data = snap.data();
+                set({ groupOrder: data.order || [] });
+            } else {
+                set({ groupOrder: [] });
+            }
+            markLoaded('groupSettings');
+        });
+
         const unsubQuickActions = onSnapshot(doc(db, 'users', uid, 'personalities', pid, 'settings', 'quickActions'), (snap) => {
             if (snap.exists()) {
                 const data = snap.data();
@@ -337,6 +398,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             unsubStates();
             unsubGroups();
             unsubQuickActions();
+            unsubGroupSettings();
         };
     }
 }));

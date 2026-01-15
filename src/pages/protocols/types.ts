@@ -21,4 +21,5 @@ export interface Protocol {
     targets: (number | string)[]; // IDs of Innerfaces affected
     hover?: string; // Tooltip text
     action?: '+' | '-'; // Default direction
+    order?: number; // For manual sorting
 }

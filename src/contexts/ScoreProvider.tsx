@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { useScores } from '../pages/protocols/hooks/useScores';
 
 interface ScoreContextType extends ReturnType<typeof useScores> {
@@ -65,8 +65,14 @@ export function ScoreProvider({ children }: { children: React.ReactNode }) {
         }
     }, [displayProgress, scoreData.isLoading]);
 
+    const contextValue = useMemo(() => ({
+        ...scoreData,
+        initialized,
+        progress: displayProgress
+    }), [scoreData, initialized, displayProgress]);
+
     return (
-        <ScoreContext.Provider value={{ ...scoreData, initialized, progress: displayProgress }}>
+        <ScoreContext.Provider value={contextValue}>
             {children}
         </ScoreContext.Provider>
     );

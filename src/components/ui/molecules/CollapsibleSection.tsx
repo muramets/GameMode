@@ -15,29 +15,37 @@ export function CollapsibleSection({
     children,
     defaultOpen = true,
     trailing,
+    dragHandle,
     className = ''
-}: CollapsibleSectionProps) {
+}: CollapsibleSectionProps & { dragHandle?: React.ReactNode }) {
     const [isOpen, setIsOpen] = useState(defaultOpen);
 
     return (
         <div className={`w-full ${className}`}>
-            <div className="flex items-center justify-between mb-4 group">
-                <button
-                    onClick={() => setIsOpen(!isOpen)}
-                    className="flex items-center gap-3 text-2xl font-bold text-sub hover:text-text-primary transition-colors duration-200 outline-none lowercase"
-                    aria-expanded={isOpen}
-                >
-                    <div className={`transition-transform duration-200 ${isOpen ? '' : '-rotate-90'}`}>
-                        <FontAwesomeIcon icon={faChevronDown} className="text-xl" />
-                    </div>
-                    <span>{title}</span>
-                </button>
-
-                {trailing && (
-                    <div className="flex items-center">
-                        {trailing}
+            <div className="flex items-center mb-4 group">
+                {dragHandle && (
+                    <div className="mr-2">
+                        {dragHandle}
                     </div>
                 )}
+                <div className="flex-grow flex items-center justify-between">
+                    <button
+                        onClick={() => setIsOpen(!isOpen)}
+                        className="flex items-center gap-3 text-2xl font-bold text-sub hover:text-text-primary transition-colors duration-200 outline-none lowercase"
+                        aria-expanded={isOpen}
+                    >
+                        <div className={`transition-transform duration-200 ${isOpen ? '' : '-rotate-90'}`}>
+                            <FontAwesomeIcon icon={faChevronDown} className="text-xl" />
+                        </div>
+                        <span>{title}</span>
+                    </button>
+
+                    {trailing && (
+                        <div className="flex items-center">
+                            {trailing}
+                        </div>
+                    )}
+                </div>
             </div>
 
             <div
