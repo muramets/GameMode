@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useEffect, useCallback, useLayoutEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import type { Protocol, Innerface } from './types';
 import { ProtocolRow } from './ProtocolRow';
-import { ProtocolsSkeleton } from './ProtocolsSkeleton';
+import { MonkeyTypeLoader } from '../../components/ui/molecules/MonkeyTypeLoader';
 import { ProtocolSettingsModal } from './components/ProtocolSettingsModal';
 import { useAuth } from '../../contexts/AuthProvider';
 import { usePersonalityStore } from '../../stores/personalityStore';
@@ -530,16 +530,14 @@ export function ProtocolsList() {
     const { activePersonalityId } = usePersonalityStore();
     const { reorderProtocols, reorderGroups, groupOrder, groupsMetadata } = useMetadataStore();
 
-    // Zero-Latancy Navigation: Use skeletons for the first frame
-    const [isReady, setIsReady] = useState(false);
-
-    useLayoutEffect(() => {
-        // Defer rendering of heavy content by one frame to allow instant navigation
-        const timer = requestAnimationFrame(() => {
-            setIsReady(true);
-        });
-        return () => cancelAnimationFrame(timer);
+    // Simplified loading logic: Minimum 500ms display time
+    const [minTimeMet, setMinTimeMet] = useState(false);
+    useEffect(() => {
+        const timer = setTimeout(() => setMinTimeMet(true), 500);
+        return () => clearTimeout(timer);
     }, []);
+
+    const isReady = minTimeMet && !!protocols && protocols.length > 0;
 
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilters, setActiveFilters] = useState<string[]>([]);
@@ -757,8 +755,8 @@ export function ProtocolsList() {
                 />
             </div>
 
-            {(!protocols || !isReady) ? (
-                <ProtocolsSkeleton />
+            {(!isReady) ? (
+                <MonkeyTypeLoader />
             ) : filteredProtocols.length === 0 ? (
                 <div className="py-12 text-center text-sub"><FontAwesomeIcon icon={faSearch} className="text-4xl opacity-20 mb-4" /><p>No protocols found</p></div>
             ) : (
