@@ -14,7 +14,7 @@ export const TruncatedTooltip = ({ text, className, as: Component = 'div' }: { t
             <Tooltip>
                 <TooltipTrigger asChild>
                     <Component
-                        className={`${className} truncate pointer-events-auto cursor-default`}
+                        className={`${className} truncate pointer-events-auto cursor-pointer`}
                         onMouseEnter={handleMouseEnter}
                     >
                         {text}
