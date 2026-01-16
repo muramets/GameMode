@@ -53,8 +53,12 @@ export function InnerfaceCard({ innerface, onEdit }: InnerfaceCardProps) {
                 <div className="flex items-start gap-3 w-full pr-1">
                     {/* Icon */}
                     <div
-                        className="w-10 h-10 rounded-xl bg-black/20 flex items-center justify-center text-lg shrink-0 group-hover:scale-105 transition-transform duration-300"
-                        style={{ color: innerface.color }}
+                        className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 group-hover:scale-105 transition-transform duration-300"
+                        style={{
+                            backgroundColor: `${innerface.color || '#ffffff'}33`,
+                            color: innerface.color || '#ffffff',
+                            boxShadow: `0 0 15px ${innerface.color || '#ffffff'}15`
+                        }}
                     >
                         {renderIcon(innerface.icon)}
                     </div>

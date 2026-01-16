@@ -232,7 +232,6 @@ const InnerfacesDragContainer = React.memo(({
 
         // Initialize groups from groupOrder to ensure order
         groupOrder.forEach(g => { groups[g] = []; });
-        if (!groups['ungrouped']) groups['ungrouped'] = [];
 
         innerfaces.forEach(i => {
             const g = i.group || 'ungrouped';
@@ -245,14 +244,20 @@ const InnerfacesDragContainer = React.memo(({
         // But if `innerfaces` is filtered, we might not want to show empty groups unless they are intentional?
         // Current logic keeps them if they are in groupOrder.
 
-        return Object.entries(groups).sort((a, b) => {
-            const idxA = groupOrder.indexOf(a[0]);
-            const idxB = groupOrder.indexOf(b[0]);
-            if (idxA === -1 && idxB === -1) return 0;
-            if (idxA === -1) return 1; // Unknown groups to end
-            if (idxB === -1) return -1;
-            return idxA - idxB;
-        });
+        return Object.entries(groups)
+            .filter(([groupName, items]) => {
+                // Hide ungrouped if empty
+                if (groupName === 'ungrouped' && items.length === 0) return false;
+                return true;
+            })
+            .sort((a, b) => {
+                const idxA = groupOrder.indexOf(a[0]);
+                const idxB = groupOrder.indexOf(b[0]);
+                if (idxA === -1 && idxB === -1) return 0;
+                if (idxA === -1) return 1; // Unknown groups to end
+                if (idxB === -1) return -1;
+                return idxA - idxB;
+            });
     }, [innerfaces, groupOrder]);
 
     const handleDragStart = useCallback((event: DragStartEvent) => {

@@ -157,8 +157,15 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
                     <motion.div layout className="flex flex-wrap justify-end gap-1.5 content-center pointer-events-auto min-w-0">
                         {targetInnerfaces.map((innerface: Innerface) => {
                             const InnerfaceIcon = (
-                                <div className="w-6 h-6 rounded-md bg-bg-primary/40 flex items-center justify-center shrink-0 transition-colors hover:bg-bg-primary pointer-events-auto">
-                                    <div className="text-[0.7rem] opacity-80" style={{ color: innerface.color }}> {renderIcon(innerface.icon)} </div>
+                                <div
+                                    className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-transform hover:scale-110 duration-200 pointer-events-auto"
+                                    style={{
+                                        backgroundColor: `${innerface.color || '#ffffff'}1A`,
+                                        color: innerface.color || '#ffffff',
+                                        boxShadow: `0 0 10px ${innerface.color || '#ffffff'}0D`
+                                    }}
+                                >
+                                    <div className="text-[0.7rem]"> {renderIcon(innerface.icon)} </div>
                                 </div>
                             );
 

@@ -25,7 +25,7 @@ interface InnerfaceSettingsModalProps {
 
 export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: InnerfaceSettingsModalProps) {
     const { user } = useAuth();
-    const { innerfaces, protocols, addInnerface, updateInnerface, deleteInnerface, groupsMetadata, updateGroupMetadata } = useMetadataStore();
+    const { innerfaces, protocols, addInnerface, updateInnerface, deleteInnerface, groupsMetadata, updateGroupMetadata, updateProtocol } = useMetadataStore();
     const { activePersonalityId } = usePersonalityStore();
 
     // Form State
@@ -144,6 +144,23 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user || !activePersonalityId) return;
+
+        // 1. Bi-directional Cleanup: Ensure deselected protocols remove this innerface from their 'targets'
+        if (innerfaceId) {
+            const removalPromises = protocols.map(p => {
+                const isTargeting = p.targets?.some(t => t.toString() === innerfaceId.toString());
+                const isSelected = protocolIds.some(id => id.toString() === p.id.toString());
+
+                if (isTargeting && !isSelected) {
+                    // Protocol was targeting this innerface, but is no longer in the selected list
+                    // We must remove the link from the protocol side
+                    const newTargets = (p.targets || []).filter(t => t.toString() !== innerfaceId.toString());
+                    return updateProtocol(user.uid, activePersonalityId, p.id, { targets: newTargets });
+                }
+                return Promise.resolve();
+            });
+            await Promise.all(removalPromises);
+        }
 
         const fullName = description ? `${name}. ${description}` : name;
         const newInitialScore = Number(initialScore);
