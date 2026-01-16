@@ -35,7 +35,7 @@ export function Header() {
                     </svg>
                 </div>
                 <div
-                    className="relative text-[2rem] leading-8 text-text-primary mt-[-0.23em] tracking-normal"
+                    className="relative text-[2rem] leading-8 text-text-primary mt-[-0.23em] tracking-normal max-[720px]:hidden"
                     id="logo"
                     style={{ fontFamily: '"Lexend Deca", sans-serif', fontWeight: 400 }}
                 >
@@ -92,6 +92,6 @@ export function Header() {
                     </div>
                 </div>
             </nav>
-        </header>
+        </header >
     );
 }

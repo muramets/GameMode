@@ -2,8 +2,6 @@ import { useState, useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faThumbtack, faCheck } from '@fortawesome/free-solid-svg-icons';
 import { useMetadataStore } from '../../../stores/metadataStore';
-import { usePersonalityStore } from '../../../stores/personalityStore';
-import { useAuth } from '../../../contexts/AuthProvider';
 import { renderIcon } from '../../../utils/iconMapper';
 import { Input } from '../../../components/ui/molecules/Input';
 import { Button } from '../../../components/ui/atoms/Button';
@@ -16,9 +14,9 @@ interface AddQuickActionModalProps {
 }
 
 export function AddQuickActionModal({ isOpen, onClose }: AddQuickActionModalProps) {
-    const { user } = useAuth();
+    // const { user } = useAuth(); // Unused
     const { protocols, pinnedProtocolIds, togglePinnedProtocol } = useMetadataStore();
-    const { activePersonalityId } = usePersonalityStore();
+    // const { activePersonalityId } = usePersonalityStore(); // Unused
     const [searchQuery, setSearchQuery] = useState('');
 
     const filteredProtocols = useMemo(() => {
@@ -30,8 +28,7 @@ export function AddQuickActionModal({ isOpen, onClose }: AddQuickActionModalProp
     }, [protocols, searchQuery]);
 
     const handleTogglePin = (protocolId: string | number) => {
-        if (!user?.uid || !activePersonalityId) return;
-        togglePinnedProtocol(user.uid, activePersonalityId, protocolId.toString());
+        togglePinnedProtocol(protocolId.toString());
     };
 
     return (
@@ -41,7 +38,7 @@ export function AddQuickActionModal({ isOpen, onClose }: AddQuickActionModalProp
             title="Add Quick Action"
             className="!bg-bg-primary"
         >
-            <div className="flex flex-col h-[60vh]">
+            <div className="flex flex-col max-h-[60vh]">
                 <p className="text-sm text-sub font-mono -mt-2 mb-4">Pin your most used protocols for quick access.</p>
 
                 {/* Search */}

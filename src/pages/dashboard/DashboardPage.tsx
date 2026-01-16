@@ -32,10 +32,7 @@ export function Dashboard() {
 
     // Handle Quick Action Delete -> Unpin
     const handleUnpinAction = (id: string | number) => {
-        const activePersonalityId = localStorage.getItem('active_personality_id');
-        if (user && activePersonalityId) {
-            togglePinnedProtocol(user.uid, activePersonalityId, id.toString());
-        }
+        togglePinnedProtocol(id.toString());
     };
 
     const handleAddState = () => {
@@ -69,6 +66,7 @@ export function Dashboard() {
                 onAddState={handleAddState}
                 onEdit={handleEditState}
                 onHistory={handleViewHistory}
+                hasProtocols={protocols.length > 0}
             />
 
             <QuickActionsGrid

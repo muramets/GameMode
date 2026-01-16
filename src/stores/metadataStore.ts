@@ -506,6 +506,9 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     },
 
     subscribeToMetadata: (context: PathContext) => {
+        const pathRoot = getPathRoot(context);
+        console.log(`[MetadataStore] Subscribing to: ${pathRoot}`);
+
         set({
             innerfaces: [],
             protocols: [],
@@ -519,81 +522,114 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         });
 
         let loadedSections = 0;
-        const markLoaded = () => {
+        const markLoaded = (source: string) => {
             loadedSections++;
+            console.log(`[MetadataStore] Loaded ${source} (${loadedSections}/7)`);
             set(state => ({ loadedCount: state.loadedCount + 1 }));
-            if (loadedSections >= 7) { // Changed from 6 to 7 to match totalSources
+            if (loadedSections >= 7) {
+                console.log(`[MetadataStore] All 7 sections loaded. isLoading -> false`);
                 set({ isLoading: false });
             }
         };
 
-        const pathRoot = getPathRoot(context);
+        const handleSnapshotError = (err: Error, source: string) => {
+            console.error(`[MetadataStore] Error loading ${source}:`, err);
+            set({ error: err.message });
+            markLoaded(source);
+        };
 
-        const unsubIfaces = onSnapshot(collection(db, `${pathRoot}/innerfaces`), (snap) => {
-            const innerfaces = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Innerface));
-            // Sort by group then by name/order... logic handled in UI mostly, but here we can sort too
-            set({ innerfaces });
-            markLoaded();
-        });
+        const unsubIfaces = onSnapshot(
+            collection(db, `${pathRoot}/innerfaces`),
+            (snap) => {
+                const innerfaces = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Innerface));
+                set({ innerfaces });
+                markLoaded('innerfaces');
+            },
+            (err) => handleSnapshotError(err, 'innerfaces')
+        );
 
-        const unsubProtocols = onSnapshot(collection(db, `${pathRoot}/protocols`), (snap) => {
-            const protocols = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Protocol));
-            set({ protocols });
-            markLoaded();
-        });
+        const unsubProtocols = onSnapshot(
+            collection(db, `${pathRoot}/protocols`),
+            (snap) => {
+                const protocols = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Protocol));
+                set({ protocols });
+                markLoaded('protocols');
+            },
+            (err) => handleSnapshotError(err, 'protocols')
+        );
 
-        const unsubStates = onSnapshot(collection(db, `${pathRoot}/states`), (snap) => {
-            const states = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as StateData));
-            // Sort states by 'order' logic:
-            states.sort((a, b) => {
-                const orderA = a.order ?? 9999;
-                const orderB = b.order ?? 9999;
-                return orderA - orderB;
-            });
-            set({ states });
-            markLoaded();
-        });
+        const unsubStates = onSnapshot(
+            collection(db, `${pathRoot}/states`),
+            (snap) => {
+                const states = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as StateData));
+                states.sort((a, b) => {
+                    const orderA = a.order ?? 9999;
+                    const orderB = b.order ?? 9999;
+                    return orderA - orderB;
+                });
+                set({ states });
+                markLoaded('states');
+            },
+            (err) => handleSnapshotError(err, 'states')
+        );
 
-        const unsubGroups = onSnapshot(collection(db, `${pathRoot}/groups`), (snap) => {
-            const groupsMetadata: Record<string, { icon: string; color?: string }> = {};
-            snap.docs.forEach(doc => {
-                groupsMetadata[doc.id] = doc.data() as { icon: string; color?: string };
-            });
-            set({ groupsMetadata });
-            markLoaded();
-        });
+        const unsubGroups = onSnapshot(
+            collection(db, `${pathRoot}/groups`),
+            (snap) => {
+                const groupsMetadata: Record<string, { icon: string; color?: string }> = {};
+                snap.docs.forEach(doc => {
+                    groupsMetadata[doc.id] = doc.data() as { icon: string; color?: string };
+                });
+                set({ groupsMetadata });
+                markLoaded('groups');
+            },
+            (err) => handleSnapshotError(err, 'groups')
+        );
 
-        const unsubGroupSettings = onSnapshot(doc(db, `${pathRoot}/settings/groups`), (snap) => {
-            if (snap.exists()) {
-                const data = snap.data();
-                set({ groupOrder: data.order || [] });
-            } else {
-                set({ groupOrder: [] });
-            }
-            markLoaded();
-        });
+        const unsubGroupSettings = onSnapshot(
+            doc(db, `${pathRoot}/settings/groups`),
+            (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    set({ groupOrder: data.order || [] });
+                } else {
+                    set({ groupOrder: [] });
+                }
+                markLoaded('settings/groups');
+            },
+            (err) => handleSnapshotError(err, 'settings/groups')
+        );
 
-        const unsubInnerfaceGroupSettings = onSnapshot(doc(db, `${pathRoot}/settings/innerface_groups`), (snap) => {
-            if (snap.exists()) {
-                const data = snap.data();
-                set({ innerfaceGroupOrder: data.order || [] });
-            } else {
-                set({ innerfaceGroupOrder: [] });
-            }
-            markLoaded();
-        });
+        const unsubInnerfaceGroupSettings = onSnapshot(
+            doc(db, `${pathRoot}/settings/innerface_groups`),
+            (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    set({ innerfaceGroupOrder: data.order || [] });
+                } else {
+                    set({ innerfaceGroupOrder: [] });
+                }
+                markLoaded('settings/innerface_groups');
+            },
+            (err) => handleSnapshotError(err, 'settings/innerface_groups')
+        );
 
-        const unsubQuickActions = onSnapshot(doc(db, `${pathRoot}/settings/quickActions`), (snap) => {
-            if (snap.exists()) {
-                const data = snap.data();
-                set({ pinnedProtocolIds: data.ids || [] });
-            } else {
-                set({ pinnedProtocolIds: [] });
-            }
-            markLoaded();
-        });
+        const unsubQuickActions = onSnapshot(
+            doc(db, `${pathRoot}/settings/quickActions`),
+            (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    set({ pinnedProtocolIds: data.ids || [] });
+                } else {
+                    set({ pinnedProtocolIds: [] });
+                }
+                markLoaded('settings/quickActions');
+            },
+            (err) => handleSnapshotError(err, 'settings/quickActions')
+        );
 
         return () => {
+            console.log(`[MetadataStore] Unsubscribing from ${pathRoot}`);
             unsubIfaces();
             unsubProtocols();
             unsubStates();

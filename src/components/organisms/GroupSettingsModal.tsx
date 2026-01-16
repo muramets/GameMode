@@ -52,12 +52,12 @@ export function GroupSettingsModal({ isOpen, onClose, groupName }: GroupSettings
 
         // 1. Rename if changed
         if (name.trim() !== groupName && name.trim() !== '') {
-            await renameGroup(user.uid, activePersonalityId, groupName, name.trim());
+            await renameGroup(groupName, name.trim());
         }
 
         // 2. Update Metadata (use new name if renamed, otherwise old name)
         const targetName = name.trim() !== '' ? name.trim() : groupName;
-        await updateGroupMetadata(user.uid, activePersonalityId, targetName, {
+        await updateGroupMetadata(targetName, {
             icon,
             color
         });
@@ -95,7 +95,7 @@ export function GroupSettingsModal({ isOpen, onClose, groupName }: GroupSettings
                 </div>
             }
         >
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-5 max-h-[60vh] overflow-y-auto custom-scrollbar px-1">
                 {/* Name Input */}
                 <div className="flex flex-col gap-1.5">
                     <InputLabel label="Group Name" />

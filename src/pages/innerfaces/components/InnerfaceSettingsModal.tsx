@@ -100,14 +100,12 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
     }, [isOpen, innerfaceId, innerfaces]);
 
     const handleUpdateGroupIcon = async (groupName: string, icon: string) => {
-        if (!user || !activePersonalityId) return;
-        await updateGroupMetadata(user.uid, activePersonalityId, groupName, { icon });
+        await updateGroupMetadata(groupName, { icon });
         setEditingGroupIcon(null);
     };
 
     const handleUpdateGroupColor = async (groupName: string, color: string) => {
-        if (!user || !activePersonalityId) return;
-        await updateGroupMetadata(user.uid, activePersonalityId, groupName, { color });
+        await updateGroupMetadata(groupName, { color });
         setEditingGroupColor(null);
         setIsGroupColorPickerOpen(false);
     };
@@ -222,7 +220,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                         // Protocol was targeting this innerface, but is no longer in the selected list
                         // We must remove the link from the protocol side
                         const newTargets = (p.targets || []).filter(t => t.toString() !== innerfaceId.toString());
-                        return updateProtocol(user.uid, activePersonalityId, p.id, { targets: newTargets });
+                        return updateProtocol(p.id, { targets: newTargets });
                     }
                     return Promise.resolve();
                 });
@@ -247,11 +245,11 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                 if (existing && existing.initialScore !== newInitialScore) {
                     data.versionTimestamp = new Date().toISOString();
                 }
-                await updateInnerface(user.uid, activePersonalityId, innerfaceId, data);
+                await updateInnerface(innerfaceId, data);
             } else {
                 // For new ones, set versionTimestamp to current time 
                 data.versionTimestamp = new Date().toISOString();
-                await addInnerface(user.uid, activePersonalityId, data);
+                await addInnerface(data);
             }
             onClose();
         } catch (error) {
@@ -273,7 +271,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
             return;
         }
 
-        await deleteInnerface(user.uid, activePersonalityId, innerfaceId);
+        await deleteInnerface(innerfaceId);
         onClose();
     };
 
@@ -329,7 +327,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                 </>
             }
         >
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-5 max-h-[60vh] overflow-y-auto custom-scrollbar px-1">
                 <div className="flex flex-col gap-1.5">
                     <InputLabel label="Name" />
                     <Input

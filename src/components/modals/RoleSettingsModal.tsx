@@ -312,7 +312,7 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
                 </>
             }
         >
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-5 max-h-[60vh] overflow-y-auto custom-scrollbar px-1">
                 {/* Header: Icon, Name, Color */}
                 <div className="flex gap-4 items-end">
                     {/* Icon Preview */}

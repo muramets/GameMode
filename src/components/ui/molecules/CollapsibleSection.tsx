@@ -9,6 +9,8 @@ interface CollapsibleSectionProps {
     trailing?: React.ReactNode;
     className?: string;
     variant?: 'default' | 'mini';
+    isOpen?: boolean;
+    onToggle?: () => void;
 }
 
 export function CollapsibleSection({
@@ -18,9 +20,11 @@ export function CollapsibleSection({
     trailing,
     dragHandle,
     className = '',
-    variant = 'default'
+    variant = 'default',
+    isOpen: controlledIsOpen,
+    onToggle
 }: CollapsibleSectionProps & { dragHandle?: React.ReactNode }) {
-    const [isOpen, setIsOpen] = useState(defaultOpen);
+    const [internalIsOpen, setInternalIsOpen] = useState(defaultOpen);
 
     const isMini = variant === 'mini';
     const headerClass = isMini
@@ -30,6 +34,16 @@ export function CollapsibleSection({
     const iconClass = isMini ? "text-[10px]" : "text-xl";
     const gapClass = isMini ? "gap-2" : "gap-3";
     const mbClass = isMini ? "mb-2" : "mb-4";
+
+    const isSectionOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
+
+    const handleToggle = () => {
+        if (onToggle) {
+            onToggle();
+        } else {
+            setInternalIsOpen(!internalIsOpen);
+        }
+    };
 
     return (
         <div className={`w-full ${className}`}>
@@ -41,11 +55,11 @@ export function CollapsibleSection({
                 )}
                 <div className="flex-grow flex items-center justify-between">
                     <button
-                        onClick={() => setIsOpen(!isOpen)}
+                        onClick={handleToggle}
                         className={`flex items-center ${gapClass} ${headerClass} transition-colors duration-200 outline-none`}
-                        aria-expanded={isOpen}
+                        aria-expanded={isSectionOpen}
                     >
-                        <div className={`transition-transform duration-200 ${isOpen ? '' : '-rotate-90'}`}>
+                        <div className={`transition-transform duration-200 ${isSectionOpen ? '' : '-rotate-90'}`}>
                             <FontAwesomeIcon icon={faChevronDown} className={iconClass} />
                         </div>
                         <span>{title}</span>
@@ -60,7 +74,7 @@ export function CollapsibleSection({
             </div>
 
             <div
-                className={`transition-all duration-300 ease-in-out overflow-hidden ${isOpen ? 'opacity-100 max-h-[2000px]' : 'opacity-0 max-h-0'
+                className={`transition-all duration-300 ease-in-out overflow-hidden ${isSectionOpen ? 'opacity-100 max-h-[2000px]' : 'opacity-0 max-h-0'
                     }`}
             >
                 <div className={isMini ? "py-0" : "py-1"}>

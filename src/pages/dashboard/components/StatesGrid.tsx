@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import type { StateData } from './types';
 import { Plus } from 'lucide-react';
 import { CollapsibleSection } from '../../../components/ui/molecules/CollapsibleSection';
@@ -20,7 +21,6 @@ import {
 import { SortableStateCard } from './SortableStateCard';
 import { StateCard } from './StateCard';
 import { useMetadataStore } from '../../../stores/metadataStore';
-import { useAuth } from '../../../contexts/AuthProvider';
 import { useState } from 'react';
 
 interface StatesGridProps {
@@ -28,13 +28,13 @@ interface StatesGridProps {
     onAddState?: () => void;
     onEdit?: (id: string) => void;
     onHistory?: (id: string) => void;
+    hasProtocols?: boolean;
 }
 
-export function StatesGrid({ states, onAddState, onEdit, onHistory }: StatesGridProps) {
-    const { user } = useAuth();
+export function StatesGrid({ states, onAddState, onEdit, onHistory, hasProtocols = false }: StatesGridProps) {
     const { reorderStates } = useMetadataStore();
-    const activePersonalityId = localStorage.getItem('active_personality_id');
     const [activeId, setActiveId] = useState<string | null>(null);
+    const navigate = useNavigate();
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -58,9 +58,7 @@ export function StatesGrid({ states, onAddState, onEdit, onHistory }: StatesGrid
 
             if (oldIndex !== -1 && newIndex !== -1) {
                 const newOrder = arrayMove(states, oldIndex, newIndex);
-                if (user && activePersonalityId) {
-                    reorderStates(user.uid, activePersonalityId, newOrder.map(s => s.id));
-                }
+                reorderStates(newOrder.map(s => s.id));
             }
         }
     };
@@ -116,13 +114,24 @@ export function StatesGrid({ states, onAddState, onEdit, onHistory }: StatesGrid
 
                     {/* Empty State / Add Placeholder */}
                     {states.length === 0 && (
-                        <button
-                            onClick={onAddState}
-                            className="col-span-full md:col-span-1 min-h-[180px] border border-dashed border-sub-alt rounded-2xl flex flex-col items-center justify-center text-sub hover:text-text-primary hover:border-sub transition-all group"
-                        >
-                            <Plus className="w-8 h-8 opacity-40 group-hover:opacity-100 transition-opacity duration-300" />
-                            <span className="text-sm font-mono mt-3 group-hover:opacity-100 transition-opacity duration-300">Add First State</span>
-                        </button>
+                        !hasProtocols ? (
+                            <button
+                                onClick={() => navigate('/protocols')}
+                                className="col-span-full md:col-span-1 min-h-[180px] border border-dashed border-sub/30 hover:border-sub rounded-2xl flex flex-col items-center justify-center p-6 text-center select-none cursor-pointer hover:bg-sub-alt/5 transition-all duration-200 group"
+                            >
+                                <span className="text-sm font-mono text-sub opacity-70 group-hover:opacity-100 group-hover:text-text-primary transition-all duration-200">
+                                    <span className="font-bold text-main/80 group-hover:text-main">Tip:</span> start by adding your routine via Protocols
+                                </span>
+                            </button>
+                        ) : (
+                            <button
+                                onClick={onAddState}
+                                className="col-span-full md:col-span-1 min-h-[180px] border border-dashed border-sub/30 hover:border-sub rounded-2xl flex flex-col items-center justify-center text-sub hover:text-text-primary transition-all duration-200 group bg-sub-alt/5 hover:bg-sub-alt/10"
+                            >
+                                <Plus className="w-8 h-8 opacity-40 group-hover:opacity-100 transition-opacity duration-300" />
+                                <span className="text-sm font-mono mt-3 group-hover:opacity-100 transition-opacity duration-300">Add First State</span>
+                            </button>
+                        )
                     )}
                 </div>
             </DndContext>

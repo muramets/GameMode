@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import type { Protocol } from '../../protocols/types';
@@ -21,7 +22,6 @@ import {
 import { SortableQuickActionCard } from './SortableQuickActionCard';
 import { QuickActionCard } from './QuickActionCard';
 import { useMetadataStore } from '../../../stores/metadataStore';
-import { useAuth } from '../../../contexts/AuthProvider';
 import { useState } from 'react';
 
 interface QuickActionsGridProps {
@@ -39,10 +39,9 @@ export function QuickActionsGrid({
     onActionClick,
     onDeleteAction
 }: QuickActionsGridProps) {
-    const { user } = useAuth();
     const { reorderQuickActions } = useMetadataStore();
-    const activePersonalityId = localStorage.getItem('active_personality_id');
     const [activeId, setActiveId] = useState<string | null>(null);
+    const navigate = useNavigate();
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -65,9 +64,7 @@ export function QuickActionsGrid({
 
             if (oldIndex !== -1 && newIndex !== -1) {
                 const newOrder = arrayMove(actions, oldIndex, newIndex);
-                if (user && activePersonalityId) {
-                    reorderQuickActions(user.uid, activePersonalityId, newOrder.map(a => a.id.toString()));
-                }
+                reorderQuickActions(newOrder.map(a => a.id.toString()));
             }
         }
     };
@@ -140,9 +137,14 @@ export function QuickActionsGrid({
 
                     {/* Zero Protocols Placeholder */}
                     {actions.length === 0 && totalProtocolCount === 0 && (
-                        <div className="col-span-full h-[70px] flex items-center justify-center text-sm font-mono text-sub">
-                            <span><span className="font-bold">tip:</span> pin your protocols for quick action here</span>
-                        </div>
+                        <button
+                            onClick={() => navigate('/protocols')}
+                            className="col-span-full md:col-span-1 h-[70px] flex items-center justify-center text-sm font-mono text-sub opacity-70 border border-dashed border-sub/30 hover:border-sub rounded-lg select-none cursor-pointer w-full hover:bg-sub-alt/5 transition-all duration-200 group"
+                        >
+                            <span className="opacity-70 group-hover:opacity-100 transition-opacity duration-200 group-hover:text-text-primary">
+                                <span className="font-bold text-main/80 group-hover:text-main">Tip:</span> create a protocol first to pin it here as a Quick Action
+                            </span>
+                        </button>
                     )}
                 </div>
             </DndContext>

@@ -3,8 +3,6 @@ import type { Protocol, Innerface } from './types';
 import { ProtocolRow } from './ProtocolRow';
 import { MonkeyTypeLoader } from '../../components/ui/molecules/MonkeyTypeLoader';
 import { ProtocolSettingsModal } from './components/ProtocolSettingsModal';
-import { useAuth } from '../../contexts/AuthProvider';
-import { usePersonalityStore } from '../../stores/personalityStore';
 import { useScoreContext } from '../../contexts/ScoreProvider';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -42,6 +40,7 @@ import {
     rectSortingStrategy
 } from '@dnd-kit/sortable';
 import { useMetadataStore } from '../../stores/metadataStore';
+import { useCollapsedGroups } from '../../hooks/useCollapsedGroups';
 
 // --- Interaction Context for Zero-Lag DnD ---
 import { SortableItem } from '../../components/ui/molecules/SortableItem';
@@ -130,7 +129,9 @@ const ProtocolGroup = React.memo(({
     applyProtocol,
     handleEditProtocol,
     onGroupEdit,
-    groupsMetadata
+    groupsMetadata,
+    isCollapsed,
+    onToggleCollapse
 }: {
     groupName: string;
     protocols: Protocol[];
@@ -140,6 +141,8 @@ const ProtocolGroup = React.memo(({
     handleEditProtocol: any;
     onGroupEdit: (groupName: string) => void;
     groupsMetadata: Record<string, { icon: string; color?: string }>;
+    isCollapsed: boolean;
+    onToggleCollapse: () => void;
 }) => {
     const staticConfig = GROUP_CONFIG[groupName] || GROUP_CONFIG['ungrouped'];
     const storeMeta = groupsMetadata[groupName];
@@ -174,7 +177,8 @@ const ProtocolGroup = React.memo(({
                 >
                     <CollapsibleSection
                         key={groupName}
-                        defaultOpen={true}
+                        isOpen={!isCollapsed}
+                        onToggle={onToggleCollapse}
                         dragHandle={
                             isDragEnabled && (
                                 <div
@@ -339,7 +343,9 @@ const ProtocolsContent = React.memo(({
     applyProtocol,
     handleEditProtocol,
     onGroupEdit,
-    groupsMetadata
+    groupsMetadata,
+    isGroupCollapsed,
+    toggleGroup
 }: {
     groupedProtocols: [string, Protocol[]][];
     innerfaces: Innerface[];
@@ -349,6 +355,8 @@ const ProtocolsContent = React.memo(({
     handleEditProtocol: (id: string | number) => void;
     onGroupEdit: (groupName: string) => void;
     groupsMetadata: Record<string, { icon: string; color?: string }>;
+    isGroupCollapsed: (groupName: string) => boolean;
+    toggleGroup: (groupName: string) => void;
 }) => {
     const sortableGroupIds = useMemo(() => groupedProtocols.map(([name]) => `group-${name}`), [groupedProtocols]);
 
@@ -377,6 +385,8 @@ const ProtocolsContent = React.memo(({
                             handleEditProtocol={handleEditProtocol}
                             onGroupEdit={onGroupEdit}
                             groupsMetadata={groupsMetadata}
+                            isCollapsed={isGroupCollapsed(groupName)}
+                            onToggleCollapse={() => toggleGroup(groupName)}
                         />
                     );
                 })}
@@ -526,9 +536,9 @@ const ProtocolsDragContainer = React.memo(({
 
 export function ProtocolsList() {
     const { applyProtocol, innerfaces, protocols } = useScoreContext();
-    const { user } = useAuth();
-    const { activePersonalityId } = usePersonalityStore();
-    const { reorderProtocols, reorderGroups, groupOrder, groupsMetadata } = useMetadataStore();
+    // const { user } = useAuth(); // Unused
+    // const { activePersonalityId } = usePersonalityStore(); // Unused
+    const { reorderProtocols, reorderGroups, groupOrder, groupsMetadata, isLoading } = useMetadataStore();
 
     // Simplified loading logic: Minimum 500ms display time
     const [minTimeMet, setMinTimeMet] = useState(false);
@@ -537,7 +547,7 @@ export function ProtocolsList() {
         return () => clearTimeout(timer);
     }, []);
 
-    const isReady = minTimeMet && !!protocols && protocols.length > 0;
+    const isReady = minTimeMet && !isLoading;
 
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilters, setActiveFilters] = useState<string[]>([]);
@@ -547,6 +557,9 @@ export function ProtocolsList() {
     // Group Settings State
     const [isGroupSettingsOpen, setIsGroupSettingsOpen] = useState(false);
     const [selectedGroup, setSelectedGroup] = useState<string>('');
+
+    // Collapsed Groups Persistence
+    const { isGroupCollapsed, toggleGroup } = useCollapsedGroups('protocols-collapsed-groups', false);
 
     // 1. Data Processing - Root Level (Static during drag)
     const innerfaceMap = useMemo(() => {
@@ -614,12 +627,12 @@ export function ProtocolsList() {
     }, []);
 
     const onReorderGroups = useCallback((newOrder: string[]) => {
-        if (user && activePersonalityId) reorderGroups(user.uid, activePersonalityId, newOrder);
-    }, [user, activePersonalityId, reorderGroups]);
+        reorderGroups(newOrder);
+    }, [reorderGroups]);
 
     const onReorderProtocols = useCallback((newItemIds: string[]) => {
-        if (user && activePersonalityId) reorderProtocols(user.uid, activePersonalityId, newItemIds);
-    }, [user, activePersonalityId, reorderProtocols]);
+        reorderProtocols(newItemIds);
+    }, [reorderProtocols]);
 
     // Extract unique groups
     const protocolGroups = useMemo(() => {
@@ -758,7 +771,17 @@ export function ProtocolsList() {
             {(!isReady) ? (
                 <MonkeyTypeLoader />
             ) : filteredProtocols.length === 0 ? (
-                <div className="py-12 text-center text-sub"><FontAwesomeIcon icon={faSearch} className="text-4xl opacity-20 mb-4" /><p>No protocols found</p></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <button
+                        onClick={() => { setSelectedProtocolId(null); setIsModalOpen(true); }}
+                        className="w-full min-h-[72px] border border-dashed border-sub/30 hover:border-sub rounded-xl flex flex-col items-center justify-center gap-2 text-sub hover:text-text-primary transition-all duration-200 group bg-sub-alt/5 hover:bg-sub-alt/10"
+                    >
+                        <div className="flex items-center gap-2">
+                            <FontAwesomeIcon icon={faPlus} className="text-sm opacity-50 group-hover:opacity-100 transition-opacity" />
+                            <span className="font-lexend text-sm font-medium opacity-50 group-hover:opacity-100 transition-opacity">Create First Protocol</span>
+                        </div>
+                    </button>
+                </div>
             ) : (
                 <ProtocolsDragContainer
                     groupedProtocols={groupedProtocols}
@@ -775,6 +798,8 @@ export function ProtocolsList() {
                         onGroupEdit={handleGroupEdit}
                         renderedCount={renderedCount}
                         groupsMetadata={groupsMetadata}
+                        isGroupCollapsed={isGroupCollapsed}
+                        toggleGroup={toggleGroup}
                     />
                 </ProtocolsDragContainer>
             )}

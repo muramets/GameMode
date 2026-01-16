@@ -153,8 +153,6 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                                 if (innerface.protocolIds?.some(pid => pid.toString() === protocolId.toString())) {
                                     const newProtocolIds = innerface.protocolIds.filter(pid => pid.toString() !== protocolId.toString());
                                     await useMetadataStore.getState().updateInnerface(
-                                        user.uid,
-                                        activePersonalityId,
                                         innerface.id,
                                         { protocolIds: newProtocolIds }
                                     );
@@ -182,9 +180,9 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
             };
 
             if (protocolId) {
-                await updateProtocol(user.uid, activePersonalityId, protocolId, data);
+                await updateProtocol(protocolId, data);
             } else {
-                await addProtocol(user.uid, activePersonalityId, data);
+                await addProtocol(data);
             }
             onClose();
         } catch (error) {
@@ -195,7 +193,7 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
     };
 
     const handleDelete = async () => {
-        if (!protocolId || !user || !activePersonalityId) return;
+        if (!protocolId) return;
 
         if (!isConfirmingDelete) {
             setIsConfirmingDelete(true);
@@ -203,19 +201,17 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
             return;
         }
 
-        await deleteProtocol(user.uid, activePersonalityId, protocolId);
+        await deleteProtocol(protocolId);
         onClose();
     };
 
     const handleUpdateGroupIcon = async (groupName: string, icon: string) => {
-        if (!user || !activePersonalityId) return;
-        await updateGroupMetadata(user.uid, activePersonalityId, groupName, { icon });
+        await updateGroupMetadata(groupName, { icon });
         setEditingGroupIcon(null);
     };
 
     const handleUpdateGroupColor = async (groupName: string, color: string) => {
-        if (!user || !activePersonalityId) return;
-        await updateGroupMetadata(user.uid, activePersonalityId, groupName, { color });
+        await updateGroupMetadata(groupName, { color });
         setEditingGroupColor(null);
         setIsGroupColorPickerOpen(false);
     };
@@ -298,7 +294,7 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                 </>
             }
         >
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-5 max-h-[60vh] overflow-y-auto custom-scrollbar px-1">
                 <div className="flex flex-col gap-1.5">
                     <InputLabel label="Title" />
                     <Input

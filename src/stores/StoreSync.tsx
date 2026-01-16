@@ -7,12 +7,13 @@ import { usePersonalityStore } from './personalityStore';
 export function StoreSync() {
     const { user } = useAuth();
     const subscribeToHistory = useHistoryStore(state => state.subscribeToHistory);
-    const { subscribeToMetadata, setContext } = useMetadataStore();
 
-    const {
-        ensureDefaultPersonality,
-        activeContext
-    } = usePersonalityStore();
+    // Use selectors for stable references and to avoid re-renders on unrelated state changes
+    const subscribeToMetadata = useMetadataStore(state => state.subscribeToMetadata);
+    const setContext = useMetadataStore(state => state.setContext);
+
+    const ensureDefaultPersonality = usePersonalityStore(state => state.ensureDefaultPersonality);
+    const activeContext = usePersonalityStore(state => state.activeContext);
 
     // 1. Initialize Personalities
     useEffect(() => {
@@ -22,6 +23,9 @@ export function StoreSync() {
     }, [user, ensureDefaultPersonality]);
 
     // 2. Sync Data when Context is Active
+    // We use JSON.stringify(activeContext) to prevent cycles if the object reference changes but content is same
+    const contextHash = activeContext ? JSON.stringify(activeContext) : null;
+
     useEffect(() => {
         if (user && activeContext) {
             console.log(`[StoreSync] Syncing data for context:`, activeContext);
@@ -50,7 +54,7 @@ export function StoreSync() {
                 unsubMetadata();
             };
         }
-    }, [user, activeContext, subscribeToHistory, subscribeToMetadata]);
+    }, [user, contextHash, subscribeToHistory, subscribeToMetadata, setContext]); // Removed activeContext, added contextHash
 
     return null;
 }

@@ -171,7 +171,7 @@ export function JoinTeamModal({ isOpen, onClose }: JoinTeamModalProps) {
                 </div>
             }
         >
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto custom-scrollbar px-1">
                 {/* Invite Code Input */}
                 <div className="flex flex-col gap-1.5">
                     <InputLabel label="Invite Code or Link" />

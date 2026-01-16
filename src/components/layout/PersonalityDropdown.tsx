@@ -71,7 +71,7 @@ export function PersonalityDropdown() {
                         })()}
                     </div>
 
-                    <span className="mt-[0.1em] transition-colors duration-150 group-hover:text-[var(--text-color)]" style={{ fontSize: '0.75em' }}>
+                    <span className="mt-[0.1em] transition-colors duration-150 group-hover:text-[var(--text-color)] max-[850px]:hidden" style={{ fontSize: '0.75em' }}>
                         {(activeItem?.name || 'loading...').toLowerCase()}
                     </span>
 

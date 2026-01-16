@@ -211,7 +211,7 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
                 </>
             }
         >
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto custom-scrollbar px-1">
                 {/* Avatar Section - Centered and Large */}
                 <div className="flex flex-col items-center gap-2">
                     <InputLabel label="Profile Picture" />

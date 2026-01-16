@@ -33,8 +33,8 @@ import { ADMIN_EMAILS } from '../../config/adminList';
 
 export function TeamsDropdown() {
     const { user } = useAuth();
-    const { teams, roles, memberships, subscribeToTeams, loadRoles } = useTeamStore();
-    const { activePersonalityId, switchPersonality, switchToRole, activeContext } = usePersonalityStore();
+    const { teams, roles, subscribeToTeams, loadRoles } = useTeamStore();
+    const { switchToRole, activeContext } = usePersonalityStore();
 
     // Local state
     const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
@@ -96,7 +96,6 @@ export function TeamsDropdown() {
     };
 
     const handleRoleClick = (teamId: string, roleId: string) => {
-        const team = ownedTeams.find(t => t.id === teamId);
         // Always owner here because we filtered
         switchToRole(teamId, roleId);
     };
@@ -142,7 +141,7 @@ export function TeamsDropdown() {
                     </div>
 
                     <span
-                        className="mt-[0.1em] transition-colors duration-150 group-hover:text-[var(--text-color)]"
+                        className="mt-[0.1em] transition-colors duration-150 group-hover:text-[var(--text-color)] max-[850px]:hidden"
                         style={{ fontSize: '0.75em' }}
                     >
                         teams
@@ -166,7 +165,7 @@ export function TeamsDropdown() {
                 </button>
 
                 {/* Dropdown Menu */}
-                <div className="absolute top-full left-0 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 min-w-[26ch] z-[100] text-[0.75rem] pt-2">
+                <div className="absolute top-full right-0 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 min-w-[26ch] z-[100] text-[0.75rem] pt-2">
                     <div
                         className="flex flex-col rounded-[0.5rem] overflow-hidden"
                         style={{

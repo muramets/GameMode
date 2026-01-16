@@ -88,15 +88,15 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
         };
 
         if (stateId) {
-            await updateState(user.uid, activePersonalityId, stateId, data);
+            await updateState(stateId, data);
         } else {
-            await addState(user.uid, activePersonalityId, data);
+            await addState(data);
         }
         onClose();
     };
 
     const handleDelete = async () => {
-        if (!stateId || !user || !activePersonalityId) return;
+        if (!stateId) return;
 
         if (!isConfirmingDelete) {
             setIsConfirmingDelete(true);
@@ -104,7 +104,7 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
             return;
         }
 
-        await deleteState(user.uid, activePersonalityId, stateId);
+        await deleteState(stateId);
         onClose();
     };
 
@@ -175,7 +175,7 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
                 </>
             }
         >
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-5 max-h-[60vh] overflow-y-auto custom-scrollbar px-1">
                 <div className="flex flex-col gap-1.5">
                     <InputLabel label="Name" />
                     <Input

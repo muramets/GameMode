@@ -27,10 +27,9 @@ import {
 import { useMetadataStore } from '../../stores/metadataStore';
 import { SortableItem } from '../../components/ui/molecules/SortableItem';
 import { type Innerface } from '../protocols/types';
-import { useAuth } from '../../contexts/AuthProvider';
-import { usePersonalityStore } from '../../stores/personalityStore';
 import { CollapsibleSection } from '../../components/ui/molecules/CollapsibleSection';
 import { GROUP_CONFIG } from '../../constants/common';
+import { useCollapsedGroups } from '../../hooks/useCollapsedGroups';
 
 // --- Draggable Item Wrapper ---
 const DraggableInnerfaceItem = React.memo(({
@@ -96,13 +95,17 @@ const InnerfaceGroup = React.memo(({
     innerfaces,
     onEdit,
     onGroupEdit,
-    groupsMetadata
+    groupsMetadata,
+    isCollapsed,
+    onToggleCollapse
 }: {
     groupName: string;
     innerfaces: Innerface[];
     onEdit: (id: string | number) => void;
     onGroupEdit: (groupName: string) => void;
     groupsMetadata: Record<string, { icon: string; color?: string }>;
+    isCollapsed: boolean;
+    onToggleCollapse: () => void;
 }) => {
     const staticConfig = GROUP_CONFIG[groupName] || GROUP_CONFIG['ungrouped'];
     const storeMeta = groupsMetadata[groupName];
@@ -136,7 +139,8 @@ const InnerfaceGroup = React.memo(({
                 >
                     <CollapsibleSection
                         key={groupName}
-                        defaultOpen={true}
+                        isOpen={!isCollapsed}
+                        onToggle={onToggleCollapse}
                         dragHandle={
                             <div
                                 ref={setActivatorNodeRef}
@@ -204,7 +208,9 @@ const InnerfacesDragContainer = React.memo(({
     onEdit,
     onGroupEdit,
     groupOrder,
-    groupsMetadata
+    groupsMetadata,
+    isGroupCollapsed,
+    toggleGroup
 }: {
     innerfaces: Innerface[];
     onReorder: (newOrder: string[]) => void;
@@ -214,6 +220,8 @@ const InnerfacesDragContainer = React.memo(({
     onGroupEdit: (groupName: string) => void;
     groupOrder: string[];
     groupsMetadata: Record<string, { icon: string; color?: string }>;
+    isGroupCollapsed: (groupName: string) => boolean;
+    toggleGroup: (groupName: string) => void;
 }) => {
     // ... hooks ...
     const [activeId, setActiveId] = useState<string | null>(null);
@@ -363,6 +371,8 @@ const InnerfacesDragContainer = React.memo(({
                                 onEdit={onEdit}
                                 onGroupEdit={onGroupEdit}
                                 groupsMetadata={groupsMetadata}
+                                isCollapsed={isGroupCollapsed(groupName)}
+                                onToggleCollapse={() => toggleGroup(groupName)}
                             />
                         ))}
                     </div>
@@ -381,8 +391,8 @@ const InnerfacesDragContainer = React.memo(({
 
 export function InnerfacesPage() {
     const { innerfaces, isLoading } = useScoreContext();
-    const { user } = useAuth();
-    const { activePersonalityId } = usePersonalityStore();
+    // const { user } = useAuth(); // Unused
+    // const { activePersonalityId } = usePersonalityStore(); // Unused
     const { reorderInnerfaces, reorderInnerfaceGroups, updateInnerface, innerfaceGroupOrder, groupsMetadata } = useMetadataStore();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -391,6 +401,9 @@ export function InnerfacesPage() {
     // Group Settings State
     const [isGroupSettingsOpen, setIsGroupSettingsOpen] = useState(false);
     const [selectedGroup, setSelectedGroup] = useState<string>('');
+
+    // Persistence
+    const { isGroupCollapsed, toggleGroup } = useCollapsedGroups('innerfaces-collapsed-groups', false);
 
     const sortedInnerfaces = useMemo(() => {
         return [...innerfaces].sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999));
@@ -412,22 +425,16 @@ export function InnerfacesPage() {
     }, []); // Added handleGroupEdit logic
 
     const handleReorder = useCallback((newOrderIdStrs: string[]) => {
-        if (user && activePersonalityId) {
-            reorderInnerfaces(user.uid, activePersonalityId, newOrderIdStrs);
-        }
-    }, [user, activePersonalityId, reorderInnerfaces]);
+        reorderInnerfaces(newOrderIdStrs);
+    }, [reorderInnerfaces]);
 
     const handleReorderGroups = useCallback((newGroupOrder: string[]) => {
-        if (user && activePersonalityId) {
-            reorderInnerfaceGroups(user.uid, activePersonalityId, newGroupOrder);
-        }
-    }, [user, activePersonalityId, reorderInnerfaceGroups]);
+        reorderInnerfaceGroups(newGroupOrder);
+    }, [reorderInnerfaceGroups]);
 
     const handleUpdateInnerface = useCallback((id: string | number, data: Partial<Innerface>) => {
-        if (user && activePersonalityId) {
-            updateInnerface(user.uid, activePersonalityId, id, data);
-        }
-    }, [user, activePersonalityId, updateInnerface]);
+        updateInnerface(id, data);
+    }, [updateInnerface]);
 
     if (isLoading && innerfaces.length === 0) {
         return (
@@ -453,16 +460,32 @@ export function InnerfacesPage() {
                 </button>
             </div>
 
-            <InnerfacesDragContainer
-                innerfaces={sortedInnerfaces}
-                onReorder={handleReorder}
-                onReorderGroups={handleReorderGroups}
-                onUpdateInnerface={handleUpdateInnerface}
-                onEdit={handleEdit}
-                onGroupEdit={handleGroupEdit}
-                groupOrder={innerfaceGroupOrder}
-                groupsMetadata={groupsMetadata}
-            />
+            {sortedInnerfaces.length === 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <button
+                        onClick={handleCreate}
+                        className="w-full min-h-[120px] border border-dashed border-sub/30 hover:border-sub rounded-xl flex flex-col items-center justify-center gap-2 text-sub hover:text-text-primary transition-all duration-200 group bg-sub-alt/5 hover:bg-sub-alt/10"
+                    >
+                        <div className="flex items-center gap-2">
+                            <FontAwesomeIcon icon={faPlus} className="text-sm opacity-50 group-hover:opacity-100 transition-opacity" />
+                            <span className="font-lexend text-sm font-medium opacity-50 group-hover:opacity-100 transition-opacity">Create First Innerface</span>
+                        </div>
+                    </button>
+                </div>
+            ) : (
+                <InnerfacesDragContainer
+                    innerfaces={sortedInnerfaces}
+                    onReorder={handleReorder}
+                    onReorderGroups={handleReorderGroups}
+                    onUpdateInnerface={handleUpdateInnerface}
+                    onEdit={handleEdit}
+                    onGroupEdit={handleGroupEdit}
+                    groupOrder={innerfaceGroupOrder}
+                    groupsMetadata={groupsMetadata}
+                    isGroupCollapsed={isGroupCollapsed}
+                    toggleGroup={toggleGroup}
+                />
+            )}
 
             <InnerfaceSettingsModal
                 isOpen={isModalOpen}
