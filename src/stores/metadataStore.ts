@@ -30,7 +30,8 @@ interface MetadataState {
     states: StateData[];
     pinnedProtocolIds: string[];
     groupsMetadata: Record<string, { icon: string; color?: string }>;
-    groupOrder: string[]; // List of group names in order
+    groupOrder: string[]; // List of protocol group names
+    innerfaceGroupOrder: string[]; // List of innerface group names
     isLoading: boolean;
     loadedCount: number;
     error: string | null;
@@ -53,6 +54,7 @@ interface MetadataState {
     deleteState: (uid: string, pid: string, id: string) => Promise<void>;
 
     updateGroupMetadata: (uid: string, pid: string, groupName: string, metadata: { icon?: string; color?: string }) => Promise<void>;
+    renameGroup: (uid: string, pid: string, oldName: string, newName: string) => Promise<void>;
 
     // Quick Actions
     togglePinnedProtocol: (uid: string, pid: string, protocolId: string) => Promise<void>;
@@ -67,6 +69,7 @@ interface MetadataState {
 
     // Innerface Ordering
     reorderInnerfaces: (uid: string, pid: string, orderedIds: string[]) => Promise<void>;
+    reorderInnerfaceGroups: (uid: string, pid: string, orderedGroups: string[]) => Promise<void>;
 
     // --- Subscriptions ---
     subscribeToMetadata: (uid: string, pid: string) => () => void;
@@ -79,6 +82,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     pinnedProtocolIds: [],
     groupsMetadata: {},
     groupOrder: [],
+    innerfaceGroupOrder: [],
     isLoading: true,
     loadedCount: 0,
     error: null,
@@ -169,6 +173,69 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             const docRef = doc(db, 'users', uid, 'personalities', pid, 'groups', groupName);
             await setDoc(docRef, metadata, { merge: true });
         } catch (err: any) {
+            set({ error: err.message });
+        }
+    },
+
+    renameGroup: async (uid, pid, oldName, newName) => {
+        try {
+            const trimmedNewName = newName.trim();
+            if (!trimmedNewName || trimmedNewName === oldName) return;
+
+            const { writeBatch } = await import('firebase/firestore');
+            const batch = writeBatch(db);
+
+            // 1. Update Innerfaces
+            const innerfaces = get().innerfaces;
+            innerfaces.forEach(i => {
+                if (i.group === oldName) {
+                    const docRef = doc(db, 'users', uid, 'personalities', pid, 'innerfaces', i.id.toString());
+                    batch.update(docRef, { group: trimmedNewName });
+                }
+            });
+
+            // 2. Update Protocols
+            const protocols = get().protocols;
+            protocols.forEach(p => {
+                if (p.group === oldName) {
+                    const docRef = doc(db, 'users', uid, 'personalities', pid, 'protocols', p.id.toString());
+                    batch.update(docRef, { group: trimmedNewName });
+                }
+            });
+
+            // 3. Move Group Metadata (if exists)
+            const groupsMetadata = get().groupsMetadata;
+            if (groupsMetadata[oldName]) {
+                const oldMetaRef = doc(db, 'users', uid, 'personalities', pid, 'groups', oldName);
+                const newMetaRef = doc(db, 'users', uid, 'personalities', pid, 'groups', trimmedNewName);
+
+                batch.set(newMetaRef, groupsMetadata[oldName]);
+                batch.delete(oldMetaRef);
+            }
+
+            // 4. Update Sort Orders
+            // Protocol Group Order
+            const groupOrder = get().groupOrder;
+            if (groupOrder.includes(oldName)) {
+                const newOrder = groupOrder.map(g => g === oldName ? trimmedNewName : g);
+                const orderRef = doc(db, 'users', uid, 'personalities', pid, 'settings', 'groups');
+                batch.set(orderRef, { order: newOrder }, { merge: true });
+                set({ groupOrder: newOrder }); // Optimistic
+            }
+
+            // Innerface Group Order
+            const innerfaceGroupOrder = get().innerfaceGroupOrder;
+            if (innerfaceGroupOrder.includes(oldName)) {
+                const newOrder = innerfaceGroupOrder.map(g => g === oldName ? trimmedNewName : g);
+                const orderRef = doc(db, 'users', uid, 'personalities', pid, 'settings', 'innerface_groups');
+                batch.set(orderRef, { order: newOrder }, { merge: true });
+                set({ innerfaceGroupOrder: newOrder }); // Optimistic
+            }
+
+            await batch.commit();
+
+        } catch (err: any) {
+            console.error("Failed to rename group:", err);
             set({ error: err.message });
         }
     },
@@ -369,10 +436,22 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         }
     },
 
+    reorderInnerfaceGroups: async (uid, pid, orderedGroups) => {
+        try {
+            // Optimistic update
+            set({ innerfaceGroupOrder: orderedGroups });
+
+            const docRef = doc(db, 'users', uid, 'personalities', pid, 'settings', 'innerface_groups');
+            await setDoc(docRef, { order: orderedGroups }, { merge: true });
+        } catch (err: any) {
+            set({ error: err.message });
+        }
+    },
+
     subscribeToMetadata: (uid, pid) => {
         set({ isLoading: true, loadedCount: 0 });
 
-        const totalSources = 6;
+        const totalSources = 7; // Increased source count
         const loadedSources = new Set<string>();
         const markLoaded = (source: string) => {
             if (!loadedSources.has(source)) {
@@ -427,6 +506,16 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             markLoaded('groupSettings');
         });
 
+        const unsubInnerfaceGroupSettings = onSnapshot(doc(db, 'users', uid, 'personalities', pid, 'settings', 'innerface_groups'), (snap) => {
+            if (snap.exists()) {
+                const data = snap.data();
+                set({ innerfaceGroupOrder: data.order || [] });
+            } else {
+                set({ innerfaceGroupOrder: [] });
+            }
+            markLoaded('innerfaceGroupSettings');
+        });
+
         const unsubQuickActions = onSnapshot(doc(db, 'users', uid, 'personalities', pid, 'settings', 'quickActions'), (snap) => {
             if (snap.exists()) {
                 const data = snap.data();
@@ -444,6 +533,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             unsubGroups();
             unsubQuickActions();
             unsubGroupSettings();
+            unsubInnerfaceGroupSettings();
         };
     }
 }));

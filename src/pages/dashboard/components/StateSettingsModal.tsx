@@ -6,7 +6,7 @@ import { useAuth } from '../../../contexts/AuthProvider';
 
 import { useMetadataStore } from '../../../stores/metadataStore';
 import { usePersonalityStore } from '../../../stores/personalityStore';
-import { getMappedIcon, renderIcon } from '../../../utils/iconMapper';
+import { getMappedIcon, renderIcon, ICON_PRESETS } from '../../../utils/iconMapper';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faExclamationTriangle, faTimes, faSearch } from '@fortawesome/free-solid-svg-icons';
 import { PRESET_COLORS } from '../../../constants/common';
@@ -35,6 +35,7 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
     // UI State
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
     const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+    const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'protocols' | 'innerfaces'>('innerfaces');
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -245,35 +246,74 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
                         </Popover.Root>
                     </div>
 
-                    {/* Icon */}
-                    <div className="w-20 flex flex-col gap-1.5">
+                    {/* Icon & Picker */}
+                    <div className="w-20 flex flex-col gap-1.5 relative">
                         <InputLabel label="Icon" />
-                        <div className="relative group/icon bg-sub-alt rounded-lg transition-colors duration-200 focus-within:bg-sub border border-transparent focus-within:border-white/5">
-                            {getMappedIcon(icon) && (
-                                <div
-                                    className="absolute inset-0 flex items-center justify-center pointer-events-none transition-colors duration-200"
-                                    style={{ color: color }}
+                        <Popover.Root open={isIconPickerOpen} onOpenChange={setIsIconPickerOpen}>
+                            <Popover.Trigger asChild>
+                                <div className="relative group/icon bg-sub-alt rounded-lg transition-colors duration-200 focus-within:bg-sub border border-transparent focus-within:border-white/5 cursor-pointer"
+                                    onClick={() => setIsIconPickerOpen(true)}
                                 >
-                                    <FontAwesomeIcon icon={getMappedIcon(icon)} className="text-sm" />
+                                    {getMappedIcon(icon) && (
+                                        <div
+                                            className="absolute inset-0 flex items-center justify-center pointer-events-none transition-colors duration-200"
+                                            style={{ color: color }}
+                                        >
+                                            <FontAwesomeIcon icon={getMappedIcon(icon)} className="text-sm" />
+                                        </div>
+                                    )}
+                                    <Input
+                                        type="text"
+                                        value={icon}
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            setIcon(val);
+                                        }}
+                                        className={`text-center text-lg p-0 h-[42px] relative z-10 ${getMappedIcon(icon) ? '!text-transparent !caret-text-primary' : ''} !bg-transparent focus:!bg-transparent !border-none outline-none cursor-pointer`}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsIconPickerOpen(true);
+                                        }}
+                                    />
                                 </div>
-                            )}
-                            <Input
-                                type="text"
-                                value={icon}
-                                onChange={e => {
-                                    const val = e.target.value;
-                                    // Use Intl.Segmenter to correctly handle graphemes (complex emojis)
-                                    const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
-                                    const segments = Array.from(segmenter.segment(val));
-
-                                    // Get the last typed grapheme (visual character)
-                                    const lastGrapheme = segments.length > 0 ? segments[segments.length - 1].segment : '';
-                                    setIcon(lastGrapheme);
-                                }}
-                                className={`text-center text-lg p-0 h-[42px] relative z-10 ${getMappedIcon(icon) ? '!text-transparent !caret-text-primary' : ''} !bg-transparent focus:!bg-transparent !border-none outline-none`}
-                                maxLength={10} // Increased to accommodate complex byte sequences
-                            />
-                        </div>
+                            </Popover.Trigger>
+                            <Popover.Portal>
+                                <Popover.Content
+                                    className="z-[100] p-2 bg-sub-alt/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl flex flex-col gap-2 min-w-[200px] animate-in fade-in zoom-in-95 duration-200"
+                                    sideOffset={5}
+                                    align="start"
+                                >
+                                    <div className="flex items-center justify-between px-1">
+                                        <span className="text-[9px] font-mono text-sub uppercase">Select Icon</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsIconPickerOpen(false)}
+                                            className="text-sub hover:text-text-primary transition-colors cursor-pointer"
+                                        >
+                                            <FontAwesomeIcon icon={faTimes} className="text-[10px]" />
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-5 gap-1.5 max-h-[160px] overflow-y-auto pr-1">
+                                        {ICON_PRESETS.map(preset => (
+                                            <button
+                                                key={preset}
+                                                type="button"
+                                                onClick={() => {
+                                                    setIcon(preset);
+                                                    setIsIconPickerOpen(false);
+                                                }}
+                                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10 cursor-pointer ${icon === preset ? 'bg-white/20 text-text-primary ring-1 ring-white/30' : 'text-sub'}`}
+                                                style={{ color: icon === preset ? color : undefined }}
+                                                title={preset}
+                                            >
+                                                <FontAwesomeIcon icon={getMappedIcon(preset)} className="text-sm" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <Popover.Arrow className="fill-current text-white/10" />
+                                </Popover.Content>
+                            </Popover.Portal>
+                        </Popover.Root>
                     </div>
                 </div>
 

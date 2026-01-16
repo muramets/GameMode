@@ -9,6 +9,7 @@ export interface Innerface {
     color?: string; // Hex code
     versionTimestamp?: string; // ISO string for hard reset
     order?: number;
+    group?: string;
 }
 
 export interface Protocol {

@@ -13,8 +13,10 @@ import {
     faFilter,
     faCircle,
     faGripVertical,
-    faBan
+    faBan,
+    faCog
 } from '@fortawesome/free-solid-svg-icons';
+import { GroupSettingsModal } from '../../components/organisms/GroupSettingsModal';
 import { ActiveFiltersList } from '../../components/ui/molecules/ActiveFiltersList';
 import { GROUP_CONFIG } from '../../constants/common';
 import { CollapsibleSection } from '../../components/ui/molecules/CollapsibleSection';
@@ -57,6 +59,8 @@ const InteractionContext = React.createContext<InteractionContextType>({
 });
 
 const useInteraction = () => React.useContext(InteractionContext);
+
+import { getMappedIcon } from '../../utils/iconMapper';
 
 // --- Helper Components for Performance ---
 
@@ -124,7 +128,9 @@ const ProtocolGroup = React.memo(({
     innerfaces,
     isDragEnabled,
     applyProtocol,
-    handleEditProtocol
+    handleEditProtocol,
+    onGroupEdit,
+    groupsMetadata
 }: {
     groupName: string;
     protocols: Protocol[];
@@ -132,8 +138,22 @@ const ProtocolGroup = React.memo(({
     isDragEnabled: boolean;
     applyProtocol: any;
     handleEditProtocol: any;
+    onGroupEdit: (groupName: string) => void;
+    groupsMetadata: Record<string, { icon: string; color?: string }>;
 }) => {
-    const config = GROUP_CONFIG[groupName] || GROUP_CONFIG['ungrouped'];
+    const staticConfig = GROUP_CONFIG[groupName] || GROUP_CONFIG['ungrouped'];
+    const storeMeta = groupsMetadata[groupName];
+
+    let icon = staticConfig.icon;
+    let color = staticConfig.color;
+
+    if (storeMeta) {
+        if (storeMeta.icon) {
+            const mapped = getMappedIcon(storeMeta.icon);
+            if (mapped) icon = mapped;
+        }
+        if (storeMeta.color) color = storeMeta.color;
+    }
 
     // Memoize the items list creation
     const itemsIds = useMemo(() => protocols.map(p => String(p.id)), [protocols]);
@@ -174,12 +194,26 @@ const ProtocolGroup = React.memo(({
                         }
                         title={
                             <div className="flex items-center gap-3">
-                                {config && <FontAwesomeIcon icon={config.icon} style={{ color: config.color }} className="text-lg opacity-80" />}
+                                {icon && <FontAwesomeIcon icon={icon} style={{ color: color }} className="text-lg opacity-80" />}
                                 <span className={groupName === 'ungrouped' ? 'opacity-50' : ''}>{groupName}</span>
                                 <span className="text-xs font-mono font-normal opacity-40 bg-sub/20 px-2 py-0.5 rounded-full ml-auto md:ml-0">
                                     {protocols.length}
                                 </span>
                             </div>
+                        }
+                        trailing={
+                            groupName !== 'ungrouped' && (
+                                <button
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-sub hover:text-text-primary p-2 ml-2"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onGroupEdit(groupName);
+                                    }}
+                                    title="Group Settings"
+                                >
+                                    <FontAwesomeIcon icon={faCog} className="text-sm" />
+                                </button>
+                            )
                         }
                         className={`animate-in fade-in slide-in-from-bottom-2 duration-500`}
                     >
@@ -303,7 +337,9 @@ const ProtocolsContent = React.memo(({
     renderedCount,
     isDragEnabled,
     applyProtocol,
-    handleEditProtocol
+    handleEditProtocol,
+    onGroupEdit,
+    groupsMetadata
 }: {
     groupedProtocols: [string, Protocol[]][];
     innerfaces: Innerface[];
@@ -311,6 +347,8 @@ const ProtocolsContent = React.memo(({
     isDragEnabled: boolean;
     applyProtocol: (id: string | number, direction: '+' | '-') => void;
     handleEditProtocol: (id: string | number) => void;
+    onGroupEdit: (groupName: string) => void;
+    groupsMetadata: Record<string, { icon: string; color?: string }>;
 }) => {
     const sortableGroupIds = useMemo(() => groupedProtocols.map(([name]) => `group-${name}`), [groupedProtocols]);
 
@@ -337,6 +375,8 @@ const ProtocolsContent = React.memo(({
                             isDragEnabled={isDragEnabled}
                             applyProtocol={applyProtocol}
                             handleEditProtocol={handleEditProtocol}
+                            onGroupEdit={onGroupEdit}
+                            groupsMetadata={groupsMetadata}
                         />
                     );
                 })}
@@ -488,7 +528,7 @@ export function ProtocolsList() {
     const { applyProtocol, innerfaces, protocols } = useScoreContext();
     const { user } = useAuth();
     const { activePersonalityId } = usePersonalityStore();
-    const { reorderProtocols, reorderGroups, groupOrder } = useMetadataStore();
+    const { reorderProtocols, reorderGroups, groupOrder, groupsMetadata } = useMetadataStore();
 
     // Zero-Latancy Navigation: Use skeletons for the first frame
     const [isReady, setIsReady] = useState(false);
@@ -505,6 +545,10 @@ export function ProtocolsList() {
     const [activeFilters, setActiveFilters] = useState<string[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedProtocolId, setSelectedProtocolId] = useState<string | number | null>(null);
+
+    // Group Settings State
+    const [isGroupSettingsOpen, setIsGroupSettingsOpen] = useState(false);
+    const [selectedGroup, setSelectedGroup] = useState<string>('');
 
     // 1. Data Processing - Root Level (Static during drag)
     const innerfaceMap = useMemo(() => {
@@ -564,6 +608,11 @@ export function ProtocolsList() {
     const handleEditProtocol = useCallback((id: string | number) => {
         setSelectedProtocolId(id);
         setIsModalOpen(true);
+    }, []);
+
+    const handleGroupEdit = useCallback((groupName: string) => {
+        setSelectedGroup(groupName);
+        setIsGroupSettingsOpen(true);
     }, []);
 
     const onReorderGroups = useCallback((newOrder: string[]) => {
@@ -725,7 +774,9 @@ export function ProtocolsList() {
                         isDragEnabled={isDragEnabled}
                         applyProtocol={applyProtocol}
                         handleEditProtocol={handleEditProtocol}
+                        onGroupEdit={handleGroupEdit}
                         renderedCount={renderedCount}
+                        groupsMetadata={groupsMetadata}
                     />
                 </ProtocolsDragContainer>
             )}
@@ -733,6 +784,12 @@ export function ProtocolsList() {
             {isModalOpen && (
                 <ProtocolSettingsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} protocolId={selectedProtocolId} />
             )}
+
+            <GroupSettingsModal
+                isOpen={isGroupSettingsOpen}
+                onClose={() => setIsGroupSettingsOpen(false)}
+                groupName={selectedGroup}
+            />
         </div>
     );
 }

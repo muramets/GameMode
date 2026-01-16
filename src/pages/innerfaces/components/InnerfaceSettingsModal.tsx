@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Modal } from '../../../components/ui/molecules/Modal';
 import { Input } from '../../../components/ui/molecules/Input';
 import { Button } from '../../../components/ui/atoms/Button';
 import { useAuth } from '../../../contexts/AuthProvider';
 import { useMetadataStore } from '../../../stores/metadataStore';
 import { usePersonalityStore } from '../../../stores/personalityStore';
-import { getMappedIcon } from '../../../utils/iconMapper';
-// import type { Innerface } from '../../../pages/protocols/types';
+import { getMappedIcon, ICON_PRESETS } from '../../../utils/iconMapper';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
-import { PRESET_COLORS } from '../../../constants/common';
+import { faTrash, faExclamationTriangle, faPlus, faChevronDown, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { PRESET_COLORS, GROUP_CONFIG } from '../../../constants/common';
+import * as Popover from '@radix-ui/react-popover';
+import { GroupDropdown } from '../../../components/organisms/GroupDropdown';
 
 interface InnerfaceSettingsModalProps {
     isOpen: boolean;
@@ -20,7 +21,7 @@ interface InnerfaceSettingsModalProps {
 
 export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: InnerfaceSettingsModalProps) {
     const { user } = useAuth();
-    const { innerfaces, addInnerface, updateInnerface, deleteInnerface } = useMetadataStore();
+    const { innerfaces, addInnerface, updateInnerface, deleteInnerface, groupsMetadata, updateGroupMetadata } = useMetadataStore();
     const { activePersonalityId } = usePersonalityStore();
 
     // Form State
@@ -30,10 +31,26 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
     const [initialScore, setInitialScore] = useState('5.00');
     const [color, setColor] = useState('#e2b714');
     const [hover, setHover] = useState('');
+    const [group, setGroup] = useState('');
 
     // UI State
     const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+    const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
+    const [editingGroupIcon, setEditingGroupIcon] = useState<string | null>(null);
+    const [editingGroupColor, setEditingGroupColor] = useState<string | null>(null);
+    const [tempGroupIcon, setTempGroupIcon] = useState('');
+    const [tempGroupColor, setTempGroupColor] = useState('');
+    const [isGroupColorPickerOpen, setIsGroupColorPickerOpen] = useState(false);
+    const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
+    const [popupAnchor, setPopupAnchor] = useState<HTMLElement | null>(null);
+
+    const availableGroups = useMemo(() => {
+        const configGroups = Object.keys(GROUP_CONFIG).filter(g => g !== 'ungrouped');
+        // Collect groups from innerfaces ONLY to keep lists separate
+        const existingIfaceGroups = Array.from(new Set(innerfaces.map(i => i.group))).filter(Boolean) as string[];
+        return Array.from(new Set([...configGroups, ...existingIfaceGroups])).sort();
+    }, [innerfaces]);
 
     useEffect(() => {
         if (isOpen && innerfaceId) {
@@ -46,6 +63,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                 setInitialScore(innerface.initialScore.toFixed(2));
                 setColor(innerface.color || '#e2b714');
                 setHover(innerface.hover || '');
+                setGroup(innerface.group || '');
             }
         } else {
             // Reset for new
@@ -55,9 +73,47 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
             setInitialScore('5.00');
             setColor('#e2b714');
             setHover('');
+            setGroup('');
             setIsConfirmingDelete(false);
+            setIsGroupDropdownOpen(false);
+            setIsGroupColorPickerOpen(false);
+            setEditingGroupColor(null);
+            setEditingGroupIcon(null);
         }
     }, [isOpen, innerfaceId, innerfaces]);
+
+    const handleUpdateGroupIcon = async (groupName: string, icon: string) => {
+        if (!user || !activePersonalityId) return;
+        await updateGroupMetadata(user.uid, activePersonalityId, groupName, { icon });
+        setEditingGroupIcon(null);
+    };
+
+    const handleUpdateGroupColor = async (groupName: string, color: string) => {
+        if (!user || !activePersonalityId) return;
+        await updateGroupMetadata(user.uid, activePersonalityId, groupName, { color });
+        setEditingGroupColor(null);
+        setIsGroupColorPickerOpen(false);
+    };
+
+    const renderGroupIcon = (groupName: string, iconOverride?: string, colorOverride?: string) => {
+        const metadata = groupsMetadata[groupName];
+        const config = GROUP_CONFIG[groupName];
+        const iconStr = iconOverride || metadata?.icon || (config ? 'CONFIG' : 'brain');
+        const colorStr = colorOverride || metadata?.color || config?.color || 'var(--main-color)';
+
+        let iconToRender;
+        if (iconStr === 'CONFIG' && config) {
+            iconToRender = config.icon;
+        } else {
+            iconToRender = getMappedIcon(iconStr) || faPlus;
+        }
+
+        return (
+            <div className="flex items-center justify-center w-full h-full" style={{ color: colorStr }}>
+                <FontAwesomeIcon icon={iconToRender} className="text-sm" />
+            </div>
+        );
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -70,7 +126,8 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
             icon,
             initialScore: newInitialScore,
             color,
-            hover
+            hover,
+            group
         };
 
         if (innerfaceId) {
@@ -175,6 +232,238 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                     />
                 </div>
 
+                <div className="flex flex-col gap-1.5 relative">
+                    <InputLabel label="Group" />
+                    <GroupDropdown
+                        isOpen={isGroupDropdownOpen}
+                        onOpenChange={setIsGroupDropdownOpen}
+                        width="w-full"
+                        maxHeight="max-h-56"
+                        trigger={(isOpen) => (
+                            <div className="relative w-full" onClick={(e) => {
+                                e.stopPropagation();
+                                setIsGroupDropdownOpen(true);
+                            }}>
+                                <Input
+                                    type="text"
+                                    value={group}
+                                    onChange={e => {
+                                        setGroup(e.target.value);
+                                        setIsGroupDropdownOpen(true);
+                                    }}
+                                    onFocus={() => setIsGroupDropdownOpen(true)}
+                                    placeholder="no group"
+                                    className="pr-8"
+                                    leftIcon={
+                                        group && availableGroups.some(g => g.toLowerCase() === group.toLowerCase()) ? (
+                                            <div
+                                                className="w-2 h-2 rounded-full"
+                                                style={{
+                                                    backgroundColor: groupsMetadata[group]?.color || GROUP_CONFIG[group]?.color || 'var(--main-color)',
+                                                    boxShadow: `0 0 8px ${groupsMetadata[group]?.color || GROUP_CONFIG[group]?.color || 'var(--main-color)'}`
+                                                }}
+                                            />
+                                        ) : undefined
+                                    }
+                                />
+                                <div className={`absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-4 h-4 transition-transform duration-200 text-sub/50 pointer-events-none ${isOpen ? 'rotate-180' : ''}`}>
+                                    <FontAwesomeIcon icon={faChevronDown} className="text-[10px]" />
+                                </div>
+                            </div>
+                        )}
+                    >
+                        <div className="p-1">
+
+
+                            {availableGroups
+                                .filter(g => g.toLowerCase().includes(group.toLowerCase()))
+                                .map(g => {
+                                    const metadata = groupsMetadata[g];
+                                    const config = GROUP_CONFIG[g];
+                                    const gColor = metadata?.color || config?.color || 'var(--main-color)';
+                                    const isEditingIcon = editingGroupIcon === g;
+                                    const isEditingColor = editingGroupColor === g;
+
+                                    return (
+                                        <div key={g} className="relative">
+                                            <GroupDropdown.Item
+                                                label={g}
+                                                isActive={group === g}
+                                                onClick={() => {
+                                                    if (!isEditingIcon && !isEditingColor) {
+                                                        setGroup(g);
+                                                        setIsGroupDropdownOpen(false);
+                                                    }
+                                                }}
+                                                onIndicatorClick={(e) => {
+                                                    if (isGroupColorPickerOpen && editingGroupColor === g) {
+                                                        setIsGroupColorPickerOpen(false);
+                                                        setEditingGroupColor(null);
+                                                    } else {
+                                                        setEditingGroupColor(g);
+                                                        setPopupAnchor(e.currentTarget as HTMLElement);
+                                                        setIsGroupColorPickerOpen(true);
+                                                    }
+                                                }}
+                                                onIconClick={() => {
+                                                    setEditingGroupIcon(g);
+                                                    setTempGroupIcon(metadata?.icon || (GROUP_CONFIG[g] ? g.toLowerCase() : 'brain'));
+                                                }}
+                                                indicatorColor={gColor}
+                                                icon={
+                                                    <div
+                                                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all shrink-0 ${isEditingIcon ? 'bg-black/40 border border-main/50' : 'bg-black/40 group-hover/item-container:bg-black/60 hover:scale-105 border border-white/5'}`}
+                                                    >
+                                                        {isEditingIcon ? (
+                                                            <input
+                                                                autoFocus
+                                                                className="w-full h-full bg-transparent text-center text-[10px] font-mono outline-none text-text-primary"
+                                                                value={tempGroupIcon}
+                                                                onChange={(e) => setTempGroupIcon(e.target.value)}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter') handleUpdateGroupIcon(g, tempGroupIcon);
+                                                                    if (e.key === 'Escape') setEditingGroupIcon(null);
+                                                                }}
+                                                                onBlur={() => handleUpdateGroupIcon(g, tempGroupIcon)}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            />
+                                                        ) : (
+                                                            renderGroupIcon(g)
+                                                        )}
+                                                    </div>
+                                                }
+                                            />
+                                        </div>
+                                    );
+                                })}
+
+                            {/* Add New Option */}
+                            {group.trim() !== '' && !availableGroups.some(g => g.toLowerCase() === group.toLowerCase()) && (
+                                <>
+                                    <GroupDropdown.Item
+                                        label={
+                                            <span>
+                                                <span className="text-sub opacity-70 mr-1.5">create:</span>
+                                                <span className="text-text-primary font-bold">{group}</span>
+                                            </span>
+                                        }
+                                        tooltipText={`Create group: ${group}`}
+                                        isActive={false}
+                                        indicatorColor={tempGroupColor}
+                                        onIndicatorClick={(e) => {
+                                            if (isGroupColorPickerOpen && editingGroupColor === 'NEW') {
+                                                setIsGroupColorPickerOpen(false);
+                                                setEditingGroupColor(null);
+                                            } else {
+                                                setEditingGroupColor('NEW');
+                                                setPopupAnchor(e.currentTarget as HTMLElement);
+                                                setIsGroupColorPickerOpen(true);
+                                                if (!tempGroupColor) setTempGroupColor('#e2b714');
+                                            }
+                                        }}
+                                        onClick={() => {
+                                            if (tempGroupIcon.trim()) {
+                                                handleUpdateGroupIcon(group, tempGroupIcon);
+                                                if (tempGroupColor) handleUpdateGroupColor(group, tempGroupColor);
+                                            }
+                                            setGroup(group);
+                                            setIsGroupDropdownOpen(false);
+                                        }}
+                                        onIconClick={() => {
+                                            setIsGroupColorPickerOpen(false);
+                                            setEditingGroupIcon('NEW');
+                                            if (!tempGroupIcon) setTempGroupIcon('brain');
+                                        }}
+                                        icon={
+                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all shrink-0 ${editingGroupIcon === 'NEW' ? 'bg-transparent border border-main/50' : 'bg-main/10 border border-main/20 hover:bg-main hover:text-bg-primary'}`}>
+                                                {editingGroupIcon === 'NEW' ? (
+                                                    <input
+                                                        autoFocus
+                                                        className="w-full h-full bg-transparent text-center text-[10px] font-mono outline-none text-text-primary"
+                                                        value={tempGroupIcon}
+                                                        onChange={(e) => setTempGroupIcon(e.target.value)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') setEditingGroupIcon(null);
+                                                            if (e.key === 'Escape') setEditingGroupIcon(null);
+                                                        }}
+                                                        onBlur={() => setEditingGroupIcon(null)}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    />
+                                                ) : (
+                                                    <FontAwesomeIcon icon={faPlus} className="text-sm" />
+                                                )}
+                                            </div>
+                                        }
+                                    />
+                                </>
+                            )}
+
+                            {availableGroups.filter(g => g.toLowerCase().includes(group.toLowerCase())).length === 0 && group.trim() === '' && (
+                                <div className="px-3 py-2 text-[10px] text-sub italic">No groups found</div>
+                            )}
+
+                            <Popover.Root open={isGroupColorPickerOpen} onOpenChange={setIsGroupColorPickerOpen}>
+                                {popupAnchor && <Popover.Anchor virtualRef={{ current: popupAnchor }} />}
+                                <Popover.Portal>
+                                    <Popover.Content
+                                        className="z-[100] p-2 bg-sub-alt/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl flex flex-col gap-2 min-w-[124px] animate-in fade-in zoom-in-95 duration-200"
+                                        sideOffset={5}
+                                        align="start"
+                                        onInteractOutside={(e) => {
+                                            if (popupAnchor && popupAnchor.contains(e.target as Node)) {
+                                                e.preventDefault();
+                                            }
+                                        }}
+                                    >
+                                        <div className="flex items-center justify-between px-1">
+                                            <span className="text-[9px] font-mono text-sub uppercase">Color</span>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setIsGroupColorPickerOpen(false);
+                                                    setEditingGroupColor(null);
+                                                }}
+                                                className="text-sub hover:text-text-primary transition-colors cursor-pointer"
+                                            >
+                                                <FontAwesomeIcon icon={faTimes} className="text-[10px]" />
+                                            </button>
+                                        </div>
+                                        <div className="grid grid-cols-4 gap-1.5">
+                                            {PRESET_COLORS.map(c => (
+                                                <button
+                                                    key={c}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (editingGroupColor === 'NEW') {
+                                                            setTempGroupColor(c);
+                                                        } else if (editingGroupColor) {
+                                                            handleUpdateGroupColor(editingGroupColor, c);
+                                                        }
+                                                        setIsGroupColorPickerOpen(false);
+                                                    }}
+                                                    className={`w-5 h-5 rounded-full transition-transform hover:scale-125 hover:ring-2 hover:ring-white/30 cursor-pointer ${(editingGroupColor === 'NEW' ? tempGroupColor : (editingGroupColor ? (groupsMetadata[editingGroupColor]?.color || GROUP_CONFIG[editingGroupColor]?.color) : '')) === c
+                                                        ? 'ring-2 ring-white/50'
+                                                        : ''
+                                                        }`}
+                                                    style={{ backgroundColor: c }}
+                                                />
+                                            ))}
+                                        </div>
+                                        <Popover.Arrow className="fill-current text-white/10" />
+                                    </Popover.Content>
+                                </Popover.Portal>
+                            </Popover.Root>
+                        </div>
+                    </GroupDropdown>
+                    {isGroupDropdownOpen && (
+                        <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setIsGroupDropdownOpen(false)}
+                        />
+                    )}
+                </div>
+
                 <div className="flex gap-4">
                     <div className="w-32 flex flex-col gap-1.5">
                         <InputLabel label="Starting Point" />
@@ -240,32 +529,73 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                         )}
                     </div>
 
-                    <div className="w-16 flex flex-col gap-1.5">
+                    <div className="w-16 flex flex-col gap-1.5 relative">
                         <InputLabel label="Icon" />
-                        <div className="relative group/icon bg-sub-alt rounded-lg transition-colors duration-200 focus-within:bg-sub border border-transparent focus-within:border-white/5">
-                            {getMappedIcon(icon) && (
-                                <div
-                                    className="absolute inset-0 flex items-center justify-center pointer-events-none transition-colors duration-200"
-                                    style={{ color: color }}
+                        <Popover.Root open={isIconPickerOpen} onOpenChange={setIsIconPickerOpen}>
+                            <Popover.Trigger asChild>
+                                <div className="relative group/icon bg-sub-alt rounded-lg transition-colors duration-200 focus-within:bg-sub border border-transparent focus-within:border-white/5 cursor-pointer"
+                                    onClick={() => setIsIconPickerOpen(true)}
                                 >
-                                    <FontAwesomeIcon icon={getMappedIcon(icon)} className="text-sm" />
+                                    {getMappedIcon(icon) && (
+                                        <div
+                                            className="absolute inset-0 flex items-center justify-center pointer-events-none transition-colors duration-200"
+                                            style={{ color: color }}
+                                        >
+                                            <FontAwesomeIcon icon={getMappedIcon(icon)} className="text-sm" />
+                                        </div>
+                                    )}
+                                    <Input
+                                        type="text"
+                                        value={icon}
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            setIcon(val);
+                                        }}
+                                        className={`text-center text-lg p-0 h-[42px] relative z-10 ${getMappedIcon(icon) ? '!text-transparent !caret-text-primary' : ''} !bg-transparent focus:!bg-transparent !border-none outline-none cursor-pointer`}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsIconPickerOpen(true);
+                                        }}
+                                    />
                                 </div>
-                            )}
-                            <Input
-                                type="text"
-                                value={icon}
-                                onChange={e => {
-                                    // Take the last character entered (replace mode) 
-                                    // or just allow standard typing if empty.
-                                    // Using slice(-2) allows for surrogate pairs (emojis)
-                                    const val = e.target.value;
-                                    const newVal = val.length > 2 ? val.slice(-2) : val;
-                                    setIcon(newVal);
-                                }}
-                                className={`text-center text-lg p-0 h-[42px] relative z-10 ${getMappedIcon(icon) ? '!text-transparent !caret-text-primary' : ''} !bg-transparent focus:!bg-transparent !border-none outline-none`}
-                                maxLength={5} // Allow typing to trigger slice logic
-                            />
-                        </div>
+                            </Popover.Trigger>
+                            <Popover.Portal>
+                                <Popover.Content
+                                    className="z-[100] p-2 bg-sub-alt/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl flex flex-col gap-2 min-w-[200px] animate-in fade-in zoom-in-95 duration-200"
+                                    sideOffset={5}
+                                    align="start"
+                                >
+                                    <div className="flex items-center justify-between px-1">
+                                        <span className="text-[9px] font-mono text-sub uppercase">Select Icon</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsIconPickerOpen(false)}
+                                            className="text-sub hover:text-text-primary transition-colors cursor-pointer"
+                                        >
+                                            <FontAwesomeIcon icon={faTimes} className="text-[10px]" />
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-5 gap-1.5 max-h-[160px] overflow-y-auto pr-1">
+                                        {ICON_PRESETS.map(preset => (
+                                            <button
+                                                key={preset}
+                                                type="button"
+                                                onClick={() => {
+                                                    setIcon(preset);
+                                                    setIsIconPickerOpen(false);
+                                                }}
+                                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10 cursor-pointer ${icon === preset ? 'bg-white/20 text-text-primary ring-1 ring-white/30' : 'text-sub'}`}
+                                                style={{ color: icon === preset ? color : undefined }}
+                                                title={preset}
+                                            >
+                                                <FontAwesomeIcon icon={getMappedIcon(preset)} className="text-sm" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <Popover.Arrow className="fill-current text-white/10" />
+                                </Popover.Content>
+                            </Popover.Portal>
+                        </Popover.Root>
                     </div>
                 </div>
 
