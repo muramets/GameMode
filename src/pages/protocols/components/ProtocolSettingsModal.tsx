@@ -12,9 +12,10 @@ import { GROUP_CONFIG, PRESET_COLORS } from '../../../constants/common';
 import * as Popover from '@radix-ui/react-popover';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../../components/ui/atoms/Tooltip';
 import { GroupDropdown } from '../../../components/organisms/GroupDropdown';
+import { CollapsibleSection } from '../../../components/ui/molecules/CollapsibleSection';
+import { faSearch } from '@fortawesome/free-solid-svg-icons';
 
 // 
-
 
 interface ProtocolSettingsModalProps {
     isOpen: boolean;
@@ -49,6 +50,7 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
     const [isGroupColorPickerOpen, setIsGroupColorPickerOpen] = useState(false);
     const [popupAnchor, setPopupAnchor] = useState<HTMLElement | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
 
     const availableGroups = useMemo(() => {
         const configGroups = Object.keys(GROUP_CONFIG).filter(g => g !== 'ungrouped');
@@ -86,7 +88,9 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
             setIsColorPickerOpen(false);
             setIsGroupColorPickerOpen(false);
             setEditingGroupColor(null);
+            setEditingGroupColor(null);
             setEditingGroupIcon(null);
+            setSearchQuery('');
         }
     }, [isOpen, protocolId, protocols]);
 
@@ -615,40 +619,87 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
 
                 <div className="flex flex-col gap-2">
                     <InputLabel label="Affects Innerfaces" />
-                    <div className="flex flex-wrap gap-2 py-1">
-                        {innerfaces.map(innerface => {
-                            const isActive = targets.includes(innerface.id);
-                            return (
-                                <TooltipProvider key={innerface.id} delayDuration={300}>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <button
-                                                type="button"
-                                                onClick={() => toggleTarget(innerface.id)}
-                                                className={`px-3 py-1.5 rounded-lg border flex items-center gap-2 transition-all font-mono text-[10px] uppercase font-bold tracking-wider ${isActive
-                                                    ? ''
-                                                    : 'bg-sub-alt border-transparent text-sub hover:text-text-primary hover:bg-sub'
-                                                    }`}
-                                                style={isActive ? {
-                                                    backgroundColor: `${innerface.color}33`,
-                                                    color: innerface.color,
-                                                    boxShadow: `0 4px 8px rgba(0,0,0,0.2)`,
-                                                    borderColor: 'transparent'
-                                                } : undefined}
-                                            >
-                                                <span style={{ color: isActive ? 'currentColor' : innerface.color }}>
-                                                    {renderIcon(innerface.icon)}
-                                                </span>
-                                                {innerface.name.split('.')[0]}
-                                            </button>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="top">
-                                            <span className="font-mono text-xs">{innerface.hover || innerface.name}</span>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            );
-                        })}
+                    <div className="bg-sub-alt/30 rounded-xl p-3 border border-white/5 h-[300px] flex flex-col gap-3">
+                        {/* Search Input */}
+                        <Input
+                            type="text"
+                            placeholder="Search innerfaces..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            icon={faSearch}
+                        />
+
+                        {/* Scrollable List */}
+                        <div className="flex-1 overflow-y-auto custom-scrollbar">
+                            <div className="flex flex-col gap-1">
+                                {(() => {
+                                    const filteredInnerfaces = innerfaces.filter(i => i.name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+                                    if (filteredInnerfaces.length === 0) {
+                                        return <div className="w-full text-center py-8 text-sub/40 italic text-xs">No innerfaces found</div>;
+                                    }
+
+                                    const groupedInnerfaces: Record<string, typeof innerfaces> = {};
+                                    filteredInnerfaces.forEach(i => {
+                                        const g = i.group || 'ungrouped';
+                                        if (!groupedInnerfaces[g]) groupedInnerfaces[g] = [];
+                                        groupedInnerfaces[g].push(i);
+                                    });
+
+                                    const sortedGroups = Object.keys(groupedInnerfaces).sort((a, b) => {
+                                        if (a === 'ungrouped') return 1;
+                                        if (b === 'ungrouped') return -1;
+                                        return a.localeCompare(b);
+                                    });
+
+                                    return sortedGroups.map(groupName => (
+                                        <CollapsibleSection
+                                            key={groupName}
+                                            title={groupName}
+                                            variant="mini"
+                                            defaultOpen={true}
+                                            className="mb-2"
+                                        >
+                                            <div className="flex flex-wrap gap-2 pt-1">
+                                                {groupedInnerfaces[groupName].map(innerface => {
+                                                    const isActive = targets.includes(innerface.id);
+                                                    return (
+                                                        <TooltipProvider key={innerface.id} delayDuration={300}>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => toggleTarget(innerface.id)}
+                                                                        className={`px-3 py-1.5 rounded-lg border flex items-center gap-2 transition-all font-mono text-[10px] uppercase font-bold tracking-wider ${isActive
+                                                                            ? ''
+                                                                            : 'bg-sub-alt border-transparent text-sub hover:text-text-primary hover:bg-sub'
+                                                                            }`}
+                                                                        style={isActive ? {
+                                                                            backgroundColor: `${innerface.color}33`,
+                                                                            color: innerface.color,
+                                                                            boxShadow: `0 4px 8px rgba(0,0,0,0.2)`,
+                                                                            borderColor: 'transparent'
+                                                                        } : undefined}
+                                                                    >
+                                                                        <span style={{ color: isActive ? 'currentColor' : innerface.color }}>
+                                                                            {renderIcon(innerface.icon)}
+                                                                        </span>
+                                                                        {innerface.name.split('.')[0]}
+                                                                    </button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent side="top">
+                                                                    <span className="font-mono text-xs">{innerface.hover || innerface.name}</span>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                    );
+                                                })}
+                                            </div>
+                                        </CollapsibleSection>
+                                    ));
+                                })()}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

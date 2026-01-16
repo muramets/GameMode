@@ -12,6 +12,7 @@ import { faTrash, faExclamationTriangle, faTimes, faSearch } from '@fortawesome/
 import { PRESET_COLORS } from '../../../constants/common';
 import * as Popover from '@radix-ui/react-popover';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../../components/ui/atoms/Tooltip';
+import { CollapsibleSection } from '../../../components/ui/molecules/CollapsibleSection';
 
 interface StateSettingsModalProps {
     isOpen: boolean;
@@ -329,7 +330,6 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
                             >
                                 Innerfaces
                             </button>
-                            {/* Removed Protocol Support for now (Recency Heat logic pending) */}
                             {/* <button
                                 type="button"
                                 onClick={() => setActiveTab('protocols')}
@@ -352,86 +352,146 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
 
                         {/* Scrollable List */}
                         <div className="flex-1 overflow-y-auto custom-scrollbar">
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-col gap-1">
                                 {activeTab === 'protocols' ? (
                                     protocols.length > 0 ? (
-                                        protocols
-                                            .filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()))
-                                            .map(protocol => {
-                                                const isActive = protocolIds.some(id => id.toString() === protocol.id.toString());
-                                                const pColor = protocol.color || 'var(--text-primary)';
-                                                return (
-                                                    <TooltipProvider key={protocol.id} delayDuration={300}>
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => toggleProtocol(protocol.id)}
-                                                                    className={`px-3 py-1.5 rounded-lg border flex items-center gap-2 transition-all font-mono text-[10px] uppercase font-bold tracking-wider ${isActive
-                                                                        ? ''
-                                                                        : 'bg-sub-alt border-transparent text-sub hover:text-text-primary hover:bg-sub'
-                                                                        }`}
-                                                                    style={isActive ? {
-                                                                        backgroundColor: `${pColor}33`,
-                                                                        color: pColor,
-                                                                        boxShadow: `0 4px 8px rgba(0,0,0,0.2)`,
-                                                                        borderColor: 'transparent'
-                                                                    } : undefined}
-                                                                >
-                                                                    <span style={{ color: isActive ? 'currentColor' : pColor }}>
-                                                                        {renderIcon(protocol.icon)}
-                                                                    </span>
-                                                                    {protocol.title}
-                                                                </button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent side="top">
-                                                                <span className="font-mono text-xs">{protocol.description}</span>
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
-                                                );
-                                            })
+                                        (() => {
+                                            const filteredProtocols = protocols.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()));
+                                            if (filteredProtocols.length === 0) {
+                                                return <div className="w-full text-center py-8 text-sub/40 italic text-xs">No protocols found</div>;
+                                            }
+
+                                            const groupedProtocols: Record<string, typeof protocols> = {};
+                                            filteredProtocols.forEach(p => {
+                                                const g = p.group || 'ungrouped';
+                                                if (!groupedProtocols[g]) groupedProtocols[g] = [];
+                                                groupedProtocols[g].push(p);
+                                            });
+
+                                            const sortedGroups = Object.keys(groupedProtocols).sort((a, b) => {
+                                                if (a === 'ungrouped') return 1;
+                                                if (b === 'ungrouped') return -1;
+                                                return a.localeCompare(b);
+                                            });
+
+                                            return sortedGroups.map(groupName => (
+                                                <CollapsibleSection
+                                                    key={groupName}
+                                                    title={groupName}
+                                                    variant="mini"
+                                                    defaultOpen={true}
+                                                    className="mb-2"
+                                                >
+                                                    <div className="flex flex-wrap gap-2 pt-1">
+                                                        {groupedProtocols[groupName].map(protocol => {
+                                                            const isActive = protocolIds.some(id => id.toString() === protocol.id.toString());
+                                                            const pColor = protocol.color || 'var(--text-primary)';
+                                                            return (
+                                                                <TooltipProvider key={protocol.id} delayDuration={300}>
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger asChild>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => toggleProtocol(protocol.id)}
+                                                                                className={`px-3 py-1.5 rounded-lg border flex items-center gap-2 transition-all font-mono text-[10px] uppercase font-bold tracking-wider ${isActive
+                                                                                    ? ''
+                                                                                    : 'bg-sub-alt border-transparent text-sub hover:text-text-primary hover:bg-sub'
+                                                                                    }`}
+                                                                                style={isActive ? {
+                                                                                    backgroundColor: `${pColor}33`,
+                                                                                    color: pColor,
+                                                                                    boxShadow: `0 4px 8px rgba(0,0,0,0.2)`,
+                                                                                    borderColor: 'transparent'
+                                                                                } : undefined}
+                                                                            >
+                                                                                <span style={{ color: isActive ? 'currentColor' : pColor }}>
+                                                                                    {renderIcon(protocol.icon)}
+                                                                                </span>
+                                                                                {protocol.title}
+                                                                            </button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent side="top">
+                                                                            <span className="font-mono text-xs">{protocol.description}</span>
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                </TooltipProvider>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </CollapsibleSection>
+                                            ));
+                                        })()
                                     ) : (
                                         <div className="w-full text-center py-8 text-sub/40 italic text-xs">No protocols found</div>
                                     )
                                 ) : (
                                     innerfaces.length > 0 ? (
-                                        innerfaces
-                                            .filter(i => i.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                                            .map(innerface => {
-                                                const isActive = innerfaceIds.some(id => id.toString() === innerface.id.toString());
-                                                const iColor = innerface.color || 'var(--text-primary)';
-                                                return (
-                                                    <TooltipProvider key={innerface.id} delayDuration={300}>
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => toggleInnerface(innerface.id)}
-                                                                    className={`px-3 py-1.5 rounded-lg border flex items-center gap-2 transition-all font-mono text-[10px] uppercase font-bold tracking-wider ${isActive
-                                                                        ? ''
-                                                                        : 'bg-sub-alt border-transparent text-sub hover:text-text-primary hover:bg-sub'
-                                                                        }`}
-                                                                    style={isActive ? {
-                                                                        backgroundColor: `${iColor}33`,
-                                                                        color: iColor,
-                                                                        boxShadow: `0 4px 8px rgba(0,0,0,0.2)`,
-                                                                        borderColor: 'transparent'
-                                                                    } : undefined}
-                                                                >
-                                                                    <span style={{ color: isActive ? 'currentColor' : iColor }}>
-                                                                        {renderIcon(innerface.icon)}
-                                                                    </span>
-                                                                    {innerface.name.split('.')[0]}
-                                                                </button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent side="top">
-                                                                <span className="font-mono text-xs">{innerface.hover || innerface.name}</span>
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
-                                                );
-                                            })
+                                        (() => {
+                                            const filteredInnerfaces = innerfaces.filter(i => i.name.toLowerCase().includes(searchQuery.toLowerCase()));
+                                            if (filteredInnerfaces.length === 0) {
+                                                return <div className="w-full text-center py-8 text-sub/40 italic text-xs">No innerfaces found</div>;
+                                            }
+
+                                            const groupedInnerfaces: Record<string, typeof innerfaces> = {};
+                                            filteredInnerfaces.forEach(i => {
+                                                const g = i.group || 'ungrouped';
+                                                if (!groupedInnerfaces[g]) groupedInnerfaces[g] = [];
+                                                groupedInnerfaces[g].push(i);
+                                            });
+
+                                            const sortedGroups = Object.keys(groupedInnerfaces).sort((a, b) => {
+                                                if (a === 'ungrouped') return 1;
+                                                if (b === 'ungrouped') return -1;
+                                                return a.localeCompare(b);
+                                            });
+
+                                            return sortedGroups.map(groupName => (
+                                                <CollapsibleSection
+                                                    key={groupName}
+                                                    title={groupName}
+                                                    variant="mini"
+                                                    defaultOpen={true}
+                                                    className="mb-2"
+                                                >
+                                                    <div className="flex flex-wrap gap-2 pt-1">
+                                                        {groupedInnerfaces[groupName].map(innerface => {
+                                                            const isActive = innerfaceIds.some(id => id.toString() === innerface.id.toString());
+                                                            const iColor = innerface.color || 'var(--text-primary)';
+                                                            return (
+                                                                <TooltipProvider key={innerface.id} delayDuration={300}>
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger asChild>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => toggleInnerface(innerface.id)}
+                                                                                className={`px-3 py-1.5 rounded-lg border flex items-center gap-2 transition-all font-mono text-[10px] uppercase font-bold tracking-wider ${isActive
+                                                                                    ? ''
+                                                                                    : 'bg-sub-alt border-transparent text-sub hover:text-text-primary hover:bg-sub'
+                                                                                    }`}
+                                                                                style={isActive ? {
+                                                                                    backgroundColor: `${iColor}33`,
+                                                                                    color: iColor,
+                                                                                    boxShadow: `0 4px 8px rgba(0,0,0,0.2)`,
+                                                                                    borderColor: 'transparent'
+                                                                                } : undefined}
+                                                                            >
+                                                                                <span style={{ color: isActive ? 'currentColor' : iColor }}>
+                                                                                    {renderIcon(innerface.icon)}
+                                                                                </span>
+                                                                                {innerface.name.split('.')[0]}
+                                                                            </button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent side="top">
+                                                                            <span className="font-mono text-xs">{innerface.hover || innerface.name}</span>
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                </TooltipProvider>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </CollapsibleSection>
+                                            ));
+                                        })()
                                     ) : (
                                         <div className="w-full text-center py-8 text-sub/40 italic text-xs">No innerfaces found</div>
                                     )

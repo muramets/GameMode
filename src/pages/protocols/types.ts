@@ -10,6 +10,7 @@ export interface Innerface {
     versionTimestamp?: string; // ISO string for hard reset
     order?: number;
     group?: string;
+    protocolIds?: (number | string)[];
 }
 
 export interface Protocol {
