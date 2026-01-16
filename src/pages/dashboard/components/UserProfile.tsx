@@ -34,8 +34,8 @@ export function UserProfile() {
     // 2. Check-ins today/month from history
     const stats = history.reduce((acc, record) => {
         const recordDate = parseISO(record.timestamp);
-        // Consistent multiplier for visual XP based on protocol weight.
-        const recordXP = Math.round(record.weight * 500);
+        // Use raw weight for visual XP (no multiplier)
+        const recordXP = record.weight;
 
         if (isToday(recordDate)) {
             acc.checkinsToday += 1;
@@ -55,9 +55,13 @@ export function UserProfile() {
     const renderXP = (xp: number, isTotal = false) => {
         if (xp === 0) return <span className="text-xs text-sub font-mono">0 XP</span>;
         const isPositive = xp > 0;
+        const formattedXP = Number(xp.toFixed(2)); // Strip trailing zeros
         return (
-            <span className={`text-xs font-mono ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                {isPositive ? '+' : ''}{xp} XP{isTotal ? ' total' : ''}
+            <span
+                className="text-xs font-mono"
+                style={{ color: isPositive ? '#98c379' : '#ca4754' }}
+            >
+                {isPositive ? '+' : ''}{formattedXP} XP{isTotal ? ' total' : ''}
             </span>
         );
     };
