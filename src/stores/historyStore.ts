@@ -31,12 +31,12 @@ interface HistoryState {
 
     // Actions
     addCheckin: (uid: string, pid: string, record: Omit<HistoryRecord, 'id'>) => Promise<void>;
-    addSystemEvent: (uid: string, pid: string, message: string, details?: any) => Promise<void>; // New action
+    addSystemEvent: (uid: string, pid: string, message: string, details?: Record<string, unknown>) => Promise<void>; // New action
     deleteCheckin: (uid: string, pid: string, id: string) => Promise<void>;
     subscribeToHistory: (uid: string, pid: string) => () => void;
 }
 
-export const useHistoryStore = create<HistoryState>((set, get) => ({
+export const useHistoryStore = create<HistoryState>((set) => ({
     history: [],
     isLoading: true,
     error: null,
@@ -49,9 +49,10 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
                 // Server timestamp is crucial for correct ordering across devices with different system clocks
                 serverTimestamp: Timestamp.now()
             });
-        } catch (err: any) {
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
             console.error('Error adding checkin:', err);
-            set({ error: err.message });
+            set({ error: message });
         }
     },
 
@@ -71,9 +72,10 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
                 details, // New field for metadata
                 serverTimestamp: Timestamp.now()
             });
-        } catch (err: any) {
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
             console.error('Error adding system event:', err);
-            set({ error: err.message });
+            set({ error: message });
         }
     },
 
@@ -81,9 +83,10 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
         try {
             const docRef = doc(db, 'users', uid, 'personalities', pid, 'history', id);
             await deleteDoc(docRef);
-        } catch (err: any) {
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
             console.error('Error deleting checkin:', err);
-            set({ error: err.message });
+            set({ error: message });
         }
     },
 

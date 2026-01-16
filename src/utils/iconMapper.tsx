@@ -11,9 +11,10 @@ import {
     faPerson, faMartiniGlass, faWineGlass, faBeerMugEmpty, faBan,
     faSpa, faHotTubPerson, faBowlFood, faLaptopCode, faReceipt,
     faSmoking, faPersonSwimming, faSackDollar, faMoneyBill, faCoins,
-    faPenToSquare, faHandRock, faShoePrints, faCog
+    faPenToSquare, faHandRock, faShoePrints, faCog, faUsers
 } from '@fortawesome/free-solid-svg-icons';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const EMOJI_MAP: Record<string, any> = {
     // Descriptive Names (Preferred)
     'brain': faBrain,
@@ -117,6 +118,9 @@ const EMOJI_MAP: Record<string, any> = {
     '👨‍👩‍👧‍👦': faHouseUser,
     '🧩': faPuzzlePiece,
     '🏗': faUsersGear,
+    'users': faUsers,
+    'team': faUsers,
+    'teams': faUsers,
     'user': faUser,
     '🎥': faFilm,
     '🎹': faMusic,

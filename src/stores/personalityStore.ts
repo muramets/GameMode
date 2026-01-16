@@ -46,8 +46,9 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
 
             const personalities = snap.docs.map(d => ({ ...d.data(), id: d.id } as Personality));
             set({ personalities, isLoading: false });
-        } catch (err: any) {
-            set({ error: err.message, isLoading: false });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message, isLoading: false });
         }
     },
 
@@ -61,8 +62,9 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
                     p.id === personalityId ? { ...p, ...data } : p
                 )
             }));
-        } catch (err: any) {
-            set({ error: err.message });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message });
         }
     },
 
@@ -84,8 +86,9 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
             }));
 
             return id;
-        } catch (err: any) {
-            set({ error: err.message });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message });
             throw err;
         }
     },
@@ -99,8 +102,9 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
 
             localStorage.setItem('active_personality_id', personalityId);
             set({ activePersonalityId: personalityId });
-        } catch (err: any) {
-            set({ error: err.message });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message });
         }
     },
 
@@ -116,8 +120,9 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
                 const first = get().personalities[0];
                 get().switchPersonality(uid, first.id);
             }
-        } catch (err: any) {
-            set({ error: err.message });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message });
         }
     },
 

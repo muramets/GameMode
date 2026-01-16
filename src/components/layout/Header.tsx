@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthProvider';
 import { PersonalityDropdown } from './PersonalityDropdown';
+import { TeamsDropdown } from './TeamsDropdown';
 // import { faKeyboard, faCrown, faInfo, faCog } from '@fortawesome/free-solid-svg-icons';
 import { LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -56,6 +57,10 @@ export function Header() {
                 </div>
 
                 <div className="flex items-center gap-4 relative">
+                    {/* Teams Dropdown - Before Personality for team management */}
+                    <TeamsDropdown />
+
+                    {/* Personal Personalities */}
                     <PersonalityDropdown />
 
                     <div

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import type { FormEvent } from 'react';
 import { Modal } from '../ui/molecules/Modal';
 import { Input } from '../ui/molecules/Input';
 import { Button } from '../ui/atoms/Button';
@@ -9,6 +10,13 @@ import { faTrash, faExclamationTriangle, faUser } from '@fortawesome/free-solid-
 import { PRESET_COLORS } from '../../constants/common';
 import * as Popover from '@radix-ui/react-popover';
 import { ImageCropper } from '../ui/molecules/ImageCropper';
+
+// Moved outside to avoid recreating on each render
+const InputLabel = ({ label }: { label: string }) => (
+    <label className="text-[10px] text-main font-mono font-bold uppercase tracking-[0.2em] opacity-90 px-1">
+        {label}
+    </label>
+);
 
 interface PersonalitySettingsModalProps {
     isOpen: boolean;
@@ -30,9 +38,12 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
 
     const [tempImage, setTempImage] = useState<string | null>(null);
     const [isCropping, setIsCropping] = useState(false);
-    const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
+
+    // Sync form state with props when modal opens - intentional pattern for modal forms
     useEffect(() => {
+        /* eslint-disable react-hooks/set-state-in-effect */
         if (isOpen && personalityId) {
             const p = personalities.find(p => p.id === personalityId);
             if (p) {
@@ -52,9 +63,10 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
         setIsColorPickerOpen(false);
         setTempImage(null);
         setIsCropping(false);
+        /* eslint-enable react-hooks/set-state-in-effect */
     }, [isOpen, personalityId, personalities]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         if (!user || !name.trim()) return;
 
@@ -110,12 +122,6 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
         setIsCropping(false);
         setTempImage(null);
     };
-
-    const InputLabel = ({ label }: { label: string }) => (
-        <label className="text-[10px] text-main font-mono font-bold uppercase tracking-[0.2em] opacity-90 px-1">
-            {label}
-        </label>
-    );
 
     // If cropping, show the cropper instead of the normal form
     if (isCropping && tempImage) {

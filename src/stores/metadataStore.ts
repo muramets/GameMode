@@ -91,8 +91,9 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         try {
             const colRef = collection(db, 'users', uid, 'personalities', pid, 'innerfaces');
             await addDoc(colRef, data);
-        } catch (err: any) {
-            set({ error: err.message });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message });
         }
     },
 
@@ -100,8 +101,9 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         try {
             const docRef = doc(db, 'users', uid, 'personalities', pid, 'innerfaces', id.toString());
             await updateDoc(docRef, data);
-        } catch (err: any) {
-            set({ error: err.message });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message });
         }
     },
 
@@ -124,8 +126,9 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
                 });
 
             await Promise.all(updates);
-        } catch (err: any) {
-            set({ error: err.message });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message });
         }
     },
 
@@ -133,8 +136,9 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         try {
             const colRef = collection(db, 'users', uid, 'personalities', pid, 'protocols');
             await addDoc(colRef, data);
-        } catch (err: any) {
-            set({ error: err.message });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message });
         }
     },
 
@@ -142,8 +146,9 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         try {
             const docRef = doc(db, 'users', uid, 'personalities', pid, 'protocols', id.toString());
             await updateDoc(docRef, data);
-        } catch (err: any) {
-            set({ error: err.message });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message });
         }
     },
 
@@ -163,8 +168,9 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
                 });
 
             await Promise.all(updates);
-        } catch (err: any) {
-            set({ error: err.message });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message });
         }
     },
 
@@ -172,8 +178,9 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         try {
             const docRef = doc(db, 'users', uid, 'personalities', pid, 'groups', groupName);
             await setDoc(docRef, metadata, { merge: true });
-        } catch (err: any) {
-            set({ error: err.message });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message });
         }
     },
 
@@ -234,9 +241,10 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
 
             await batch.commit();
 
-        } catch (err: any) {
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
             console.error("Failed to rename group:", err);
-            set({ error: err.message });
+            set({ error: message });
         }
     },
 
@@ -244,8 +252,9 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         try {
             const colRef = collection(db, 'users', uid, 'personalities', pid, 'states');
             await addDoc(colRef, data);
-        } catch (err: any) {
-            set({ error: err.message });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message });
         }
     },
 
@@ -253,8 +262,9 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         try {
             const docRef = doc(db, 'users', uid, 'personalities', pid, 'states', id);
             await updateDoc(docRef, data);
-        } catch (err: any) {
-            set({ error: err.message });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message });
         }
     },
 
@@ -272,8 +282,9 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
                 });
 
             await Promise.all(updates);
-        } catch (err: any) {
-            set({ error: err.message });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message });
         }
     },
 
@@ -287,8 +298,9 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
 
             const docRef = doc(db, 'users', uid, 'personalities', pid, 'settings', 'quickActions');
             await setDoc(docRef, { ids: newIds }, { merge: true });
-        } catch (err: any) {
-            set({ error: err.message });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message });
         }
     },
 
@@ -330,9 +342,10 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
 
             await batch.commit();
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Failed to reorder states:", err);
-            set({ error: err.message });
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message });
             // Revert checks would happen on next snapshot update naturally
         }
     },
@@ -373,9 +386,10 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             });
 
             await batch.commit();
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Failed to reorder innerfaces:", err);
-            set({ error: err.message });
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message });
         }
     },
 
@@ -386,8 +400,9 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
 
             const docRef = doc(db, 'users', uid, 'personalities', pid, 'settings', 'quickActions');
             await setDoc(docRef, { ids: orderedIds }, { merge: true });
-        } catch (err: any) {
-            set({ error: err.message });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message });
         }
     },
 
@@ -419,8 +434,9 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             });
 
             await batch.commit();
-        } catch (err: any) {
-            set({ error: err.message });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message });
         }
     },
 
@@ -431,8 +447,9 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
 
             const docRef = doc(db, 'users', uid, 'personalities', pid, 'settings', 'groups');
             await setDoc(docRef, { order: orderedGroups }, { merge: true });
-        } catch (err: any) {
-            set({ error: err.message });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message });
         }
     },
 
@@ -443,8 +460,9 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
 
             const docRef = doc(db, 'users', uid, 'personalities', pid, 'settings', 'innerface_groups');
             await setDoc(docRef, { order: orderedGroups }, { merge: true });
-        } catch (err: any) {
-            set({ error: err.message });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message });
         }
     },
 

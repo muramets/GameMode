@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import type { FormEvent } from 'react';
 import { Modal } from '../../../components/ui/molecules/Modal';
 import { Input } from '../../../components/ui/molecules/Input';
 import { Button } from '../../../components/ui/atoms/Button';
@@ -19,6 +20,12 @@ interface StateSettingsModalProps {
     onClose: () => void;
     stateId?: string | null;
 }
+
+const InputLabel = ({ label }: { label: string }) => (
+    <label className="text-[10px] text-main font-mono font-bold uppercase tracking-[0.2em] opacity-90 px-1">
+        {label}
+    </label>
+);
 
 export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsModalProps) {
     const { user } = useAuth();
@@ -67,7 +74,7 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
         }
     }, [isOpen, stateId, states]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         if (!user || !activePersonalityId) return;
 
@@ -101,11 +108,7 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
         onClose();
     };
 
-    const InputLabel = ({ label }: { label: string }) => (
-        <label className="text-[10px] text-main font-mono font-bold uppercase tracking-[0.2em] opacity-90 px-1">
-            {label}
-        </label>
-    );
+
 
     const toggleInnerface = (id: string | number) => {
         setInnerfaceIds(prev => {

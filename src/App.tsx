@@ -15,6 +15,7 @@ import Dashboard from './pages/dashboard/DashboardPage';
 import { ProtocolsList } from './pages/protocols';
 import InnerfacesPage from './pages/innerfaces/InnerfacesPage';
 import HistoryPage from './pages/history/HistoryPage';
+import JoinInvitePage from './pages/JoinInvitePage';
 
 const Login = () => {
   const { signInWithGoogle, user } = useAuth();
@@ -65,7 +66,9 @@ function AppContent() {
       ) : (
         <Router>
           <Routes>
+            {/* Public routes */}
             <Route path="/login" element={<Login />} />
+            <Route path="/invite/:code" element={<JoinInvitePage />} />
             <Route path="/" element={
               <PrivateRoute>
                 <Layout>
@@ -108,10 +111,14 @@ function App() {
     applyTheme(themes.serika_dark);
   }, []);
 
-  const navStart = (window as any).__navStart;
-  if (navStart) {
-    console.log(`[PERF][2] App: Rendering shell at ${performance.now().toFixed(2)}ms (Delta: ${(performance.now() - navStart).toFixed(2)}ms)`);
-  }
+  useEffect(() => {
+    // Log performance metrics on mount
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const navStart = (window as any).__navStart;
+    if (navStart) {
+      console.log(`[PERF][2] App: Rendering shell at ${performance.now().toFixed(2)}ms (Delta: ${(performance.now() - navStart).toFixed(2)}ms)`);
+    }
+  }, []);
 
   return (
     <QueryProvider>

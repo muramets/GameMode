@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import type { FormEvent } from 'react';
 import { Modal } from '../ui/molecules/Modal';
 import { Input } from '../ui/molecules/Input';
 import { Button } from '../ui/atoms/Button';
@@ -16,6 +17,12 @@ interface GroupSettingsModalProps {
     onClose: () => void;
     groupName: string;
 }
+
+const InputLabel = ({ label }: { label: string }) => (
+    <label className="text-[10px] text-main font-mono font-bold uppercase tracking-[0.2em] opacity-90 px-1">
+        {label}
+    </label>
+);
 
 export function GroupSettingsModal({ isOpen, onClose, groupName }: GroupSettingsModalProps) {
     const { user } = useAuth();
@@ -39,7 +46,7 @@ export function GroupSettingsModal({ isOpen, onClose, groupName }: GroupSettings
         }
     }, [isOpen, groupName, groupsMetadata]);
 
-    const handleSave = async (e: React.FormEvent) => {
+    const handleSave = async (e: FormEvent) => {
         e.preventDefault();
         if (!user || !activePersonalityId) return;
 
@@ -58,11 +65,7 @@ export function GroupSettingsModal({ isOpen, onClose, groupName }: GroupSettings
         onClose();
     };
 
-    const InputLabel = ({ label }: { label: string }) => (
-        <label className="text-[10px] text-main font-mono font-bold uppercase tracking-[0.2em] opacity-90 px-1">
-            {label}
-        </label>
-    );
+
 
     return (
         <Modal
