@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faMinus, faPlus, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { Protocol } from '../../protocols/types'; // Updated import
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, TooltipPortal } from '../../../components/ui/atoms/Tooltip';
 import { renderIcon } from '../../../utils/iconMapper'; // Need to import this utility
@@ -8,6 +9,7 @@ import { renderIcon } from '../../../utils/iconMapper'; // Need to import this u
 export function QuickActionCard({ action, onAction, onDelete }: { action: Protocol; onAction?: (direction: '+' | '-') => void; onDelete?: () => void }) {
     const [hoverSide, setHoverSide] = useState<'left' | 'right' | null>(null);
     const [feedbackType, setFeedbackType] = useState<'plus' | 'minus' | null>(null);
+    const [contentFeedbackType, setContentFeedbackType] = useState<'plus' | 'minus' | null>(null);
     const [shake, setShake] = useState<'left' | 'right' | null>(null);
     const titleRef = useRef<HTMLSpanElement>(null);
     const [isTruncated, setIsTruncated] = useState(false);
@@ -25,14 +27,24 @@ export function QuickActionCard({ action, onAction, onDelete }: { action: Protoc
         return () => window.removeEventListener('resize', checkTruncation);
     }, [action.title]);
 
+    // Derived states to avoid sticking/double-renders (matching ProtocolRow pattern)
+    const effectiveHoverSide = hoverSide;
+    const effectiveFeedbackType = feedbackType;
+    const effectiveContentFeedbackType = contentFeedbackType;
+    const effectiveShake = shake;
+
     const handleAction = (direction: '+' | '-') => {
         // Trigger shake
         setShake(direction === '+' ? 'right' : 'left');
         setTimeout(() => setShake(null), 300);
 
-        // Trigger feedback
+        // Trigger feedback (Scale/Colors) - 500ms
         setFeedbackType(direction === '+' ? 'plus' : 'minus');
-        setTimeout(() => setFeedbackType(null), 1500);
+        setTimeout(() => setFeedbackType(null), 500);
+
+        // Trigger content (Icon -> XP) - 800ms (500ms + 300ms transition)
+        setContentFeedbackType(direction === '+' ? 'plus' : 'minus');
+        setTimeout(() => setContentFeedbackType(null), 800);
 
         onAction?.(direction);
     };
@@ -43,19 +55,19 @@ export function QuickActionCard({ action, onAction, onDelete }: { action: Protoc
             <div className="group relative h-[70px] transition-all duration-300 hover:scale-[1.03] select-none">
 
                 {/* Inner Animation Container - Handles Tilt, Background, & Shadows */}
-                <div className={`w-full h-full relative bg-sub-alt rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 ${shake === 'left' ? 'animate-tilt-left' : shake === 'right' ? 'animate-tilt-right' : ''
+                <div className={`w-full h-full relative bg-sub-alt rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 ${effectiveShake === 'left' ? 'animate-tilt-left' : effectiveShake === 'right' ? 'animate-tilt-right' : ''
                     }`}>
 
                     <style>{`
                         @keyframes tilt-left {
                             0%, 100% { transform: rotate(0deg); }
-                            25% { transform: rotate(-2deg); }
-                            75% { transform: rotate(1deg); }
+                            25% { transform: rotate(-1deg); }
+                            75% { transform: rotate(0.5deg); }
                         }
                         @keyframes tilt-right {
                             0%, 100% { transform: rotate(0deg); }
-                            25% { transform: rotate(2deg); }
-                            75% { transform: rotate(-1deg); }
+                            25% { transform: rotate(1deg); }
+                            75% { transform: rotate(-0.5deg); }
                         }
                         .animate-tilt-left { animation: tilt-left 0.3s ease-in-out; }
                         .animate-tilt-right { animation: tilt-right 0.3s ease-in-out; }
@@ -66,14 +78,14 @@ export function QuickActionCard({ action, onAction, onDelete }: { action: Protoc
                         className="absolute inset-0 transition-opacity duration-300"
                         style={{
                             background: `radial-gradient(circle at 100% 50%, rgba(152, 195, 121, 0.4), transparent 70%)`,
-                            opacity: hoverSide === 'right' ? 1 : 0
+                            opacity: effectiveHoverSide === 'right' ? 1 : 0
                         }}
                     />
                     <div
                         className="absolute inset-0 transition-opacity duration-300"
                         style={{
                             background: `radial-gradient(circle at 0% 50%, rgba(202,71,84,0.25), transparent 70%)`,
-                            opacity: hoverSide === 'left' ? 1 : 0
+                            opacity: effectiveHoverSide === 'left' ? 1 : 0
                         }}
                     />
 
@@ -81,9 +93,9 @@ export function QuickActionCard({ action, onAction, onDelete }: { action: Protoc
                     <div className="absolute inset-0 flex z-10">
                         {/* Left Button (Decrease) */}
                         <button
-                            className="flex-1 flex items-center justify-start pl-5 text-sub transition-colors focus:outline-none active:scale-95 duration-150"
+                            className="flex-1 flex items-center justify-start pl-5 text-sub transition-colors focus:outline-none duration-150"
                             style={{
-                                color: feedbackType === 'minus' ? '#ca4754' : hoverSide === 'left' ? '#ca4754' : undefined,
+                                color: effectiveFeedbackType === 'minus' ? '#ca4754' : effectiveHoverSide === 'left' ? '#ca4754' : undefined,
                                 transition: 'color 0.2s ease'
                             }}
                             onMouseEnter={() => setHoverSide('left')}
@@ -93,18 +105,18 @@ export function QuickActionCard({ action, onAction, onDelete }: { action: Protoc
                                 handleAction('-');
                             }}
                         >
-                            <div className={`transition-all duration-300 transform ${feedbackType === 'minus' ? 'scale-110' : ''}`}>
+                            <div className={`transition-all duration-300 transform ${effectiveFeedbackType === 'minus' ? 'scale-150' : ''}`}>
                                 <FontAwesomeIcon
-                                    icon={feedbackType === 'minus' ? faCheck : faMinus}
-                                    className={`text-sm transition-all duration-300 ${feedbackType === 'minus' ? 'text-[#ca4754]' : ''}`}
+                                    icon={faMinus}
+                                    className={`text-sm transition-all duration-300 ${effectiveFeedbackType === 'minus' ? 'text-[#ca4754]' : ''}`}
                                 />
                             </div>
                         </button>
                         {/* Right Button (Increase/Primary) */}
                         <button
-                            className="flex-1 flex items-center justify-end pr-5 text-sub transition-colors focus:outline-none active:scale-95 duration-150"
+                            className="flex-1 flex items-center justify-end pr-5 text-sub transition-colors focus:outline-none duration-150"
                             style={{
-                                color: feedbackType === 'plus' ? '#98c379' : hoverSide === 'right' ? '#98c379' : undefined, // Explicit green on hover
+                                color: effectiveFeedbackType === 'plus' ? '#98c379' : effectiveHoverSide === 'right' ? '#98c379' : undefined, // Explicit green on hover
                                 transition: 'color 0.2s ease'
                             }}
                             onMouseEnter={() => setHoverSide('right')}
@@ -114,10 +126,10 @@ export function QuickActionCard({ action, onAction, onDelete }: { action: Protoc
                                 handleAction('+');
                             }}
                         >
-                            <div className={`transition-all duration-300 transform ${feedbackType === 'plus' ? 'scale-110' : ''}`}>
+                            <div className={`transition-all duration-300 transform ${effectiveFeedbackType === 'plus' ? 'scale-150' : ''}`}>
                                 <FontAwesomeIcon
-                                    icon={feedbackType === 'plus' ? faCheck : faPlus}
-                                    className={`text-sm transition-all duration-300 ${feedbackType === 'plus' ? 'text-[#98c379]' : ''}`}
+                                    icon={faPlus}
+                                    className={`text-sm transition-all duration-300 ${effectiveFeedbackType === 'plus' ? 'text-[#98c379]' : ''}`}
                                 />
                             </div>
                         </button>
@@ -125,38 +137,97 @@ export function QuickActionCard({ action, onAction, onDelete }: { action: Protoc
 
                     {/* 3. Visual Layer: Text Content (Centered, Wide, Pointer Events None) */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20">
-                        <div className="w-[180px] flex items-center justify-center gap-1.5 text-text-primary font-mono text-[0.8rem] font-bold tracking-tight">
-                            <span className="opacity-70 text-xs shrink-0 flex items-center justify-center w-4 transition-all duration-300" style={{ transform: feedbackType ? 'scale(1.2)' : 'scale(1)' }}>
-                                {feedbackType ? (
-                                    <FontAwesomeIcon
-                                        icon={feedbackType === 'plus' ? faPlus : faMinus}
-                                        className={feedbackType === 'plus' ? "text-[#98c379]" : "text-[#ca4754]"}
-                                    />
-                                ) : renderIcon(action.icon)}
-                            </span>
-                            <span ref={titleRef} className={`truncate text-center transition-colors duration-300 ${feedbackType === 'plus' ? 'text-[#98c379]' : feedbackType === 'minus' ? 'text-[#ca4754]' : ''
-                                }`}>{action.title}</span>
-                        </div>
+                        <motion.div
+                            layout
+                            animate={{
+                                scale: effectiveFeedbackType ? 1.25 : 1,
+                                y: effectiveFeedbackType ? -4 : 0
+                            }}
+                            transition={{
+                                type: "spring",
+                                stiffness: 500,
+                                damping: 30
+                            }}
+                            className="w-[180px] flex items-center justify-center gap-3 text-text-primary font-mono text-[0.8rem] font-bold tracking-tight"
+                        >
+                            <motion.div
+                                layout
+                                initial={false}
+                                animate={{
+                                    backgroundColor: effectiveHoverSide === 'right' ? '#98c37933' :
+                                        effectiveHoverSide === 'left' ? '#ca475433' :
+                                            `${action.color || '#ffffff'}33`,
+                                    boxShadow: effectiveHoverSide === 'right' ? '0 0 10px #98c37933' :
+                                        effectiveHoverSide === 'left' ? '0 0 10px #ca475433' :
+                                            `0 0 10px ${action.color || '#ffffff'}15`,
+                                    color: effectiveHoverSide === 'right' ? '#98c379' :
+                                        effectiveHoverSide === 'left' ? '#ca4754' :
+                                            action.color || 'var(--text-primary)'
+                                }}
+                                transition={{
+                                    type: "spring",
+                                    stiffness: 500,
+                                    damping: 30
+                                }}
+                                className={`rounded-md flex items-center justify-center shrink-0 relative z-20 h-6 w-6`}
+                            >
+                                <span className={`text-[0.65rem] opacity-90 flex items-center justify-center`}>
+                                    {renderIcon(action.icon)}
+                                </span>
+                            </motion.div>
+
+                            <motion.span
+                                layout
+                                ref={titleRef}
+                                className={`truncate text-center transition-colors duration-300 origin-left ${effectiveFeedbackType === 'plus' || effectiveHoverSide === 'right' ? 'text-[#98c379]' : effectiveFeedbackType === 'minus' || effectiveHoverSide === 'left' ? 'text-[#ca4754]' : ''
+                                    }`}
+                            >
+                                {action.title}
+                            </motion.span>
+                        </motion.div>
 
                         <div
-                            className="text-[0.7rem] font-mono transition-colors duration-200 uppercase tracking-wide truncate max-w-[160px]"
-                            style={{
-                                color: feedbackType === 'plus' ? '#98c379' : feedbackType === 'minus' ? '#ca4754' :
-                                    hoverSide === 'right' ? '#98c379' : hoverSide === 'left' ? '#ca4754' : 'var(--text-secondary)'
-                            }}
+                            className="text-[0.7rem] font-mono transition-colors duration-300 uppercase tracking-wide truncate max-w-[160px] text-text-secondary opacity-80 group-hover:text-text-primary group-hover:opacity-100"
                         >
                             {/* Show description or group */}
-                            <span className="opacity-80">{action.group || action.description}</span>
+                            <AnimatePresence mode="wait" initial={false}>
+                                {effectiveContentFeedbackType ? (
+                                    <motion.span
+                                        key="xp-feedback"
+                                        initial={{ opacity: 0, y: 5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -5 }}
+                                        transition={{ duration: 0.2 }}
+                                        className={`font-bold ${effectiveContentFeedbackType === 'plus' ? 'text-[#98c379]' : 'text-[#ca4754]'}`}
+                                    >
+                                        {effectiveContentFeedbackType === 'plus' ? '+' : ''}{action.weight} XP
+                                    </motion.span>
+                                ) : (
+                                    <motion.span
+                                        key="group-name"
+                                        initial={{ opacity: 0, y: -5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: 5 }}
+                                        transition={{ duration: 0.2 }}
+                                    >
+                                        {action.group || action.description}
+                                    </motion.span>
+                                )}
+                            </AnimatePresence>
                         </div>
                     </div>
 
-                    {/* Success/Error Ripple Effect Overlay */}
+                    {/* Success/Error Ripple Effect Overlay - SPLIT into two to avoid flash */}
                     <div
-                        className={`absolute inset-0 pointer-events-none transition-all duration-500 ease-out z-0 ${feedbackType ? 'opacity-100' : 'opacity-0'}`}
+                        className={`absolute inset-0 pointer-events-none transition-all duration-500 ease-out z-0 ${effectiveFeedbackType === 'plus' ? 'opacity-100' : 'opacity-0'}`}
                         style={{
-                            background: feedbackType === 'plus'
-                                ? `radial-gradient(circle at 85% 50%, rgba(152, 195, 121, 0.2) 0%, transparent 60%)`
-                                : `radial-gradient(circle at 15% 50%, rgba(202, 71, 84, 0.2) 0%, transparent 60%)`
+                            background: `radial-gradient(circle at 85% 50%, rgba(152, 195, 121, 0.2) 0%, transparent 60%)`
+                        }}
+                    />
+                    <div
+                        className={`absolute inset-0 pointer-events-none transition-all duration-500 ease-out z-0 ${effectiveFeedbackType === 'minus' ? 'opacity-100' : 'opacity-0'}`}
+                        style={{
+                            background: `radial-gradient(circle at 15% 50%, rgba(202, 71, 84, 0.2) 0%, transparent 60%)`
                         }}
                     />
 
@@ -199,6 +270,6 @@ export function QuickActionCard({ action, onAction, onDelete }: { action: Protoc
                     )}
                 </div>
             </div>
-        </TooltipProvider>
+        </TooltipProvider >
     );
 }

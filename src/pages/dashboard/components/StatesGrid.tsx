@@ -8,6 +8,7 @@ import {
     PointerSensor,
     useSensor,
     useSensors,
+    DragOverlay,
     type DragEndEvent
 } from '@dnd-kit/core';
 import {
@@ -17,8 +18,10 @@ import {
     rectSortingStrategy
 } from '@dnd-kit/sortable';
 import { SortableStateCard } from './SortableStateCard';
+import { StateCard } from './StateCard';
 import { useMetadataStore } from '../../../stores/metadataStore';
 import { useAuth } from '../../../contexts/AuthProvider';
+import { useState } from 'react';
 
 interface StatesGridProps {
     states: StateData[];
@@ -31,6 +34,7 @@ export function StatesGrid({ states, onAddState, onEdit, onHistory }: StatesGrid
     const { user } = useAuth();
     const { reorderStates } = useMetadataStore();
     const activePersonalityId = localStorage.getItem('active_personality_id');
+    const [activeId, setActiveId] = useState<string | null>(null);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -46,6 +50,7 @@ export function StatesGrid({ states, onAddState, onEdit, onHistory }: StatesGrid
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
+        setActiveId(null);
 
         if (active.id !== over?.id) {
             const oldIndex = states.findIndex((s) => s.id === active.id);
@@ -79,8 +84,21 @@ export function StatesGrid({ states, onAddState, onEdit, onHistory }: StatesGrid
             <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
+                onDragStart={(event) => setActiveId(String(event.active.id))}
                 onDragEnd={handleDragEnd}
             >
+                <DragOverlay dropAnimation={null}>
+                    {activeId ? (
+                        <div className="cursor-grabbing opacity-90 scale-[1.02] shadow-2xl touch-none">
+                            {/* Find the state object for the active ID */}
+                            {(() => {
+                                const activeState = states.find(s => s.id === activeId);
+                                if (!activeState) return null;
+                                return <StateCard state={activeState} {...activeState} />;
+                            })()}
+                        </div>
+                    ) : null}
+                </DragOverlay>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     <SortableContext
                         items={states.map(s => s.id)}

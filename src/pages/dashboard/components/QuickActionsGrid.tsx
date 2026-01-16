@@ -9,6 +9,7 @@ import {
     PointerSensor,
     useSensor,
     useSensors,
+    DragOverlay,
     type DragEndEvent
 } from '@dnd-kit/core';
 import {
@@ -18,8 +19,10 @@ import {
     rectSortingStrategy
 } from '@dnd-kit/sortable';
 import { SortableQuickActionCard } from './SortableQuickActionCard';
+import { QuickActionCard } from './QuickActionCard';
 import { useMetadataStore } from '../../../stores/metadataStore';
 import { useAuth } from '../../../contexts/AuthProvider';
+import { useState } from 'react';
 
 interface QuickActionsGridProps {
     actions: Protocol[];
@@ -39,6 +42,7 @@ export function QuickActionsGrid({
     const { user } = useAuth();
     const { reorderQuickActions } = useMetadataStore();
     const activePersonalityId = localStorage.getItem('active_personality_id');
+    const [activeId, setActiveId] = useState<string | null>(null);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -53,6 +57,7 @@ export function QuickActionsGrid({
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
+        setActiveId(null);
 
         if (active.id !== over?.id) {
             const oldIndex = actions.findIndex((a) => a.id === active.id);
@@ -86,9 +91,28 @@ export function QuickActionsGrid({
             <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
+                onDragStart={(event) => setActiveId(String(event.active.id))}
                 onDragEnd={handleDragEnd}
             >
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                <DragOverlay dropAnimation={null}>
+                    {activeId ? (
+                        <div className="cursor-grabbing opacity-90 scale-[1.02] shadow-2xl touch-none h-full">
+                            {/* Find the action object for the active ID */}
+                            {(() => {
+                                const activeAction = actions.find(a => a.id === activeId);
+                                if (!activeAction) return null;
+                                return (
+                                    <QuickActionCard
+                                        action={activeAction}
+                                        onAction={() => null} // No-op during drag
+                                        onDelete={() => null} // No-op during drag
+                                    />
+                                );
+                            })()}
+                        </div>
+                    ) : null}
+                </DragOverlay>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 p-2">
                     <SortableContext
                         items={actions.map(a => a.id)}
                         strategy={rectSortingStrategy}

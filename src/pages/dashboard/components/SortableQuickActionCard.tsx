@@ -23,8 +23,7 @@ export function SortableQuickActionCard({ action, onClick, onDelete }: SortableQ
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
-        zIndex: isDragging ? 50 : 'auto',
-        opacity: isDragging ? 0.3 : 1
+        opacity: isDragging ? 0 : 1
     };
 
     return (
