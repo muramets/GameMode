@@ -50,6 +50,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
     const [isGroupColorPickerOpen, setIsGroupColorPickerOpen] = useState(false);
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
     const [popupAnchor, setPopupAnchor] = useState<HTMLElement | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
     const availableGroups = useMemo(() => {
@@ -145,111 +146,119 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user || !activePersonalityId) return;
-        // --- System Event Logging ---
-        // 1. Detect Protocol Changes (Links/Unlinks)
-        if (innerfaceId) {
-            const innerface = innerfaces.find(i => i.id == innerfaceId); // loose comparison for potentially string vs number
-            if (innerface) {
-                // Current implicit/effective protocols
-                const currentProtocolIds = new Set([
-                    ...(innerface.protocolIds || []),
-                    ...protocols.filter(p => p.targets?.some(t => t.toString() === innerface.id.toString())).map(p => p.id)
-                ].map(id => id.toString()));
 
-                // New selected protocols
-                const newProtocolIds = new Set(protocolIds.map(id => id.toString()));
+        setIsSubmitting(true);
+        try {
+            // --- System Event Logging ---
+            // 1. Detect Protocol Changes (Links/Unlinks)
+            if (innerfaceId) {
+                const innerface = innerfaces.find(i => i.id == innerfaceId); // loose comparison for potentially string vs number
+                if (innerface) {
+                    // Current implicit/effective protocols
+                    const currentProtocolIds = new Set([
+                        ...(innerface.protocolIds || []),
+                        ...protocols.filter(p => p.targets?.some(t => t.toString() === innerface.id.toString())).map(p => p.id)
+                    ].map(id => id.toString()));
 
-                // Find modifications
-                const added = protocolIds.filter(id => !currentProtocolIds.has(id.toString()));
-                const removed = Array.from(currentProtocolIds).filter(id => !newProtocolIds.has(id));
+                    // New selected protocols
+                    const newProtocolIds = new Set(protocolIds.map(id => id.toString()));
 
-                // Log additions
-                for (const pid of added) {
-                    const protocol = protocols.find(p => p.id.toString() === pid.toString());
-                    if (protocol) {
+                    // Find modifications
+                    const added = protocolIds.filter(id => !currentProtocolIds.has(id.toString()));
+                    const removed = Array.from(currentProtocolIds).filter(id => !newProtocolIds.has(id));
+
+                    // Log additions
+                    for (const pid of added) {
+                        const protocol = protocols.find(p => p.id.toString() === pid.toString());
+                        if (protocol) {
+                            try {
+                                await useHistoryStore.getState().addSystemEvent(
+                                    user.uid,
+                                    activePersonalityId,
+                                    `Linked: ${protocol.title} ↔ ${name}`
+                                );
+                            } catch (e) { console.error("Failed to log system event", e); }
+                        }
+                    }
+
+                    // Log removals
+                    for (const pid of removed) {
+                        const protocol = protocols.find(p => p.id.toString() === pid);
+                        if (protocol) {
+                            try {
+                                await useHistoryStore.getState().addSystemEvent(
+                                    user.uid,
+                                    activePersonalityId,
+                                    `Unlinked: ${protocol.title} ↔ ${name}`
+                                );
+                            } catch (e) { console.error("Failed to log system event", e); }
+                        }
+                    }
+
+                    // 2. Detect Score Changes
+                    const newScoreVal = Number(initialScore);
+                    const currentScoreVal = Number(innerface.initialScore);
+
+                    if (Math.abs(currentScoreVal - newScoreVal) > 0.001) {
                         try {
                             await useHistoryStore.getState().addSystemEvent(
                                 user.uid,
                                 activePersonalityId,
-                                `Linked: ${protocol.title} ↔ ${name}`
+                                `Manual Adjustment: ${name}`,
+                                { from: currentScoreVal, to: newScoreVal }
                             );
                         } catch (e) { console.error("Failed to log system event", e); }
                     }
-                }
-
-                // Log removals
-                for (const pid of removed) {
-                    const protocol = protocols.find(p => p.id.toString() === pid);
-                    if (protocol) {
-                        try {
-                            await useHistoryStore.getState().addSystemEvent(
-                                user.uid,
-                                activePersonalityId,
-                                `Unlinked: ${protocol.title} ↔ ${name}`
-                            );
-                        } catch (e) { console.error("Failed to log system event", e); }
-                    }
-                }
-
-                // 2. Detect Score Changes
-                const newScoreVal = Number(initialScore);
-                const currentScoreVal = Number(innerface.initialScore);
-
-                if (Math.abs(currentScoreVal - newScoreVal) > 0.001) {
-                    try {
-                        await useHistoryStore.getState().addSystemEvent(
-                            user.uid,
-                            activePersonalityId,
-                            `Manual Adjustment: ${name}`,
-                            { from: currentScoreVal, to: newScoreVal }
-                        );
-                    } catch (e) { console.error("Failed to log system event", e); }
                 }
             }
-        }
 
-        // 1. Bi-directional Cleanup: Ensure deselected protocols remove this innerface from their 'targets'
-        if (innerfaceId) {
-            const removalPromises = protocols.map(p => {
-                const isTargeting = p.targets?.some(t => t.toString() === innerfaceId.toString());
-                const isSelected = protocolIds.some(id => id.toString() === p.id.toString());
+            // 1. Bi-directional Cleanup: Ensure deselected protocols remove this innerface from their 'targets'
+            if (innerfaceId) {
+                const removalPromises = protocols.map(p => {
+                    const isTargeting = p.targets?.some(t => t.toString() === innerfaceId.toString());
+                    const isSelected = protocolIds.some(id => id.toString() === p.id.toString());
 
-                if (isTargeting && !isSelected) {
-                    // Protocol was targeting this innerface, but is no longer in the selected list
-                    // We must remove the link from the protocol side
-                    const newTargets = (p.targets || []).filter(t => t.toString() !== innerfaceId.toString());
-                    return updateProtocol(user.uid, activePersonalityId, p.id, { targets: newTargets });
+                    if (isTargeting && !isSelected) {
+                        // Protocol was targeting this innerface, but is no longer in the selected list
+                        // We must remove the link from the protocol side
+                        const newTargets = (p.targets || []).filter(t => t.toString() !== innerfaceId.toString());
+                        return updateProtocol(user.uid, activePersonalityId, p.id, { targets: newTargets });
+                    }
+                    return Promise.resolve();
+                });
+                await Promise.all(removalPromises);
+            }
+
+            const fullName = description ? `${name}. ${description}` : name;
+            const newInitialScore = Number(initialScore);
+            const data: any = {
+                name: fullName,
+                icon,
+                initialScore: newInitialScore,
+                color,
+                hover,
+                group,
+                protocolIds
+            };
+
+            if (innerfaceId) {
+                const existing = innerfaces.find(i => i.id === innerfaceId);
+                // If initial score changed, update versionTimestamp to trigger Hard Reset
+                if (existing && existing.initialScore !== newInitialScore) {
+                    data.versionTimestamp = new Date().toISOString();
                 }
-                return Promise.resolve();
-            });
-            await Promise.all(removalPromises);
-        }
-
-        const fullName = description ? `${name}. ${description}` : name;
-        const newInitialScore = Number(initialScore);
-        const data: any = {
-            name: fullName,
-            icon,
-            initialScore: newInitialScore,
-            color,
-            hover,
-            group,
-            protocolIds
-        };
-
-        if (innerfaceId) {
-            const existing = innerfaces.find(i => i.id === innerfaceId);
-            // If initial score changed, update versionTimestamp to trigger Hard Reset
-            if (existing && existing.initialScore !== newInitialScore) {
+                await updateInnerface(user.uid, activePersonalityId, innerfaceId, data);
+            } else {
+                // For new ones, set versionTimestamp to current time 
                 data.versionTimestamp = new Date().toISOString();
+                await addInnerface(user.uid, activePersonalityId, data);
             }
-            await updateInnerface(user.uid, activePersonalityId, innerfaceId, data);
-        } else {
-            // For new ones, set versionTimestamp to current time 
-            data.versionTimestamp = new Date().toISOString();
-            await addInnerface(user.uid, activePersonalityId, data);
+            onClose();
+        } catch (error) {
+            console.error('Failed to save innerface:', error);
+        } finally {
+            setIsSubmitting(false);
         }
-        onClose();
     };
 
     const handleDelete = async () => {
@@ -288,6 +297,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                             variant="danger"
                             size="sm"
                             onClick={handleDelete}
+                            disabled={isSubmitting}
                             leftIcon={<FontAwesomeIcon icon={isConfirmingDelete ? faExclamationTriangle : faTrash} />}
                             className="text-[10px] uppercase tracking-wider font-bold px-3 py-2 transition-all duration-200"
                         >
@@ -301,6 +311,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                             variant="neutral"
                             size="sm"
                             onClick={onClose}
+                            disabled={isSubmitting}
                             className="text-[10px] uppercase tracking-wider font-bold px-4 py-2"
                         >
                             Cancel
@@ -309,6 +320,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                             type="submit"
                             variant="primary"
                             size="sm"
+                            isLoading={isSubmitting}
                             className="font-bold px-6 py-2 rounded-lg text-[10px] uppercase tracking-wider shadow-[0_0_10px_rgba(226,183,20,0.2)]"
                         >
                             {innerfaceId ? 'Update' : 'Create'}

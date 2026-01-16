@@ -48,6 +48,7 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
     const [tempGroupIcon, setTempGroupIcon] = useState('');
     const [tempGroupColor, setTempGroupColor] = useState('');
     const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
     const [isGroupColorPickerOpen, setIsGroupColorPickerOpen] = useState(false);
     const [popupAnchor, setPopupAnchor] = useState<HTMLElement | null>(null);
@@ -99,87 +100,95 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
         e.preventDefault();
         if (!user || !activePersonalityId) return;
 
-        // --- System Event Logging ---
-        // Detect Protocol Changes (Links/Unlinks)
-        if (protocolId) {
-            const currentProtocol = protocols.find(p => p.id === protocolId);
-            if (currentProtocol) {
-                // Determine effective current targets (explicit + implicit from innerface side)
-                // Note: Protocol.targets is the source of truth for "explicit" links from protocol side.
-                // But Innerface.protocolIds also creates a link.
-                // However, this modal only edits Protocol.targets. 
-                // Any link created here manifests as an ID in Protocol.targets.
+        setIsSubmitting(true);
+        try {
 
-                const currentTargets = new Set((currentProtocol.targets || []).map(t => t.toString()));
-                const newTargets = new Set(targets.map(t => t.toString()));
+            // --- System Event Logging ---
+            // Detect Protocol Changes (Links/Unlinks)
+            if (protocolId) {
+                const currentProtocol = protocols.find(p => p.id === protocolId);
+                if (currentProtocol) {
+                    // Determine effective current targets (explicit + implicit from innerface side)
+                    // Note: Protocol.targets is the source of truth for "explicit" links from protocol side.
+                    // But Innerface.protocolIds also creates a link.
+                    // However, this modal only edits Protocol.targets. 
+                    // Any link created here manifests as an ID in Protocol.targets.
 
-                const added = targets.filter(t => !currentTargets.has(t.toString()));
-                const removed = Array.from(currentTargets).filter(t => !newTargets.has(t));
+                    const currentTargets = new Set((currentProtocol.targets || []).map(t => t.toString()));
+                    const newTargets = new Set(targets.map(t => t.toString()));
 
-                // Log additions
-                for (const tid of added) {
-                    const innerface = innerfaces.find(i => i.id.toString() === tid.toString());
-                    if (innerface) {
-                        try {
-                            await useHistoryStore.getState().addSystemEvent(
-                                user.uid,
-                                activePersonalityId,
-                                `Linked: ${title} ↔ ${innerface.name.split('.')[0]}`
-                            );
-                        } catch (e) { console.error("Failed to log system event", e); }
-                    }
-                }
+                    const added = targets.filter(t => !currentTargets.has(t.toString()));
+                    const removed = Array.from(currentTargets).filter(t => !newTargets.has(t));
 
-                // Log removals
-                for (const tid of removed) {
-                    const innerface = innerfaces.find(i => i.id.toString() === tid);
-                    if (innerface) {
-                        try {
-                            // 1. Log System Event
-                            await useHistoryStore.getState().addSystemEvent(
-                                user.uid,
-                                activePersonalityId,
-                                `Unlinked: ${title} ↔ ${innerface.name.split('.')[0]}`
-                            );
-
-                            // 2. Bi-directional Sync: Remove this protocol from the innerface's protocolIds
-                            // Check if the innerface actually has this protocol explicitly linked
-                            if (innerface.protocolIds?.some(pid => pid.toString() === protocolId.toString())) {
-                                const newProtocolIds = innerface.protocolIds.filter(pid => pid.toString() !== protocolId.toString());
-                                await useMetadataStore.getState().updateInnerface(
+                    // Log additions
+                    for (const tid of added) {
+                        const innerface = innerfaces.find(i => i.id.toString() === tid.toString());
+                        if (innerface) {
+                            try {
+                                await useHistoryStore.getState().addSystemEvent(
                                     user.uid,
                                     activePersonalityId,
-                                    innerface.id,
-                                    { protocolIds: newProtocolIds }
+                                    `Linked: ${title} ↔ ${innerface.name.split('.')[0]}`
                                 );
-                            } else {
-                                // Innerface does not have this protocol explicit ID. No update needed.
-                            }
+                            } catch (e) { console.error("Failed to log system event", e); }
+                        }
+                    }
 
-                        } catch (e) { console.error("Failed to sync/log system event", e); }
+                    // Log removals
+                    for (const tid of removed) {
+                        const innerface = innerfaces.find(i => i.id.toString() === tid);
+                        if (innerface) {
+                            try {
+                                // 1. Log System Event
+                                await useHistoryStore.getState().addSystemEvent(
+                                    user.uid,
+                                    activePersonalityId,
+                                    `Unlinked: ${title} ↔ ${innerface.name.split('.')[0]}`
+                                );
+
+                                // 2. Bi-directional Sync: Remove this protocol from the innerface's protocolIds
+                                // Check if the innerface actually has this protocol explicitly linked
+                                if (innerface.protocolIds?.some(pid => pid.toString() === protocolId.toString())) {
+                                    const newProtocolIds = innerface.protocolIds.filter(pid => pid.toString() !== protocolId.toString());
+                                    await useMetadataStore.getState().updateInnerface(
+                                        user.uid,
+                                        activePersonalityId,
+                                        innerface.id,
+                                        { protocolIds: newProtocolIds }
+                                    );
+                                } else {
+                                    // Innerface does not have this protocol explicit ID. No update needed.
+                                }
+
+                            } catch (e) { console.error("Failed to sync/log system event", e); }
+                        }
                     }
                 }
             }
-        }
 
-        const data = {
-            title,
-            description,
-            hover, // Include hover in submission
-            group,
-            icon,
-            action,
-            weight: Number(weight),
-            targets,
-            color
-        };
+            const data = {
+                title,
+                description,
+                hover, // Include hover in submission
+                group,
+                icon,
+                action,
+                weight: Number(weight),
+                targets,
+                color
+            };
 
-        if (protocolId) {
-            await updateProtocol(user.uid, activePersonalityId, protocolId, data);
-        } else {
-            await addProtocol(user.uid, activePersonalityId, data);
+            if (protocolId) {
+                await updateProtocol(user.uid, activePersonalityId, protocolId, data);
+            } else {
+                await addProtocol(user.uid, activePersonalityId, data);
+            }
+            onClose();
+        } catch (error) {
+            console.error('Failed to save protocol:', error);
+        } finally {
+            setIsSubmitting(false);
         }
-        onClose();
     };
 
     const handleDelete = async () => {
@@ -254,6 +263,7 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                             variant="danger"
                             size="sm"
                             onClick={handleDelete}
+                            disabled={isSubmitting}
                             leftIcon={<FontAwesomeIcon icon={isConfirmingDelete ? faExclamationTriangle : faTrash} />}
                             className="text-[10px] uppercase tracking-wider font-bold px-3 py-2 transition-all duration-200"
                         >
@@ -267,6 +277,7 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                             variant="neutral"
                             size="sm"
                             onClick={onClose}
+                            disabled={isSubmitting}
                             className="text-[10px] uppercase tracking-wider font-bold px-4 py-2"
                         >
                             Cancel
@@ -275,6 +286,7 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                             type="submit"
                             variant="primary"
                             size="sm"
+                            isLoading={isSubmitting}
                             className="font-bold px-6 py-2 rounded-lg text-[10px] uppercase tracking-wider shadow-[0_0_10px_rgba(226,183,20,0.2)]"
                         >
                             {protocolId ? 'Update' : 'Create'}
