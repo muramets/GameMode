@@ -155,10 +155,10 @@ export function getMappedIcon(iconStr: string) {
 }
 
 export const ICON_PRESETS = [
-    'brain', 'physical', 'mental', 'recovery', 'work',
+    'brain', 'physical', 'recovery', 'work',
     'learning', 'substances', 'energy', 'engagement', 'body-sync',
     'strategic', 'execution', 'relationship', 'family', 'community',
-    'harmony', 'meditation', 'warm-up', 'focus',
+    'harmony', 'meditation',
     'movie', 'music', 'lock', 'rocket', 'reading', 'alcohol',
     'ban', 'sauna', 'salad', 'code', 'receipt', 'weed',
     'swim', 'money', 'write', 'rock-on'
