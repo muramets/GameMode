@@ -14,9 +14,14 @@ import {
 } from 'firebase/firestore';
 import type { Personality } from '../types/personality';
 
+export type ActiveContext =
+    | { type: 'personality'; uid: string; pid: string }
+    | { type: 'role'; teamId: string; roleId: string };
+
 interface PersonalityState {
     personalities: Personality[];
-    activePersonalityId: string | null;
+    activePersonalityId: string | null; // Kept for legacy compatibility - ID of the active ITEM (pid or roleId)
+    activeContext: ActiveContext | null;
     isLoading: boolean;
     error: string | null;
 
@@ -25,6 +30,7 @@ interface PersonalityState {
     addPersonality: (uid: string, name: string, data?: Partial<Personality>) => Promise<string>;
     updatePersonality: (uid: string, personalityId: string, data: Partial<Personality>) => Promise<void>;
     switchPersonality: (uid: string, personalityId: string) => Promise<void>;
+    switchToRole: (teamId: string, roleId: string) => void;
     deletePersonality: (uid: string, personalityId: string) => Promise<void>;
 
     // Migration helper
@@ -34,6 +40,15 @@ interface PersonalityState {
 export const usePersonalityStore = create<PersonalityState>((set, get) => ({
     personalities: [],
     activePersonalityId: localStorage.getItem('active_personality_id'),
+    activeContext: localStorage.getItem('active_context')
+        ? JSON.parse(localStorage.getItem('active_context')!)
+        : (localStorage.getItem('active_personality_id') ? { // Fallback for migration
+            type: 'personality',
+            pid: localStorage.getItem('active_personality_id')!,
+            // We don't have UID here easily without auth context passed or stored. 
+            // We'll rely on switchPersonality to fix this if it's broken.
+            uid: ''
+        } as any : null),
     isLoading: true,
     error: null,
 
@@ -100,12 +115,28 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
                 lastActiveAt: Date.now()
             });
 
+            const context: ActiveContext = { type: 'personality', uid, pid: personalityId };
             localStorage.setItem('active_personality_id', personalityId);
-            set({ activePersonalityId: personalityId });
+            localStorage.setItem('active_context', JSON.stringify(context));
+
+            set({
+                activePersonalityId: personalityId,
+                activeContext: context
+            });
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
             set({ error: message });
         }
+    },
+
+    switchToRole: (teamId, roleId) => {
+        const context: ActiveContext = { type: 'role', teamId, roleId };
+        localStorage.setItem('active_personality_id', roleId); // Reuse this for simple ID tracking
+        localStorage.setItem('active_context', JSON.stringify(context));
+        set({
+            activePersonalityId: roleId,
+            activeContext: context
+        });
     },
 
     deletePersonality: async (uid, id) => {
@@ -199,7 +230,8 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
         // If we have personalities but no active ID selected (fresh login on new device)
         const storedId = localStorage.getItem('active_personality_id');
         if (storedId && currentList.some(p => p.id === storedId)) {
-            set({ activePersonalityId: storedId });
+            // Use switchPersonality to ensure activeContext is fully hydrated with UID
+            await switchPersonality(uid, storedId);
             return storedId;
         } else {
             // Default to most recently active (first in list due to sort)

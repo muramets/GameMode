@@ -129,7 +129,7 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
 
             const data = {
                 name: name.trim(),
-                description: description.trim() || undefined,
+                description: description.trim(),
                 icon,
                 themeColor: color,
                 templateData: template

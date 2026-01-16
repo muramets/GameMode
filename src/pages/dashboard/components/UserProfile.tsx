@@ -4,19 +4,36 @@ import { faUser } from '@fortawesome/free-solid-svg-icons';
 import { Card } from '../../../components/ui/atoms/Card';
 import { useAuth } from '../../../contexts/AuthProvider';
 import { usePersonalityStore } from '../../../stores/personalityStore';
+import { useTeamStore } from '../../../stores/teamStore';
 import { useScoreContext } from '../../../contexts/ScoreProvider';
 import { getTierColor } from '../../../utils/colorUtils';
 import { calculateLevel, scoreToXP } from '../../../utils/xpUtils';
+import { getMappedIcon } from '../../../utils/iconMapper';
 import { isToday, isThisMonth, parseISO } from 'date-fns';
 
 export function UserProfile() {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const { personalities, activePersonalityId } = usePersonalityStore();
+    const { personalities, activePersonalityId, activeContext } = usePersonalityStore();
+    const { roles } = useTeamStore();
     const { innerfaces, history } = useScoreContext();
 
-    const activePersonality = personalities.find(p => p.id === activePersonalityId);
-    const username = activePersonality?.name || user?.displayName || user?.email?.split('@')[0] || "Unknown Player";
+    // Determine display data based on context (Role vs Personality)
+    let displayName = "Unknown";
+    let displayAvatar: string | undefined;
+    let displayIcon: string = 'user';
+
+    if (activeContext?.type === 'role') {
+        const teamRoles = roles[activeContext.teamId] || [];
+        const role = teamRoles.find(r => r.id === activeContext.roleId);
+        displayName = role?.name || "Loading Role...";
+        displayIcon = role?.icon || 'user';
+    } else {
+        const activePersonality = personalities.find(p => p.id === activePersonalityId);
+        displayName = activePersonality?.name || user?.displayName || user?.email?.split('@')[0] || "Unknown Player";
+        displayAvatar = activePersonality?.avatar;
+        displayIcon = activePersonality?.icon || 'user';
+    }
 
     // 1. Level calculation: Average of Innerfaces only (States are derivative, so excluding them avoids double counting)
     const allScores = [
@@ -87,7 +104,7 @@ export function UserProfile() {
                 {/* Avatar */}
                 <div className="relative shrink-0 group/avatar">
                     {/* Premium Glow Effects */}
-                    {activePersonality?.avatar && (
+                    {displayAvatar && (
                         <>
                             <style>{`
                                 @keyframes avatar-glow-spin {
@@ -136,17 +153,17 @@ export function UserProfile() {
                     <div
                         className="w-[66px] h-[66px] rounded-full bg-bg-primary flex items-center justify-center text-sub text-2xl overflow-hidden relative shadow-sm border border-white/5 z-10 transition-transform duration-300 group-hover/avatar:scale-105"
                         style={{
-                            animation: activePersonality?.avatar ? 'avatar-pulse 5s ease-in-out infinite' : 'none'
+                            animation: displayAvatar ? 'avatar-pulse 5s ease-in-out infinite' : 'none'
                         }}
                     >
-                        {activePersonality?.avatar ? (
+                        {displayAvatar ? (
                             <img
-                                src={activePersonality.avatar}
-                                alt={username}
+                                src={displayAvatar}
+                                alt={displayName}
                                 className="w-full h-full object-cover"
                             />
                         ) : (
-                            <FontAwesomeIcon icon={faUser} />
+                            <FontAwesomeIcon icon={getMappedIcon(displayIcon)} />
                         )}
                     </div>
                 </div>
@@ -154,7 +171,7 @@ export function UserProfile() {
                 {/* Details */}
                 <div className="flex flex-col gap-1 flex-1 min-w-0">
                     <h2 className="text-[1.75rem] leading-none font-normal text-text-primary font-mono m-0 truncate cursor-default select-none">
-                        {username}
+                        {displayName}
                     </h2>
 
                     {/* Level + Progress Row */}

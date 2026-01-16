@@ -7,7 +7,8 @@ import {
     updateDoc,
     setDoc,
     addDoc,
-    deleteDoc
+    deleteDoc,
+    writeBatch
 } from 'firebase/firestore';
 import type { Innerface, Protocol } from '../pages/protocols/types';
 import type { StateData } from '../pages/dashboard/components/types';
@@ -36,44 +37,61 @@ interface MetadataState {
     loadedCount: number;
     error: string | null;
 
+    // Context State
+    context: PathContext | null;
+    setContext: (context: PathContext | null) => void;
+
     // --- Actions ---
 
     // Innerfaces
-    addInnerface: (uid: string, pid: string, innerface: Omit<Innerface, 'id'>) => Promise<void>;
-    updateInnerface: (uid: string, pid: string, id: number | string, data: Partial<Innerface>) => Promise<void>;
-    deleteInnerface: (uid: string, pid: string, id: number | string) => Promise<void>;
+    addInnerface: (innerface: Omit<Innerface, 'id'>) => Promise<void>;
+    updateInnerface: (id: number | string, data: Partial<Innerface>) => Promise<void>;
+    deleteInnerface: (id: number | string) => Promise<void>;
 
     // Protocols
-    addProtocol: (uid: string, pid: string, protocol: Omit<Protocol, 'id'>) => Promise<void>;
-    updateProtocol: (uid: string, pid: string, id: number | string, data: Partial<Protocol>) => Promise<void>;
-    deleteProtocol: (uid: string, pid: string, id: number | string) => Promise<void>;
+    addProtocol: (protocol: Omit<Protocol, 'id'>) => Promise<void>;
+    updateProtocol: (id: number | string, data: Partial<Protocol>) => Promise<void>;
+    deleteProtocol: (id: number | string) => Promise<void>;
 
     // States
-    addState: (uid: string, pid: string, state: Omit<StateData, 'id'>) => Promise<void>;
-    updateState: (uid: string, pid: string, id: string, data: Partial<StateData>) => Promise<void>;
-    deleteState: (uid: string, pid: string, id: string) => Promise<void>;
+    addState: (state: Omit<StateData, 'id'>) => Promise<void>;
+    updateState: (id: string, data: Partial<StateData>) => Promise<void>;
+    deleteState: (id: string) => Promise<void>;
 
-    updateGroupMetadata: (uid: string, pid: string, groupName: string, metadata: { icon?: string; color?: string }) => Promise<void>;
-    renameGroup: (uid: string, pid: string, oldName: string, newName: string) => Promise<void>;
+    // Group Actions
+    updateGroupMetadata: (groupName: string, metadata: { icon?: string; color?: string }) => Promise<void>;
+    renameGroup: (oldName: string, newName: string) => Promise<void>;
 
     // Quick Actions
-    togglePinnedProtocol: (uid: string, pid: string, protocolId: string) => Promise<void>;
-    reorderQuickActions: (uid: string, pid: string, orderedIds: string[]) => Promise<void>;
+    togglePinnedProtocol: (protocolId: string) => Promise<void>;
+    reorderQuickActions: (orderedIds: string[]) => Promise<void>;
 
     // Protocol Ordering
-    reorderProtocols: (uid: string, pid: string, orderedIds: string[]) => Promise<void>;
-    reorderGroups: (uid: string, pid: string, orderedGroups: string[]) => Promise<void>;
+    reorderProtocols: (orderedIds: string[]) => Promise<void>;
+    reorderGroups: (orderedGroups: string[]) => Promise<void>;
 
     // State Ordering
-    reorderStates: (uid: string, pid: string, orderedIds: string[]) => Promise<void>;
+    reorderStates: (orderedIds: string[]) => Promise<void>;
 
     // Innerface Ordering
-    reorderInnerfaces: (uid: string, pid: string, orderedIds: string[]) => Promise<void>;
-    reorderInnerfaceGroups: (uid: string, pid: string, orderedGroups: string[]) => Promise<void>;
+    reorderInnerfaces: (orderedIds: string[]) => Promise<void>;
+    reorderInnerfaceGroups: (orderedGroups: string[]) => Promise<void>;
 
     // --- Subscriptions ---
-    subscribeToMetadata: (uid: string, pid: string) => () => void;
+    subscribeToMetadata: (context: PathContext) => () => void;
 }
+
+export type PathContext =
+    | { type: 'personality'; uid: string; pid: string }
+    | { type: 'role'; teamId: string; roleId: string };
+
+const getPathRoot = (context: PathContext | null) => {
+    if (!context) throw new Error('No active context for metadata operation');
+    if (context.type === 'personality') {
+        return `users/${context.uid}/personalities/${context.pid}`;
+    }
+    return `teams/${context.teamId}/roles/${context.roleId}`;
+};
 
 export const useMetadataStore = create<MetadataState>((set, get) => ({
     innerfaces: [],
@@ -87,19 +105,28 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     loadedCount: 0,
     error: null,
 
-    addInnerface: async (uid, pid, data) => {
+    context: null,
+    setContext: (context) => set({ context }),
+
+    // ========================================================================
+    // INNERFACE ACTIONS
+    // ========================================================================
+
+    addInnerface: async (innerface: Omit<Innerface, 'id'>) => {
         try {
-            const colRef = collection(db, 'users', uid, 'personalities', pid, 'innerfaces');
-            await addDoc(colRef, data);
+            const context = get().context;
+            const colRef = collection(db, `${getPathRoot(context)}/innerfaces`);
+            await addDoc(colRef, innerface);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
             set({ error: message });
         }
     },
 
-    updateInnerface: async (uid, pid, id, data) => {
+    updateInnerface: async (id: number | string, data: Partial<Innerface>) => {
         try {
-            const docRef = doc(db, 'users', uid, 'personalities', pid, 'innerfaces', id.toString());
+            const context = get().context;
+            const docRef = doc(db, `${getPathRoot(context)}/innerfaces/${id}`);
             await updateDoc(docRef, data);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
@@ -107,10 +134,11 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         }
     },
 
-    deleteInnerface: async (uid, pid, id) => {
+    deleteInnerface: async (id: number | string) => {
         try {
+            const context = get().context;
             // 1. Delete the primitive
-            const docRef = doc(db, 'users', uid, 'personalities', pid, 'innerfaces', id.toString());
+            const docRef = doc(db, `${getPathRoot(context)}/innerfaces/${id}`);
             await deleteDoc(docRef);
 
             // 2. Scan all states for references to this ID to prevent "Ghost IDs"
@@ -122,7 +150,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
                     // Remove the ID from the array
                     const newIds = (s.innerfaceIds || []).filter(iId => iId.toString() !== id.toString());
                     // Update the state document
-                    return updateDoc(doc(db, 'users', uid, 'personalities', pid, 'states', s.id), { innerfaceIds: newIds });
+                    return updateDoc(doc(db, `${getPathRoot(context)}/states/${s.id}`), { innerfaceIds: newIds });
                 });
 
             await Promise.all(updates);
@@ -132,19 +160,21 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         }
     },
 
-    addProtocol: async (uid, pid, data) => {
+    addProtocol: async (protocol: Omit<Protocol, 'id'>) => {
         try {
-            const colRef = collection(db, 'users', uid, 'personalities', pid, 'protocols');
-            await addDoc(colRef, data);
+            const context = get().context;
+            const colRef = collection(db, `${getPathRoot(context)}/protocols`);
+            await addDoc(colRef, protocol);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
             set({ error: message });
         }
     },
 
-    updateProtocol: async (uid, pid, id, data) => {
+    updateProtocol: async (id: number | string, data: Partial<Protocol>) => {
         try {
-            const docRef = doc(db, 'users', uid, 'personalities', pid, 'protocols', id.toString());
+            const context = get().context;
+            const docRef = doc(db, `${getPathRoot(context)}/protocols/${id}`);
             await updateDoc(docRef, data);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
@@ -152,10 +182,11 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         }
     },
 
-    deleteProtocol: async (uid, pid, id) => {
+    deleteProtocol: async (id: number | string) => {
         try {
+            const context = get().context;
             // 1. Delete the primitive
-            const docRef = doc(db, 'users', uid, 'personalities', pid, 'protocols', id.toString());
+            const docRef = doc(db, `${getPathRoot(context)}/protocols/${id}`);
             await deleteDoc(docRef);
 
             // 2. Scan all states for references to this ID
@@ -164,7 +195,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
                 .filter(s => Array.isArray(s.protocolIds) && s.protocolIds.some(pId => pId.toString() === id.toString()))
                 .map(s => {
                     const newIds = (s.protocolIds || []).filter(pId => pId.toString() !== id.toString());
-                    return updateDoc(doc(db, 'users', uid, 'personalities', pid, 'states', s.id), { protocolIds: newIds });
+                    return updateDoc(doc(db, `${getPathRoot(context)}/states/${s.id}`), { protocolIds: newIds });
                 });
 
             await Promise.all(updates);
@@ -174,9 +205,10 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         }
     },
 
-    updateGroupMetadata: async (uid, pid, groupName, metadata) => {
+    updateGroupMetadata: async (groupName: string, metadata: { icon?: string; color?: string }) => {
         try {
-            const docRef = doc(db, 'users', uid, 'personalities', pid, 'groups', groupName);
+            const context = get().context;
+            const docRef = doc(db, `${getPathRoot(context)}/groups/${groupName}`);
             await setDoc(docRef, metadata, { merge: true });
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
@@ -184,19 +216,19 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         }
     },
 
-    renameGroup: async (uid, pid, oldName, newName) => {
+    renameGroup: async (oldName: string, newName: string) => {
         try {
+            const context = get().context;
             const trimmedNewName = newName.trim();
             if (!trimmedNewName || trimmedNewName === oldName) return;
 
-            const { writeBatch } = await import('firebase/firestore');
             const batch = writeBatch(db);
 
             // 1. Update Innerfaces
             const innerfaces = get().innerfaces;
             innerfaces.forEach(i => {
                 if (i.group === oldName) {
-                    const docRef = doc(db, 'users', uid, 'personalities', pid, 'innerfaces', i.id.toString());
+                    const docRef = doc(db, `${getPathRoot(context)}/innerfaces/${i.id}`);
                     batch.update(docRef, { group: trimmedNewName });
                 }
             });
@@ -205,7 +237,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             const protocols = get().protocols;
             protocols.forEach(p => {
                 if (p.group === oldName) {
-                    const docRef = doc(db, 'users', uid, 'personalities', pid, 'protocols', p.id.toString());
+                    const docRef = doc(db, `${getPathRoot(context)}/protocols/${p.id}`);
                     batch.update(docRef, { group: trimmedNewName });
                 }
             });
@@ -213,8 +245,8 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             // 3. Move Group Metadata (if exists)
             const groupsMetadata = get().groupsMetadata;
             if (groupsMetadata[oldName]) {
-                const oldMetaRef = doc(db, 'users', uid, 'personalities', pid, 'groups', oldName);
-                const newMetaRef = doc(db, 'users', uid, 'personalities', pid, 'groups', trimmedNewName);
+                const oldMetaRef = doc(db, `${getPathRoot(context)}/groups/${oldName}`);
+                const newMetaRef = doc(db, `${getPathRoot(context)}/groups/${trimmedNewName}`);
 
                 batch.set(newMetaRef, groupsMetadata[oldName]);
                 batch.delete(oldMetaRef);
@@ -225,7 +257,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             const groupOrder = get().groupOrder;
             if (groupOrder.includes(oldName)) {
                 const newOrder = groupOrder.map(g => g === oldName ? trimmedNewName : g);
-                const orderRef = doc(db, 'users', uid, 'personalities', pid, 'settings', 'groups');
+                const orderRef = doc(db, `${getPathRoot(context)}/settings/groups`);
                 batch.set(orderRef, { order: newOrder }, { merge: true });
                 set({ groupOrder: newOrder }); // Optimistic
             }
@@ -234,7 +266,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             const innerfaceGroupOrder = get().innerfaceGroupOrder;
             if (innerfaceGroupOrder.includes(oldName)) {
                 const newOrder = innerfaceGroupOrder.map(g => g === oldName ? trimmedNewName : g);
-                const orderRef = doc(db, 'users', uid, 'personalities', pid, 'settings', 'innerface_groups');
+                const orderRef = doc(db, `${getPathRoot(context)}/settings/innerface_groups`);
                 batch.set(orderRef, { order: newOrder }, { merge: true });
                 set({ innerfaceGroupOrder: newOrder }); // Optimistic
             }
@@ -248,9 +280,10 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         }
     },
 
-    addState: async (uid, pid, data) => {
+    addState: async (data: Omit<StateData, 'id'>) => {
         try {
-            const colRef = collection(db, 'users', uid, 'personalities', pid, 'states');
+            const context = get().context;
+            const colRef = collection(db, `${getPathRoot(context)}/states`);
             await addDoc(colRef, data);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
@@ -258,9 +291,10 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         }
     },
 
-    updateState: async (uid, pid, id, data) => {
+    updateState: async (id: string, data: Partial<StateData>) => {
         try {
-            const docRef = doc(db, 'users', uid, 'personalities', pid, 'states', id);
+            const context = get().context;
+            const docRef = doc(db, `${getPathRoot(context)}/states/${id}`);
             await updateDoc(docRef, data);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
@@ -268,9 +302,10 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         }
     },
 
-    deleteState: async (uid, pid, id) => {
+    deleteState: async (id: string) => {
         try {
-            const docRef = doc(db, 'users', uid, 'personalities', pid, 'states', id);
+            const context = get().context;
+            const docRef = doc(db, `${getPathRoot(context)}/states/${id}`);
             await deleteDoc(docRef);
 
             const states = get().states;
@@ -278,7 +313,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
                 .filter(s => Array.isArray(s.stateIds) && s.stateIds.includes(id))
                 .map(s => {
                     const newIds = (s.stateIds || []).filter(sId => sId !== id);
-                    return updateDoc(doc(db, 'users', uid, 'personalities', pid, 'states', s.id), { stateIds: newIds });
+                    return updateDoc(doc(db, `${getPathRoot(context)}/states/${s.id}`), { stateIds: newIds });
                 });
 
             await Promise.all(updates);
@@ -288,15 +323,16 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         }
     },
 
-    togglePinnedProtocol: async (uid, pid, protocolId) => {
+    togglePinnedProtocol: async (protocolId: string) => {
         try {
+            const context = get().context;
             const ids = get().pinnedProtocolIds;
             const isPinned = ids.includes(protocolId);
             const newIds = isPinned
                 ? ids.filter(id => id !== protocolId)
                 : [...ids, protocolId];
 
-            const docRef = doc(db, 'users', uid, 'personalities', pid, 'settings', 'quickActions');
+            const docRef = doc(db, `${getPathRoot(context)}/settings/quickActions`);
             await setDoc(docRef, { ids: newIds }, { merge: true });
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
@@ -304,8 +340,9 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         }
     },
 
-    reorderStates: async (uid, pid, orderedIds) => {
+    reorderStates: async (orderedIds: string[]) => {
         try {
+            const context = get().context;
             // Optimistically update local state immediately
             const currentStates = get().states;
             const stateMap = new Map(currentStates.map(s => [s.id, s]));
@@ -326,17 +363,16 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
 
             // Batch update Firestore
             // We use a WriteBatch to ensure atomicity
-            const { writeBatch } = await import('firebase/firestore');
             const batch = writeBatch(db);
 
             orderedIds.forEach((id, index) => {
-                const docRef = doc(db, 'users', uid, 'personalities', pid, 'states', id);
+                const docRef = doc(db, `${getPathRoot(context)}/states/${id}`);
                 batch.update(docRef, { order: index });
             });
 
             // Also update any missing ones to logical ends
             missingStates.forEach(s => {
-                const docRef = doc(db, 'users', uid, 'personalities', pid, 'states', s.id);
+                const docRef = doc(db, `${getPathRoot(context)}/states/${s.id}`);
                 batch.update(docRef, { order: s.order });
             });
 
@@ -350,8 +386,9 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         }
     },
 
-    reorderInnerfaces: async (uid, pid, orderedIds) => {
+    reorderInnerfaces: async (orderedIds: string[]) => {
         try {
+            const context = get().context;
             // Optimistically update local state immediately
             const currentInnerfaces = get().innerfaces;
             const ifaceMap = new Map(currentInnerfaces.map(i => [i.id.toString(), i]));
@@ -371,17 +408,16 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             set({ innerfaces: [...reorderedInnerfaces, ...missingInnerfaces] });
 
             // Batch update Firestore
-            const { writeBatch } = await import('firebase/firestore');
             const batch = writeBatch(db);
 
             orderedIds.forEach((id, index) => {
-                const docRef = doc(db, 'users', uid, 'personalities', pid, 'innerfaces', id);
+                const docRef = doc(db, `${getPathRoot(context)}/innerfaces/${id}`);
                 batch.update(docRef, { order: index });
             });
 
             // Also update any missing ones to logical ends
             missingInnerfaces.forEach(i => {
-                const docRef = doc(db, 'users', uid, 'personalities', pid, 'innerfaces', i.id.toString());
+                const docRef = doc(db, `${getPathRoot(context)}/innerfaces/${i.id.toString()}`);
                 batch.update(docRef, { order: i.order });
             });
 
@@ -393,12 +429,13 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         }
     },
 
-    reorderQuickActions: async (uid, pid, orderedIds) => {
+    reorderQuickActions: async (orderedIds: string[]) => {
         try {
+            const context = get().context;
             // Optimistic update
             set({ pinnedProtocolIds: orderedIds });
 
-            const docRef = doc(db, 'users', uid, 'personalities', pid, 'settings', 'quickActions');
+            const docRef = doc(db, `${getPathRoot(context)}/settings/quickActions`);
             await setDoc(docRef, { ids: orderedIds }, { merge: true });
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
@@ -406,8 +443,9 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         }
     },
 
-    reorderProtocols: async (uid, pid, orderedIds) => {
+    reorderProtocols: async (orderedIds: string[]) => {
         try {
+            const context = get().context;
             // Optimistic update
             const currentProtocols = get().protocols;
             const protocolsMap = new Map(currentProtocols.map(p => [p.id, p]));
@@ -425,11 +463,10 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             set({ protocols: [...otherProtocols, ...reorderedProtocols] });
 
             // Batch update
-            const { writeBatch } = await import('firebase/firestore');
             const batch = writeBatch(db);
 
             orderedIds.forEach((id, index) => {
-                const docRef = doc(db, 'users', uid, 'personalities', pid, 'protocols', id.toString());
+                const docRef = doc(db, `${getPathRoot(context)}/protocols/${id}`);
                 batch.update(docRef, { order: index });
             });
 
@@ -440,12 +477,13 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         }
     },
 
-    reorderGroups: async (uid, pid, orderedGroups) => {
+    reorderGroups: async (orderedGroups: string[]) => {
         try {
+            const context = get().context;
             // Optimistic update
             set({ groupOrder: orderedGroups });
 
-            const docRef = doc(db, 'users', uid, 'personalities', pid, 'settings', 'groups');
+            const docRef = doc(db, `${getPathRoot(context)}/settings/groups`);
             await setDoc(docRef, { order: orderedGroups }, { merge: true });
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
@@ -453,12 +491,13 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         }
     },
 
-    reorderInnerfaceGroups: async (uid, pid, orderedGroups) => {
+    reorderInnerfaceGroups: async (orderedGroups: string[]) => {
         try {
+            const context = get().context;
             // Optimistic update
             set({ innerfaceGroupOrder: orderedGroups });
 
-            const docRef = doc(db, 'users', uid, 'personalities', pid, 'settings', 'innerface_groups');
+            const docRef = doc(db, `${getPathRoot(context)}/settings/innerface_groups`);
             await setDoc(docRef, { order: orderedGroups }, { merge: true });
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
@@ -466,82 +505,92 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         }
     },
 
-    subscribeToMetadata: (uid, pid) => {
-        set({ isLoading: true, loadedCount: 0 });
+    subscribeToMetadata: (context: PathContext) => {
+        set({
+            innerfaces: [],
+            protocols: [],
+            states: [],
+            groupsMetadata: {},
+            groupOrder: [],
+            innerfaceGroupOrder: [],
+            pinnedProtocolIds: [],
+            isLoading: true,
+            loadedCount: 0
+        });
 
-        const totalSources = 7; // Increased source count
-        const loadedSources = new Set<string>();
-        const markLoaded = (source: string) => {
-            if (!loadedSources.has(source)) {
-                loadedSources.add(source);
-                set({ loadedCount: loadedSources.size });
-                if (loadedSources.size >= totalSources) {
-                    set({ isLoading: false });
-                }
+        let loadedSections = 0;
+        const markLoaded = () => {
+            loadedSections++;
+            set(state => ({ loadedCount: state.loadedCount + 1 }));
+            if (loadedSections >= 7) { // Changed from 6 to 7 to match totalSources
+                set({ isLoading: false });
             }
         };
 
-        const unsubIfaces = onSnapshot(collection(db, 'users', uid, 'personalities', pid, 'innerfaces'), (snap) => {
-            const innerfaces = snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Innerface));
+        const pathRoot = getPathRoot(context);
+
+        const unsubIfaces = onSnapshot(collection(db, `${pathRoot}/innerfaces`), (snap) => {
+            const innerfaces = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Innerface));
+            // Sort by group then by name/order... logic handled in UI mostly, but here we can sort too
             set({ innerfaces });
-            markLoaded('innerfaces');
+            markLoaded();
         });
 
-        const unsubProtocols = onSnapshot(collection(db, 'users', uid, 'personalities', pid, 'protocols'), (snap) => {
-            const protocols = snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Protocol));
+        const unsubProtocols = onSnapshot(collection(db, `${pathRoot}/protocols`), (snap) => {
+            const protocols = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Protocol));
             set({ protocols });
-            markLoaded('protocols');
+            markLoaded();
         });
 
-        const unsubStates = onSnapshot(collection(db, 'users', uid, 'personalities', pid, 'states'), (snap) => {
-            const states = snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as StateData));
-            // Sort by order field
+        const unsubStates = onSnapshot(collection(db, `${pathRoot}/states`), (snap) => {
+            const states = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as StateData));
+            // Sort states by 'order' logic:
             states.sort((a, b) => {
                 const orderA = a.order ?? 9999;
                 const orderB = b.order ?? 9999;
                 return orderA - orderB;
             });
             set({ states });
-            markLoaded('states');
+            markLoaded();
         });
 
-        const unsubGroups = onSnapshot(collection(db, 'users', uid, 'personalities', pid, 'groups'), (snap) => {
+        const unsubGroups = onSnapshot(collection(db, `${pathRoot}/groups`), (snap) => {
             const groupsMetadata: Record<string, { icon: string; color?: string }> = {};
             snap.docs.forEach(doc => {
                 groupsMetadata[doc.id] = doc.data() as { icon: string; color?: string };
             });
             set({ groupsMetadata });
-            markLoaded('groups');
+            markLoaded();
         });
 
-        const unsubGroupSettings = onSnapshot(doc(db, 'users', uid, 'personalities', pid, 'settings', 'groups'), (snap) => {
+        const unsubGroupSettings = onSnapshot(doc(db, `${pathRoot}/settings/groups`), (snap) => {
             if (snap.exists()) {
                 const data = snap.data();
                 set({ groupOrder: data.order || [] });
             } else {
                 set({ groupOrder: [] });
             }
-            markLoaded('groupSettings');
+            markLoaded();
         });
 
-        const unsubInnerfaceGroupSettings = onSnapshot(doc(db, 'users', uid, 'personalities', pid, 'settings', 'innerface_groups'), (snap) => {
+        const unsubInnerfaceGroupSettings = onSnapshot(doc(db, `${pathRoot}/settings/innerface_groups`), (snap) => {
             if (snap.exists()) {
                 const data = snap.data();
                 set({ innerfaceGroupOrder: data.order || [] });
             } else {
                 set({ innerfaceGroupOrder: [] });
             }
-            markLoaded('innerfaceGroupSettings');
+            markLoaded();
         });
 
-        const unsubQuickActions = onSnapshot(doc(db, 'users', uid, 'personalities', pid, 'settings', 'quickActions'), (snap) => {
+        const unsubQuickActions = onSnapshot(doc(db, `${pathRoot}/settings/quickActions`), (snap) => {
             if (snap.exists()) {
                 const data = snap.data();
                 set({ pinnedProtocolIds: data.ids || [] });
             } else {
                 set({ pinnedProtocolIds: [] });
             }
-            markLoaded('quickActions');
+            markLoaded();
         });
 
         return () => {

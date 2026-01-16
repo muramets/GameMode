@@ -29,11 +29,12 @@ import { getMappedIcon } from '../../utils/iconMapper';
 import { TeamSettingsModal } from '../modals/TeamSettingsModal';
 import { RoleSettingsModal } from '../modals/RoleSettingsModal';
 import { JoinTeamModal } from '../modals/JoinTeamModal';
+import { ADMIN_EMAILS } from '../../config/adminList';
 
 export function TeamsDropdown() {
     const { user } = useAuth();
     const { teams, roles, memberships, subscribeToTeams, loadRoles } = useTeamStore();
-    const { activePersonalityId, switchPersonality } = usePersonalityStore();
+    const { activePersonalityId, switchPersonality, switchToRole, activeContext } = usePersonalityStore();
 
     // Local state
     const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
@@ -51,26 +52,35 @@ export function TeamsDropdown() {
         return unsub;
     }, [user?.uid, subscribeToTeams]);
 
+    // Admin Access Control: Only listed admins can see the Teams Dropdown
+    const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
+
+    // Filter teams to only show those owned by the user
+    // Participants (members) should not see teams in this menu to avoid confusion
+    const ownedTeams = teams.filter(t => t.ownerId === user?.uid);
+
     // Load roles for each team
     useEffect(() => {
-        teams.forEach(team => {
+        ownedTeams.forEach(team => {
             if (!roles[team.id]) {
                 loadRoles(team.id);
             }
         });
-    }, [teams, roles, loadRoles]);
+    }, [ownedTeams, roles, loadRoles]);
 
-    // Check if current personality is from a team role
+    // Check active role highlight
     const getActiveTeamRole = () => {
-        for (const [teamId, membership] of Object.entries(memberships)) {
-            if (membership.personalityId === activePersonalityId) {
-                return { teamId, roleId: membership.roleId };
-            }
+        // 1. If in Design Mode (Role Context)
+        if (activeContext?.type === 'role') {
+            return { teamId: activeContext.teamId, roleId: activeContext.roleId };
         }
         return null;
     };
 
     const activeTeamRole = getActiveTeamRole();
+
+    // If not admin, do not render anything
+    if (!isAdmin) return null;
 
     const toggleTeamExpand = (teamId: string, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -85,11 +95,10 @@ export function TeamsDropdown() {
         });
     };
 
-    const handleRoleClick = (teamId: string) => {
-        const membership = memberships[teamId];
-        if (membership?.personalityId && user?.uid) {
-            switchPersonality(user.uid, membership.personalityId);
-        }
+    const handleRoleClick = (teamId: string, roleId: string) => {
+        const team = ownedTeams.find(t => t.id === teamId);
+        // Always owner here because we filtered
+        switchToRole(teamId, roleId);
     };
 
     const handleEditTeam = (e: React.MouseEvent, teamId: string) => {
@@ -152,7 +161,7 @@ export function TeamsDropdown() {
                             width: 'max-content'
                         }}
                     >
-                        {teams.length}
+                        {ownedTeams.length}
                     </div>
                 </button>
 
@@ -167,7 +176,7 @@ export function TeamsDropdown() {
                         }}
                     >
                         {/* Teams List */}
-                        {teams.length === 0 ? (
+                        {ownedTeams.length === 0 ? (
                             <div
                                 className="flex items-center justify-center leading-none opacity-50"
                                 style={{ color: 'var(--sub-color)', padding: '0.5em 0' }}
@@ -175,10 +184,9 @@ export function TeamsDropdown() {
                                 no teams yet
                             </div>
                         ) : (
-                            teams.map((team, index) => {
+                            ownedTeams.map((team, index) => {
                                 const isExpanded = expandedTeams.has(team.id);
                                 const teamRoles = roles[team.id] || [];
-                                const isOwner = team.ownerId === user?.uid;
                                 const iconDef = getMappedIcon(team.icon || 'users') || getMappedIcon('users');
 
                                 return (
@@ -225,17 +233,15 @@ export function TeamsDropdown() {
                                                 {team.name.toLowerCase()}
                                             </div>
 
-                                            {/* Settings (owner only) */}
-                                            {isOwner && (
-                                                <div className="flex items-center shrink-0 mr-[0.9em]">
-                                                    <button
-                                                        onClick={(e) => handleEditTeam(e, team.id)}
-                                                        className="opacity-0 group-hover/item:opacity-100 transition-all text-[var(--text-color)]"
-                                                    >
-                                                        <FontAwesomeIcon icon={faCog} className="text-[0.8em]" />
-                                                    </button>
-                                                </div>
-                                            )}
+                                            {/* Settings (owner only - always true here) */}
+                                            <div className="flex items-center shrink-0 mr-[0.9em]">
+                                                <button
+                                                    onClick={(e) => handleEditTeam(e, team.id)}
+                                                    className="opacity-0 group-hover/item:opacity-100 transition-all text-[var(--text-color)]"
+                                                >
+                                                    <FontAwesomeIcon icon={faCog} className="text-[0.8em]" />
+                                                </button>
+                                            </div>
                                         </div>
 
                                         {/* Minimal separator before roles */}
@@ -258,7 +264,7 @@ export function TeamsDropdown() {
                                                     return (
                                                         <div
                                                             key={role.id}
-                                                            onClick={() => handleRoleClick(team.id)}
+                                                            onClick={() => handleRoleClick(team.id, role.id)}
                                                             className="group/role flex items-center cursor-pointer transition-colors duration-100 leading-none text-[var(--text-color)] hover:text-[var(--bg-color)] hover:bg-[var(--text-color)]"
                                                             style={{ padding: '0.4em 0', paddingLeft: '2em' }}
                                                         >
@@ -284,15 +290,13 @@ export function TeamsDropdown() {
 
                                                             {/* Actions & Active Indicator */}
                                                             <div className="flex items-center shrink-0 mr-[0.9em] gap-2">
-                                                                {isOwner && (
-                                                                    <button
-                                                                        onClick={(e) => handleEditRole(e, team.id, role.id)}
-                                                                        className="opacity-0 group-hover/role:opacity-100 transition-all hover:!text-[var(--main-color)]"
-                                                                        style={{ color: 'var(--bg-color)' }}
-                                                                    >
-                                                                        <FontAwesomeIcon icon={faCog} className="text-[0.8em]" />
-                                                                    </button>
-                                                                )}
+                                                                <button
+                                                                    onClick={(e) => handleEditRole(e, team.id, role.id)}
+                                                                    className="opacity-0 group-hover/role:opacity-100 transition-all hover:!text-[var(--main-color)]"
+                                                                    style={{ color: 'var(--bg-color)' }}
+                                                                >
+                                                                    <FontAwesomeIcon icon={faCog} className="text-[0.8em]" />
+                                                                </button>
                                                                 {isActive && (
                                                                     <FontAwesomeIcon icon={faCheck} className="text-[0.7em]" />
                                                                 )}
@@ -301,26 +305,23 @@ export function TeamsDropdown() {
                                                     );
                                                 })}
 
-                                                {/* Add Role Button (owner only) */}
-                                                {isOwner && (
-                                                    <button
-                                                        onClick={(e) => handleCreateRole(e, team.id)}
-                                                        className="group/add flex items-center text-left transition-colors duration-100 leading-none text-[var(--sub-color)] hover:text-[var(--bg-color)] hover:bg-[var(--text-color)]"
-                                                        style={{ padding: '0.4em 0', paddingLeft: '2em' }}
+                                                {/* Add Role Button (always owner) */}
+                                                <button
+                                                    onClick={(e) => handleCreateRole(e, team.id)}
+                                                    className="group/add flex items-center text-left transition-colors duration-100 leading-none text-[var(--sub-color)] hover:text-[var(--bg-color)] hover:bg-[var(--text-color)]"
+                                                    style={{ padding: '0.4em 0', paddingLeft: '2em' }}
+                                                >
+                                                    <div
+                                                        className="w-[1em] h-[1em] flex items-center justify-center shrink-0 opacity-60 group-hover/add:opacity-100"
+                                                        style={{ marginRight: '0.7em' }}
                                                     >
-                                                        <div
-                                                            className="w-[1em] h-[1em] flex items-center justify-center shrink-0 opacity-60 group-hover/add:opacity-100"
-                                                            style={{ marginRight: '0.7em' }}
-                                                        >
-                                                            <FontAwesomeIcon icon={faPlus} className="text-[1em]" />
-                                                        </div>
-                                                        <span className="text-[0.9em]">add role</span>
-                                                    </button>
-
-                                                )}
+                                                        <FontAwesomeIcon icon={faPlus} className="text-[1em]" />
+                                                    </div>
+                                                    <span className="text-[0.9em]">add role</span>
+                                                </button>
 
                                                 {/* Separator after expanded content - only if not last team */}
-                                                {index !== teams.length - 1 && (
+                                                {index !== ownedTeams.length - 1 && (
                                                     <div
                                                         className="h-[1px] mx-0 opacity-10 shrink-0 mt-2 mb-1"
                                                         style={{ backgroundColor: 'var(--sub-color)' }}

@@ -2,17 +2,37 @@ import React, { useState } from 'react';
 import { usePersonalityStore } from '../../stores/personalityStore';
 import { useAuth } from '../../contexts/AuthProvider';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCog, faPlus, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faCog, faPlus, faCheck, faPen } from '@fortawesome/free-solid-svg-icons';
 import { getMappedIcon } from '../../utils/iconMapper';
 import { PersonalitySettingsModal } from '../modals/PersonalitySettingsModal';
 
+import { useTeamStore } from '../../stores/teamStore';
+import type { TeamRole } from '../../types/team';
+
+
 export function PersonalityDropdown() {
     const { user } = useAuth();
-    const { personalities, activePersonalityId, switchPersonality } = usePersonalityStore();
+    const { personalities, activePersonalityId, switchPersonality, activeContext } = usePersonalityStore();
+    const { roles } = useTeamStore();
+
+    // UI Local State
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [editingPersonalityId, setEditingPersonalityId] = useState<string | null>(null);
 
-    const activePersonality = personalities.find(p => p.id === activePersonalityId);
+    // Determine Active Display Item
+    let activeItem: { name: string; icon?: string; themeColor?: string } | null | undefined = personalities.find(p => p.id === activePersonalityId);
+    let isDesignMode = false;
+
+    if (activeContext?.type === 'role') {
+        isDesignMode = true;
+        // Find the role in team store
+        // We might need to look through all teams if we don't assume we have the teamId handy,
+        // but activeContext has it!
+        const role = roles[activeContext.teamId]?.find((r: TeamRole) => r.id === activeContext.roleId);
+        if (role) {
+            activeItem = role;
+        }
+    }
 
     const handleEdit = (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
@@ -42,34 +62,52 @@ export function PersonalityDropdown() {
                     >
                         {/* Icon */}
                         {(() => {
-                            const iconDef = getMappedIcon(activePersonality?.icon || 'user');
+                            const iconDef = getMappedIcon(activeItem?.icon || 'user');
                             return iconDef ? (
                                 <FontAwesomeIcon icon={iconDef} style={{ fontSize: '1em' }} />
                             ) : (
-                                <span style={{ fontSize: '1em' }}>{activePersonality?.icon || '👤'}</span>
+                                <span style={{ fontSize: '1em' }}>{activeItem?.icon || '👤'}</span>
                             );
                         })()}
                     </div>
 
                     <span className="mt-[0.1em] transition-colors duration-150 group-hover:text-[var(--text-color)]" style={{ fontSize: '0.75em' }}>
-                        {(activePersonality?.name || 'loading...').toLowerCase()}
+                        {(activeItem?.name || 'loading...').toLowerCase()}
                     </span>
 
-                    {/* Personality Count Badge (Styled as Level Badge) */}
-                    <div
-                        className="flex items-center justify-center transition-colors duration-150 bg-[var(--sub-color)] group-hover:bg-[var(--text-color)] group-hover:text-[var(--bg-color)]"
-                        style={{
-                            fontSize: '0.65em',
-                            lineHeight: '0.65em',
-                            padding: '0.3em 0.45em',
-                            borderRadius: '4px',
-                            color: 'var(--bg-color)',
-                            alignSelf: 'center',
-                            width: 'max-content'
-                        }}
-                    >
-                        {personalities.length}
-                    </div>
+                    {/* Personality Count Badge OR Role Mode Indicator */}
+                    {isDesignMode ? (
+                        <div
+                            className="flex items-center justify-center transition-colors duration-150 bg-[var(--main-color)] text-[var(--bg-color)] gap-[0.4em]"
+                            style={{
+                                fontSize: '0.6em',
+                                lineHeight: '0.65em',
+                                padding: '0.35em 0.5em',
+                                borderRadius: '6px',
+                                alignSelf: 'center',
+                                width: 'max-content',
+                                fontWeight: 'bold'
+                            }}
+                        >
+                            <FontAwesomeIcon icon={faPen} style={{ fontSize: '0.9em' }} />
+                            ROLE
+                        </div>
+                    ) : (
+                        <div
+                            className="flex items-center justify-center transition-colors duration-150 bg-[var(--sub-color)] group-hover:bg-[var(--text-color)] group-hover:text-[var(--bg-color)]"
+                            style={{
+                                fontSize: '0.65em',
+                                lineHeight: '0.65em',
+                                padding: '0.3em 0.45em',
+                                borderRadius: '4px',
+                                color: 'var(--bg-color)',
+                                alignSelf: 'center',
+                                width: 'max-content'
+                            }}
+                        >
+                            {personalities.length}
+                        </div>
+                    )}
                 </button>
 
                 {/* Dropdown Menu - Exact MonkeyType Replica */}
@@ -82,9 +120,17 @@ export function PersonalityDropdown() {
                             gap: '0.25em'
                         }}
                     >
+                        {/* Switch Header if in Design Mode */}
+                        {isDesignMode && (
+                            <div className="px-3 pt-2 pb-1 flex flex-col gap-1 opacity-70">
+                                <span className="text-[0.9em] font-bold text-[var(--sub-color)]">Back to personality:</span>
+                                <div className="h-[1px] bg-[var(--sub-color)] opacity-30 w-full" />
+                            </div>
+                        )}
+
                         {/* Personalities List */}
                         {personalities.map((p, index) => {
-                            const isActive = p.id === activePersonalityId;
+                            const isActive = !isDesignMode && p.id === activePersonalityId;
                             const iconDef = getMappedIcon(p.icon || 'user');
 
                             return (
@@ -94,7 +140,7 @@ export function PersonalityDropdown() {
                                     className={`
                                         group/item relative flex items-center justify-start text-left cursor-pointer transition-colors duration-100 leading-none
                                         text-[var(--text-color)] hover:text-[var(--bg-color)] hover:bg-[var(--text-color)]
-                                        ${index === 0 ? 'rounded-t-[0.5rem]' : ''}
+                                        ${index === 0 && !isDesignMode ? 'rounded-t-[0.5rem]' : ''}
                                     `}
                                     style={{ padding: '0.5em 0' }}
                                 >

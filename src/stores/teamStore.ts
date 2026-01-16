@@ -216,14 +216,53 @@ export const useTeamStore = create<TeamState>((set, get) => ({
     createRole: async (teamId, data) => {
         try {
             const roleRef = doc(collection(db, 'teams', teamId, 'roles'));
+            const { templateData, ...roleMeta } = data; // Extract template data
+
             const role: TeamRole = {
                 id: roleRef.id,
                 teamId,
-                ...data,
+                ...roleMeta,
                 createdAt: Date.now()
-            };
+            } as TeamRole;
 
-            await setDoc(roleRef, role);
+            const batch = writeBatch(db);
+            batch.set(roleRef, role);
+
+            // Write template data to subcollections
+            if (templateData) {
+                // Innerfaces
+                templateData.innerfaces?.forEach(i => {
+                    batch.set(doc(roleRef, 'innerfaces', i.id.toString()), i);
+                });
+
+                // Protocols
+                templateData.protocols?.forEach(p => {
+                    batch.set(doc(roleRef, 'protocols', p.id.toString()), p);
+                });
+
+                // States
+                templateData.states?.forEach(s => {
+                    batch.set(doc(roleRef, 'states', s.id), s);
+                });
+
+                // Groups
+                Object.entries(templateData.groups || {}).forEach(([name, meta]) => {
+                    batch.set(doc(roleRef, 'groups', name), meta);
+                });
+
+                // Settings
+                if (templateData.groupOrder?.length) {
+                    batch.set(doc(roleRef, 'settings', 'groups'), { order: templateData.groupOrder });
+                }
+                if (templateData.innerfaceGroupOrder?.length) {
+                    batch.set(doc(roleRef, 'settings', 'innerface_groups'), { order: templateData.innerfaceGroupOrder });
+                }
+                if (templateData.pinnedProtocolIds?.length) {
+                    batch.set(doc(roleRef, 'settings', 'quickActions'), { ids: templateData.pinnedProtocolIds });
+                }
+            }
+
+            await batch.commit();
 
             set(state => ({
                 roles: {
@@ -244,13 +283,61 @@ export const useTeamStore = create<TeamState>((set, get) => ({
     updateRole: async (teamId, roleId, data) => {
         try {
             const roleRef = doc(db, 'teams', teamId, 'roles', roleId);
-            await updateDoc(roleRef, data);
+            const { templateData, ...roleMeta } = data;
+
+            // If template data is provided, we need to rewrite subcollections
+            // For now, simpler to just write what we have. In a real app, might want to diff.
+            // But since this is usually "Copy All" from a personality, overwrite is expected.
+
+            const batch = writeBatch(db);
+
+            // Update metadata
+            if (Object.keys(roleMeta).length > 0) {
+                batch.update(roleRef, roleMeta);
+            }
+
+            if (templateData) {
+                // Determine what to delete? Ideally delete everything first is safest to avoid ghosts.
+                // Fetch existing subcollections to delete
+                const [ifaceSnap, protoSnap, stateSnap, groupSnap] = await Promise.all([
+                    getDocs(collection(roleRef, 'innerfaces')),
+                    getDocs(collection(roleRef, 'protocols')),
+                    getDocs(collection(roleRef, 'states')),
+                    getDocs(collection(roleRef, 'groups'))
+                ]);
+
+                ifaceSnap.docs.forEach(d => batch.delete(d.ref));
+                protoSnap.docs.forEach(d => batch.delete(d.ref));
+                stateSnap.docs.forEach(d => batch.delete(d.ref));
+                groupSnap.docs.forEach(d => batch.delete(d.ref));
+
+                // Add new data
+                templateData.innerfaces?.forEach(i => {
+                    batch.set(doc(roleRef, 'innerfaces', i.id.toString()), i);
+                });
+                templateData.protocols?.forEach(p => {
+                    batch.set(doc(roleRef, 'protocols', p.id.toString()), p);
+                });
+                templateData.states?.forEach(s => {
+                    batch.set(doc(roleRef, 'states', s.id), s);
+                });
+                Object.entries(templateData.groups || {}).forEach(([name, meta]) => {
+                    batch.set(doc(roleRef, 'groups', name), meta);
+                });
+
+                // Settings
+                batch.set(doc(roleRef, 'settings', 'groups'), { order: templateData.groupOrder || [] });
+                batch.set(doc(roleRef, 'settings', 'innerface_groups'), { order: templateData.innerfaceGroupOrder || [] });
+                batch.set(doc(roleRef, 'settings', 'quickActions'), { ids: templateData.pinnedProtocolIds || [] });
+            }
+
+            await batch.commit();
 
             set(state => ({
                 roles: {
                     ...state.roles,
                     [teamId]: (state.roles[teamId] || []).map(r =>
-                        r.id === roleId ? { ...r, ...data } : r
+                        r.id === roleId ? { ...r, ...roleMeta } : r
                     )
                 }
             }));
@@ -364,9 +451,25 @@ export const useTeamStore = create<TeamState>((set, get) => ({
             if (!roleDoc.exists()) throw new Error('Role no longer exists');
 
             const role = roleDoc.data() as TeamRole;
-            const template = role.templateData;
 
             // 3. Create a new personality from the template
+            // Fetch template data from Role subcollections
+            const [
+                roleIfaces,
+                roleProtos,
+                roleStates,
+                roleGroups,
+                roleGroupSettings,
+                roleQuickActions
+            ] = await Promise.all([
+                getDocs(collection(db, 'teams', invite.teamId, 'roles', invite.roleId, 'innerfaces')),
+                getDocs(collection(db, 'teams', invite.teamId, 'roles', invite.roleId, 'protocols')),
+                getDocs(collection(db, 'teams', invite.teamId, 'roles', invite.roleId, 'states')),
+                getDocs(collection(db, 'teams', invite.teamId, 'roles', invite.roleId, 'groups')),
+                getDoc(doc(db, 'teams', invite.teamId, 'roles', invite.roleId, 'settings', 'groups')),
+                getDoc(doc(db, 'teams', invite.teamId, 'roles', invite.roleId, 'settings', 'quickActions'))
+            ]);
+
             const personalityId = `${role.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
             const personality: Personality = {
                 id: personalityId,
@@ -383,54 +486,38 @@ export const useTeamStore = create<TeamState>((set, get) => ({
             // Create personality document
             batch.set(doc(db, 'users', uid, 'personalities', personalityId), personality);
 
-            // Copy template data to personality subcollections
-            if (template) {
-                // Innerfaces
-                template.innerfaces?.forEach((innerface, idx) => {
-                    const innerfaceId = `if-${Date.now()}-${idx}`;
-                    batch.set(
-                        doc(db, 'users', uid, 'personalities', personalityId, 'innerfaces', innerfaceId),
-                        { ...innerface, id: innerfaceId }
-                    );
-                });
+            // Copy Innerfaces
+            roleIfaces.docs.forEach((d, idx) => {
+                const data = d.data();
+                const newId = `if-${Date.now()}-${idx}`;
+                batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'innerfaces', newId), { ...data, id: newId });
+            });
 
-                // Protocols
-                template.protocols?.forEach((protocol, idx) => {
-                    const protocolId = `pr-${Date.now()}-${idx}`;
-                    batch.set(
-                        doc(db, 'users', uid, 'personalities', personalityId, 'protocols', protocolId),
-                        { ...protocol, id: protocolId }
-                    );
-                });
+            // Copy Protocols
+            roleProtos.docs.forEach((d, idx) => {
+                const data = d.data();
+                const newId = `pr-${Date.now()}-${idx}`;
+                batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'protocols', newId), { ...data, id: newId });
+            });
 
-                // States
-                template.states?.forEach((state, idx) => {
-                    const stateId = `st-${Date.now()}-${idx}`;
-                    batch.set(
-                        doc(db, 'users', uid, 'personalities', personalityId, 'states', stateId),
-                        { ...state, id: stateId }
-                    );
-                });
+            // Copy States
+            roleStates.docs.forEach((d, idx) => {
+                const data = d.data();
+                const newId = `st-${Date.now()}-${idx}`;
+                batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'states', newId), { ...data, id: newId });
+            });
 
-                // Groups metadata
-                Object.entries(template.groups || {}).forEach(([groupName, metadata]) => {
-                    batch.set(
-                        doc(db, 'users', uid, 'personalities', personalityId, 'groups', groupName),
-                        metadata
-                    );
-                });
+            // Copy Groups
+            roleGroups.docs.forEach(d => {
+                batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'groups', d.id), d.data());
+            });
 
-                // Settings
-                if (template.groupOrder?.length || template.pinnedProtocolIds?.length) {
-                    batch.set(
-                        doc(db, 'users', uid, 'personalities', personalityId, 'settings', 'groups'),
-                        { order: template.groupOrder || [] }
-                    );
-                    batch.set(
-                        doc(db, 'users', uid, 'personalities', personalityId, 'settings', 'quickActions'),
-                        { ids: template.pinnedProtocolIds || [] }
-                    );
-                }
+            // Copy Settings
+            if (roleGroupSettings.exists()) {
+                batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'settings', 'groups'), roleGroupSettings.data());
+            }
+            if (roleQuickActions.exists()) {
+                batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'settings', 'quickActions'), roleQuickActions.data());
             }
 
             // 4. Add membership to user document

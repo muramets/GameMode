@@ -7,35 +7,50 @@ import { usePersonalityStore } from './personalityStore';
 export function StoreSync() {
     const { user } = useAuth();
     const subscribeToHistory = useHistoryStore(state => state.subscribeToHistory);
-    const subscribeToMetadata = useMetadataStore(state => state.subscribeToMetadata);
+    const { subscribeToMetadata, setContext } = useMetadataStore();
 
     const {
         ensureDefaultPersonality,
-        activePersonalityId
+        activeContext
     } = usePersonalityStore();
 
-    // 1. Initialize Personalities (and migrate if needed)
+    // 1. Initialize Personalities
     useEffect(() => {
         if (user) {
             ensureDefaultPersonality(user.uid);
         }
     }, [user, ensureDefaultPersonality]);
 
-    // 2. Sync Data when Personality is Active
+    // 2. Sync Data when Context is Active
     useEffect(() => {
-        if (user && activePersonalityId) {
-            console.log(`[StoreSync] Syncing data for user: ${user.uid}, personality: ${activePersonalityId}`);
+        if (user && activeContext) {
+            console.log(`[StoreSync] Syncing data for context:`, activeContext);
 
-            const unsubHistory = subscribeToHistory(user.uid, activePersonalityId);
-            const unsubMetadata = subscribeToMetadata(user.uid, activePersonalityId);
+            // History only for personalities
+            let unsubHistory = () => { };
+            if (activeContext.type === 'personality') {
+                // Ensure UID is present (fallback for migration)
+                const uid = activeContext.uid || user.uid;
+                unsubHistory = subscribeToHistory(uid, activeContext.pid);
+            }
+
+            // Metadata for both
+            const context = activeContext.type === 'personality'
+                ? { ...activeContext, uid: activeContext.uid || user.uid }
+                : activeContext;
+
+            // Set context in store for actions to use
+            setContext(context);
+
+            const unsubMetadata = subscribeToMetadata(context);
 
             return () => {
-                console.log('[StoreSync] Unsubscribing from current personality...');
+                console.log('[StoreSync] Unsubscribing...');
                 unsubHistory();
                 unsubMetadata();
             };
         }
-    }, [user, activePersonalityId, subscribeToHistory, subscribeToMetadata]);
+    }, [user, activeContext, subscribeToHistory, subscribeToMetadata]);
 
     return null;
 }
