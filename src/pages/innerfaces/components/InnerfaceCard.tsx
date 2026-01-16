@@ -4,8 +4,8 @@ import type { Innerface } from '../../../pages/protocols/types';
 import { renderIcon } from '../../../utils/iconMapper';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog, faHistory, faArrowUp, faArrowDown } from '@fortawesome/free-solid-svg-icons';
-import { ProgressBar } from '../../../components/ui/atoms/ProgressBar';
-import { getScoreColor } from '../../../utils/colorUtils';
+import { getTierColor } from '../../../utils/colorUtils';
+import { calculateLevel, scoreToXP } from '../../../utils/xpUtils';
 
 import { TruncatedTooltip } from '../../../components/ui/molecules/TruncatedTooltip';
 
@@ -16,8 +16,12 @@ interface InnerfaceCardProps {
 
 export function InnerfaceCard({ innerface, onEdit }: InnerfaceCardProps) {
     const navigate = useNavigate();
-    const score = innerface.currentScore || innerface.initialScore;
-    const dynamicColor = getScoreColor(score);
+
+    // XP Calculation
+    const currentScore = innerface.currentScore || innerface.initialScore || 0;
+    const totalXP = scoreToXP(currentScore);
+    const { level, currentLevelXP, progress } = calculateLevel(totalXP);
+    const tierColor = getTierColor(level);
 
     const handleHistory = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -31,25 +35,24 @@ export function InnerfaceCard({ innerface, onEdit }: InnerfaceCardProps) {
 
     return (
         <Card className="group relative overflow-hidden p-4 flex flex-col justify-between min-h-[120px] hover:-translate-y-[2px] transition-all duration-300 hover:shadow-lg border border-transparent text-left select-none cursor-default">
-            {/* 1. Dynamic Gradient from Score (Radiates from bottom right where score usually is, or center) */}
-            {/* Positioning it roughly behind the score area */}
+            {/* 1. Dynamic Gradient from Tier Color */}
             <div
-                className="absolute -right-10 -bottom-10 w-48 h-48 blur-[60px] transition-opacity duration-500 opacity-[0.15] group-hover:opacity-[0.25]"
+                className="absolute -right-10 -bottom-10 w-48 h-48 blur-[60px] transition-opacity duration-500 opacity-[0.10] group-hover:opacity-[0.20]"
                 style={{
-                    background: `radial-gradient(circle, ${dynamicColor} 0%, transparent 70%)`
+                    background: `radial-gradient(circle, ${tierColor} 0%, transparent 70%)`
                 }}
             />
 
-            {/* Focused Glow -  Ambient top light */}
+            {/* Focused Glow */}
             <div
                 className="absolute inset-x-0 top-0 h-24 opacity-0 group-hover:opacity-[0.05] transition-all duration-500 ease-out pointer-events-none"
                 style={{
-                    background: `linear-gradient(to bottom, ${dynamicColor}, transparent)`
+                    background: `linear-gradient(to bottom, ${tierColor}, transparent)`
                 }}
             />
 
             {/* Header: Icon & Title */}
-            <div className="flex items-start justify-between relative z-10 w-full mb-2">
+            <div className="flex items-start justify-between relative z-10 w-full mb-1">
                 <div className="flex items-start gap-3 w-full pr-1">
                     {/* Icon */}
                     <div
@@ -81,8 +84,8 @@ export function InnerfaceCard({ innerface, onEdit }: InnerfaceCardProps) {
                 </div>
             </div>
 
-            {/* Middle: Actions & Score */}
-            <div className="relative z-10 mt-auto mb-2 flex items-end justify-between w-full">
+            {/* Middle: Actions & Level Display */}
+            <div className="relative z-10 mt-auto mb-3 flex items-end justify-between w-full">
                 {/* Left: Actions (Only visible on hover) */}
                 <div className="flex flex-col gap-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <button
@@ -101,45 +104,45 @@ export function InnerfaceCard({ innerface, onEdit }: InnerfaceCardProps) {
                     </button>
                 </div>
 
-                {/* Right: Score */}
+                {/* Right: Big Level Number */}
                 <div className="flex flex-col items-end">
-                    <div className="flex items-center gap-2">
-                        {/* Trend Indicator */}
-                        {(() => {
-                            const score = innerface.currentScore || innerface.initialScore;
-                            const initial = innerface.initialScore || 0;
-                            const delta = score - initial;
-
-                            if (Math.abs(delta) <= 0.01) return null;
-
-                            return (
-                                <div className={`text-base ${delta > 0 ? 'text-[#98c379]' : 'text-[#ca4754]'} opacity-80 flex items-center`}>
-                                    <FontAwesomeIcon icon={delta > 0 ? faArrowUp : faArrowDown} className="text-xs" />
-                                </div>
-                            );
-                        })()}
+                    <div className="flex items-baseline gap-1">
+                        <div className="flex flex-col items-center justify-end relative">
+                            {currentScore !== innerface.initialScore && (
+                                <span className={`absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] font-bold leading-none ${currentScore > innerface.initialScore ? 'text-correct' : 'text-error'}`}>
+                                    <FontAwesomeIcon icon={currentScore > innerface.initialScore ? faArrowUp : faArrowDown} />
+                                </span>
+                            )}
+                            <span className="text-[9px] font-mono text-sub uppercase tracking-widest opacity-40 mb-1 group-hover:text-text-primary group-hover:opacity-100 transition-all duration-300 block">
+                                Lvl
+                            </span>
+                        </div>
                         <div
-                            className="text-[2rem] font-light font-mono leading-none tracking-tight transition-colors duration-300"
-                            style={{ color: dynamicColor }}
+                            className="text-[2.5rem] font-medium font-mono leading-none tracking-tight transition-colors duration-300"
+                            style={{ color: tierColor }}
                         >
-                            {score.toFixed(2)}
+                            {level}
                         </div>
                     </div>
-                    <span className="text-[9px] font-mono text-sub uppercase tracking-widest opacity-40 mt-1 group-hover:opacity-100 group-hover:text-text-primary transition-all duration-300">
-                        Starting Point: {innerface.initialScore}
-                    </span>
                 </div>
             </div>
 
-            {/* Bottom: Progress Bar */}
-            <div className="relative z-10 w-full">
-                <ProgressBar
-                    current={score}
-                    max={10}
-                    customColor={dynamicColor}
-                    heightClass="h-[4px]"
-                    trackColorClass="bg-bg-primary/50"
-                />
+            {/* Bottom: Progress Bar (XP to next level) */}
+            <div className="relative z-10 w-full flex flex-col gap-1">
+                <div className="h-[4px] bg-bg-primary/50 w-full rounded-full overflow-hidden">
+                    <div
+                        className="h-full transition-all duration-300 ease-out rounded-full"
+                        style={{
+                            width: `${progress}%`,
+                            backgroundColor: tierColor
+                        }}
+                    />
+                </div>
+                {/* XP Detail (Visible on hover or always small) */}
+                <div className="flex justify-between items-center text-[9px] font-mono text-sub opacity-50 group-hover:opacity-100 group-hover:text-text-primary transition-all duration-200">
+                    <span>{currentLevelXP} / 100 XP</span>
+                    <span>{totalXP} Total</span>
+                </div>
             </div>
         </Card>
     );

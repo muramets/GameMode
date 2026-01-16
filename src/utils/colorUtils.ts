@@ -3,69 +3,40 @@
  * Implements a specific ladder with smooth transitions.
  */
 
-interface ColorRGB {
-    r: number;
-    g: number;
-    b: number;
-}
+// ColorRGB interface removed as it is no longer used
 
-const COLOR_STEPS: { score: number; hex: string }[] = [
-    { score: 0, hex: '#6b1b1b' },    // Improved Deep Maroon
-    { score: 1.5, hex: '#942525' },  // Improved Maroon
-    { score: 3, hex: '#CA4754' },    // Red (Serika Error)
-    { score: 5, hex: '#E2B714' },    // Yellow (Serika Main)
-    { score: 7, hex: '#98C379' },    // Green (Serika Success)
-    { score: 9, hex: '#00E0FF' },    // Cyan
-    { score: 10, hex: '#D1D0C5' },   // Platinum/Off-white
+const TIER_COLORS = [
+    { maxLevel: 3, hex: '#CA4754' },    // Levels 1-3: Bronze/Red (Beginner)
+    { maxLevel: 6, hex: '#E2B714' },    // Levels 4-6: Gold/Yellow (Intermediate)
+    { maxLevel: 9, hex: '#98C379' },    // Levels 7-9: Green (Advanced)
+    { maxLevel: 19, hex: '#C678DD' },   // Levels 10-19: Purple (Master)
+    { maxLevel: Infinity, hex: '#61AFEF' } // Levels 20+: Blue/Cyan (Legend)
 ];
 
-function hexToRgb(hex: string): ColorRGB {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16)
-    } : { r: 0, g: 0, b: 0 };
-}
-
-function rgbToHex(rgb: ColorRGB): string {
-    const toHex = (c: number) => Math.round(c).toString(16).padStart(2, '0');
-    return `#${toHex(rgb.r)}${toHex(rgb.g)}${toHex(rgb.b)}`;
-}
-
-function interpolate(c1: ColorRGB, c2: ColorRGB, factor: number): ColorRGB {
-    return {
-        r: c1.r + (c2.r - c1.r) * factor,
-        g: c1.g + (c2.g - c1.g) * factor,
-        b: c1.b + (c2.b - c1.b) * factor
-    };
-}
-
 /**
- * Returns a hex color string interpolated based on the score (0-10).
+ * Returns a hex color string based on the Level (derived from score).
+ * Infinite scaling with tiers.
  */
 export function getScoreColor(score: number): string {
-    // Clamp score
-    const s = Math.min(Math.max(score, 0), 10);
+    // 1. Calculate Level from Score
+    // Score 7.45 -> 745 XP -> Level 8 (since 0-99 is L1. Wait. 
+    // Let's stick to the xpUtils logic: 0-0.99 (0-99XP) is L1.
+    // So Score 0 -> L1. Score 1 -> L2.
+    // Formula: floor(score) + 1
 
-    // Find the two steps to interpolate between
-    let lower = COLOR_STEPS[0];
-    let upper = COLOR_STEPS[COLOR_STEPS.length - 1];
+    // Handle edge case where score might be negative
+    const safeScore = Math.max(0, score);
+    const level = Math.floor(safeScore) + 1;
 
-    for (let i = 0; i < COLOR_STEPS.length - 1; i++) {
-        if (s >= COLOR_STEPS[i].score && s <= COLOR_STEPS[i + 1].score) {
-            lower = COLOR_STEPS[i];
-            upper = COLOR_STEPS[i + 1];
-            break;
-        }
-    }
+    // 2. Find Tier
+    const tier = TIER_COLORS.find(t => level <= t.maxLevel) || TIER_COLORS[TIER_COLORS.length - 1];
 
-    const range = upper.score - lower.score;
-    const factor = range === 0 ? 0 : (s - lower.score) / range;
-
-    const rgbLower = hexToRgb(lower.hex);
-    const rgbUpper = hexToRgb(upper.hex);
-
-    const interpolatedRgb = interpolate(rgbLower, rgbUpper, factor);
-    return rgbToHex(interpolatedRgb);
+    return tier.hex;
 }
+
+// Keep helper for direct hex access if needed
+export function getTierColor(level: number): string {
+    const tier = TIER_COLORS.find(t => level <= t.maxLevel) || TIER_COLORS[TIER_COLORS.length - 1];
+    return tier.hex;
+}
+

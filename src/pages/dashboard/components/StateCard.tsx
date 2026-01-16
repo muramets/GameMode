@@ -4,7 +4,8 @@ import { faCog, faHistory, faArrowUp, faArrowDown } from '@fortawesome/free-soli
 import { OverflowTooltip } from '../../../components/ui/atoms/OverflowTooltip';
 import type { StateData } from './types';
 import { renderIcon } from '../../../utils/iconMapper';
-import { getScoreColor } from '../../../utils/colorUtils';
+import { getTierColor } from '../../../utils/colorUtils';
+import { calculateLevel, scoreToXP } from '../../../utils/xpUtils';
 
 interface StateCardProps {
     state: StateData;
@@ -26,16 +27,17 @@ export function StateCard({
     onHistory
 }: StateCardProps) {
     const cardRef = useRef<HTMLDivElement>(null);
-    const percentage = Math.min((score / 10) * 100, 100);
+
+    // XP / Level Calculation
+    const totalXP = scoreToXP(score);
+    const { level, currentLevelXP, progress } = calculateLevel(totalXP);
+    const tierColor = getTierColor(level);
+
+    // Display Color
+    const displayColor = tierColor;
+
+    // Trend calculation
     const change = score - yesterdayScore;
-    const dynamicColor = getScoreColor(score);
-    // Use user defined color if it differs from default, else use dynamic score color
-    // Actually, user wants "use colorUtils for progress bar and gradient". 
-    // They might still want the 'card' to have a theme color, but the 'progress' to be dynamic.
-    // Let's use dynamicColor for the progress bar and gradient as requested.
-    // But keep the icon using the state's assigned color if any? Or maybe use dynamic there too?
-    // Let's default to dynamicColor for "life" elements.
-    const displayColor = dynamicColor;
 
     // Helper to split name and subtext
     const displayName = state.name;
@@ -70,7 +72,7 @@ export function StateCard({
 
             {/* Focused Glow - Moves slightly on hover */}
             <div
-                className="absolute -top-16 left-1/2 -translate-x-1/2 w-[60%] h-32 blur-[60px] transition-all duration-700 ease-in-out opacity-[0.15] group-hover:opacity-30 group-hover:scale-125 group-hover:-top-12"
+                className="absolute -top-16 left-1/2 -translate-x-1/2 w-[60%] h-32 blur-[60px] transition-all duration-700 ease-in-out opacity-[0.10] group-hover:opacity-20 group-hover:scale-125 group-hover:-top-12"
                 style={{ backgroundColor: displayColor }}
             />
 
@@ -105,35 +107,20 @@ export function StateCard({
                 </div>
 
                 {/* Controls - Positioned absolute and lowered to not block title space */}
-                <div className="absolute -right-2 top-0 flex items-center gap-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out z-20">
-                    <button
-                        className="w-7 h-7 flex items-center justify-center rounded-lg text-sub hover:text-main transition-colors text-[0.8rem]"
-                        title="Edit state"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onEdit?.();
-                        }}
-                    >
-                        <FontAwesomeIcon icon={faCog} />
-                    </button>
-                    <button
-                        className="w-7 h-7 flex items-center justify-center rounded-lg text-sub hover:text-main transition-colors text-[0.8rem]"
-                        title="View history"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onHistory?.();
-                        }}
-                    >
-                        <FontAwesomeIcon icon={faHistory} />
-                    </button>
-                </div>
             </div>
 
-            {/* Score */}
-            <div className="relative z-10 my-2">
+            {/* Middle: Actions & Level Display */}
+            <div className="relative z-10 my-2 flex items-end justify-between w-full">
+                {/* Left: Level Display */}
                 <div className="flex items-baseline gap-2">
-                    <span className="text-[3.5rem] font-light leading-none font-mono tracking-tight text-text-primary">
-                        {score.toFixed(2)}
+                    <span className="text-[9px] font-mono text-sub uppercase tracking-widest opacity-40 mb-1 transition-all duration-300 group-hover:text-text-primary group-hover:opacity-100">
+                        Lvl
+                    </span>
+                    <span
+                        className="text-[3.5rem] font-light leading-none font-mono tracking-tight transition-colors duration-300"
+                        style={{ color: displayColor }}
+                    >
+                        {level}
                     </span>
 
                     {Math.abs(change) > 0.001 && (
@@ -143,27 +130,50 @@ export function StateCard({
                     )}
                 </div>
 
-                <div className="text-[0.75rem] text-sub font-mono mt-1 ml-1 flex items-center gap-2 opacity-80">
-                    yesterday: {yesterdayScore.toFixed(2)}
+                {/* Right: Actions (Only visible on hover) */}
+                <div className="flex flex-col gap-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 items-end">
+                    <button
+                        className="w-7 h-7 flex items-center justify-end text-sub hover:text-main transition-colors text-[0.8rem]"
+                        title="View history"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onHistory?.();
+                        }}
+                    >
+                        <FontAwesomeIcon icon={faHistory} />
+                    </button>
+                    <button
+                        className="w-7 h-7 flex items-center justify-end text-sub hover:text-main transition-colors text-[0.8rem]"
+                        title="Edit state"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onEdit?.();
+                        }}
+                    >
+                        <FontAwesomeIcon icon={faCog} />
+                    </button>
                 </div>
             </div>
 
-            {/* Progress Bar */}
-            <div className="w-full h-[6px] bg-bg-primary/50 rounded-full overflow-hidden my-4 relative z-10">
-                <div
-                    className="h-full transition-all duration-500 ease-out rounded-full"
-                    style={{
-                        width: `${percentage}%`,
-                        backgroundColor: displayColor,
-                        boxShadow: `0 0 10px ${displayColor}40`
-                    }}
-                />
+            {/* Progress Bar Section */}
+            <div className="relative z-10 my-4 flex flex-col gap-1.5">
+                <div className="text-[0.75rem] text-sub font-mono ml-1 opacity-70 transition-all duration-300 group-hover:text-text-primary group-hover:opacity-100">
+                    {currentLevelXP}% to next level
+                </div>
+                <div className="w-full h-[6px] bg-bg-primary/50 rounded-full overflow-hidden">
+                    <div
+                        className="h-full transition-all duration-500 ease-out rounded-full"
+                        style={{
+                            width: `${progress}%`,
+                            backgroundColor: displayColor,
+                            boxShadow: `0 0 10px ${displayColor}40`
+                        }}
+                    />
+                </div>
             </div>
 
-
-
             {/* Details Footer */}
-            <div className="flex justify-between items-center text-[0.7rem] text-sub font-mono relative z-10 px-1 opacity-70 group-hover:opacity-100 transition-opacity">
+            <div className="flex justify-between items-center text-[0.7rem] text-sub font-mono relative z-10 px-1 opacity-70 group-hover:opacity-100  transition-all duration-300 group-hover:text-text-primary">
                 <span>{depText}</span>
             </div>
         </div>

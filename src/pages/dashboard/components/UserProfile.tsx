@@ -5,37 +5,40 @@ import { Card } from '../../../components/ui/atoms/Card';
 import { useAuth } from '../../../contexts/AuthProvider';
 import { usePersonalityStore } from '../../../stores/personalityStore';
 import { useScoreContext } from '../../../contexts/ScoreProvider';
-import { getScoreColor } from '../../../utils/colorUtils';
+import { getTierColor } from '../../../utils/colorUtils';
+import { calculateLevel, scoreToXP } from '../../../utils/xpUtils';
 import { isToday, isThisMonth, parseISO } from 'date-fns';
 
 export function UserProfile() {
     const { user } = useAuth();
     const navigate = useNavigate();
     const { personalities, activePersonalityId } = usePersonalityStore();
-    const { innerfaces, states, history } = useScoreContext();
+    const { innerfaces, history } = useScoreContext();
 
     const activePersonality = personalities.find(p => p.id === activePersonalityId);
     const username = activePersonality?.name || user?.displayName || user?.email?.split('@')[0] || "Unknown Player";
 
-    // 1. Level calculation: average of all innerfaces + states (on 10-point scale)
+    // 1. Level calculation: Average of Innerfaces only (States are derivative, so excluding them avoids double counting)
     const allScores = [
-        ...innerfaces.map(i => i.currentScore || 0),
-        ...states.map(s => s.score || 0)
+        ...innerfaces.map(i => i.currentScore || 0)
     ];
 
     const averageScore = allScores.length > 0
         ? allScores.reduce((a, b) => a + b, 0) / allScores.length
         : 0;
 
-    const level = Math.floor(averageScore) || 1;
-    const percentage = (averageScore % 1) * 100;
-    const progressColor = getScoreColor(averageScore);
+    const totalXP = scoreToXP(averageScore);
+    const { level, currentLevelXP, progress } = calculateLevel(totalXP);
+    const tierColor = getTierColor(level);
 
     // 2. Check-ins today/month from history
     const stats = history.reduce((acc, record) => {
+        // Exclude system events (re-linking, starting point changes, etc.) from daily/monthly stats
+        if (record.type === 'system') return acc;
+
         const recordDate = parseISO(record.timestamp);
-        // Use raw weight for visual XP (no multiplier)
-        const recordXP = record.weight;
+        // Use XP if available, else derive from weight
+        const recordXP = record.xp ?? Math.round(record.weight * 100);
 
         if (isToday(recordDate)) {
             acc.checkinsToday += 1;
@@ -55,19 +58,18 @@ export function UserProfile() {
     const renderXP = (xp: number, isTotal = false) => {
         if (xp === 0) return <span className="text-xs text-sub font-mono">0 XP</span>;
         const isPositive = xp > 0;
-        const formattedXP = Number(xp.toFixed(2)); // Strip trailing zeros
         return (
             <span
                 className="text-xs font-mono"
                 style={{ color: isPositive ? '#98c379' : '#ca4754' }}
             >
-                {isPositive ? '+' : ''}{formattedXP} XP{isTotal ? ' total' : ''}
+                {isPositive ? '+' : ''}{xp} XP{isTotal ? ' total' : ''}
             </span>
         );
     };
 
     return (
-        <Card className="flex flex-col md:flex-row items-center justify-between gap-8 p-6 mb-8 bg-sub-alt rounded-lg shadow-sm border-none hover:scale-[1.02] hover:shadow-xl transition-all duration-300">
+        <Card className="group flex flex-col md:flex-row items-center justify-between gap-8 p-6 mb-8 bg-sub-alt rounded-lg shadow-sm border-none hover:scale-[1.02] hover:shadow-xl transition-all duration-300">
             {/* User Info Section */}
             <div className="flex md:flex-row items-center gap-4 w-full md:w-auto">
                 {/* Avatar */}
@@ -84,31 +86,44 @@ export function UserProfile() {
                     {/* Level + Progress Row */}
                     <div className="flex items-center gap-3 mt-4">
                         {/* Level Number */}
-                        <span className="text-[2rem] font-medium font-mono text-text-primary leading-none">
-                            {level}
-                        </span>
+                        <div className="flex flex-col items-center leading-none">
+                            <span
+                                className="text-[2rem] font-medium font-mono"
+                                style={{ color: tierColor }}
+                            >
+                                {level}
+                            </span>
+                            <span className="text-[9px] font-mono text-sub uppercase tracking-wider opacity-60 transition-all duration-300 group-hover:text-text-primary group-hover:opacity-100">Level</span>
+                        </div>
 
                         {/* Progress Bar Container */}
-                        <div className="flex items-center gap-2 w-full max-w-[300px]">
-                            <div className="flex-1 h-[6px] bg-bg-primary rounded-[3px] overflow-hidden min-w-[100px]">
+                        <div className="flex flex-col gap-1.5 w-full max-w-[300px] min-w-[200px]">
+                            <div className="w-full h-[6px] bg-bg-primary rounded-[3px] overflow-hidden">
                                 <div
                                     className="h-full transition-all duration-300 ease-out rounded-[3px]"
                                     style={{
-                                        width: `${percentage}%`,
-                                        backgroundColor: progressColor
+                                        width: `${progress}%`,
+                                        backgroundColor: tierColor
                                     }}
                                 />
                             </div>
-                            {/* Decimal Value */}
-                            <span className="text-xs text-sub text-right font-mono min-w-[4ch]">
-                                {averageScore.toFixed(2)}
-                            </span>
+                            {/* XP Progress Value */}
+                            <div className="flex justify-between items-center text-[10px] font-mono text-sub leading-none w-full">
+                                <span className="opacity-70 transition-all duration-300 group-hover:text-text-primary group-hover:opacity-100">
+                                    {currentLevelXP} / 100 XP
+                                </span>
+                                <span className="opacity-50 transition-all duration-300 tracking-wide group-hover:text-text-primary group-hover:opacity-100">
+                                    {totalXP} Total
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
-
-                <div className="hidden md:block w-1 h-[80px] bg-text-primary opacity-10 rounded-full ml-4"></div>
+                <div className="hidden md:block w-[8px] h-[80px] bg-text-primary opacity-5 rounded-full ml-6 shrink-0 transition-all duration-300"></div>
             </div>
+
+            {/* Mobile Separator (Horizontal) */}
+            <div className="w-full h-[6px] bg-text-primary opacity-5 rounded-full my-6 md:hidden shrink-0"></div>
 
             {/* Stats Section */}
             <div className="flex gap-8 mt-2 md:mt-0">

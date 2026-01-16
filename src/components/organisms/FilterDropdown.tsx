@@ -125,7 +125,7 @@ interface ItemProps {
 export function Item({ label, isActive, onClick, onIndicatorClick, onIconClick, icon, style, showIndicator = true, showCheck = false, className = "", indicatorColor }: ItemProps) {
     return (
         <div
-            className={`flex items-center transition-all group/item-container rounded-lg mx-1 ${isActive ? 'bg-sub/30 text-text-primary' : 'text-sub hover:bg-sub/20 hover:text-text-primary'} ${className}`}
+            className={`flex items-center transition-all group/item-container rounded-lg mx-1 pl-3 ${isActive ? 'bg-sub/30 text-text-primary' : 'text-sub hover:bg-sub/20 hover:text-text-primary'} ${className}`}
             style={style}
         >
             {showIndicator && (
@@ -138,7 +138,7 @@ export function Item({ label, isActive, onClick, onIndicatorClick, onIconClick, 
                     }}
                     type="button"
                     disabled={!onIndicatorClick}
-                    className="w-6 h-6 flex items-center justify-center transition-all shrink-0 group/indicator cursor-default"
+                    className="w-4 h-6 flex items-center justify-center transition-all shrink-0 group/indicator cursor-default"
                 >
                     <div className="w-4 h-4 rounded-full flex items-center justify-center transition-all">
                         <div
@@ -155,12 +155,12 @@ export function Item({ label, isActive, onClick, onIndicatorClick, onIconClick, 
             <button
                 onClick={onClick}
                 type="button"
-                className={`flex-1 flex items-center gap-3 py-1.5 min-w-0 ${showIndicator ? 'pr-2 pl-0.5' : 'px-2'}`}
+                className={`flex-1 flex items-center gap-3 py-3 min-w-0 ${showIndicator ? 'pr-2 pl-3' : 'px-2'}`}
             >
                 <TooltipProvider delayDuration={400}>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <span className="flex-1 text-left lowercase truncate font-mono text-[11px]">{label}</span>
+                            <span className="flex-1 text-left truncate font-mono text-[11px]">{label}</span>
                         </TooltipTrigger>
                         <TooltipContent side="top" className="text-[10px] font-mono">
                             {label}
@@ -215,7 +215,7 @@ export function NavButton({ title, icon, value, onClick, active, style }: NavBut
                     )}
                 </div>
                 <div className="flex flex-col items-start gap-0.5">
-                    <span className="uppercase tracking-wider font-bold opacity-90">{title}</span>
+                    <span className="tracking-wider font-bold opacity-90">{title}</span>
                     <span className="text-[10px] opacity-60 lowercase">{value}</span>
                 </div>
             </div>

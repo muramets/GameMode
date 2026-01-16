@@ -29,7 +29,15 @@ export function useScores() {
             return;
         }
 
-        const weight = direction === '+' ? protocol.weight : -protocol.weight;
+        // 1. Determine XP
+        // If protocol has explicit XP, use it. Otherwise derive from weight (Legacy support).
+        const rawXP = protocol.xp ?? Math.round(protocol.weight * 100);
+        const xp = direction === '+' ? rawXP : -rawXP;
+
+        // 2. Calculate Weight for Internal Score (0-10 scale) retention
+        // 1 XP = 0.01 Score
+        const weight = xp / 100;
+
         const changes: Record<string | number, number> = {};
         protocol.targets.forEach(targetId => {
             changes[targetId] = weight;
@@ -42,6 +50,7 @@ export function useScores() {
             protocolIcon: protocol.icon,
             timestamp: new Date().toISOString(),
             weight,
+            xp,
             targets: protocol.targets,
             changes,
             action: direction

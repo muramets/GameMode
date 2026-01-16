@@ -20,7 +20,7 @@ export type TimeFilter = 'All time' | 'Today' | 'This week' | 'This month';
 export type TypeFilter = 'All types' | 'Protocols' | 'Manual' | 'System';
 export type EffectFilter = 'All effects' | 'Positive' | 'Negative';
 
-type FilterView = 'root' | 'protocol_groups' | 'protocols_list' | 'innerfaces' | 'states';
+type FilterView = 'root' | 'protocol_groups' | 'protocols_list' | 'innerface_groups' | 'innerfaces' | 'states';
 
 interface HistoryFilterProps {
     timeFilter: TimeFilter;
@@ -57,11 +57,12 @@ export function HistoryFilter({
     innerfaces,
     states,
     hasActiveFilters,
-    clearFilters
+    clearFilters,
+    groupsMetadata
 }: HistoryFilterProps & {
     selectedStateIds: string[];
     setSelectedStateIds: (val: string[]) => void;
-    states: StateData[];
+    groupsMetadata: Record<string, { icon: string; color?: string }>;
 }) {
     const [view, setView] = useState<FilterView>('root');
     const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
@@ -75,26 +76,42 @@ export function HistoryFilter({
     // Group protocols
     const protocolGroups = useMemo(() => {
         const groups = new Set<string>();
-        protocols.forEach(p => groups.add(p.group || 'Other'));
+        // Only add groups that have protocols
+        protocols.forEach(p => {
+            if (p.group) groups.add(p.group);
+            else groups.add('ungrouped');
+        });
         return Array.from(groups).sort();
     }, [protocols]);
+
+    // Group innerfaces
+    const innerfaceGroups = useMemo(() => {
+        const groups = new Set<string>();
+        innerfaces.forEach(i => {
+            if (i.group) groups.add(i.group);
+            else groups.add('ungrouped');
+        });
+        return Array.from(groups).sort();
+    }, [innerfaces]);
 
     const filteredProtocols = useMemo(() => {
         if (!selectedGroup) return [];
         return protocols.filter(p =>
-            (p.group || 'Other') === selectedGroup &&
+            (p.group || 'ungrouped') === selectedGroup &&
             p.title.toLowerCase().includes(searchQuery.toLowerCase())
         );
     }, [protocols, selectedGroup, searchQuery]);
 
     const filteredInnerfaces = useMemo(() => {
+        if (!selectedGroup) return [];
         return innerfaces.filter(i =>
+            (i.group || 'ungrouped') === selectedGroup &&
             i.name.toLowerCase().includes(searchQuery.toLowerCase())
         );
-    }, [innerfaces, searchQuery]);
+    }, [innerfaces, selectedGroup, searchQuery]);
 
     const getProtocolLabel = (ids: string[]) => {
-        if (ids.length === 0) return 'All protocols';
+        if (ids.length === 0) return 'All protocols Check-ins';
         if (ids.length === 1) return protocols.find(p => p.id.toString() === ids[0])?.title || ids[0];
         return `${ids.length} selected`;
     };
@@ -173,7 +190,7 @@ export function HistoryFilter({
                                 title="Innerface"
                                 icon={faChartBar}
                                 value={getInnerfaceLabel(selectedInnerfaceIds)}
-                                onClick={() => setView('innerfaces')}
+                                onClick={() => { setSelectedGroup(null); setView('innerface_groups'); }}
                                 active={selectedInnerfaceIds.length > 0}
                             />
                         </div>
@@ -237,24 +254,35 @@ export function HistoryFilter({
                     />
 
                     <FilterDropdown.Item
-                        label="All protocols"
+                        label="ALL PROTOCOLS"
                         isActive={selectedProtocolIds.length === 0}
                         onClick={() => { setSelectedProtocolIds([]); setView('root'); }}
-                        className="mx-1 mt-1"
+                        className="mx-1 mt-1 font-bold tracking-wider"
                     />
 
                     <div className="flex flex-col gap-0.5 mt-2 px-1">
                         {protocolGroups.map(group => {
-                            const config = GROUP_CONFIG[group];
+                            const config = GROUP_CONFIG[group] || GROUP_CONFIG['ungrouped'];
+                            const meta = groupsMetadata[group];
+
+                            // Resolve color: Metadata > Config > Default
+                            const color = meta?.color || config?.color;
+
                             return (
                                 <FilterDropdown.NavButton
                                     key={group}
-                                    title={group}
-                                    icon={config ? <FontAwesomeIcon icon={config.icon} /> : <div className="w-1.5 h-1.5 rounded-full bg-sub/50" />}
+                                    title={group.toLowerCase()}
+                                    icon={
+                                        meta?.icon ? (
+                                            <div style={{ color: color }}>{renderIcon(meta.icon)}</div>
+                                        ) : (
+                                            config ? <FontAwesomeIcon icon={config.icon} /> : <div className="w-1.5 h-1.5 rounded-full bg-sub/50" />
+                                        )
+                                    }
                                     value={""}
                                     onClick={() => { setSelectedGroup(group); setView('protocols_list'); }}
                                     active={false}
-                                    style={config ? { '--hover-color': config.color } as React.CSSProperties : undefined}
+                                    style={color ? { '--hover-color': color } as React.CSSProperties : undefined}
                                 />
                             );
                         })}
@@ -282,8 +310,8 @@ export function HistoryFilter({
                                     isActive={isSelected}
                                     onClick={() => toggleProtocol(p.id.toString())}
                                     icon={renderIcon(p.icon)}
-                                    showIndicator={false}
-                                    showCheck={true}
+                                    showIndicator={true}
+                                    showCheck={false}
                                     style={p.color ? { '--hover-color': p.color } as React.CSSProperties : undefined}
                                 />
                             );
@@ -295,24 +323,62 @@ export function HistoryFilter({
                 </div>
             )}
 
-            {view === 'innerfaces' && (
-                <div className="animate-in slide-in-from-right-4 duration-200">
+            {view === 'innerface_groups' && (
+                <div className="animate-in slide-in-from-right-4 duration-200 h-full flex flex-col">
                     <FilterDropdown.SearchHeader
-                        title="Select Innerface"
-                        showSearch={innerfaces.length > 10}
+                        title="Select Group"
+                        showSearch={false}
                         searchQuery={searchQuery}
                         onSearchChange={setSearchQuery}
                         onBack={() => setView('root')}
                     />
 
                     <FilterDropdown.Item
-                        label="All innerfaces"
+                        label="ALL INNERFACES"
                         isActive={selectedInnerfaceIds.length === 0}
                         onClick={() => { setSelectedInnerfaceIds([]); setView('root'); }}
-                        className="mx-1 mt-1"
+                        className="mx-1 mt-1 font-bold tracking-wider"
                     />
 
                     <div className="flex flex-col gap-0.5 mt-2 px-1">
+                        {innerfaceGroups.map(group => {
+                            const config = GROUP_CONFIG[group] || GROUP_CONFIG['ungrouped'];
+                            const meta = groupsMetadata[group];
+                            const color = meta?.color || config?.color;
+
+                            return (
+                                <FilterDropdown.NavButton
+                                    key={group}
+                                    title={group.toLowerCase()}
+                                    icon={
+                                        meta?.icon ? (
+                                            <div style={{ color: color }}>{renderIcon(meta.icon)}</div>
+                                        ) : (
+                                            config ? <FontAwesomeIcon icon={config.icon} /> : <div className="w-1.5 h-1.5 rounded-full bg-sub/50" />
+                                        )
+                                    }
+                                    value={""}
+                                    onClick={() => { setSelectedGroup(group); setView('innerfaces'); }}
+                                    active={false}
+                                    style={color ? { '--hover-color': color } as React.CSSProperties : undefined}
+                                />
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {view === 'innerfaces' && (
+                <div className="animate-in slide-in-from-right-4 duration-200 h-full flex flex-col">
+                    <FilterDropdown.SearchHeader
+                        title={selectedGroup || 'Innerfaces'}
+                        showSearch={filteredInnerfaces.length > 10}
+                        searchQuery={searchQuery}
+                        onSearchChange={setSearchQuery}
+                        onBack={() => setView('innerface_groups')}
+                    />
+
+                    <div className="flex flex-col gap-0.5 mt-1 px-1">
                         {filteredInnerfaces.map(i => {
                             const isSelected = selectedInnerfaceIds.includes(i.id.toString());
                             return (
@@ -322,8 +388,8 @@ export function HistoryFilter({
                                     isActive={isSelected}
                                     onClick={() => toggleInnerface(i.id.toString())}
                                     icon={renderIcon(i.icon)}
-                                    showIndicator={false}
-                                    showCheck={true}
+                                    showIndicator={true}
+                                    showCheck={false}
                                 />
                             );
                         })}
@@ -345,10 +411,10 @@ export function HistoryFilter({
                     />
 
                     <FilterDropdown.Item
-                        label="All states"
+                        label="ALL STATES"
                         isActive={selectedStateIds.length === 0}
                         onClick={() => { setSelectedStateIds([]); setView('root'); }}
-                        className="mx-1 mt-1"
+                        className="mx-1 mt-1 font-bold tracking-wider"
                     />
 
                     <div className="flex flex-col gap-0.5 mt-2 px-1">

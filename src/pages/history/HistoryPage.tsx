@@ -10,6 +10,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { HistoryFilter } from './components/HistoryFilter';
 import { Input } from '../../components/ui/molecules/Input';
+import { Button } from '../../components/ui/atoms/Button';
 import { ActiveFiltersList } from '../../components/ui/molecules/ActiveFiltersList';
 import { HistoryEvent } from './components/HistoryEvent';
 import type { TimeFilter, TypeFilter, EffectFilter } from './components/HistoryFilter';
@@ -17,7 +18,7 @@ import type { HistoryRecord } from '../../types/history';
 
 export default function HistoryPage() {
     const { history, deleteEvent } = useScoreContext();
-    const { innerfaces, protocols, states } = useMetadataStore();
+    const { innerfaces, protocols, states, groupsMetadata } = useMetadataStore();
     const location = useLocation();
 
     // Filters state
@@ -205,6 +206,7 @@ export default function HistoryPage() {
                         protocols={protocols}
                         innerfaces={innerfaces}
                         states={states}
+                        groupsMetadata={groupsMetadata}
                         hasActiveFilters={hasActiveFilters}
                         clearFilters={clearFilters}
                     />
@@ -311,15 +313,16 @@ export default function HistoryPage() {
                         <FontAwesomeIcon icon={faSearch} className="text-4xl" />
                     </div>
                     <h3 className="text-xl font-lexend font-bold text-text-secondary mb-3">No matching events</h3>
-                    <p className="text-sub font-mono text-sm max-w-sm opacity-50 mb-8">
+                    <p className="text-text-secondary font-mono text-sm max-w-sm mb-8">
                         Your filters are too strict. No records were found matching these specific conditions.
                     </p>
-                    <button
+                    <Button
+                        variant="primary"
                         onClick={clearFilters}
-                        className="px-8 py-3 bg-main text-bg-primary rounded-xl font-mono text-xs font-black uppercase tracking-[0.25em] hover:scale-105 active:scale-95 transition-all shadow-xl shadow-main/20"
+                        className="px-8 py-6 rounded-xl font-mono text-xs font-black uppercase tracking-[0.25em] transition-all hover:shadow-text-primary/20 shadow-xl shadow-main/20"
                     >
                         Reset All Filters
-                    </button>
+                    </Button>
                 </div>
             )}
         </div>

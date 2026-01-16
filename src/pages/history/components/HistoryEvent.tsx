@@ -106,6 +106,7 @@ export function HistoryEvent({ event, innerfaces, protocolColor, onDelete, onFil
                     {Object.entries(event.changes).map(([innerfaceId, change]) => {
                         const iface = innerfaces.find(i => i.id == innerfaceId);
                         const isHistorical = iface?.versionTimestamp && event.timestamp <= iface.versionTimestamp;
+                        const xpChange = Math.round(change * 100);
 
                         return (
                             <TooltipProvider key={innerfaceId} delayDuration={300}>
@@ -125,7 +126,7 @@ export function HistoryEvent({ event, innerfaces, protocolColor, onDelete, onFil
                                             </span>
                                             <div className="h-3 w-px bg-white/5" />
                                             <span className={`text-[10px] font-mono font-black ${change > 0 ? 'text-correct' : 'text-error'}`}>
-                                                {change > 0 ? '+' : ''}{change.toFixed(2)}
+                                                {change > 0 ? '+' : ''}{xpChange} XP
                                             </span>
                                         </button>
                                     </TooltipTrigger>

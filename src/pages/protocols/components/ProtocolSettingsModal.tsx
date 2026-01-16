@@ -36,7 +36,7 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
     const [group, setGroup] = useState('');
     const [icon, setIcon] = useState('🔹');
     const [action, setAction] = useState<'+' | '-'>('+');
-    const [weight, setWeight] = useState('0.01');
+    const [xp, setXp] = useState('1'); // Use XP (Integer)
     const [targets, setTargets] = useState<(string | number)[]>([]);
     const [color, setColor] = useState('#e2b714');
 
@@ -70,7 +70,9 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                 setGroup(protocol.group || '');
                 setIcon(protocol.icon);
                 setAction(protocol.action || '+');
-                setWeight(protocol.weight.toString());
+                // Calculate XP from stored weight if xp is missing
+                const derivedXp = protocol.xp ?? Math.round(protocol.weight * 100);
+                setXp(derivedXp.toString());
                 setTargets(protocol.targets);
                 setColor(protocol.color || '#e2b714');
             }
@@ -82,7 +84,7 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
             setGroup('');
             setIcon('🔹');
             setAction('+');
-            setWeight('0.01');
+            setXp('1');
             setTargets([]);
             setColor('#e2b714');
             setIsConfirmingDelete(false);
@@ -173,7 +175,8 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                 group,
                 icon,
                 action,
-                weight: Number(weight),
+                xp: Number(xp),
+                weight: Number(xp) / 100, // Derived weight for backward compatibility
                 targets,
                 color
             };
@@ -318,12 +321,12 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                    <InputLabel label="Hover Text" />
+                    <InputLabel label="Quick Note" />
                     <Input
                         type="text"
                         value={hover}
                         onChange={e => setHover(e.target.value)}
-                        placeholder="Tooltip text (optional)"
+                        placeholder="Short note shown on tap/hover..."
                     />
                 </div>
 
@@ -558,10 +561,12 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                         />
                     )}
                 </div>
-                <div className="flex gap-4">
-                    {/* Impact */}
-                    <div className="w-32 flex flex-col gap-1.5">
-                        <InputLabel label="Impact" />
+                <div className="flex flex-col gap-5">
+                    {/* XP Reward Row */}
+                    <div className="flex flex-col gap-3">
+                        <InputLabel label="XP Reward" />
+
+                        {/* Manual Input */}
                         <div className="flex items-center gap-2">
                             <button
                                 type="button"
@@ -572,124 +577,144 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                             </button>
                             <Input
                                 type="number"
-                                value={weight}
-                                onChange={e => setWeight(e.target.value)}
-                                step="0.01"
-                                min="0"
-                                className="flex-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                value={xp}
+                                onChange={e => setXp(e.target.value)}
+                                step="1"
+                                min="1"
+                                className="flex-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-center h-[42px] text-lg font-mono font-bold"
                             />
+                        </div>
+
+                        {/* Separator */}
+                        <div className="relative flex py-1 items-center">
+                            <div className="flex-grow border-t border-white/10"></div>
+                            <span className="flex-shrink-0 mx-2 text-[9px] text-sub/50 uppercase tracking-widest font-mono">or choose preset</span>
+                            <div className="flex-grow border-t border-white/10"></div>
+                        </div>
+
+                        {/* Presets */}
+                        <div className="grid grid-cols-3 gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setXp('1')}
+                                className={`px-2 py-3 rounded-xl border text-[10px] font-mono uppercase tracking-wide transition-all ${xp === '1' ? 'bg-[#e2b714] border-[#e2b714] text-bg-primary font-bold shadow-[0_0_15px_rgba(226,183,20,0.3)]' : 'bg-sub-alt border-transparent text-sub hover:text-text-primary hover:bg-sub'}`}
+                            >
+                                Easy: 1 XP
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setXp('5')}
+                                className={`px-2 py-3 rounded-xl border text-[10px] font-mono uppercase tracking-wide transition-all ${xp === '5' ? 'bg-[#e2b714] border-[#e2b714] text-bg-primary font-bold shadow-[0_0_15px_rgba(226,183,20,0.3)]' : 'bg-sub-alt border-transparent text-sub hover:text-text-primary hover:bg-sub'}`}
+                            >
+                                Medium: 5 XP
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setXp('20')}
+                                className={`px-2 py-3 rounded-xl border text-[10px] font-mono uppercase tracking-wide transition-all ${xp === '20' ? 'bg-[#e2b714] border-[#e2b714] text-bg-primary font-bold shadow-[0_0_15px_rgba(226,183,20,0.3)]' : 'bg-sub-alt border-transparent text-sub hover:text-text-primary hover:bg-sub'}`}
+                            >
+                                Hard: 20 XP
+                            </button>
                         </div>
                     </div>
 
-                    {/* Color */}
-                    <div className="w-[60px] flex flex-col gap-1.5 relative">
-                        <InputLabel label="Color" />
-                        <button
-                            type="button"
-                            onClick={() => setIsColorPickerOpen(!isColorPickerOpen)}
-                            className="h-[42px] w-full bg-sub-alt rounded-lg border border-transparent hover:bg-sub focus:border-white/5 transition-colors flex items-center justify-center relative"
-                        >
-                            <div
-                                className="w-5 h-5 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.3)] transition-transform duration-200 active:scale-90"
-                                style={{ backgroundColor: color }}
-                            />
-                        </button>
+                    {/* Style Row (Color & Icon) */}
+                    <div className="flex gap-4">
+                        {/* Color */}
+                        <div className="w-[80px] flex flex-col gap-1.5 relative">
+                            <InputLabel label="Color" />
+                            <button
+                                type="button"
+                                onClick={() => setIsColorPickerOpen(!isColorPickerOpen)}
+                                className="h-[42px] w-full bg-sub-alt rounded-lg border border-transparent hover:bg-sub focus:border-white/5 transition-colors flex items-center justify-center relative"
+                            >
+                                <div
+                                    className="w-5 h-5 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.3)] transition-transform duration-200 active:scale-90"
+                                    style={{ backgroundColor: color }}
+                                />
+                            </button>
 
-                        {/* Color Dropdown */}
-                        {isColorPickerOpen && (
-                            <div className="absolute top-[calc(100%+8px)] right-0 w-[180px] z-50 py-2 bg-bg-secondary border border-white/5 rounded-xl shadow-2xl flex flex-wrap justify-center gap-2 animate-in fade-in zoom-in-95 duration-200 p-2 max-h-[160px] overflow-y-auto custom-scrollbar">
-                                {PRESET_COLORS.map((preset: string) => (
-                                    <button
-                                        key={preset}
-                                        type="button"
-                                        onClick={() => {
-                                            setColor(preset);
-                                            setIsColorPickerOpen(false);
-                                        }}
-                                        className="w-6 h-6 rounded-full hover:scale-110 transition-transform shadow-sm relative group shrink-0"
-                                        style={{ backgroundColor: preset }}
+                            {/* Color Dropdown */}
+                            {isColorPickerOpen && (
+                                <div className="absolute top-[calc(100%+8px)] left-0 w-[180px] z-50 py-2 bg-bg-secondary border border-white/5 rounded-xl shadow-2xl flex flex-wrap justify-center gap-2 animate-in fade-in zoom-in-95 duration-200 p-2 max-h-[160px] overflow-y-auto custom-scrollbar">
+                                    {PRESET_COLORS.map((preset: string) => (
+                                        <button
+                                            key={preset}
+                                            type="button"
+                                            onClick={() => {
+                                                setColor(preset);
+                                                setIsColorPickerOpen(false);
+                                            }}
+                                            className="w-6 h-6 rounded-full hover:scale-110 transition-transform shadow-sm relative group shrink-0"
+                                            style={{ backgroundColor: preset }}
+                                        >
+                                            {color === preset && (
+                                                <div className="absolute inset-0 rounded-full border-2 border-white/50" />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {isColorPickerOpen && (
+                                <div className="fixed inset-0 z-40" onClick={() => setIsColorPickerOpen(false)} />
+                            )}
+                        </div>
+
+                        {/* Icon & Picker */}
+                        <div className="w-[80px] flex flex-col gap-1.5 relative">
+                            <InputLabel label="Icon" />
+                            <Popover.Root open={isIconPickerOpen} onOpenChange={setIsIconPickerOpen}>
+                                <Popover.Trigger asChild>
+                                    <div className="relative group/icon bg-sub-alt rounded-lg h-[42px] transition-colors duration-200 focus-within:bg-sub border border-transparent focus-within:border-white/5 cursor-pointer flex items-center justify-center"
+                                        onClick={() => setIsIconPickerOpen(true)}
                                     >
-                                        {color === preset && (
-                                            <div className="absolute inset-0 rounded-full border-2 border-white/50" />
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-
-                        {isColorPickerOpen && (
-                            <div className="fixed inset-0 z-40" onClick={() => setIsColorPickerOpen(false)} />
-                        )}
-                    </div>
-
-                    {/* Icon & Picker */}
-                    <div className="w-20 flex flex-col gap-1.5 relative">
-                        <InputLabel label="Icon" />
-                        <Popover.Root open={isIconPickerOpen} onOpenChange={setIsIconPickerOpen}>
-                            <Popover.Trigger asChild>
-                                <div className="relative group/icon bg-sub-alt rounded-lg transition-colors duration-200 focus-within:bg-sub border border-transparent focus-within:border-white/5 cursor-pointer"
-                                    onClick={() => setIsIconPickerOpen(true)}
-                                >
-                                    {getMappedIcon(icon) && (
                                         <div
                                             className="absolute inset-0 flex items-center justify-center pointer-events-none transition-colors duration-200"
                                             style={{ color: color }}
                                         >
-                                            <FontAwesomeIcon icon={getMappedIcon(icon)} className="text-sm" />
+                                            <FontAwesomeIcon icon={getMappedIcon(icon)} className="text-xl" />
                                         </div>
-                                    )}
-                                    <Input
-                                        type="text"
-                                        value={icon}
-                                        onChange={e => {
-                                            const val = e.target.value;
-                                            setIcon(val);
-                                        }}
-                                        className={`text-center text-lg p-0 h-[42px] relative z-10 ${getMappedIcon(icon) ? '!text-transparent !caret-text-primary' : ''} !bg-transparent focus:!bg-transparent !border-none outline-none cursor-pointer`}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setIsIconPickerOpen(true);
-                                        }}
-                                    />
-                                </div>
-                            </Popover.Trigger>
-                            <Popover.Portal>
-                                <Popover.Content
-                                    className="z-[100] p-2 bg-sub-alt/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl flex flex-col gap-2 min-w-[200px] animate-in fade-in zoom-in-95 duration-200"
-                                    sideOffset={5}
-                                    align="start"
-                                >
-                                    <div className="flex items-center justify-between px-1">
-                                        <span className="text-[9px] font-mono text-sub uppercase">Select Icon</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsIconPickerOpen(false)}
-                                            className="text-sub hover:text-text-primary transition-colors cursor-pointer"
-                                        >
-                                            <FontAwesomeIcon icon={faTimes} className="text-[10px]" />
-                                        </button>
                                     </div>
-                                    <div className="grid grid-cols-5 gap-1.5 max-h-[160px] overflow-y-auto pr-1">
-                                        {ICON_PRESETS.map((preset: string) => (
+                                </Popover.Trigger>
+                                <Popover.Portal>
+                                    <Popover.Content
+                                        className="z-[100] p-2 bg-sub-alt/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl flex flex-col gap-2 min-w-[200px] animate-in fade-in zoom-in-95 duration-200"
+                                        sideOffset={5}
+                                        align="start"
+                                    >
+                                        <div className="flex items-center justify-between px-1">
+                                            <span className="text-[9px] font-mono text-sub uppercase">Select Icon</span>
                                             <button
-                                                key={preset}
                                                 type="button"
-                                                onClick={() => {
-                                                    setIcon(preset);
-                                                    setIsIconPickerOpen(false);
-                                                }}
-                                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10 cursor-pointer ${icon === preset ? 'bg-white/20 text-text-primary ring-1 ring-white/30' : 'text-sub'}`}
-                                                style={{ color: icon === preset ? color : undefined }}
-                                                title={preset}
+                                                onClick={() => setIsIconPickerOpen(false)}
+                                                className="text-sub hover:text-text-primary transition-colors cursor-pointer"
                                             >
-                                                <FontAwesomeIcon icon={getMappedIcon(preset)} className="text-sm" />
+                                                <FontAwesomeIcon icon={faTimes} className="text-[10px]" />
                                             </button>
-                                        ))}
-                                    </div>
-                                    <Popover.Arrow className="fill-current text-white/10" />
-                                </Popover.Content>
-                            </Popover.Portal>
-                        </Popover.Root>
+                                        </div>
+                                        <div className="grid grid-cols-5 gap-1.5 max-h-[160px] overflow-y-auto pr-1">
+                                            {ICON_PRESETS.map((preset: string) => (
+                                                <button
+                                                    key={preset}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setIcon(preset);
+                                                        setIsIconPickerOpen(false);
+                                                    }}
+                                                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10 cursor-pointer ${icon === preset ? 'bg-white/20 text-text-primary ring-1 ring-white/30' : 'text-sub'}`}
+                                                    style={{ color: icon === preset ? color : undefined }}
+                                                    title={preset}
+                                                >
+                                                    <FontAwesomeIcon icon={getMappedIcon(preset)} className="text-sm" />
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <Popover.Arrow className="fill-current text-white/10" />
+                                    </Popover.Content>
+                                </Popover.Portal>
+                            </Popover.Root>
+                        </div>
                     </div>
                 </div>
 

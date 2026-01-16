@@ -584,13 +584,13 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
 
                 <div className="flex gap-4">
                     <div className="w-32 flex flex-col gap-1.5">
-                        <InputLabel label="Starting Point" />
+                        <InputLabel label="Base Level" />
                         <Input
                             type="number"
                             value={initialScore}
                             onChange={e => setInitialScore(e.target.value)}
                             onBlur={() => {
-                                const num = parseFloat(initialScore.toString()); // Ensure it's treated as value
+                                const num = parseFloat(initialScore.toString());
                                 if (!isNaN(num)) {
                                     setInitialScore(num.toFixed(2));
                                 }
@@ -718,12 +718,12 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                    <InputLabel label="Hover Text" />
+                    <InputLabel label="Quick Note" />
                     <Input
                         type="text"
                         value={hover}
                         onChange={e => setHover(e.target.value)}
-                        placeholder="Tooltip text..."
+                        placeholder="Short note shown on tap/hover..."
                     />
                 </div>
 
