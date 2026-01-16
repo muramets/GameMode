@@ -5,6 +5,7 @@ import { Button } from '../../../components/ui/atoms/Button';
 import { useAuth } from '../../../contexts/AuthProvider';
 import { useMetadataStore } from '../../../stores/metadataStore';
 import { usePersonalityStore } from '../../../stores/personalityStore';
+import { useHistoryStore } from '../../../stores/historyStore';
 import { getMappedIcon, ICON_PRESETS } from '../../../utils/iconMapper';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faExclamationTriangle, faPlus, faChevronDown, faTimes } from '@fortawesome/free-solid-svg-icons';
@@ -144,6 +145,68 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user || !activePersonalityId) return;
+        // --- System Event Logging ---
+        // 1. Detect Protocol Changes (Links/Unlinks)
+        if (innerfaceId) {
+            const innerface = innerfaces.find(i => i.id == innerfaceId); // loose comparison for potentially string vs number
+            if (innerface) {
+                // Current implicit/effective protocols
+                const currentProtocolIds = new Set([
+                    ...(innerface.protocolIds || []),
+                    ...protocols.filter(p => p.targets?.some(t => t.toString() === innerface.id.toString())).map(p => p.id)
+                ].map(id => id.toString()));
+
+                // New selected protocols
+                const newProtocolIds = new Set(protocolIds.map(id => id.toString()));
+
+                // Find modifications
+                const added = protocolIds.filter(id => !currentProtocolIds.has(id.toString()));
+                const removed = Array.from(currentProtocolIds).filter(id => !newProtocolIds.has(id));
+
+                // Log additions
+                for (const pid of added) {
+                    const protocol = protocols.find(p => p.id.toString() === pid.toString());
+                    if (protocol) {
+                        try {
+                            await useHistoryStore.getState().addSystemEvent(
+                                user.uid,
+                                activePersonalityId,
+                                `Linked: ${protocol.title} ↔ ${name}`
+                            );
+                        } catch (e) { console.error("Failed to log system event", e); }
+                    }
+                }
+
+                // Log removals
+                for (const pid of removed) {
+                    const protocol = protocols.find(p => p.id.toString() === pid);
+                    if (protocol) {
+                        try {
+                            await useHistoryStore.getState().addSystemEvent(
+                                user.uid,
+                                activePersonalityId,
+                                `Unlinked: ${protocol.title} ↔ ${name}`
+                            );
+                        } catch (e) { console.error("Failed to log system event", e); }
+                    }
+                }
+
+                // 2. Detect Score Changes
+                const newScoreVal = Number(initialScore);
+                const currentScoreVal = Number(innerface.initialScore);
+
+                if (Math.abs(currentScoreVal - newScoreVal) > 0.001) {
+                    try {
+                        await useHistoryStore.getState().addSystemEvent(
+                            user.uid,
+                            activePersonalityId,
+                            `Manual Adjustment: ${name}`,
+                            { from: currentScoreVal, to: newScoreVal }
+                        );
+                    } catch (e) { console.error("Failed to log system event", e); }
+                }
+            }
+        }
 
         // 1. Bi-directional Cleanup: Ensure deselected protocols remove this innerface from their 'targets'
         if (innerfaceId) {
@@ -402,7 +465,6 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                                                 setEditingGroupColor('NEW');
                                                 setPopupAnchor(e.currentTarget as HTMLElement);
                                                 setIsGroupColorPickerOpen(true);
-                                                if (!tempGroupColor) setTempGroupColor('#e2b714');
                                             }
                                         }}
                                         onClick={() => {

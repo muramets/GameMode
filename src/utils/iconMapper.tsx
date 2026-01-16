@@ -11,7 +11,7 @@ import {
     faPerson, faMartiniGlass, faWineGlass, faBeerMugEmpty, faBan,
     faSpa, faHotTubPerson, faBowlFood, faLaptopCode, faReceipt,
     faSmoking, faPersonSwimming, faSackDollar, faMoneyBill, faCoins,
-    faPenToSquare, faHandRock, faShoePrints
+    faPenToSquare, faHandRock, faShoePrints, faCog
 } from '@fortawesome/free-solid-svg-icons';
 
 const EMOJI_MAP: Record<string, any> = {
@@ -130,7 +130,9 @@ const EMOJI_MAP: Record<string, any> = {
     'coins': faCoins,
     'memo': faPenToSquare,
     '📝': faPenToSquare,
-    '🤘': faHandRock
+    '🤘': faHandRock,
+    'gear': faCog,
+    'settings': faCog
 };
 
 export function renderIcon(iconStr: string, className?: string) {

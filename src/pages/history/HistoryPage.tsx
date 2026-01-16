@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 import { useScoreContext } from '../../contexts/ScoreProvider';
 import { useMetadataStore } from '../../stores/metadataStore';
@@ -78,6 +79,7 @@ export default function HistoryPage() {
             if (typeFilter !== 'All types') {
                 if (typeFilter === 'Protocols' && event.type !== 'protocol') return false;
                 if (typeFilter === 'Manual' && event.type !== 'quick_action') return false;
+                if (typeFilter === 'System' && event.type !== 'system') return false;
             }
 
             // Effect filter
@@ -269,15 +271,35 @@ export default function HistoryPage() {
                             {getDateLabel(dateKey)}<span className="opacity-50">: {events.length}</span>
                         </h2>
                         <div className="flex flex-col gap-2">
-                            {events.map((event: HistoryRecord) => (
-                                <HistoryEvent
-                                    key={event.id}
-                                    event={event}
-                                    innerfaces={innerfaces}
-                                    onDelete={deleteEvent}
-                                    onFilterInnerface={(id) => setSelectedInnerfaceIds([...selectedInnerfaceIds, id])}
-                                />
-                            ))}
+                            <AnimatePresence mode="popLayout">
+                                {events.map((event: HistoryRecord) => {
+                                    const protocol = protocols.find(p => p.id.toString() === event.protocolId.toString());
+                                    return (
+                                        <motion.div
+                                            key={event.id}
+                                            layout
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{
+                                                opacity: 0,
+                                                x: -50,
+                                                height: 0,
+                                                marginBottom: 0,
+                                                filter: 'blur(4px)'
+                                            }}
+                                            transition={{ duration: 0.3 }}
+                                        >
+                                            <HistoryEvent
+                                                event={event}
+                                                innerfaces={innerfaces}
+                                                protocolColor={protocol?.color}
+                                                onDelete={deleteEvent}
+                                                onFilterInnerface={(id) => setSelectedInnerfaceIds([...selectedInnerfaceIds, id])}
+                                            />
+                                        </motion.div>
+                                    );
+                                })}
+                            </AnimatePresence>
                         </div>
                     </div>
                 ))}

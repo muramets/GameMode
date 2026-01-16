@@ -5,6 +5,7 @@ import { Button } from '../../../components/ui/atoms/Button';
 import { useAuth } from '../../../contexts/AuthProvider';
 import { useMetadataStore } from '../../../stores/metadataStore';
 import { usePersonalityStore } from '../../../stores/personalityStore';
+import { useHistoryStore } from '../../../stores/historyStore';
 import { renderIcon, getMappedIcon, ICON_PRESETS } from '../../../utils/iconMapper';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faExclamationTriangle, faPlus, faMinus, faChevronDown, faTimes } from '@fortawesome/free-solid-svg-icons';
@@ -97,6 +98,69 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user || !activePersonalityId) return;
+
+        // --- System Event Logging ---
+        // Detect Protocol Changes (Links/Unlinks)
+        if (protocolId) {
+            const currentProtocol = protocols.find(p => p.id === protocolId);
+            if (currentProtocol) {
+                // Determine effective current targets (explicit + implicit from innerface side)
+                // Note: Protocol.targets is the source of truth for "explicit" links from protocol side.
+                // But Innerface.protocolIds also creates a link.
+                // However, this modal only edits Protocol.targets. 
+                // Any link created here manifests as an ID in Protocol.targets.
+
+                const currentTargets = new Set((currentProtocol.targets || []).map(t => t.toString()));
+                const newTargets = new Set(targets.map(t => t.toString()));
+
+                const added = targets.filter(t => !currentTargets.has(t.toString()));
+                const removed = Array.from(currentTargets).filter(t => !newTargets.has(t));
+
+                // Log additions
+                for (const tid of added) {
+                    const innerface = innerfaces.find(i => i.id.toString() === tid.toString());
+                    if (innerface) {
+                        try {
+                            await useHistoryStore.getState().addSystemEvent(
+                                user.uid,
+                                activePersonalityId,
+                                `Linked: ${title} ↔ ${innerface.name.split('.')[0]}`
+                            );
+                        } catch (e) { console.error("Failed to log system event", e); }
+                    }
+                }
+
+                // Log removals
+                for (const tid of removed) {
+                    const innerface = innerfaces.find(i => i.id.toString() === tid);
+                    if (innerface) {
+                        try {
+                            // 1. Log System Event
+                            await useHistoryStore.getState().addSystemEvent(
+                                user.uid,
+                                activePersonalityId,
+                                `Unlinked: ${title} ↔ ${innerface.name.split('.')[0]}`
+                            );
+
+                            // 2. Bi-directional Sync: Remove this protocol from the innerface's protocolIds
+                            // Check if the innerface actually has this protocol explicitly linked
+                            if (innerface.protocolIds?.some(pid => pid.toString() === protocolId.toString())) {
+                                const newProtocolIds = innerface.protocolIds.filter(pid => pid.toString() !== protocolId.toString());
+                                await useMetadataStore.getState().updateInnerface(
+                                    user.uid,
+                                    activePersonalityId,
+                                    innerface.id,
+                                    { protocolIds: newProtocolIds }
+                                );
+                            } else {
+                                // Innerface does not have this protocol explicit ID. No update needed.
+                            }
+
+                        } catch (e) { console.error("Failed to sync/log system event", e); }
+                    }
+                }
+            }
+        }
 
         const data = {
             title,

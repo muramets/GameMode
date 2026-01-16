@@ -31,11 +31,12 @@ interface HistoryState {
 
     // Actions
     addCheckin: (uid: string, pid: string, record: Omit<HistoryRecord, 'id'>) => Promise<void>;
+    addSystemEvent: (uid: string, pid: string, message: string, details?: any) => Promise<void>; // New action
     deleteCheckin: (uid: string, pid: string, id: string) => Promise<void>;
     subscribeToHistory: (uid: string, pid: string) => () => void;
 }
 
-export const useHistoryStore = create<HistoryState>((set) => ({
+export const useHistoryStore = create<HistoryState>((set, get) => ({
     history: [],
     isLoading: true,
     error: null,
@@ -50,6 +51,28 @@ export const useHistoryStore = create<HistoryState>((set) => ({
             });
         } catch (err: any) {
             console.error('Error adding checkin:', err);
+            set({ error: err.message });
+        }
+    },
+
+    addSystemEvent: async (uid, pid, message, details = {}) => {
+        try {
+            const historyRef = collection(db, 'users', uid, 'personalities', pid, 'history');
+            await addDoc(historyRef, {
+                type: 'system',
+                protocolId: 'SYSTEM',
+                protocolName: message,
+                protocolIcon: 'gear',
+                timestamp: new Date().toISOString(),
+                action: '0',
+                weight: 0,
+                targets: [],
+                changes: {},
+                details, // New field for metadata
+                serverTimestamp: Timestamp.now()
+            });
+        } catch (err: any) {
+            console.error('Error adding system event:', err);
             set({ error: err.message });
         }
     },
