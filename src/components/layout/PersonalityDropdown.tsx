@@ -40,15 +40,8 @@ export function PersonalityDropdown() {
                             height: '1.4em'
                         }}
                     >
-                        {/* Avatar / Icon */}
-                        {activePersonality?.avatar ? (
-                            <img
-                                src={activePersonality.avatar}
-                                alt="avatar"
-                                className="rounded-full object-cover"
-                                style={{ width: '1.1em', height: '1.1em' }}
-                            />
-                        ) : (() => {
+                        {/* Icon */}
+                        {(() => {
                             const iconDef = getMappedIcon(activePersonality?.icon || 'user');
                             return iconDef ? (
                                 <FontAwesomeIcon icon={iconDef} style={{ fontSize: '1em' }} />
@@ -107,7 +100,7 @@ export function PersonalityDropdown() {
                                 >
                                     {/* Icon */}
                                     <div
-                                        className={`w-[1em] h-[1em] flex items-center justify-center shrink-0 transition-colors opacity-80 group-hover/item:opacity-100 ${!p.themeColor ? 'group-hover/item:text-inherit' : ''}`}
+                                        className={`w-[1em] h-[1em] flex items-center justify-center shrink-0 transition-colors opacity-80 group-hover/item:opacity-100 group-hover/item:!text-[var(--bg-color)] ${!p.themeColor ? 'group-hover/item:text-inherit' : ''}`}
                                         style={{
                                             color: p.themeColor || 'inherit',
                                             marginLeft: '0.9em',
@@ -122,32 +115,30 @@ export function PersonalityDropdown() {
                                     </div>
 
                                     {/* Name */}
-                                    <div className="flex-1 truncate pt-[0.1em] mr-4">
+                                    <div className="flex-1 truncate pt-[0.1em] mr-2">
                                         {p.name.toLowerCase()}
                                     </div>
 
-                                    {/* Settings Gear - Visible on Hover (Before Checkmark) */}
-                                    <button
-                                        onClick={(e) => handleEdit(e, p.id)}
-                                        className="opacity-0 group-hover/item:opacity-100 transition-all ml-1 shrink-0 hover:!text-[var(--main-color)]"
-                                        style={{ color: 'var(--bg-color)' }}
-                                    >
-                                        <FontAwesomeIcon icon={faCog} className="text-[0.8em]" />
-                                    </button>
-
-                                    {/* Active Checkmark Indicator (Last) */}
-                                    {isActive && (
-                                        <div
-                                            className="flex items-center justify-center shrink-0"
-                                            style={{
-                                                marginLeft: '0.5em',
-                                                marginRight: '0.9em' // Matching standard margin for symmetry
-                                            }}
-                                        >
-                                            <FontAwesomeIcon icon={faCheck} className="text-[0.7em]" />
+                                    {/* Actions Container (Gear + Checkmark) */}
+                                    <div className="flex items-center shrink-0 mr-[0.9em]">
+                                        {/* Settings Gear - Always present but hidden, fixed width */}
+                                        <div className="w-[1.5em] flex justify-center">
+                                            <button
+                                                onClick={(e) => handleEdit(e, p.id)}
+                                                className="opacity-0 group-hover/item:opacity-100 transition-all hover:!text-[var(--main-color)]"
+                                                style={{ color: 'var(--bg-color)' }}
+                                            >
+                                                <FontAwesomeIcon icon={faCog} className="text-[0.8em]" />
+                                            </button>
                                         </div>
-                                    )}
-                                    {!isActive && <div style={{ marginRight: '0.9em' }} />} {/* Spacer for alignment if needed, or just let it be flex */}
+
+                                        {/* Active Checkmark Indicator (Fixed width slot) */}
+                                        <div className="w-[1em] flex justify-center ml-1">
+                                            {isActive && (
+                                                <FontAwesomeIcon icon={faCheck} className="text-[0.7em]" />
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             );
                         })}

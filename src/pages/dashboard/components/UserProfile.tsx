@@ -68,13 +68,87 @@ export function UserProfile() {
         );
     };
 
+    // Calculate next TIER color (not just next level) for a visible motivational gradient
+    // Tier boundaries: 1-3 (Red), 4-6 (Gold), 7-9 (Green), 10-19 (Purple), 20+ (Blue)
+    const getNextTierFirstLevel = (currentLevel: number): number => {
+        if (currentLevel <= 3) return 4;   // Next tier starts at level 4
+        if (currentLevel <= 6) return 7;   // Next tier starts at level 7
+        if (currentLevel <= 9) return 10;  // Next tier starts at level 10
+        if (currentLevel <= 19) return 20; // Next tier starts at level 20
+        return currentLevel + 1;           // Already at max tier, just use next level
+    };
+    const nextTierFirstLevel = getNextTierFirstLevel(level);
+    const nextTierColor = getTierColor(nextTierFirstLevel);
+
     return (
-        <Card className="group flex flex-col md:flex-row items-center justify-between gap-8 p-6 mb-8 bg-sub-alt rounded-lg shadow-sm border-none hover:scale-[1.02] hover:shadow-xl transition-all duration-300">
+        <Card className="group flex flex-col md:flex-row items-center justify-between gap-8 p-6 mb-8 bg-sub-alt rounded-lg shadow-sm border-none hover:scale-[1.02] hover:shadow-xl transition-all duration-300 overflow-hidden">
             {/* User Info Section */}
             <div className="flex md:flex-row items-center gap-4 w-full md:w-auto">
                 {/* Avatar */}
-                <div className="w-[66px] h-[66px] rounded-full bg-bg-primary flex items-center justify-center text-sub text-2xl shrink-0">
-                    <FontAwesomeIcon icon={faUser} />
+                <div className="relative shrink-0 group/avatar">
+                    {/* Premium Glow Effects */}
+                    {activePersonality?.avatar && (
+                        <>
+                            <style>{`
+                                @keyframes avatar-glow-spin {
+                                    0% { transform: rotate(0deg) scale(1); }
+                                    50% { transform: rotate(180deg) scale(1.05); }
+                                    100% { transform: rotate(360deg) scale(1); }
+                                }
+                                @keyframes avatar-glow-counter {
+                                    0% { transform: rotate(360deg) scale(1.05); }
+                                    50% { transform: rotate(180deg) scale(1); }
+                                    100% { transform: rotate(0deg) scale(1.05); }
+                                }
+                                @keyframes avatar-shimmer {
+                                    0% { transform: translateX(-100%) rotate(25deg); opacity: 0; }
+                                    5% { opacity: 1; }
+                                    10% { transform: translateX(200%) rotate(25deg); opacity: 0; }
+                                    100% { transform: translateX(200%) rotate(25deg); opacity: 0; }
+                                }
+                                @keyframes avatar-pulse {
+                                    0%, 100% { transform: scale(1); }
+                                    50% { transform: scale(1.02); }
+                                }
+                            `}</style>
+
+                            {/* Outer Glow Layer (counter-rotation) */}
+                            <div
+                                className="absolute -inset-3 rounded-full blur-[20px] opacity-15 transition-opacity duration-150 group-hover:opacity-25"
+                                style={{
+                                    background: `conic-gradient(from 180deg, ${nextTierColor} 0%, ${tierColor} 50%, ${nextTierColor} 100%)`,
+                                    animation: 'avatar-glow-counter 8s ease-in-out infinite'
+                                }}
+                            />
+
+                            {/* Inner Glow Layer (main rotation) */}
+                            <div
+                                className="absolute -inset-1 rounded-full blur-[14px] opacity-25 transition-opacity duration-150 group-hover:opacity-40"
+                                style={{
+                                    background: `conic-gradient(from 0deg, ${tierColor} 0%, ${nextTierColor} 30%, ${tierColor} 50%, ${nextTierColor} 70%, ${tierColor} 100%)`,
+                                    animation: 'avatar-glow-spin 6s ease-in-out infinite'
+                                }}
+                            />
+                        </>
+                    )}
+
+                    {/* Avatar Container with Pulse */}
+                    <div
+                        className="w-[66px] h-[66px] rounded-full bg-bg-primary flex items-center justify-center text-sub text-2xl overflow-hidden relative shadow-sm border border-white/5 z-10 transition-transform duration-300 group-hover/avatar:scale-105"
+                        style={{
+                            animation: activePersonality?.avatar ? 'avatar-pulse 5s ease-in-out infinite' : 'none'
+                        }}
+                    >
+                        {activePersonality?.avatar ? (
+                            <img
+                                src={activePersonality.avatar}
+                                alt={username}
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            <FontAwesomeIcon icon={faUser} />
+                        )}
+                    </div>
                 </div>
 
                 {/* Details */}

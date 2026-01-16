@@ -5,9 +5,10 @@ import { Button } from '../ui/atoms/Button';
 import { useAuth } from '../../contexts/AuthProvider';
 import { usePersonalityStore } from '../../stores/personalityStore';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faExclamationTriangle, faUser } from '@fortawesome/free-solid-svg-icons';
 import { PRESET_COLORS } from '../../constants/common';
 import * as Popover from '@radix-ui/react-popover';
+import { ImageCropper } from '../ui/molecules/ImageCropper';
 
 interface PersonalitySettingsModalProps {
     isOpen: boolean;
@@ -27,6 +28,10 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
     const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
 
+    const [tempImage, setTempImage] = useState<string | null>(null);
+    const [isCropping, setIsCropping] = useState(false);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
     useEffect(() => {
         if (isOpen && personalityId) {
             const p = personalities.find(p => p.id === personalityId);
@@ -45,6 +50,8 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
         }
         setIsConfirmingDelete(false);
         setIsColorPickerOpen(false);
+        setTempImage(null);
+        setIsCropping(false);
     }, [isOpen, personalityId, personalities]);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -84,11 +91,75 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
         onClose();
     };
 
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = () => {
+                setTempImage(reader.result as string);
+                setIsCropping(true);
+            };
+            reader.readAsDataURL(file);
+            // Reset input so same file can be selected again
+            e.target.value = '';
+        }
+    };
+
+    const handleCropComplete = (croppedBase64: string) => {
+        setAvatar(croppedBase64);
+        setIsCropping(false);
+        setTempImage(null);
+    };
+
     const InputLabel = ({ label }: { label: string }) => (
         <label className="text-[10px] text-main font-mono font-bold uppercase tracking-[0.2em] opacity-90 px-1">
             {label}
         </label>
     );
+
+    // If cropping, show the cropper instead of the normal form
+    if (isCropping && tempImage) {
+        return (
+            <Modal
+                isOpen={isOpen}
+                onClose={() => { setIsCropping(false); setTempImage(null); }}
+                title="Adjust Avatar"
+                className="max-w-md"
+                footer={
+                    <div className="flex items-center justify-end gap-3 w-full">
+                        <Button
+                            type="button"
+                            variant="neutral"
+                            size="sm"
+                            onClick={() => { setIsCropping(false); setTempImage(null); }}
+                            className="text-[10px] uppercase tracking-wider font-bold px-4 py-2"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="primary"
+                            size="sm"
+                            onClick={() => {
+                                // Trigger save from cropper - we need a ref or callback
+                                const event = new CustomEvent('cropper-save');
+                                document.dispatchEvent(event);
+                            }}
+                            className="font-bold px-6 py-2 rounded-lg text-[10px] uppercase tracking-wider shadow-[0_0_10px_rgba(226,183,20,0.2)] hover:shadow-[0_0_10px_rgba(209,208,197,0.3)] transition-shadow"
+                        >
+                            Save
+                        </Button>
+                    </div>
+                }
+            >
+                <ImageCropper
+                    imageSrc={tempImage}
+                    onCrop={handleCropComplete}
+                    onCancel={() => { setIsCropping(false); setTempImage(null); }}
+                />
+            </Modal>
+        );
+    }
 
     return (
         <Modal
@@ -134,21 +205,68 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
                 </>
             }
         >
-            <div className="flex flex-col gap-5">
-                {/* Name */}
-                <div className="flex flex-col gap-1.5">
-                    <InputLabel label="Name" />
-                    <Input
-                        type="text"
-                        value={name}
-                        onChange={e => setName(e.target.value)}
-                        placeholder="e.g. Work, Gaming..."
-                        autoFocus
-                        required
-                    />
+            <div className="flex flex-col gap-4">
+                {/* Avatar Section - Centered and Large */}
+                <div className="flex flex-col items-center gap-2">
+                    <InputLabel label="Profile Picture" />
+                    <div className="group relative">
+                        <div
+                            className="relative w-[80px] h-[80px] rounded-full bg-sub-alt cursor-pointer transition-all duration-150 shadow-lg flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-text-primary/50"
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleFileSelect}
+                            />
+
+                            {avatar ? (
+                                <img
+                                    src={avatar}
+                                    alt="Avatar"
+                                    className="w-full h-full object-cover transition-all duration-150 group-hover:brightness-110"
+                                />
+                            ) : (
+                                <FontAwesomeIcon
+                                    icon={faUser}
+                                    className="text-sub text-3xl opacity-50 transition-all duration-150 group-hover:opacity-100 group-hover:text-bg-primary"
+                                />
+                            )}
+                        </div>
+
+                        {/* Delete Button */}
+                        {avatar && (
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setAvatar('');
+                                }}
+                                className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-error text-bg-primary flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 hover:scale-110 shadow-md"
+                                title="Remove avatar"
+                            >
+                                <FontAwesomeIcon icon={faTrash} className="text-[10px]" />
+                            </button>
+                        )}
+                    </div>
                 </div>
 
-                <div className="flex gap-4">
+                <div className="flex gap-4 items-start">
+                    {/* Name (Larger width) */}
+                    <div className="flex-1 flex flex-col gap-1.5">
+                        <InputLabel label="Name" />
+                        <Input
+                            type="text"
+                            value={name}
+                            onChange={e => setName(e.target.value)}
+                            placeholder="e.g. Work, Gaming..."
+                            autoFocus
+                            required
+                        />
+                    </div>
+
                     {/* Color */}
                     <div className="w-[60px] flex flex-col gap-1.5 relative">
                         <InputLabel label="Color" />
@@ -190,18 +308,6 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
                                 </Popover.Content>
                             </Popover.Portal>
                         </Popover.Root>
-                    </div>
-
-                    {/* Avatar URL (Optional) */}
-                    <div className="flex-1 flex flex-col gap-1.5">
-                        <InputLabel label="Avatar URL (Optional)" />
-                        <Input
-                            type="text"
-                            value={avatar}
-                            onChange={e => setAvatar(e.target.value)}
-                            placeholder="https://..."
-                            className="md:text-xs"
-                        />
                     </div>
                 </div>
             </div>
