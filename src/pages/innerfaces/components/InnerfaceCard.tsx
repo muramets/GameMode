@@ -7,6 +7,8 @@ import { faCog, faHistory, faArrowUp, faArrowDown } from '@fortawesome/free-soli
 import { ProgressBar } from '../../../components/ui/atoms/ProgressBar';
 import { getScoreColor } from '../../../utils/colorUtils';
 
+import { TruncatedTooltip } from '../../../components/ui/molecules/TruncatedTooltip';
+
 interface InnerfaceCardProps {
     innerface: Innerface;
     onEdit?: () => void;
@@ -46,9 +48,9 @@ export function InnerfaceCard({ innerface, onEdit }: InnerfaceCardProps) {
                 }}
             />
 
-            {/* Header: Icon & Title & Actions */}
-            <div className="flex items-start justify-between relative z-10">
-                <div className="flex items-start gap-3">
+            {/* Header: Icon & Title */}
+            <div className="flex items-start justify-between relative z-10 w-full mb-2">
+                <div className="flex items-start gap-3 w-full pr-1">
                     {/* Icon */}
                     <div
                         className="w-10 h-10 rounded-xl bg-black/20 flex items-center justify-center text-lg shrink-0 group-hover:scale-105 transition-transform duration-300"
@@ -58,39 +60,44 @@ export function InnerfaceCard({ innerface, onEdit }: InnerfaceCardProps) {
                     </div>
 
                     {/* Title */}
-                    <div className="flex flex-col min-w-0 pt-0.5">
-                        <h3 className="font-lexend font-medium text-sm leading-tight text-text-primary truncate">
-                            {innerface.name.split('.')[0]}
-                        </h3>
+                    <div className="flex flex-col min-w-0 pt-0.5 flex-1 pr-2">
+                        <TruncatedTooltip
+                            as="h3"
+                            text={innerface.name.split('.')[0]}
+                            className="font-lexend font-medium text-sm leading-tight text-text-primary truncate w-full"
+                        />
                         {innerface.name.split('.')[1] && (
-                            <p className="text-[10px] text-sub font-mono uppercase tracking-wider opacity-60 truncate mt-0.5 group-hover:opacity-100 group-hover:text-text-primary transition-all duration-300">
-                                {innerface.name.split('.')[1].trim()}
-                            </p>
+                            <TruncatedTooltip
+                                as="p"
+                                text={innerface.name.split('.')[1].trim()}
+                                className="text-[10px] text-sub font-mono uppercase tracking-wider opacity-60 truncate mt-0.5 group-hover:opacity-100 group-hover:text-text-primary transition-all duration-300 w-full"
+                            />
                         )}
                     </div>
                 </div>
+            </div>
 
-                {/* Actions (Only visible on hover) */}
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            {/* Middle: Actions & Score */}
+            <div className="relative z-10 mt-auto mb-2 flex items-end justify-between w-full">
+                {/* Left: Actions (Only visible on hover) */}
+                <div className="flex flex-col gap-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <button
                         onClick={handleHistory}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg text-sub hover:text-main transition-colors"
+                        className="w-10 h-7 flex items-center justify-start text-sub hover:text-main transition-colors duration-200"
                         title="View History"
                     >
                         <FontAwesomeIcon icon={faHistory} className="text-xs" />
                     </button>
                     <button
                         onClick={handleEdit}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg text-sub hover:text-main transition-colors"
+                        className="w-10 h-7 flex items-center justify-start text-sub hover:text-main transition-colors duration-200"
                         title="Settings"
                     >
                         <FontAwesomeIcon icon={faCog} className="text-xs" />
                     </button>
                 </div>
-            </div>
 
-            {/* Middle: Score */}
-            <div className="relative z-10 mt-auto mb-2 text-right">
+                {/* Right: Score */}
                 <div className="flex flex-col items-end">
                     <div className="flex items-center gap-2">
                         {/* Trend Indicator */}
