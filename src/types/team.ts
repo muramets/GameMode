@@ -41,6 +41,7 @@ export interface TeamRole {
     icon?: string;
     themeColor?: string;
     createdAt: number;
+    activeInviteCode?: string; // Cache persistent invite link
     templateData: RoleTemplate;
 }
 

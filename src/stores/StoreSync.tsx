@@ -10,25 +10,37 @@ export function StoreSync() {
     const { user } = useAuth();
     const location = useLocation();
     const subscribeToHistory = useHistoryStore(state => state.subscribeToHistory);
+    const clearHistory = useHistoryStore(state => state.clearHistory);
 
     // Use selectors for stable references
     const subscribeToMetadata = useMetadataStore(state => state.subscribeToMetadata);
     const setContext = useMetadataStore(state => state.setContext);
     const subscribeToTeams = useTeamStore(state => state.subscribeToTeams);
+    const subscribeToRoles = useTeamStore(state => state.subscribeToRoles);
 
     const ensureDefaultPersonality = usePersonalityStore(state => state.ensureDefaultPersonality);
+    const loadPersonalities = usePersonalityStore(state => state.loadPersonalities);
     const activeContext = usePersonalityStore(state => state.activeContext);
+
+    const isInviteRoute = location.pathname.startsWith('/invite/');
 
     // 1. Initialize Personalities & Teams
     useEffect(() => {
-        if (user && !location.pathname.startsWith('/invite/')) {
-            ensureDefaultPersonality(user.uid);
+        if (user) {
+            // On invite routes, DON'T create default personality - JoinInvitePage will create the role personality
+            // But DO load personalities to complete loading state
+            if (!isInviteRoute) {
+                ensureDefaultPersonality(user.uid);
+            } else {
+                // Just load personalities list without creating defaults
+                loadPersonalities(user.uid);
+            }
 
-            // Start listening to teams immediately
+            // Always start listening to teams (needed for loading to complete)
             const unsubTeams = subscribeToTeams(user.uid);
             return () => unsubTeams();
         }
-    }, [user, ensureDefaultPersonality, subscribeToTeams, location.pathname]);
+    }, [user, ensureDefaultPersonality, loadPersonalities, subscribeToTeams, isInviteRoute]);
 
     // 2. Sync Data when Context is Active
     // We use JSON.stringify(activeContext) to prevent cycles if the object reference changes but content is same
@@ -45,6 +57,16 @@ export function StoreSync() {
             } else if (activeContext.type === 'viewer') {
                 // In viewer mode, subscribe to target user's history
                 unsubHistory = subscribeToHistory(activeContext.targetUid, activeContext.personalityId);
+            } else {
+                // Role context - NO HISTORY
+                // Explicitly clear history to prevent leakage from previous state
+                clearHistory();
+
+                // Subscribe to Role Metadata (for name, icon, etc in UI)
+                const unsubRoles = subscribeToRoles(activeContext.teamId);
+                // Chain unsubs
+                const oldUnsub = unsubHistory;
+                unsubHistory = () => { oldUnsub(); unsubRoles(); };
             }
 
             // Build PathContext for metadataStore
@@ -73,7 +95,7 @@ export function StoreSync() {
                 unsubMetadata();
             };
         }
-    }, [user, contextHash, subscribeToHistory, subscribeToMetadata, setContext]); // Removed activeContext, added contextHash
+    }, [user, contextHash, subscribeToHistory, subscribeToMetadata, setContext, clearHistory]); // Removed activeContext, added contextHash
 
     return null;
 }

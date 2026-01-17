@@ -17,10 +17,11 @@ interface ProtocolRowProps {
     onLevelUp: (id: string | number) => void;
     onLevelDown: (id: string | number) => void;
     onEdit: (id: string | number) => void;
-    isDisabled?: boolean;
+    isDisabled?: boolean; // For Dragging: disable ALL interactions
+    isReadOnly?: boolean; // For Role Mode: disable Check-ins, but allow Hover/Edit
 }
 
-export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerfaces, onLevelUp, onLevelDown, onEdit, isDisabled }: ProtocolRowProps) {
+export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerfaces, onLevelUp, onLevelDown, onEdit, isDisabled, isReadOnly }: ProtocolRowProps) {
     const navigate = useNavigate();
     const [hoverSide, setHoverSide] = useState<'left' | 'right' | null>(null);
     const [feedbackType, setFeedbackType] = useState<'plus' | 'minus' | null>(null);
@@ -29,9 +30,10 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
     const [isHovered, setIsHovered] = useState(false);
 
     // Derived states to avoid double-renders on drag start
-    const effectiveHoverSide = isDisabled ? null : hoverSide;
-    const effectiveFeedbackType = isDisabled ? null : feedbackType;
-    const effectiveShake = isDisabled ? null : shake;
+    // If ReadOnly: hoverSide is null (no swipes), but we still allow component hover (isHovered)
+    const effectiveHoverSide = (isDisabled || isReadOnly) ? null : hoverSide;
+    const effectiveFeedbackType = (isDisabled || isReadOnly) ? null : feedbackType;
+    const effectiveShake = (isDisabled || isReadOnly) ? null : shake;
 
     // Resolve targets with memoization to avoid lookups on every render
     const targetInnerfaces = useMemo(() => {
@@ -41,7 +43,7 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
     }, [protocol.targets, innerfaces]);
 
     const handleAction = (direction: '+' | '-') => {
-        if (isDisabled) return;
+        if (isDisabled || isReadOnly) return;
         setHoverSide(direction === '+' ? 'right' : 'left');
         setShake(direction === '+' ? 'right' : 'left');
         setTimeout(() => setShake(null), 300);
@@ -53,7 +55,7 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
     };
 
     const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
-        if (isDisabled || feedbackType || !rowRef.current) return;
+        if (isDisabled || isReadOnly || feedbackType || !rowRef.current) return;
         const rect = rowRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const center = rect.width / 2;
@@ -69,11 +71,12 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
     };
 
     const handleMouseEnter = () => {
+        // Allow hover state even in ReadOnly (so we can access Settings), but NOT if Disabled (Dragging)
         if (!isDisabled) setIsHovered(true);
     };
 
     const handleClick = () => {
-        if (isDisabled) return;
+        if (isDisabled || isReadOnly) return;
         if (hoverSide === 'left') handleAction('-');
         else if (hoverSide === 'right') handleAction('+');
     };
@@ -87,7 +90,7 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
             onMouseLeave={handleMouseLeave}
             onClick={handleClick}
             className={`group relative min-h-[72px] bg-sub-alt border border-transparent rounded-xl overflow-hidden select-none 
-                ${isDisabled ? 'cursor-default opacity-90' : 'cursor-pointer'} 
+                ${isDisabled ? 'cursor-grabbing opacity-90' : isReadOnly ? 'cursor-default' : 'cursor-pointer'} 
                 ${effectiveShake === 'left' ? 'animate-tilt-left' : effectiveShake === 'right' ? 'animate-tilt-right' : ''}
                 ${DEBUG_LAYOUT ? 'border-dashed border-red-500' : ''}`}
             whileHover={!isDisabled ? { scale: 1.002, backgroundColor: 'var(--sub-alt-color)' } : {}}

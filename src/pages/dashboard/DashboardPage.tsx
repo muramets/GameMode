@@ -10,8 +10,11 @@ import { useMetadataStore } from '../../stores/metadataStore';
 
 import { useScoreContext } from '../../contexts/ScoreProvider';
 
+import { usePersonalityStore } from '../../stores/personalityStore';
+
 export function Dashboard() {
     const { user } = useAuth();
+    const { activeContext } = usePersonalityStore();
     const { states, protocols, applyProtocol, isLoading } = useScoreContext();
     const { pinnedProtocolIds, togglePinnedProtocol } = useMetadataStore();
     const navigate = useNavigate();
@@ -75,6 +78,7 @@ export function Dashboard() {
                 onAddAction={() => setIsQuickActionModalOpen(true)}
                 onActionClick={handleQuickActionClick}
                 onDeleteAction={handleUnpinAction}
+                isDisabled={activeContext?.type === 'role' || activeContext?.type === 'viewer'}
             />
 
             <AddQuickActionModal

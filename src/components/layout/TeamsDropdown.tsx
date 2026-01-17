@@ -366,7 +366,7 @@ export function TeamsDropdown() {
                                                                     )}
 
                                                                     {/* Actions & Active Indicator - Packed left with consistent gap */}
-                                                                    <div className="flex items-center shrink-0 ml-2 gap-2">
+                                                                    <div className="flex items-center shrink-0 ml-auto gap-2">
                                                                         <button
                                                                             onClick={(e) => { e.stopPropagation(); handleEditRole(e, team.id, role.id); }}
                                                                             className="opacity-0 group-hover/role:opacity-100 transition-all hover:!text-[var(--main-color)]"

@@ -31,15 +31,18 @@ interface HistoryState {
 
     // Actions
     addCheckin: (uid: string, pid: string, record: Omit<HistoryRecord, 'id'>) => Promise<void>;
-    addSystemEvent: (uid: string, pid: string, message: string, details?: Record<string, unknown>) => Promise<void>; // New action
+    addSystemEvent: (uid: string, pid: string, message: string, details?: Record<string, unknown>) => Promise<void>;
     deleteCheckin: (uid: string, pid: string, id: string) => Promise<void>;
     subscribeToHistory: (uid: string, pid: string) => () => void;
+    clearHistory: () => void;
 }
 
 export const useHistoryStore = create<HistoryState>((set) => ({
     history: [],
     isLoading: true,
     error: null,
+
+    clearHistory: () => set({ history: [], isLoading: false, error: null }),
 
     addCheckin: async (uid, pid, record) => {
         try {

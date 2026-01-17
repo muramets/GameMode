@@ -8,9 +8,10 @@ interface SortableQuickActionCardProps {
     action: Protocol;
     onClick: (id: string | number, direction: '+' | '-') => void;
     onDelete: (id: string | number) => void;
+    isDisabled?: boolean;
 }
 
-export function SortableQuickActionCard({ action, onClick, onDelete }: SortableQuickActionCardProps) {
+export function SortableQuickActionCard({ action, onClick, onDelete, isDisabled }: SortableQuickActionCardProps) {
     const {
         attributes,
         listeners,
@@ -38,6 +39,7 @@ export function SortableQuickActionCard({ action, onClick, onDelete }: SortableQ
                 action={action}
                 onAction={(direction) => onClick(action.id, direction)}
                 onDelete={() => onDelete(action.id)}
+                isDisabled={isDisabled}
             />
         </div>
     );

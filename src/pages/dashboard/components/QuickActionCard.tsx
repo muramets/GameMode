@@ -6,7 +6,7 @@ import type { Protocol } from '../../protocols/types'; // Updated import
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, TooltipPortal } from '../../../components/ui/atoms/Tooltip';
 import { renderIcon } from '../../../utils/iconMapper'; // Need to import this utility
 
-export function QuickActionCard({ action, onAction, onDelete }: { action: Protocol; onAction?: (direction: '+' | '-') => void; onDelete?: () => void }) {
+export function QuickActionCard({ action, onAction, onDelete, isDisabled }: { action: Protocol; onAction?: (direction: '+' | '-') => void; onDelete?: () => void; isDisabled?: boolean }) {
     const [hoverSide, setHoverSide] = useState<'left' | 'right' | null>(null);
     const [feedbackType, setFeedbackType] = useState<'plus' | 'minus' | null>(null);
     const [contentFeedbackType, setContentFeedbackType] = useState<'plus' | 'minus' | null>(null);
@@ -28,12 +28,13 @@ export function QuickActionCard({ action, onAction, onDelete }: { action: Protoc
     }, [action.title]);
 
     // Derived states to avoid sticking/double-renders (matching ProtocolRow pattern)
-    const effectiveHoverSide = hoverSide;
-    const effectiveFeedbackType = feedbackType;
-    const effectiveContentFeedbackType = contentFeedbackType;
-    const effectiveShake = shake;
+    const effectiveHoverSide = isDisabled ? null : hoverSide;
+    const effectiveFeedbackType = isDisabled ? null : feedbackType;
+    const effectiveContentFeedbackType = isDisabled ? null : contentFeedbackType;
+    const effectiveShake = isDisabled ? null : shake;
 
     const handleAction = (direction: '+' | '-') => {
+        if (isDisabled) return;
         // Trigger shake
         setShake(direction === '+' ? 'right' : 'left');
         setTimeout(() => setShake(null), 300);
@@ -52,7 +53,7 @@ export function QuickActionCard({ action, onAction, onDelete }: { action: Protoc
     return (
         <TooltipProvider>
             {/* Main Card Container - Handles Hover Scale ONLY */}
-            <div className="group relative h-[70px] transition-all duration-300 hover:scale-[1.03] select-none">
+            <div className={`group relative h-[70px] transition-all duration-300 select-none ${isDisabled ? 'cursor-default opacity-90' : 'hover:scale-[1.03] cursor-pointer'}`}>
 
                 {/* Inner Animation Container - Handles Tilt, Background, & Shadows */}
                 <div className={`w-full h-full relative bg-sub-alt rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 ${effectiveShake === 'left' ? 'animate-tilt-left' : effectiveShake === 'right' ? 'animate-tilt-right' : ''
@@ -257,7 +258,7 @@ export function QuickActionCard({ action, onAction, onDelete }: { action: Protoc
                     {onDelete && (
                         <div className="absolute top-0 right-0 w-8 h-8 z-50 flex items-start justify-end p-1 group/delete pointer-events-auto">
                             <button
-                                className="w-5 h-5 flex items-center justify-center rounded text-sub/50 hover:text-red-500 hover:bg-bg-primary/80 transition-all opacity-0 group-hover/delete:opacity-100"
+                                className={`w-5 h-5 flex items-center justify-center rounded text-sub/50 hover:text-red-500 hover:bg-bg-primary/80 transition-all opacity-0 ${isDisabled ? 'group-hover:opacity-100' : 'group-hover/delete:opacity-100'}`}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     onDelete();

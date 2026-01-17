@@ -40,6 +40,7 @@ import {
     rectSortingStrategy
 } from '@dnd-kit/sortable';
 import { useMetadataStore } from '../../stores/metadataStore';
+import { usePersonalityStore } from '../../stores/personalityStore';
 import { useCollapsedGroups } from '../../hooks/useCollapsedGroups';
 
 // --- Interaction Context for Zero-Lag DnD ---
@@ -68,13 +69,15 @@ const DraggableProtocolItem = React.memo(({
     innerfaces,
     applyProtocol,
     handleEditProtocol,
-    isDragEnabled
+    isDragEnabled,
+    isReadOnly
 }: {
     protocol: Protocol;
     innerfaces: Innerface[];
     applyProtocol: (id: string | number, direction: '+' | '-') => void;
     handleEditProtocol: (id: string | number) => void;
     isDragEnabled: boolean;
+    isReadOnly: boolean;
 }) => {
     const { justDroppedId, isDragging, clearJustDropped } = useInteraction();
     const isJustDropped = String(protocol.id) === justDroppedId;
@@ -109,6 +112,7 @@ const DraggableProtocolItem = React.memo(({
                         onLevelDown={(id: string | number) => applyProtocol(id, '-')}
                         onEdit={handleEditProtocol}
                         isDisabled={shouldDisableInteractions}
+                        isReadOnly={isReadOnly}
                     />
                 </div>
             )}
@@ -118,7 +122,8 @@ const DraggableProtocolItem = React.memo(({
     // Custom comparison to avoid re-renders on ID unrelated changes
     return prev.protocol === next.protocol &&
         prev.innerfaces === next.innerfaces &&
-        prev.isDragEnabled === next.isDragEnabled;
+        prev.isDragEnabled === next.isDragEnabled &&
+        prev.isReadOnly === next.isReadOnly;
 });
 
 const ProtocolGroup = React.memo(({
@@ -131,7 +136,8 @@ const ProtocolGroup = React.memo(({
     onGroupEdit,
     groupsMetadata,
     isCollapsed,
-    onToggleCollapse
+    onToggleCollapse,
+    isReadOnly
 }: {
     groupName: string;
     protocols: Protocol[];
@@ -143,6 +149,7 @@ const ProtocolGroup = React.memo(({
     groupsMetadata: Record<string, { icon: string; color?: string }>;
     isCollapsed: boolean;
     onToggleCollapse: () => void;
+    isReadOnly: boolean;
 }) => {
     const staticConfig = GROUP_CONFIG[groupName] || GROUP_CONFIG['ungrouped'];
     const storeMeta = groupsMetadata[groupName];
@@ -235,6 +242,7 @@ const ProtocolGroup = React.memo(({
                                         applyProtocol={applyProtocol}
                                         handleEditProtocol={handleEditProtocol}
                                         isDragEnabled={isDragEnabled}
+                                        isReadOnly={isReadOnly}
                                     />
                                 ))}
                             </div>
@@ -345,7 +353,8 @@ const ProtocolsContent = React.memo(({
     onGroupEdit,
     groupsMetadata,
     isGroupCollapsed,
-    toggleGroup
+    toggleGroup,
+    isReadOnly
 }: {
     groupedProtocols: [string, Protocol[]][];
     innerfaces: Innerface[];
@@ -357,6 +366,7 @@ const ProtocolsContent = React.memo(({
     groupsMetadata: Record<string, { icon: string; color?: string }>;
     isGroupCollapsed: (groupName: string) => boolean;
     toggleGroup: (groupName: string) => void;
+    isReadOnly: boolean;
 }) => {
     const sortableGroupIds = useMemo(() => groupedProtocols.map(([name]) => `group-${name}`), [groupedProtocols]);
 
@@ -387,6 +397,7 @@ const ProtocolsContent = React.memo(({
                             groupsMetadata={groupsMetadata}
                             isCollapsed={isGroupCollapsed(groupName)}
                             onToggleCollapse={() => toggleGroup(groupName)}
+                            isReadOnly={isReadOnly}
                         />
                     );
                 })}
@@ -537,7 +548,7 @@ const ProtocolsDragContainer = React.memo(({
 export function ProtocolsList() {
     const { applyProtocol, innerfaces, protocols } = useScoreContext();
     // const { user } = useAuth(); // Unused
-    // const { activePersonalityId } = usePersonalityStore(); // Unused
+    const { activeContext } = usePersonalityStore();
     const { reorderProtocols, reorderGroups, groupOrder, groupsMetadata, isLoading } = useMetadataStore();
 
     // Simplified loading logic: Minimum 500ms display time
@@ -606,6 +617,7 @@ export function ProtocolsList() {
     }, [filteredProtocols, groupOrder]);
 
     const isDragEnabled = !searchQuery.trim() && (activeFilters.length === 0 || activeFilters.length === 1 && activeFilters[0] === 'ungrouped');
+    const isReadOnly = activeContext?.type === 'role' || activeContext?.type === 'viewer';
 
     const [renderedCount, setRenderedCount] = useState(20);
     useEffect(() => { setRenderedCount(20); }, [filteredProtocols]);
@@ -800,6 +812,7 @@ export function ProtocolsList() {
                         groupsMetadata={groupsMetadata}
                         isGroupCollapsed={isGroupCollapsed}
                         toggleGroup={toggleGroup}
+                        isReadOnly={isReadOnly}
                     />
                 </ProtocolsDragContainer>
             )}

@@ -30,6 +30,7 @@ interface QuickActionsGridProps {
     onAddAction?: () => void;
     onActionClick?: (id: string | number, direction: '+' | '-') => void;
     onDeleteAction?: (id: string | number) => void;
+    isDisabled?: boolean;
 }
 
 export function QuickActionsGrid({
@@ -37,7 +38,8 @@ export function QuickActionsGrid({
     totalProtocolCount = 0,
     onAddAction,
     onActionClick,
-    onDeleteAction
+    onDeleteAction,
+    isDisabled
 }: QuickActionsGridProps) {
     const { reorderQuickActions } = useMetadataStore();
     const [activeId, setActiveId] = useState<string | null>(null);
@@ -120,6 +122,7 @@ export function QuickActionsGrid({
                                 action={action}
                                 onClick={(id, dir) => onActionClick?.(id, dir)}
                                 onDelete={(id) => onDeleteAction?.(id)}
+                                isDisabled={isDisabled}
                             />
                         ))}
                     </SortableContext>

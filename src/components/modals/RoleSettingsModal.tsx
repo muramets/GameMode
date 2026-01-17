@@ -7,6 +7,9 @@ import { useAuth } from '../../contexts/AuthProvider';
 import { useTeamStore } from '../../stores/teamStore';
 import { useMetadataStore } from '../../stores/metadataStore';
 import { usePersonalityStore } from '../../stores/personalityStore';
+import { db } from '../../config/firebase';
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faTrash,
@@ -52,7 +55,7 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
         groupOrder,
         pinnedProtocolIds
     } = useMetadataStore();
-    const { personalities, activePersonalityId } = usePersonalityStore();
+
 
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
@@ -68,6 +71,7 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
     const [isLoading, setIsLoading] = useState(false);
 
     const [inviteLink, setInviteLink] = useState<string | null>(null);
+    const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
     const [copied, setCopied] = useState(false);
 
     // UI state for composition
@@ -78,36 +82,131 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
     const role = teamId && roleId ? roles[teamId]?.find(r => r.id === roleId) : null;
     const isOwner = team ? team.ownerId === user?.uid : true;
 
+    const [roleInnerfaces, setRoleInnerfaces] = useState<any[]>([]);
+    const [roleProtocols, setRoleProtocols] = useState<any[]>([]);
+    const [roleStates, setRoleStates] = useState<any[]>([]);
+
+    // 1. Reset transient UI state on open or role switch
     useEffect(() => {
-        if (isOpen && roleId && role) {
+        if (isOpen) {
+            setIsConfirmingDelete(false);
+            setIsColorPickerOpen(false);
+            setCopied(false);
+            setSearchQuery('');
+            setActiveTab('protocols');
+        }
+    }, [isOpen, roleId]);
+
+    // 2. Sync form data with Role state
+    useEffect(() => {
+        if (!isOpen) return;
+
+        if (roleId && role) {
             setName(role.name);
             setDescription(role.description || '');
             setIcon(role.icon || 'user');
             setColor(role.themeColor || '#e2b714');
 
-            // Load template selections
-            const template = role.templateData;
-            if (template) {
-                setSelectedInnerfaces(new Set(template.innerfaces?.map(i => i.id.toString()) || []));
-                setSelectedProtocols(new Set(template.protocols?.map(p => p.id.toString()) || []));
-                setSelectedStates(new Set(template.states?.map(s => s.id) || []));
+            // Set invite link if it exists in the role AND is valid
+            if (role.activeInviteCode) {
+                // Verify existence asynchronously
+                const checkInvite = async () => {
+                    try {
+                        const inviteDoc = await getDoc(doc(db, 'team_invites', role.activeInviteCode!));
+                        if (inviteDoc.exists()) {
+                            const baseUrl = window.location.origin;
+                            setInviteLink(`${baseUrl}/invite/${role.activeInviteCode}`);
+                        } else {
+                            // Invite deleted manually? Clear it from UI.
+                            setInviteLink(null);
+                            // Optional: clear it from the role document too? 
+                            // For now, UI sync is enough for the user experience.
+                        }
+                    } catch (e) {
+                        console.error("Failed to verify invite", e);
+                        setInviteLink(null);
+                    }
+                };
+                checkInvite();
+            } else {
+                setInviteLink(null);
             }
-        } else if (isOpen && !roleId) {
-            // Create mode - start with nothing selected (as requested)
+
+            // Load template selections (Async from Subcollections)
+            const loadTemplate = async () => {
+                if (!teamId || !roleId) return;
+
+                // If we already have templateData in the object (rare, but future proof), use it
+                if (role.templateData) {
+                    const template = role.templateData;
+                    if (template) {
+                        setRoleInnerfaces(template.innerfaces || []);
+                        setRoleProtocols(template.protocols || []);
+                        setRoleStates(template.states || []);
+
+                        setSelectedInnerfaces(new Set(template.innerfaces?.map(i => i.id.toString()) || []));
+                        setSelectedProtocols(new Set(template.protocols?.map(p => p.id.toString()) || []));
+                        setSelectedStates(new Set(template.states?.map(s => s.id) || []));
+                    }
+                    return;
+                }
+
+                // Otherwise fetch from subcollections
+                try {
+                    const [protoSnap, ifaceSnap, stateSnap] = await Promise.all([
+                        getDocs(collection(db, 'teams', teamId, 'roles', roleId, 'protocols')),
+                        getDocs(collection(db, 'teams', teamId, 'roles', roleId, 'innerfaces')),
+                        getDocs(collection(db, 'teams', teamId, 'roles', roleId, 'states'))
+                    ]);
+
+                    const pIds = new Set<string>();
+                    const roleProtosList: any[] = [];
+                    protoSnap.forEach(d => {
+                        pIds.add(d.id);
+                        roleProtosList.push({ ...d.data(), id: d.id });
+                    });
+
+                    const iIds = new Set<string>();
+                    const roleIfacesList: any[] = [];
+                    ifaceSnap.forEach(d => {
+                        iIds.add(d.id);
+                        roleIfacesList.push({ ...d.data(), id: d.id });
+                    });
+
+                    const sIds = new Set<string>();
+                    const roleStatesList: any[] = [];
+                    stateSnap.forEach(d => {
+                        sIds.add(d.id);
+                        roleStatesList.push({ ...d.data(), id: d.id });
+                    });
+
+                    setRoleProtocols(roleProtosList);
+                    setRoleInnerfaces(roleIfacesList);
+                    setRoleStates(roleStatesList);
+
+                    setSelectedProtocols(pIds);
+                    setSelectedInnerfaces(iIds);
+                    setSelectedStates(sIds);
+                } catch (err) {
+                    console.error("Failed to load role template data", err);
+                }
+            };
+            loadTemplate();
+
+        } else if (!roleId) {
+            // Create mode - start with nothing selected
             setName('');
             setDescription('');
             setIcon('user');
             setColor('#e2b714');
+            setRoleInnerfaces([]);
+            setRoleProtocols([]);
+            setRoleStates([]);
             setSelectedInnerfaces(new Set());
             setSelectedProtocols(new Set());
             setSelectedStates(new Set());
+            setInviteLink(null);
         }
-        setIsConfirmingDelete(false);
-        setIsColorPickerOpen(false);
-        setInviteLink(null);
-        setCopied(false);
-        setSearchQuery('');
-        setActiveTab('protocols');
     }, [isOpen, roleId, role]);
 
     const handleSubmit = async (e: FormEvent) => {
@@ -116,8 +215,31 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
 
         setIsLoading(true);
         try {
+            // Get merged lists for saving
+            const mergedProtocols = (() => {
+                const map = new Map<string, any>();
+                roleProtocols.forEach(p => map.set(p.id.toString(), p));
+                protocols.forEach(p => map.set(p.id.toString(), p)); // Local overwrites role
+                return Array.from(map.values());
+            })();
+
+            const mergedInnerfaces = (() => {
+                const map = new Map<string, any>();
+                roleInnerfaces.forEach(i => map.set(i.id.toString(), i));
+                innerfaces.forEach(i => map.set(i.id.toString(), i));
+                return Array.from(map.values());
+            })();
+
+            const mergedStates = (() => {
+                const map = new Map<string, any>();
+                roleStates.forEach(s => map.set(s.id, s));
+                states.forEach(s => map.set(s.id, s));
+                return Array.from(map.values());
+            })();
+
+
             // Filter groups to only include those that are used by selected protocols
-            const selectedProtocolObjs = protocols.filter(p => selectedProtocols.has(p.id.toString()));
+            const selectedProtocolObjs = mergedProtocols.filter(p => selectedProtocols.has(p.id.toString()));
             const usedGroupNames = new Set(selectedProtocolObjs.map(p => p.group).filter(Boolean) as string[]);
 
             const filteredGroupsMetadata = Object.fromEntries(
@@ -126,9 +248,9 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
             const filteredGroupOrder = groupOrder.filter(name => usedGroupNames.has(name));
 
             const template: RoleTemplate = {
-                innerfaces: innerfaces.filter(i => selectedInnerfaces.has(i.id.toString())),
+                innerfaces: mergedInnerfaces.filter(i => selectedInnerfaces.has(i.id.toString())),
                 protocols: selectedProtocolObjs,
-                states: states.filter(s => selectedStates.has(s.id)),
+                states: mergedStates.filter(s => selectedStates.has(s.id)),
                 groups: filteredGroupsMetadata,
                 groupOrder: filteredGroupOrder,
                 innerfaceGroupOrder: [],
@@ -156,6 +278,27 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
         }
     };
 
+    const { activeContext, ensureDefaultPersonality, personalities, activePersonalityId } = usePersonalityStore();
+
+    // Determine Source Context for Pill
+    const sourceContext = useMemo(() => {
+        // If we are editing a role, the "local data" comes from the ACTIVE context the user is in.
+        if (!activePersonalityId) return null;
+
+        // Check if it's a personality
+        const p = personalities.find(p => p.id === activePersonalityId);
+        if (p) return { name: p.name, icon: p.icon, color: p.themeColor };
+
+        // If it's a role (activeContext type role)
+        if (activeContext?.type === 'role') {
+            const allRoles = Object.values(roles).flat();
+            const r = allRoles.find(r => r.id === activeContext.roleId);
+            return r ? { name: r.name, icon: r.icon, color: r.themeColor } : { name: 'Active Role', icon: 'user', color: 'var(--text-secondary)' };
+        }
+
+        return null;
+    }, [activePersonalityId, personalities, activeContext, roles]);
+
     const handleDelete = async () => {
         if (!teamId || !roleId || !user) return;
 
@@ -168,6 +311,15 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
         setIsLoading(true);
         try {
             await deleteRole(teamId, roleId);
+
+            // If we deleted the active role, switch context immediately to avoid "loading..." stuck state
+            if (activeContext?.type === 'role' && activeContext.teamId === teamId && activeContext.roleId === roleId) {
+                // Determine user's default personality
+                // We can't easily get it here without personality store state, 
+                // but ensureDefaultPersonality(user.uid) will switch to the first available one.
+                await ensureDefaultPersonality(user.uid, true);
+            }
+
             onClose();
         } catch (err) {
             console.error('Failed to delete role:', err);
@@ -196,28 +348,24 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
         }
 
         // Copy current personality's items
+        // Important: this logic might need refinement if we want to SELECT merge of role+local,
+        // but typically "Copy All" implies copying from the local personality source.
         setSelectedInnerfaces(new Set(innerfaces.map(i => i.id.toString())));
         setSelectedProtocols(new Set(protocols.map(p => p.id.toString())));
         setSelectedStates(new Set(states.map(s => s.id)));
-
-        // Sync settings if not already set
-        const activeP = personalities.find(p => p.id === activePersonalityId);
-        if (activeP) {
-            if (!name) setName(activeP.name);
-            if (!description && activeP.description) setDescription(activeP.description);
-            if (activeP.icon) setIcon(activeP.icon);
-            if (activeP.themeColor) setColor(activeP.themeColor);
-        }
     };
 
     const handleGenerateInvite = async () => {
         if (!teamId || !roleId || !user) return;
 
+        setIsGeneratingInvite(true);
         try {
             const link = await generateInviteLink(teamId, roleId, user.uid);
             setInviteLink(link);
         } catch (err) {
             console.error('Failed to generate invite:', err);
+        } finally {
+            setIsGeneratingInvite(false);
         }
     };
 
@@ -245,11 +393,34 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
     };
 
     // Filtered and grouped items for composition view
+    // Smart Union: Merge Role items + Personality items
+    const mergedProtocols = useMemo(() => {
+        const map = new Map<string, any>();
+        roleProtocols.forEach(p => map.set(p.id.toString(), p)); // Base: Role items
+        protocols.forEach(p => map.set(p.id.toString(), p));     // Overlay: Personality items (newer)
+        return Array.from(map.values());
+    }, [roleProtocols, protocols]);
+
+    const mergedInnerfaces = useMemo(() => {
+        const map = new Map<string, any>();
+        roleInnerfaces.forEach(i => map.set(i.id.toString(), i));
+        innerfaces.forEach(i => map.set(i.id.toString(), i));
+        return Array.from(map.values());
+    }, [roleInnerfaces, innerfaces]);
+
+    const mergedStates = useMemo(() => {
+        const map = new Map<string, any>();
+        roleStates.forEach(s => map.set(s.id, s));
+        states.forEach(s => map.set(s.id, s));
+        return Array.from(map.values());
+    }, [roleStates, states]);
+
+
     const itemsToRender = useMemo(() => {
         const query = searchQuery.toLowerCase();
 
         if (activeTab === 'protocols') {
-            const filtered = protocols.filter(p => p.title.toLowerCase().includes(query));
+            const filtered = mergedProtocols.filter(p => p.title.toLowerCase().includes(query));
             const grouped: Record<string, typeof protocols> = {};
             filtered.forEach(p => {
                 const g = p.group || 'ungrouped';
@@ -258,7 +429,7 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
             });
             return Object.entries(grouped);
         } else if (activeTab === 'innerfaces') {
-            const filtered = innerfaces.filter(i => i.name.toLowerCase().includes(query));
+            const filtered = mergedInnerfaces.filter(i => i.name.toLowerCase().includes(query));
             const grouped: Record<string, typeof innerfaces> = {};
             filtered.forEach(i => {
                 const g = i.group || 'ungrouped';
@@ -267,10 +438,10 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
             });
             return Object.entries(grouped);
         } else {
-            const filtered = states.filter(s => s.name.toLowerCase().includes(query));
+            const filtered = mergedStates.filter(s => s.name.toLowerCase().includes(query));
             return [['states', filtered] as [string, typeof states]];
         }
-    }, [activeTab, searchQuery, protocols, innerfaces, states]);
+    }, [activeTab, searchQuery, mergedProtocols, mergedInnerfaces, mergedStates]);
 
     const iconDef = getMappedIcon(icon);
 
@@ -311,6 +482,7 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
                             type="submit"
                             variant="primary"
                             size="sm"
+                            isLoading={isLoading}
                             disabled={!name.trim() || isLoading}
                             className="font-bold px-6 py-2 rounded-lg text-[10px] uppercase tracking-wider"
                         >
@@ -320,7 +492,7 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
                 </>
             }
         >
-            <div className="flex flex-col gap-5 max-h-[60vh] overflow-y-auto custom-scrollbar px-1">
+            <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto custom-scrollbar px-1 pb-1">
                 {/* Header: Icon, Name, Color */}
                 <div className="flex gap-4 items-end">
                     {/* Icon Preview */}
@@ -357,6 +529,7 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
                                 <button
                                     type="button"
                                     className="h-[42px] w-full bg-sub-alt rounded-lg border border-transparent hover:bg-sub transition-colors flex items-center justify-center cursor-pointer"
+                                    tabIndex={0}
                                 >
                                     <div
                                         className="w-5 h-5 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.3)]"
@@ -410,55 +583,96 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
 
                 {/* Template Builder Section (Refined Composition View) */}
                 <div className="flex flex-col gap-2 pt-2">
-                    <div className="flex items-center justify-between">
+                    {/* Header Row: Title & Context */}
+                    <div className="flex items-end justify-between mb-1">
                         <InputLabel label="Template Contents" />
-                        <div className="flex items-center gap-2">
-                            <Button
-                                type="button"
-                                variant={isSynced ? "primary" : "neutral"}
-                                size="sm"
-                                onClick={handlePersonalitySync}
-                                leftIcon={<FontAwesomeIcon icon={isSynced ? faCheck : faCopy} />}
-                                className={`text-[8px] uppercase tracking-[0.15em] font-bold py-1.5 rounded-full w-[90px] justify-center ${isSynced
-                                    ? "shadow-[0_0_10px_rgba(226,183,20,0.3)]"
-                                    : "opacity-50"
-                                    }`}
-                            >
-                                {isSynced ? "COPIED" : "COPY ALL"}
-                            </Button>
-
-                            <div className="bg-sub-alt rounded-lg p-0.5 flex gap-1 ml-2">
-                                {(['protocols', 'innerfaces', 'states'] as SelectionTab[]).map(tab => (
-                                    <button
-                                        key={tab}
-                                        type="button"
-                                        onClick={() => {
-                                            setActiveTab(tab);
-                                            setSearchQuery('');
-                                        }}
-                                        className={`px-2 py-1 rounded-md text-[10px] font-mono uppercase font-bold transition-all ${activeTab === tab ? 'bg-sub text-text-primary shadow-sm' : 'text-sub hover:text-text-primary'}`}
-                                    >
-                                        {tab}
-                                    </button>
-                                ))}
+                        {sourceContext && (
+                            <div className="flex items-center gap-2">
+                                <span className="text-[9px] text-sub uppercase font-mono tracking-wider opacity-70">
+                                    Comparing with
+                                </span>
+                                <TooltipProvider delayDuration={0}>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <div
+                                                className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg border border-white/5 cursor-help shadow-sm transition-all hover:border-white/10"
+                                                style={{ backgroundColor: `${sourceContext.color}15` }}
+                                            >
+                                                <span style={{ color: sourceContext.color }}
+                                                    className="text-[10px]">
+                                                    {renderIcon(sourceContext.icon || 'user')}
+                                                </span>
+                                                <span
+                                                    className="text-[10px] font-bold font-mono max-w-[100px] truncate"
+                                                    style={{ color: sourceContext.color }}
+                                                >
+                                                    {sourceContext.name}
+                                                </span>
+                                            </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">
+                                            <span className="font-mono text-[10px]">
+                                                Showing combined items from this Role and <b>{sourceContext.name}</b>
+                                            </span>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
                             </div>
-                        </div>
+                        )}
                     </div>
 
-                    <div className="bg-sub-alt/30 rounded-xl p-3 border border-white/5 h-[280px] flex flex-col gap-3">
+                    {/* Toolbar Row: Switcher & Actions */}
+                    <div className="flex items-center justify-between">
+                        {/* Switcher */}
+                        <div className="bg-sub-alt rounded-lg p-0.5 flex gap-1">
+                            {(['protocols', 'innerfaces', 'states'] as SelectionTab[]).map(tab => (
+                                <button
+                                    key={tab}
+                                    type="button"
+                                    onClick={() => {
+                                        setActiveTab(tab);
+                                        setSearchQuery('');
+                                    }}
+                                    className={`px-2 py-1 rounded-md text-[10px] font-mono uppercase font-bold transition-all ${activeTab === tab ? 'bg-sub text-text-primary shadow-sm' : 'text-sub hover:text-text-primary'}`}
+                                >
+                                    {tab}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Copy Button */}
+                        <Button
+                            type="button"
+                            variant={isSynced ? "primary" : "neutral"}
+                            size="sm"
+                            onClick={handlePersonalitySync}
+                            leftIcon={<FontAwesomeIcon icon={isSynced ? faCheck : faCopy} />}
+                            className={`text-[8px] uppercase tracking-[0.1em] font-bold py-1 px-1 rounded-full whitespace-nowrap min-w-0 justify-center ${isSynced
+                                ? "shadow-[0_0_10px_rgba(226,183,20,0.3)]"
+                                : "opacity-50"
+                                }`}
+                        >
+                            {isSynced ? "COPIED" : "COPY ALL"}
+                        </Button>
+                    </div>
+
+                    <div className="bg-sub-alt/30 rounded-xl border border-white/5 h-[280px] flex flex-col overflow-hidden">
+
                         {/* Search Input */}
-                        <Input
-                            type="text"
-                            placeholder={`Search ${activeTab}...`}
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            icon={faSearch}
-                            className="!bg-sub-alt/50"
-                        />
+                        <div className="p-3 pb-2">
+                            <Input
+                                type="text"
+                                placeholder={`Search ${activeTab}...`}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                icon={faSearch}
+                                className="!bg-sub-alt/50"
+                            />
+                        </div>
 
                         {/* Scrollable List */}
-                        <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
-                            <div className="flex flex-col gap-1">
+                        <div className="flex-1 overflow-y-auto custom-scrollbar">
+                            <div className="flex flex-col gap-1 px-3 pb-3">
                                 {itemsToRender.length === 0 || (itemsToRender.length === 1 && itemsToRender[0][1].length === 0) ? (
                                     <div className="w-full text-center py-12 text-sub/40 italic text-xs font-mono">
                                         No {activeTab} found
@@ -537,7 +751,7 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
 
                 {/* Invite Link Section (Edit mode only) */}
                 {roleId && (
-                    <div className="flex flex-col gap-2 pt-2 border-t border-white/5 mt-2">
+                    <div className="flex flex-col gap-2">
                         <InputLabel label="Invite Link" />
                         {inviteLink ? (
                             <div className="flex items-center gap-2">
@@ -564,10 +778,12 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
                                 variant="neutral"
                                 size="sm"
                                 onClick={handleGenerateInvite}
-                                leftIcon={<FontAwesomeIcon icon={faLink} />}
+                                isLoading={isGeneratingInvite}
+                                disabled={isGeneratingInvite}
+                                leftIcon={!isGeneratingInvite ? <FontAwesomeIcon icon={faLink} /> : undefined}
                                 className="self-start text-[10px] uppercase tracking-wider"
                             >
-                                Generate Invite Link
+                                {isGeneratingInvite ? 'Generating...' : 'Generate Invite Link'}
                             </Button>
                         )}
                     </div>

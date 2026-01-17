@@ -35,51 +35,60 @@ function AppContent() {
   // 2. No User -> Show Login (App handles routing)
   // 3. User & !Initialized -> Show GlobalLoader
   // 4. Always render StoreSync to ensure data fetching starts if user exists.
+  // Invite route needs to handle its own loading states
+  // So we check the current path and bypass GlobalLoader for invite routes
+  const isInviteRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/invite/');
 
-  if (authLoading) return <GlobalLoader />;
+  if (authLoading && !isInviteRoute) return <GlobalLoader />;
 
   return (
     <TooltipProvider delayDuration={300}>
       <Router>
         <StoreSync />
-        {(!initialized && user) ? (
-          <GlobalLoader />
-        ) : (
-          <Routes>
-            {/* Public routes */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/invite/:code" element={<JoinInvitePage />} />
-            <Route path="/" element={
+        <Routes>
+          {/* Public routes - always accessible */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/invite/:code" element={<JoinInvitePage />} />
+
+          {/* Private routes - require initialization */}
+          <Route path="/" element={
+            (!initialized && user) ? <GlobalLoader /> : (
               <PrivateRoute>
                 <Layout>
                   <Dashboard />
                 </Layout>
               </PrivateRoute>
-            } />
-            <Route path="/protocols" element={
+            )
+          } />
+          <Route path="/protocols" element={
+            (!initialized && user) ? <GlobalLoader /> : (
               <PrivateRoute>
                 <Layout>
                   <ProtocolsList />
                 </Layout>
               </PrivateRoute>
-            } />
-            <Route path="/innerfaces" element={
+            )
+          } />
+          <Route path="/innerfaces" element={
+            (!initialized && user) ? <GlobalLoader /> : (
               <PrivateRoute>
                 <Layout>
                   <InnerfacesPage />
                 </Layout>
               </PrivateRoute>
-            } />
-            <Route path="/history" element={
+            )
+          } />
+          <Route path="/history" element={
+            (!initialized && user) ? <GlobalLoader /> : (
               <PrivateRoute>
                 <Layout>
                   <HistoryPage />
                 </Layout>
               </PrivateRoute>
-            } />
-            {/* Add more routes here */}
-          </Routes>
-        )}
+            )
+          } />
+          {/* Add more routes here */}
+        </Routes>
       </Router>
     </TooltipProvider>
   );

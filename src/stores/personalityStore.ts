@@ -10,7 +10,6 @@ import {
     updateDoc,
     query,
     orderBy,
-    writeBatch
 } from 'firebase/firestore';
 import type { Personality } from '../types/personality';
 
@@ -40,7 +39,7 @@ interface PersonalityState {
     isViewerMode: () => boolean;
 
     // Migration helper
-    ensureDefaultPersonality: (uid: string) => Promise<string>; // Returns ID of active personality
+    ensureDefaultPersonality: (uid: string, forceReset?: boolean) => Promise<string>; // Returns ID of active personality
 }
 
 export const usePersonalityStore = create<PersonalityState>((set, get) => ({
@@ -211,12 +210,19 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
         }
     },
 
-    ensureDefaultPersonality: async (uid) => {
+    ensureDefaultPersonality: async (uid, forceReset = false) => {
         const { personalities, loadPersonalities, switchPersonality } = get();
 
         // If not loaded yet, try loading
         if (personalities.length === 0) {
             await loadPersonalities(uid);
+        }
+
+        // Check activeContext AFTER ensuring data is loaded
+        const { activeContext: recheckedContext } = get();
+        // If we are in a Role/Viewer and NOT forcing a reset, stay there.
+        if (!forceReset && recheckedContext && (recheckedContext.type === 'role' || recheckedContext.type === 'viewer')) {
+            return recheckedContext.type === 'role' ? recheckedContext.roleId : recheckedContext.personalityId;
         }
 
         // Re-check after load
@@ -254,47 +260,12 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
                 lastActiveAt: Date.now()
             });
 
-            // MIGRATION LOGIC: Move root collections to sub-collections
-            // existing: users/uid/innerfaces -> users/uid/personalities/defaultId/innerfaces
-            const batch = writeBatch(db);
-            const collectionsToMove = ['innerfaces', 'protocols', 'states', 'history'];
-
-            for (const colName of collectionsToMove) {
-                const oldColRef = collection(db, 'users', uid, colName);
-                const oldSnap = await getDocs(oldColRef);
-
-                for (const oldDoc of oldSnap.docs) {
-                    const newDocRef = doc(db, 'users', uid, 'personalities', defaultId, colName, oldDoc.id);
-                    batch.set(newDocRef, oldDoc.data());
-                    batch.delete(doc(db, 'users', uid, colName, oldDoc.id));
-                }
-            }
-
-            // Groups is a special case, it might be in 'groups' collection
-            const oldGroupsRef = collection(db, 'users', uid, 'groups');
-            const oldGroupsSnap = await getDocs(oldGroupsRef);
-            for (const gDoc of oldGroupsSnap.docs) {
-                const newGDocRef = doc(db, 'users', uid, 'personalities', defaultId, 'groups', gDoc.id);
-                batch.set(newGDocRef, gDoc.data());
-                batch.delete(doc(db, 'users', uid, 'groups', gDoc.id));
-            }
-
-            // Quick Actions settings
-            const qaRef = doc(db, 'users', uid, 'settings', 'quickActions');
-            const qaSnap = await getDoc(qaRef);
-            if (qaSnap.exists()) {
-                const newQaRef = doc(db, 'users', uid, 'personalities', defaultId, 'settings', 'quickActions');
-                batch.set(newQaRef, qaSnap.data());
-                batch.delete(qaRef);
-            }
-
-            await batch.commit();
-
-            // Reload to get the new state
+            // reload to get the new state
             await loadPersonalities(uid);
             await switchPersonality(uid, defaultId);
             return defaultId;
         }
+
 
         // If we have personalities but no active ID selected (fresh login on new device)
         const storedId = localStorage.getItem('active_personality_id');
