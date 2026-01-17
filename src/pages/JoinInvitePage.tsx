@@ -15,6 +15,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthProvider';
+import { useScoreContext } from '../contexts/ScoreProvider';
 import { useTeamStore } from '../stores/teamStore';
 import { usePersonalityStore } from '../stores/personalityStore';
 import { Button } from '../components/ui/atoms/Button';
@@ -26,6 +27,7 @@ import {
     faCheck,
     faArrowRight
 } from '@fortawesome/free-solid-svg-icons';
+import { GlobalLoader } from '../components/ui/molecules/GlobalLoader';
 import { getMappedIcon } from '../utils/iconMapper';
 
 // Google icon as SVG
@@ -48,12 +50,14 @@ export default function JoinInvitePage() {
     const { user, signInWithGoogle, loading: authLoading } = useAuth();
     const { getInviteInfo, joinTeam, memberships } = useTeamStore();
     const { switchPersonality } = usePersonalityStore();
+    const { resetInitialized } = useScoreContext();
 
-    const [isLoading, setIsLoading] = useState(true);
-    const [isJoining, setIsJoining] = useState(false);
-    const [isSigningIn, setIsSigningIn] = useState(false);
-    const [pendingJoin, setPendingJoin] = useState(false); // Track if we need to auto-join after sign-in
-    const [error, setError] = useState<string | null>(null);
+    // Initialize pendingJoin IMMEDIATELY from sessionStorage (critical for seamless reload)
+    const [pendingJoin, setPendingJoin] = useState(() => {
+        return sessionStorage.getItem(`pendingJoin_${code}`) === 'true';
+    });
+
+    // Cache invite data in sessionStorage to avoid re-fetch after auth
     const [inviteData, setInviteData] = useState<{
         teamName: string;
         teamIcon?: string;
@@ -63,12 +67,27 @@ export default function JoinInvitePage() {
         roleColor?: string;
         roleDescription?: string;
         teamId: string;
-    } | null>(null);
+    } | null>(() => {
+        const cached = sessionStorage.getItem(`inviteData_${code}`);
+        return cached ? JSON.parse(cached) : null;
+    });
+
+    // Only show validation loading if we don't have cached data AND not pending
+    const [isLoading, setIsLoading] = useState(!inviteData && !pendingJoin);
+    const [isJoining, setIsJoining] = useState(false);
+    const [isSigningIn, setIsSigningIn] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const isAlreadyMember = inviteData && memberships[inviteData.teamId];
 
-    // Validate invite on mount
+    // Validate invite on mount (skip if returning from auth with cached data)
     useEffect(() => {
+        // Skip validation if we already have data or are in pending join state
+        if (inviteData || pendingJoin) {
+            setIsLoading(false);
+            return;
+        }
+
         async function validateInvite() {
             if (!code) {
                 setError('No invite code provided');
@@ -84,7 +103,7 @@ export default function JoinInvitePage() {
                     return;
                 }
 
-                setInviteData({
+                const data = {
                     teamName: info.team.name,
                     teamIcon: info.team.icon,
                     teamColor: info.team.themeColor,
@@ -93,7 +112,11 @@ export default function JoinInvitePage() {
                     roleColor: info.role.themeColor,
                     roleDescription: info.role.description,
                     teamId: info.team.id
-                });
+                };
+
+                setInviteData(data);
+                // Cache for after auth
+                sessionStorage.setItem(`inviteData_${code}`, JSON.stringify(data));
             } catch {
                 setError('Failed to validate invite');
             } finally {
@@ -102,45 +125,71 @@ export default function JoinInvitePage() {
         }
 
         validateInvite();
-    }, [code, getInviteInfo]);
+    }, [code, getInviteInfo, inviteData, pendingJoin]);
 
     // Auto-join after sign-in (for new users signing in via invite)
     useEffect(() => {
-        if (user && pendingJoin && code && inviteData && !isAlreadyMember) {
+        if (user && pendingJoin && code && inviteData && !isAlreadyMember && !isJoining) {
             handleAutoJoin();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user, pendingJoin, code, inviteData, isAlreadyMember]);
+    }, [user, pendingJoin, code, inviteData, isAlreadyMember, isJoining]);
 
     const handleAutoJoin = async () => {
         if (!user || !code) return;
 
-        setIsJoining(true);
-        setError(null);
+        // Reset initialization state to start fresh loading cycle
+        resetInitialized();
+
+        // Signal global loading first to reset progress bar
+        useTeamStore.getState().setLoading(true);
+
+        // Delay local state to ensure GlobalLoader mounts AFTER ScoreProvider reset
+        setTimeout(() => {
+            setIsJoining(true);
+            setError(null);
+        }, 10);
 
         try {
             const personalityId = await joinTeam(user.uid, code);
             await switchPersonality(user.uid, personalityId);
+
+            // Clean up session storage
+            sessionStorage.removeItem(`pendingJoin_${code}`);
+            sessionStorage.removeItem(`inviteData_${code}`);
+
             navigate('/');
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Failed to join team';
             setError(message);
-        } finally {
             setPendingJoin(false);
-            setIsSigningIn(false);
             setIsJoining(false);
+            sessionStorage.removeItem(`pendingJoin_${code}`);
         }
     };
 
     const handleJoin = async () => {
         if (!user || !code) return;
 
-        setIsJoining(true);
-        setError(null);
+        // Reset initialization state to start fresh loading cycle
+        resetInitialized();
+
+        // Signal global loading first to reset progress bar
+        useTeamStore.getState().setLoading(true);
+
+        // Delay local state to ensure GlobalLoader mounts AFTER ScoreProvider reset
+        setTimeout(() => {
+            setIsJoining(true);
+            setError(null);
+        }, 10);
 
         try {
             const personalityId = await joinTeam(user.uid, code);
             await switchPersonality(user.uid, personalityId);
+
+            // Clean up
+            sessionStorage.removeItem(`inviteData_${code}`);
+
             navigate('/');
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Failed to join team';
@@ -152,27 +201,28 @@ export default function JoinInvitePage() {
     const handleSignIn = async () => {
         setIsSigningIn(true);
         try {
-            setPendingJoin(true); // Flag that we need to join after auth completes
+            setPendingJoin(true);
+            sessionStorage.setItem(`pendingJoin_${code}`, 'true');
             await signInWithGoogle();
             // Don't navigate here - let auto-join useEffect handle it
         } catch {
             setError('Failed to sign in');
             setIsSigningIn(false);
             setPendingJoin(false);
+            sessionStorage.removeItem(`pendingJoin_${code}`);
         }
     };
 
     const teamIconDef = inviteData?.teamIcon ? getMappedIcon(inviteData.teamIcon) : null;
     const roleIconDef = inviteData?.roleIcon ? getMappedIcon(inviteData.roleIcon) : null;
 
-    // Loading state
-    if (isLoading || authLoading) {
+    // Loading state (Initial validation only)
+    if (isLoading) {
         return (
             <div
                 className="relative min-h-screen flex items-center justify-center font-mono"
                 style={{ backgroundColor: 'var(--bg-color)' }}
             >
-
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -190,6 +240,12 @@ export default function JoinInvitePage() {
                 </motion.div>
             </div>
         );
+    }
+
+    // Auth, Pending Join, or Joining state
+    // Show minimal bg so GlobalLoader is the only visible indicator
+    if (authLoading || isJoining) {
+        return <GlobalLoader />;
     }
 
     // Error state (no invite data)

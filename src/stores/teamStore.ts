@@ -78,6 +78,9 @@ interface TeamState {
     loadRoleMembers: (teamId: string, roleId: string) => Promise<void>;
     subscribeToRoleMembers: (teamId: string, roleId: string) => () => void;
 
+    // --- Loading State Action ---
+    setLoading: (loading: boolean) => void;
+
     // --- Subscriptions ---
     subscribeToTeams: (uid: string) => () => void;
     subscribeToRoles: (teamId: string) => () => void;
@@ -90,6 +93,8 @@ export const useTeamStore = create<TeamState>((set, get) => ({
     memberships: {},
     isLoading: true,
     error: null,
+
+    setLoading: (loading) => set({ isLoading: loading }),
 
     // ========================================================================
     // TEAM ACTIONS
@@ -378,6 +383,30 @@ export const useTeamStore = create<TeamState>((set, get) => ({
 
     generateInviteLink: async (teamId, roleId, uid, options = {}) => {
         try {
+            // 1. Check if role already has an active invite code
+            const roleRef = doc(db, 'teams', teamId, 'roles', roleId);
+            const roleDoc = await getDoc(roleRef);
+
+            if (roleDoc.exists()) {
+                const roleData = roleDoc.data() as TeamRole;
+
+                // If persistent invite exists, check validity
+                if (roleData.activeInviteCode) {
+                    const inviteDoc = await getDoc(doc(db, 'team_invites', roleData.activeInviteCode));
+                    if (inviteDoc.exists()) {
+                        const invite = inviteDoc.data() as TeamInvite;
+                        // Check expiry
+                        const isExpired = invite.expiresAt && Date.now() > invite.expiresAt;
+                        // If not single use (persistent) and not expired, return it
+                        if (!invite.singleUse && !isExpired) {
+                            const baseUrl = window.location.origin;
+                            return `${baseUrl}/invite/${roleData.activeInviteCode}`;
+                        }
+                    }
+                }
+            }
+
+            // 2. Generate new if none exists or invalid
             const code = generateInviteCode();
             const invite: TeamInvite = {
                 code,
@@ -391,7 +420,25 @@ export const useTeamStore = create<TeamState>((set, get) => ({
                 })
             };
 
-            await setDoc(doc(db, 'team_invites', code), invite);
+            const batch = writeBatch(db);
+            // Save invite
+            batch.set(doc(db, 'team_invites', code), invite);
+            // Update role with active code (only if it's a persistent link)
+            if (!options.singleUse) {
+                batch.update(roleRef, { activeInviteCode: code });
+
+                // Update local state immediately
+                set(state => ({
+                    roles: {
+                        ...state.roles,
+                        [teamId]: (state.roles[teamId] || []).map(r =>
+                            r.id === roleId ? { ...r, activeInviteCode: code } : r
+                        )
+                    }
+                }));
+            }
+
+            await batch.commit();
 
             // Return full URL
             const baseUrl = window.location.origin;
@@ -437,6 +484,7 @@ export const useTeamStore = create<TeamState>((set, get) => ({
 
     joinTeam: async (uid, inviteCode) => {
         try {
+            set({ isLoading: true });
             // 1. Validate invite
             const inviteDoc = await getDoc(doc(db, 'team_invites', inviteCode));
             if (!inviteDoc.exists()) throw new Error('Invalid invite code');
@@ -493,38 +541,94 @@ export const useTeamStore = create<TeamState>((set, get) => ({
             // Create personality document
             batch.set(doc(db, 'users', uid, 'personalities', personalityId), personality);
 
-            // Copy Innerfaces
-            roleIfaces.docs.forEach((d, idx) => {
+            // ========================================================================
+            // ID MAPPING STRATEGY
+            // 
+            // When copying a role template to a new user personality, we must:
+            // 1. Generate new unique IDs for all copied entities (states, protocols, innerfaces)
+            // 2. Update all cross-references to use the NEW IDs instead of template IDs
+            // 
+            // Without this remapping, copied entities would reference non-existent template IDs,
+            // breaking the relationship graph (e.g., State -> Protocols, Protocol -> Innerfaces)
+            // ========================================================================
+
+            const stateIdMap = new Map<string, string>();
+            roleStates.docs.forEach((d, idx) => stateIdMap.set(d.id, `st-${Date.now()}-${idx}`));
+
+            const innerfaceIdMap = new Map<string, string>();
+            roleIfaces.docs.forEach((d, idx) => innerfaceIdMap.set(d.id, `if-${Date.now()}-${idx}`));
+
+            const protocolIdMap = new Map<string, string>();
+            roleProtos.docs.forEach((d, idx) => protocolIdMap.set(d.id, `pr-${Date.now()}-${idx}`));
+
+            // --- Copy States (and update Protocol/Innerface/State references) ---
+            roleStates.docs.forEach((d) => {
                 const data = d.data();
-                const newId = `if-${Date.now()}-${idx}`;
-                batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'innerfaces', newId), { ...data, id: newId });
+                const newId = stateIdMap.get(d.id)!;
+
+                // Remap all ID references to point to newly created entities
+                const newProtocolIds = (data.protocolIds || []).map((id: string | number) => protocolIdMap.get(id.toString()) || id);
+                const newInnerfaceIds = (data.innerfaceIds || []).map((id: string | number) => innerfaceIdMap.get(id.toString()) || id);
+                const newStateIds = (data.stateIds || []).map((id: string) => stateIdMap.get(id) || id);
+
+                batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'states', newId), {
+                    ...data,
+                    id: newId,
+                    protocolIds: newProtocolIds,
+                    innerfaceIds: newInnerfaceIds,
+                    stateIds: newStateIds
+                });
             });
 
-            // Copy Protocols
-            roleProtos.docs.forEach((d, idx) => {
+            // --- Copy Innerfaces (and update Protocol references) ---
+            roleIfaces.docs.forEach((d) => {
                 const data = d.data();
-                const newId = `pr-${Date.now()}-${idx}`;
-                batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'protocols', newId), { ...data, id: newId });
+                const newId = innerfaceIdMap.get(d.id)!;
+
+                // Remap protocol references
+                const newProtocolIds = (data.protocolIds || []).map((id: string | number) => protocolIdMap.get(id.toString()) || id);
+
+                batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'innerfaces', newId), {
+                    ...data,
+                    id: newId,
+                    protocolIds: newProtocolIds
+                });
             });
 
-            // Copy States
-            roleStates.docs.forEach((d, idx) => {
+            // --- Copy Protocols (and update Innerface references) ---
+            roleProtos.docs.forEach((d) => {
                 const data = d.data();
-                const newId = `st-${Date.now()}-${idx}`;
-                batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'states', newId), { ...data, id: newId });
+                const newId = protocolIdMap.get(d.id)!;
+
+                // Remap innerface targets
+                const newTargets = (data.targets || []).map((id: string | number) => innerfaceIdMap.get(id.toString()) || id);
+
+                batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'protocols', newId), {
+                    ...data,
+                    id: newId,
+                    targets: newTargets
+                });
             });
 
-            // Copy Groups
+            // --- Copy Groups (Simple copy) ---
             roleGroups.docs.forEach(d => {
                 batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'groups', d.id), d.data());
             });
 
-            // Copy Settings
+            // --- Copy Settings (Fix Pinned Quick Actions) ---
             if (roleGroupSettings.exists()) {
                 batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'settings', 'groups'), roleGroupSettings.data());
             }
+
             if (roleQuickActions.exists()) {
-                batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'settings', 'quickActions'), roleQuickActions.data());
+                const qaData = roleQuickActions.data();
+                // Remap Pinned Protocol IDs if they exist
+                if (qaData.ids && Array.isArray(qaData.ids)) {
+                    const newIds = qaData.ids.map((id: string) => protocolIdMap.get(id) || id);
+                    batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'settings', 'quickActions'), { ...qaData, ids: newIds });
+                } else {
+                    batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'settings', 'quickActions'), qaData);
+                }
             }
 
             // 4. Add membership to user document (using set with merge to create doc if missing)
@@ -581,7 +685,7 @@ export const useTeamStore = create<TeamState>((set, get) => ({
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
             console.error('Failed to join team:', err);
-            set({ error: message });
+            set({ error: message, isLoading: false });
             throw err;
         }
     },
