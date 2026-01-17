@@ -29,8 +29,9 @@ import {
     onSnapshot,
     writeBatch
 } from 'firebase/firestore';
-import type { Team, TeamRole, TeamInvite, TeamMembership, TeamMembershipsMap } from '../types/team';
+import type { Team, TeamRole, TeamInvite, TeamMembership, TeamMembershipsMap, RoleMember } from '../types/team';
 import type { Personality } from '../types/personality';
+import { getAuth } from 'firebase/auth';
 
 // ============================================================================
 // HELPER: Generate short invite code
@@ -51,6 +52,7 @@ interface TeamState {
     // State
     teams: Team[];
     roles: Record<string, TeamRole[]>;  // teamId -> roles
+    roleMembers: Record<string, RoleMember[]>;  // `${teamId}/${roleId}` -> members
     memberships: TeamMembershipsMap;
     isLoading: boolean;
     error: string | null;
@@ -72,6 +74,10 @@ interface TeamState {
     getInviteInfo: (inviteCode: string) => Promise<{ team: Team; role: TeamRole } | null>;
     joinTeam: (uid: string, inviteCode: string) => Promise<string>;  // returns personalityId
 
+    // --- Role Members Actions (for admin viewer) ---
+    loadRoleMembers: (teamId: string, roleId: string) => Promise<void>;
+    subscribeToRoleMembers: (teamId: string, roleId: string) => () => void;
+
     // --- Subscriptions ---
     subscribeToTeams: (uid: string) => () => void;
     subscribeToRoles: (teamId: string) => () => void;
@@ -80,6 +86,7 @@ interface TeamState {
 export const useTeamStore = create<TeamState>((set, get) => ({
     teams: [],
     roles: {},
+    roleMembers: {},
     memberships: {},
     isLoading: true,
     error: null,
@@ -520,7 +527,7 @@ export const useTeamStore = create<TeamState>((set, get) => ({
                 batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'settings', 'quickActions'), roleQuickActions.data());
             }
 
-            // 4. Add membership to user document
+            // 4. Add membership to user document (using set with merge to create doc if missing)
             const membership: TeamMembership = {
                 teamId: invite.teamId,
                 roleId: invite.roleId,
@@ -529,16 +536,33 @@ export const useTeamStore = create<TeamState>((set, get) => ({
                 invitedBy: invite.createdBy
             };
 
-            batch.update(doc(db, 'users', uid), {
-                [`teamMemberships.${invite.teamId}`]: membership
-            });
+            batch.set(doc(db, 'users', uid), {
+                teamMemberships: {
+                    [invite.teamId]: membership
+                }
+            }, { merge: true });
 
             // 5. Add user to team's memberUids
             batch.update(doc(db, 'teams', invite.teamId), {
                 memberUids: [...(get().teams.find(t => t.id === invite.teamId)?.memberUids || []), uid]
             });
 
-            // 6. Mark invite as used if single-use
+            // 6. Create RoleMember document for admin viewer feature
+            const auth = getAuth();
+            const currentUser = auth.currentUser;
+            const roleMember: RoleMember = {
+                uid,
+                displayName: currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Unknown',
+                icon: personality.icon,
+                personalityId,
+                joinedAt: Date.now()
+            };
+            batch.set(
+                doc(db, 'teams', invite.teamId, 'roles', invite.roleId, 'members', uid),
+                roleMember
+            );
+
+            // 7. Mark invite as used if single-use
             if (invite.singleUse) {
                 batch.update(doc(db, 'team_invites', inviteCode), { used: true });
             }
@@ -595,6 +619,49 @@ export const useTeamStore = create<TeamState>((set, get) => ({
                 roles: { ...state.roles, [teamId]: roles }
             }));
         });
+
+        return unsubscribe;
+    },
+
+    // ========================================================================
+    // ROLE MEMBERS (for admin viewer feature)
+    // ========================================================================
+
+    loadRoleMembers: async (teamId, roleId) => {
+        try {
+            const membersSnap = await getDocs(
+                collection(db, 'teams', teamId, 'roles', roleId, 'members')
+            );
+            const members = membersSnap.docs.map(d => ({
+                ...d.data(),
+                uid: d.id
+            } as RoleMember));
+
+            const key = `${teamId}/${roleId}`;
+            set(state => ({
+                roleMembers: { ...state.roleMembers, [key]: members }
+            }));
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            console.error('Failed to load role members:', err);
+            set({ error: message });
+        }
+    },
+
+    subscribeToRoleMembers: (teamId, roleId) => {
+        const key = `${teamId}/${roleId}`;
+        const unsubscribe = onSnapshot(
+            collection(db, 'teams', teamId, 'roles', roleId, 'members'),
+            (snap) => {
+                const members = snap.docs.map(d => ({
+                    ...d.data(),
+                    uid: d.id
+                } as RoleMember));
+                set(state => ({
+                    roleMembers: { ...state.roleMembers, [key]: members }
+                }));
+            }
+        );
 
         return unsubscribe;
     }

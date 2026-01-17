@@ -16,29 +16,9 @@ import { ProtocolsList } from './pages/protocols';
 import InnerfacesPage from './pages/innerfaces/InnerfacesPage';
 import HistoryPage from './pages/history/HistoryPage';
 import JoinInvitePage from './pages/JoinInvitePage';
+import LoginPage from './pages/LoginPage';
 
-const Login = () => {
-  const { signInWithGoogle, user } = useAuth();
 
-  if (user) {
-    return <Navigate to="/" />;
-  }
-
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-bg-primary text-text-primary">
-      <div className="p-8 bg-card-bg rounded-lg shadow-lg text-center max-w-md w-full border border-border">
-        <h1 className="text-3xl font-bold mb-2">GameMode</h1>
-        <p className="text-text-secondary mb-8">Level up your life</p>
-        <button
-          onClick={signInWithGoogle}
-          className="w-full bg-button-secondary-bg hover:bg-button-secondary-hover text-button-secondary-text font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
-        >
-          Sign in with Google
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -60,14 +40,14 @@ function AppContent() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <StoreSync />
-      {(!initialized && user) ? (
-        <GlobalLoader />
-      ) : (
-        <Router>
+      <Router>
+        <StoreSync />
+        {(!initialized && user) ? (
+          <GlobalLoader />
+        ) : (
           <Routes>
             {/* Public routes */}
-            <Route path="/login" element={<Login />} />
+            <Route path="/login" element={<LoginPage />} />
             <Route path="/invite/:code" element={<JoinInvitePage />} />
             <Route path="/" element={
               <PrivateRoute>
@@ -99,8 +79,8 @@ function AppContent() {
             } />
             {/* Add more routes here */}
           </Routes>
-        </Router>
-      )}
+        )}
+      </Router>
     </TooltipProvider>
   );
 }

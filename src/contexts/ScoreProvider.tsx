@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { useScores } from '../pages/protocols/hooks/useScores';
+import { useTeamStore } from '../stores/teamStore';
 
 interface ScoreContextType extends ReturnType<typeof useScores> {
     initialized: boolean;
@@ -10,6 +11,7 @@ const ScoreContext = createContext<ScoreContextType | null>(null);
 
 export function ScoreProvider({ children }: { children: React.ReactNode }) {
     const scoreData = useScores();
+    const teamsLoading = useTeamStore(state => state.isLoading);
     const [initialized, setInitialized] = useState(false);
 
     // "MonkeyType Style" Smooth Loader
@@ -22,6 +24,7 @@ export function ScoreProvider({ children }: { children: React.ReactNode }) {
     // 4. IF data loads LATE, we stall visual at 99%.
 
     const [displayProgress, setDisplayProgress] = useState(0);
+    const isLoading = scoreData.isLoading || teamsLoading;
 
     useEffect(() => {
         let interval: ReturnType<typeof setInterval>;
@@ -31,7 +34,7 @@ export function ScoreProvider({ children }: { children: React.ReactNode }) {
             setDisplayProgress(prev => {
 
                 // If real data is loaded, we accelerate to 100
-                if (!scoreData.isLoading) {
+                if (!isLoading) {
                     if (prev >= 100) {
                         clearInterval(interval);
                         return 100;
@@ -53,17 +56,17 @@ export function ScoreProvider({ children }: { children: React.ReactNode }) {
         }, 50);
 
         return () => clearInterval(interval);
-    }, [scoreData.isLoading]);
+    }, [isLoading]);
 
     // Listener for completion
     useEffect(() => {
-        if (displayProgress >= 100 && !scoreData.isLoading) {
+        if (displayProgress >= 100 && !isLoading) {
             const timer = setTimeout(() => {
                 setInitialized(true);
             }, 500); // Short settling time at 100%
             return () => clearTimeout(timer);
         }
-    }, [displayProgress, scoreData.isLoading]);
+    }, [displayProgress, isLoading]);
 
     const contextValue = useMemo(() => ({
         ...scoreData,

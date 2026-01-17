@@ -111,3 +111,40 @@ export interface TeamMembership {
  * TeamMemberships map stored on user document.
  */
 export type TeamMembershipsMap = Record<string, TeamMembership>;
+
+// ============================================================================
+// ROLE MEMBERS (for admin viewing)
+// ============================================================================
+
+/**
+ * RoleMember - Cached info about a user who joined via role invite.
+ * Used for displaying members in TeamsDropdown and enabling viewer mode.
+ * Stored in: teams/{teamId}/roles/{roleId}/members/{uid}
+ */
+export interface RoleMember {
+    uid: string;
+    displayName: string;      // cached user display name
+    icon?: string;            // avatar/icon for display
+    personalityId: string;    // ID of personality for viewer mode
+    joinedAt: number;
+    lastActiveAt?: number;    // for sorting by activity
+}
+
+// ============================================================================
+// COACH NOTES (future feature preparation)
+// ============================================================================
+
+/**
+ * CoachNote - Notes/comments from admin about a participant's progress.
+ * Stored in: teams/{teamId}/roles/{roleId}/members/{uid}/notes/{noteId}
+ * 
+ * @future This is a prepared structure for future implementation.
+ */
+export interface CoachNote {
+    id: string;
+    authorId: string;         // admin who wrote the note
+    content: string;
+    createdAt: number;
+    updatedAt?: number;
+    // Future: could add tags, visibility, linked protocols, etc.
+}

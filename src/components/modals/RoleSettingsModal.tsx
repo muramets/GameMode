@@ -116,13 +116,21 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
 
         setIsLoading(true);
         try {
-            // Build template from selected items
+            // Filter groups to only include those that are used by selected protocols
+            const selectedProtocolObjs = protocols.filter(p => selectedProtocols.has(p.id.toString()));
+            const usedGroupNames = new Set(selectedProtocolObjs.map(p => p.group).filter(Boolean) as string[]);
+
+            const filteredGroupsMetadata = Object.fromEntries(
+                Object.entries(groupsMetadata).filter(([name]) => usedGroupNames.has(name))
+            );
+            const filteredGroupOrder = groupOrder.filter(name => usedGroupNames.has(name));
+
             const template: RoleTemplate = {
                 innerfaces: innerfaces.filter(i => selectedInnerfaces.has(i.id.toString())),
-                protocols: protocols.filter(p => selectedProtocols.has(p.id.toString())),
+                protocols: selectedProtocolObjs,
                 states: states.filter(s => selectedStates.has(s.id)),
-                groups: groupsMetadata,
-                groupOrder,
+                groups: filteredGroupsMetadata,
+                groupOrder: filteredGroupOrder,
                 innerfaceGroupOrder: [],
                 pinnedProtocolIds: pinnedProtocolIds.filter(id => selectedProtocols.has(id))
             };

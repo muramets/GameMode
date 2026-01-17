@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { usePersonalityStore } from '../../stores/personalityStore';
 import { useAuth } from '../../contexts/AuthProvider';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCog, faPlus, faCheck, faPen } from '@fortawesome/free-solid-svg-icons';
+import { faCog, faPlus, faCheck, faPen, faEye } from '@fortawesome/free-solid-svg-icons';
 import { getMappedIcon } from '../../utils/iconMapper';
 import { PersonalitySettingsModal } from '../modals/PersonalitySettingsModal';
 
@@ -22,16 +22,21 @@ export function PersonalityDropdown() {
     // Determine Active Display Item
     let activeItem: { name: string; icon?: string; themeColor?: string } | null | undefined = personalities.find(p => p.id === activePersonalityId);
     let isDesignMode = false;
+    let isViewerMode = false;
 
     if (activeContext?.type === 'role') {
         isDesignMode = true;
         // Find the role in team store
-        // We might need to look through all teams if we don't assume we have the teamId handy,
-        // but activeContext has it!
         const role = roles[activeContext.teamId]?.find((r: TeamRole) => r.id === activeContext.roleId);
         if (role) {
             activeItem = role;
         }
+    } else if (activeContext?.type === 'viewer') {
+        isViewerMode = true;
+        activeItem = {
+            name: activeContext.displayName || 'Participant',
+            icon: 'user'
+        };
     }
 
     const handleEdit = (e: React.MouseEvent, id: string) => {
@@ -75,7 +80,7 @@ export function PersonalityDropdown() {
                         {(activeItem?.name || 'loading...').toLowerCase()}
                     </span>
 
-                    {/* Personality Count Badge OR Role Mode Indicator */}
+                    {/* Personality Count Badge OR Role Mode Indicator OR Viewer Mode Indicator */}
                     {isDesignMode ? (
                         <div
                             className="flex items-center justify-center transition-colors duration-150 bg-[var(--main-color)] text-[var(--bg-color)] gap-[0.4em]"
@@ -83,7 +88,7 @@ export function PersonalityDropdown() {
                                 fontSize: '0.6em',
                                 lineHeight: '0.65em',
                                 padding: '0.35em 0.5em',
-                                borderRadius: '6px',
+                                borderRadius: '2px',
                                 alignSelf: 'center',
                                 width: 'max-content',
                                 fontWeight: 'bold'
@@ -91,6 +96,22 @@ export function PersonalityDropdown() {
                         >
                             <FontAwesomeIcon icon={faPen} style={{ fontSize: '0.9em' }} />
                             ROLE
+                        </div>
+                    ) : isViewerMode ? (
+                        <div
+                            className="flex items-center justify-center transition-colors duration-150 bg-[var(--main-color)] text-[var(--bg-color)] gap-[0.4em]"
+                            style={{
+                                fontSize: '0.6em',
+                                lineHeight: '0.65em',
+                                padding: '0.35em 0.5em',
+                                borderRadius: '2px',
+                                alignSelf: 'center',
+                                width: 'max-content',
+                                fontWeight: 'bold'
+                            }}
+                        >
+                            <FontAwesomeIcon icon={faEye} style={{ fontSize: '0.9em' }} />
+                            COACH
                         </div>
                     ) : (
                         <div
@@ -120,8 +141,8 @@ export function PersonalityDropdown() {
                             gap: '0.25em'
                         }}
                     >
-                        {/* Switch Header if in Design Mode */}
-                        {isDesignMode && (
+                        {/* Switch Header if in Design/Viewer Mode */}
+                        {(isDesignMode || isViewerMode) && (
                             <div className="px-3 pt-2 pb-1 flex flex-col gap-1 opacity-70">
                                 <span className="text-[0.9em] font-bold text-[var(--sub-color)]">Back to personality:</span>
                                 <div className="h-[1px] bg-[var(--sub-color)] opacity-30 w-full" />

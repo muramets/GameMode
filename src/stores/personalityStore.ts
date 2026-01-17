@@ -16,7 +16,8 @@ import type { Personality } from '../types/personality';
 
 export type ActiveContext =
     | { type: 'personality'; uid: string; pid: string }
-    | { type: 'role'; teamId: string; roleId: string };
+    | { type: 'role'; teamId: string; roleId: string }
+    | { type: 'viewer'; targetUid: string; personalityId: string; teamId: string; roleId: string; displayName: string };
 
 interface PersonalityState {
     personalities: Personality[];
@@ -32,6 +33,11 @@ interface PersonalityState {
     switchPersonality: (uid: string, personalityId: string) => Promise<void>;
     switchToRole: (teamId: string, roleId: string) => void;
     deletePersonality: (uid: string, personalityId: string) => Promise<void>;
+
+    // Viewer Mode (for admin viewing participant progress)
+    switchToViewer: (targetUid: string, personalityId: string, teamId: string, roleId: string, displayName: string) => void;
+    exitViewerMode: () => void;
+    isViewerMode: () => boolean;
 
     // Migration helper
     ensureDefaultPersonality: (uid: string) => Promise<string>; // Returns ID of active personality
@@ -139,6 +145,54 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
         });
     },
 
+    // ========================================================================
+    // VIEWER MODE (admin viewing participant progress)
+    // ========================================================================
+
+    switchToViewer: (targetUid, personalityId, teamId, roleId, displayName) => {
+        // Store the previous context for returning later
+        const currentContext = get().activeContext;
+        if (currentContext && currentContext.type !== 'viewer') {
+            localStorage.setItem('pre_viewer_context', JSON.stringify(currentContext));
+        }
+
+        const context: ActiveContext = {
+            type: 'viewer',
+            targetUid,
+            personalityId,
+            teamId,
+            roleId,
+            displayName
+        };
+        localStorage.setItem('active_context', JSON.stringify(context));
+        set({
+            activePersonalityId: personalityId,
+            activeContext: context
+        });
+    },
+
+    exitViewerMode: () => {
+        // Restore previous context
+        const preViewerContext = localStorage.getItem('pre_viewer_context');
+        if (preViewerContext) {
+            const context = JSON.parse(preViewerContext) as ActiveContext;
+            localStorage.setItem('active_context', JSON.stringify(context));
+            localStorage.removeItem('pre_viewer_context');
+            set({
+                activePersonalityId: context.type === 'personality' ? context.pid :
+                    context.type === 'role' ? context.roleId : null,
+                activeContext: context
+            });
+        } else {
+            // Fallback: just clear viewer mode
+            set({ activeContext: null, activePersonalityId: null });
+        }
+    },
+
+    isViewerMode: () => {
+        return get().activeContext?.type === 'viewer';
+    },
+
     deletePersonality: async (uid, id) => {
         try {
             await deleteDoc(doc(db, 'users', uid, 'personalities', id));
@@ -168,6 +222,21 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
         // Re-check after load
         const currentList = get().personalities;
         if (currentList.length === 0) {
+            // Check for teamMemberships one last time as safety
+            const userDoc = await getDoc(doc(db, 'users', uid));
+            if (userDoc.exists()) {
+                const data = userDoc.data();
+                if (data.teamMemberships && Object.keys(data.teamMemberships).length > 0) {
+                    // Start fresh load to catch the new personality
+                    await loadPersonalities(uid);
+                    const freshList = get().personalities;
+                    if (freshList.length > 0) {
+                        await switchPersonality(uid, freshList[0].id);
+                        return freshList[0].id;
+                    }
+                }
+            }
+
             // Create default
             console.log('Creating Default Personality and migrating data...');
             const defaultId = 'main-personality';
@@ -239,5 +308,5 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
             await switchPersonality(uid, mostRecent.id);
             return mostRecent.id;
         }
-    }
+    },
 }));

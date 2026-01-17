@@ -83,14 +83,38 @@ interface MetadataState {
 
 export type PathContext =
     | { type: 'personality'; uid: string; pid: string }
-    | { type: 'role'; teamId: string; roleId: string };
+    | { type: 'role'; teamId: string; roleId: string }
+    | { type: 'viewer'; targetUid: string; personalityId: string };
 
 const getPathRoot = (context: PathContext | null) => {
     if (!context) throw new Error('No active context for metadata operation');
     if (context.type === 'personality') {
         return `users/${context.uid}/personalities/${context.pid}`;
     }
+    if (context.type === 'viewer') {
+        // Read-only access to target user's personality
+        return `users/${context.targetUid}/personalities/${context.personalityId}`;
+    }
     return `teams/${context.teamId}/roles/${context.roleId}`;
+};
+
+/**
+ * Check if current context is in viewer mode (read-only).
+ * In viewer mode, all mutation actions should be blocked.
+ */
+const isViewerMode = (context: PathContext | null): boolean => {
+    return context?.type === 'viewer';
+};
+
+/**
+ * Guard function to prevent mutations in viewer mode.
+ * Throws an error if in viewer mode to stop the action.
+ */
+const guardAgainstViewerMode = (context: PathContext | null): void => {
+    if (isViewerMode(context)) {
+        console.warn('[MetadataStore] Blocked mutation in viewer mode');
+        throw new Error('Cannot modify data in viewer mode');
+    }
 };
 
 export const useMetadataStore = create<MetadataState>((set, get) => ({
@@ -115,6 +139,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     addInnerface: async (innerface: Omit<Innerface, 'id'>) => {
         try {
             const context = get().context;
+            guardAgainstViewerMode(context);
             const colRef = collection(db, `${getPathRoot(context)}/innerfaces`);
             await addDoc(colRef, innerface);
         } catch (err: unknown) {
@@ -126,6 +151,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     updateInnerface: async (id: number | string, data: Partial<Innerface>) => {
         try {
             const context = get().context;
+            guardAgainstViewerMode(context);
             const docRef = doc(db, `${getPathRoot(context)}/innerfaces/${id}`);
             await updateDoc(docRef, data);
         } catch (err: unknown) {
@@ -137,6 +163,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     deleteInnerface: async (id: number | string) => {
         try {
             const context = get().context;
+            guardAgainstViewerMode(context);
             // 1. Delete the primitive
             const docRef = doc(db, `${getPathRoot(context)}/innerfaces/${id}`);
             await deleteDoc(docRef);
@@ -163,6 +190,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     addProtocol: async (protocol: Omit<Protocol, 'id'>) => {
         try {
             const context = get().context;
+            guardAgainstViewerMode(context);
             const colRef = collection(db, `${getPathRoot(context)}/protocols`);
             await addDoc(colRef, protocol);
         } catch (err: unknown) {
@@ -174,6 +202,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     updateProtocol: async (id: number | string, data: Partial<Protocol>) => {
         try {
             const context = get().context;
+            guardAgainstViewerMode(context);
             const docRef = doc(db, `${getPathRoot(context)}/protocols/${id}`);
             await updateDoc(docRef, data);
         } catch (err: unknown) {
@@ -185,6 +214,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     deleteProtocol: async (id: number | string) => {
         try {
             const context = get().context;
+            guardAgainstViewerMode(context);
             // 1. Delete the primitive
             const docRef = doc(db, `${getPathRoot(context)}/protocols/${id}`);
             await deleteDoc(docRef);
@@ -208,6 +238,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     updateGroupMetadata: async (groupName: string, metadata: { icon?: string; color?: string }) => {
         try {
             const context = get().context;
+            guardAgainstViewerMode(context);
             const docRef = doc(db, `${getPathRoot(context)}/groups/${groupName}`);
             await setDoc(docRef, metadata, { merge: true });
         } catch (err: unknown) {
@@ -219,6 +250,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     renameGroup: async (oldName: string, newName: string) => {
         try {
             const context = get().context;
+            guardAgainstViewerMode(context);
             const trimmedNewName = newName.trim();
             if (!trimmedNewName || trimmedNewName === oldName) return;
 
@@ -283,6 +315,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     addState: async (data: Omit<StateData, 'id'>) => {
         try {
             const context = get().context;
+            guardAgainstViewerMode(context);
             const colRef = collection(db, `${getPathRoot(context)}/states`);
             await addDoc(colRef, data);
         } catch (err: unknown) {
@@ -294,6 +327,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     updateState: async (id: string, data: Partial<StateData>) => {
         try {
             const context = get().context;
+            guardAgainstViewerMode(context);
             const docRef = doc(db, `${getPathRoot(context)}/states/${id}`);
             await updateDoc(docRef, data);
         } catch (err: unknown) {
@@ -305,6 +339,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     deleteState: async (id: string) => {
         try {
             const context = get().context;
+            guardAgainstViewerMode(context);
             const docRef = doc(db, `${getPathRoot(context)}/states/${id}`);
             await deleteDoc(docRef);
 
@@ -326,6 +361,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     togglePinnedProtocol: async (protocolId: string) => {
         try {
             const context = get().context;
+            guardAgainstViewerMode(context);
             const ids = get().pinnedProtocolIds;
             const isPinned = ids.includes(protocolId);
             const newIds = isPinned
@@ -343,6 +379,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     reorderStates: async (orderedIds: string[]) => {
         try {
             const context = get().context;
+            guardAgainstViewerMode(context);
             // Optimistically update local state immediately
             const currentStates = get().states;
             const stateMap = new Map(currentStates.map(s => [s.id, s]));
@@ -389,6 +426,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     reorderInnerfaces: async (orderedIds: string[]) => {
         try {
             const context = get().context;
+            guardAgainstViewerMode(context);
             // Optimistically update local state immediately
             const currentInnerfaces = get().innerfaces;
             const ifaceMap = new Map(currentInnerfaces.map(i => [i.id.toString(), i]));
@@ -432,6 +470,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     reorderQuickActions: async (orderedIds: string[]) => {
         try {
             const context = get().context;
+            guardAgainstViewerMode(context);
             // Optimistic update
             set({ pinnedProtocolIds: orderedIds });
 
@@ -446,6 +485,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     reorderProtocols: async (orderedIds: string[]) => {
         try {
             const context = get().context;
+            guardAgainstViewerMode(context);
             // Optimistic update
             const currentProtocols = get().protocols;
             const protocolsMap = new Map(currentProtocols.map(p => [p.id, p]));
@@ -480,6 +520,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     reorderGroups: async (orderedGroups: string[]) => {
         try {
             const context = get().context;
+            guardAgainstViewerMode(context);
             // Optimistic update
             set({ groupOrder: orderedGroups });
 
@@ -494,6 +535,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     reorderInnerfaceGroups: async (orderedGroups: string[]) => {
         try {
             const context = get().context;
+            guardAgainstViewerMode(context);
             // Optimistic update
             set({ innerfaceGroupOrder: orderedGroups });
 

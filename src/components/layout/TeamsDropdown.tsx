@@ -23,7 +23,8 @@ import {
     faChevronRight,
     faCog,
     faCheck,
-    faLink
+    faLink,
+    faEye
 } from '@fortawesome/free-solid-svg-icons';
 import { getMappedIcon } from '../../utils/iconMapper';
 import { TeamSettingsModal } from '../modals/TeamSettingsModal';
@@ -33,11 +34,13 @@ import { ADMIN_EMAILS } from '../../config/adminList';
 
 export function TeamsDropdown() {
     const { user } = useAuth();
-    const { teams, roles, subscribeToTeams, loadRoles } = useTeamStore();
-    const { switchToRole, activeContext } = usePersonalityStore();
+    const { teams, roles, roleMembers, subscribeToTeams, loadRoles, subscribeToRoleMembers } = useTeamStore();
+    const { switchToRole, switchToViewer, activeContext } = usePersonalityStore();
 
     // Local state
     const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
+    const [expandedRoles, setExpandedRoles] = useState<Set<string>>(new Set());
+    const [hoveredArrowRole, setHoveredArrowRole] = useState<string | null>(null);
     const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
     const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
     const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
@@ -68,6 +71,23 @@ export function TeamsDropdown() {
         });
     }, [ownedTeams, roles, loadRoles]);
 
+    // Eager load: Subscribe to members for ALL roles (realtime)
+    useEffect(() => {
+        const unsubscribes: (() => void)[] = [];
+
+        ownedTeams.forEach(team => {
+            const teamRoles = roles[team.id] || [];
+            teamRoles.forEach(role => {
+                const unsub = subscribeToRoleMembers(team.id, role.id);
+                unsubscribes.push(unsub);
+            });
+        });
+
+        return () => {
+            unsubscribes.forEach(unsub => unsub());
+        };
+    }, [ownedTeams, roles, subscribeToRoleMembers]);
+
     // Check active role highlight
     const getActiveTeamRole = () => {
         // 1. If in Design Mode (Role Context)
@@ -93,6 +113,24 @@ export function TeamsDropdown() {
             }
             return next;
         });
+    };
+
+    const toggleRoleExpand = (teamId: string, roleId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const key = `${teamId}/${roleId}`;
+        setExpandedRoles(prev => {
+            const next = new Set(prev);
+            if (next.has(key)) {
+                next.delete(key);
+            } else {
+                next.add(key);
+            }
+            return next;
+        });
+    };
+
+    const handleMemberClick = (member: { uid: string; personalityId: string; displayName: string }, teamId: string, roleId: string) => {
+        switchToViewer(member.uid, member.personalityId, teamId, roleId, member.displayName);
     };
 
     const handleRoleClick = (teamId: string, roleId: string) => {
@@ -259,47 +297,116 @@ export function TeamsDropdown() {
                                                 {teamRoles.map(role => {
                                                     const isActive = activeTeamRole?.teamId === team.id && activeTeamRole?.roleId === role.id;
                                                     const roleIconDef = getMappedIcon(role.icon || 'user');
+                                                    const memberKey = `${team.id}/${role.id}`;
+                                                    const members = roleMembers[memberKey] || [];
+                                                    const isRoleExpanded = expandedRoles.has(memberKey);
+                                                    const hasMembers = members.length > 0;
+                                                    const isArrowHovered = hoveredArrowRole === role.id;
 
                                                     return (
-                                                        <div
-                                                            key={role.id}
-                                                            onClick={() => handleRoleClick(team.id, role.id)}
-                                                            className="group/role flex items-center cursor-pointer transition-colors duration-100 leading-none text-[var(--text-color)] hover:text-[var(--bg-color)] hover:bg-[var(--text-color)]"
-                                                            style={{ padding: '0.4em 0', paddingLeft: '2em' }}
-                                                        >
-                                                            {/* Role Icon */}
-                                                            <div
-                                                                className={`w-[1em] h-[1em] flex items-center justify-center shrink-0 opacity-70 group-hover/role:opacity-100 ${role.themeColor ? 'group-hover/role:!text-inherit' : ''}`}
-                                                                style={{
-                                                                    color: role.themeColor || 'inherit',
-                                                                    marginRight: '0.7em'
-                                                                }}
-                                                            >
-                                                                {roleIconDef ? (
-                                                                    <FontAwesomeIcon icon={roleIconDef} className="text-[1em]" />
-                                                                ) : (
-                                                                    <span className="text-[1em]">{role.icon || '👤'}</span>
-                                                                )}
-                                                            </div>
-
-                                                            {/* Role Name */}
-                                                            <div className="flex-1 truncate text-[0.95em] opacity-70 group-hover/role:opacity-100 transition-opacity">
-                                                                {role.name.toLowerCase()}
-                                                            </div>
-
-                                                            {/* Actions & Active Indicator */}
-                                                            <div className="flex items-center shrink-0 mr-[0.9em] gap-2">
-                                                                <button
-                                                                    onClick={(e) => handleEditRole(e, team.id, role.id)}
-                                                                    className="opacity-0 group-hover/role:opacity-100 transition-all hover:!text-[var(--main-color)]"
-                                                                    style={{ color: 'var(--bg-color)' }}
+                                                        <div key={role.id}>
+                                                            {/* Role Row Container */}
+                                                            <div className="flex items-center">
+                                                                {/* Expand Arrow - separate hover target */}
+                                                                <div
+                                                                    className={`w-[1.5em] h-full flex items-center justify-center shrink-0 cursor-pointer transition-colors ${hasMembers
+                                                                        ? `text-[var(--sub-color)] hover:text-[var(--text-color)] ${isArrowHovered ? 'text-[var(--text-color)] opacity-100' : 'opacity-60 hover:opacity-100'}`
+                                                                        : 'opacity-0 pointer-events-none'
+                                                                        }`}
+                                                                    style={{ marginLeft: '0.5em' }}
+                                                                    onClick={(e) => hasMembers && toggleRoleExpand(team.id, role.id, e)}
+                                                                    onMouseEnter={() => setHoveredArrowRole(role.id)}
+                                                                    onMouseLeave={() => setHoveredArrowRole(null)}
                                                                 >
-                                                                    <FontAwesomeIcon icon={faCog} className="text-[0.8em]" />
-                                                                </button>
-                                                                {isActive && (
-                                                                    <FontAwesomeIcon icon={faCheck} className="text-[0.7em]" />
-                                                                )}
+                                                                    {hasMembers && (
+                                                                        <FontAwesomeIcon
+                                                                            icon={isRoleExpanded ? faChevronDown : faChevronRight}
+                                                                            className="text-[0.5em]"
+                                                                        />
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Role Row - nav item styling */}
+                                                                <div
+                                                                    onClick={() => handleRoleClick(team.id, role.id)}
+                                                                    className="group/role flex-1 flex items-center cursor-pointer transition-colors duration-100 leading-none select-none text-[var(--text-color)] hover:text-[var(--bg-color)] hover:bg-[var(--text-color)]"
+                                                                    style={{ padding: '0.4em 0.8em 0.4em 0.3em' }}
+                                                                >
+                                                                    {/* Role Icon */}
+                                                                    <div
+                                                                        className={`w-[1em] h-[1em] flex items-center justify-center shrink-0 opacity-70 group-hover/role:opacity-100 ${role.themeColor ? 'group-hover/role:!text-inherit' : ''}`}
+                                                                        style={{
+                                                                            color: role.themeColor || 'inherit',
+                                                                            marginRight: '0.7em'
+                                                                        }}
+                                                                    >
+                                                                        {roleIconDef ? (
+                                                                            <FontAwesomeIcon icon={roleIconDef} className="text-[1em]" />
+                                                                        ) : (
+                                                                            <span className="text-[1em]">{role.icon || '👤'}</span>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* Role Name (Truncated, shrinks if needed) */}
+                                                                    <div
+                                                                        className={`truncate text-[0.95em] transition-opacity min-w-0 ${isArrowHovered ? '!opacity-100 !text-[var(--text-color)]' : 'opacity-70 group-hover/role:opacity-100'
+                                                                            }`}
+                                                                    >
+                                                                        {role.name.toLowerCase()}
+                                                                    </div>
+
+                                                                    {/* Member Count - closer to name */}
+                                                                    {hasMembers && (
+                                                                        <span
+                                                                            className={`ml-[0.4em] text-[0.8em] transition-opacity ${isArrowHovered ? '!opacity-80' : 'opacity-50 group-hover/role:opacity-80'
+                                                                                }`}
+                                                                        >
+                                                                            ({members.length})
+                                                                        </span>
+                                                                    )}
+
+                                                                    {/* Actions & Active Indicator - Packed left with consistent gap */}
+                                                                    <div className="flex items-center shrink-0 ml-2 gap-2">
+                                                                        <button
+                                                                            onClick={(e) => { e.stopPropagation(); handleEditRole(e, team.id, role.id); }}
+                                                                            className="opacity-0 group-hover/role:opacity-100 transition-all hover:!text-[var(--main-color)]"
+                                                                            style={{ color: 'var(--bg-color)' }}
+                                                                        >
+                                                                            <FontAwesomeIcon icon={faCog} className="text-[0.8em]" />
+                                                                        </button>
+                                                                        {isActive && (
+                                                                            <FontAwesomeIcon icon={faCheck} className="text-[0.7em]" />
+                                                                        )}
+                                                                    </div>
+                                                                </div>
                                                             </div>
+
+                                                            {/* Members (expanded) */}
+                                                            {isRoleExpanded && hasMembers && (
+                                                                <div className="flex flex-col">
+                                                                    {members.map(member => (
+                                                                        <div
+                                                                            key={member.uid}
+                                                                            onClick={() => handleMemberClick(member, team.id, role.id)}
+                                                                            className="group/member flex items-center cursor-pointer transition-colors duration-100 leading-none text-[var(--sub-color)] hover:text-[var(--bg-color)] hover:bg-[var(--text-color)]"
+                                                                            style={{ padding: '0.35em 0', paddingLeft: '4em' }}
+                                                                        >
+                                                                            {/* Member Icon */}
+                                                                            <div
+                                                                                className="w-[1em] h-[1em] flex items-center justify-center shrink-0 opacity-60 group-hover/member:opacity-100"
+                                                                                style={{ marginRight: '0.6em' }}
+                                                                            >
+                                                                                <FontAwesomeIcon icon={faEye} className="text-[0.8em]" />
+                                                                            </div>
+
+                                                                            {/* Member Name */}
+                                                                            <div className="flex-1 truncate text-[0.85em] opacity-80 group-hover/member:opacity-100 transition-opacity">
+                                                                                {member.displayName.toLowerCase()}
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     );
                                                 })}
