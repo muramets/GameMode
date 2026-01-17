@@ -47,8 +47,7 @@ export function ViewerBanner() {
                             <FontAwesomeIcon icon={faEye} />
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-xs font-mono text-sub uppercase tracking-wider">Coach Mode</span>
-                            <span className="text-sm font-bold text-text-primary">Coaching: {activeContext.displayName}</span>
+                            <span className="text-sm" style={{ color: 'var(--bg-color)' }}>Coaching: {activeContext.displayName}</span>
                         </div>
                     </div>
                     {/* Exit Button */}
@@ -56,17 +55,20 @@ export function ViewerBanner() {
                         onClick={exitViewerMode}
                         onMouseEnter={() => setIsHovered(true)}
                         onMouseLeave={() => setIsHovered(false)}
-                        className="flex items-center justify-center w-[20px] h-[20px] transition-opacity hover:opacity-100"
+                        className="flex items-center justify-center gap-2 transition-opacity hover:opacity-100"
                         title="Exit Viewer Mode"
                     >
                         <FontAwesomeIcon
                             icon={faTimes}
-                            className="text-lg opacity-70 transition-colors"
+                            className="text-sm"
                             style={{
                                 color: isHovered ? 'var(--text-color)' : 'var(--bg-color)',
-                                opacity: isHovered ? 1 : 0.7
+                                opacity: isHovered ? 1 : 0.7,
+                                stroke: 'currentColor',
+                                strokeWidth: 40
                             }}
                         />
+                        <span className="text-xs" style={{ color: isHovered ? 'var(--text-color)' : 'var(--bg-color)' }}>exit</span>
                     </button>
                 </div>
             </motion.div>
