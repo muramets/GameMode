@@ -10,8 +10,9 @@ import {
     deleteDoc,
     writeBatch
 } from 'firebase/firestore';
-import type { Innerface, Protocol } from '../pages/protocols/types';
-import type { StateData } from '../pages/dashboard/components/types';
+import type { Protocol } from '../features/protocols/types';
+import type { Innerface } from '../features/innerfaces/types';
+import type { StateData } from '../features/dashboard/types';
 
 /**
  * Metadata Store

@@ -2,7 +2,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { StateCard } from './StateCard';
-import type { StateData } from './types';
+import type { StateData } from '../types';
 
 interface SortableStateCardProps {
     state: StateData;

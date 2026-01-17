@@ -25,8 +25,9 @@ import { PRESET_COLORS } from '../../constants/common';
 import * as Popover from '@radix-ui/react-popover';
 import { getMappedIcon, renderIcon } from '../../utils/iconMapper';
 import type { RoleTemplate } from '../../types/team';
-import type { Innerface, Protocol } from '../../pages/protocols/types';
-import type { StateData } from '../../pages/dashboard/components/types';
+import type { Protocol } from '../../features/protocols/types';
+import type { Innerface } from '../../features/innerfaces/types';
+import type { StateData } from '../../features/dashboard/types';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../ui/atoms/Tooltip';
 import { CollapsibleSection } from '../ui/molecules/CollapsibleSection';
 

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { useScores } from '../pages/protocols/hooks/useScores';
+import { useScores } from '../features/protocols/hooks/useScores';
 import { useTeamStore } from '../stores/teamStore';
 import { usePersonalityStore } from '../stores/personalityStore';
 

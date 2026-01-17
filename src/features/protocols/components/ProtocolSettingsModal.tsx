@@ -12,7 +12,7 @@ import { faTrash, faExclamationTriangle, faPlus, faMinus, faChevronDown, faTimes
 import { GROUP_CONFIG, PRESET_COLORS } from '../../../constants/common';
 import * as Popover from '@radix-ui/react-popover';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../../components/ui/atoms/Tooltip';
-import { GroupDropdown } from '../../../components/organisms/GroupDropdown';
+import { GroupDropdown } from '../../../features/groups/components/GroupDropdown';
 import { CollapsibleSection } from '../../../components/ui/molecules/CollapsibleSection';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
 

@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faClock, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { renderIcon } from '../../../utils/iconMapper';
 import type { HistoryRecord } from '../../../types/history';
-import type { Innerface } from '../../../pages/protocols/types';
+import type { Innerface } from '../../../features/innerfaces/types';
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../components/ui/atoms/Tooltip';
 

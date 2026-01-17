@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faCheck
 } from '@fortawesome/free-solid-svg-icons';
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '../ui/atoms/Tooltip';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '../../../components/ui/atoms/Tooltip';
 
 interface GroupDropdownProps {
     trigger: (isOpen: boolean) => ReactNode;

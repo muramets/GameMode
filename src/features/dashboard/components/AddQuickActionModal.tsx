@@ -132,7 +132,7 @@ export function AddQuickActionModal({ isOpen, onClose }: AddQuickActionModalProp
     );
 }
 
-import type { Protocol } from '../../../pages/protocols/types';
+import type { Protocol } from '../../protocols/types';
 
 // Helper Component for Item Rendering
 function ProtocolItem({ protocol, isPinned, onToggle }: { protocol: Protocol, isPinned: boolean, onToggle: () => void }) {

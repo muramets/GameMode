@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog, faHistory, faArrowUp, faArrowDown } from '@fortawesome/free-solid-svg-icons';
 import { OverflowTooltip } from '../../../components/ui/atoms/OverflowTooltip';
-import type { StateData } from './types';
+import type { StateData } from '../types';
 import { renderIcon } from '../../../utils/iconMapper';
 import { getTierColor } from '../../../utils/colorUtils';
 import { calculateLevel, scoreToXP } from '../../../utils/xpUtils';

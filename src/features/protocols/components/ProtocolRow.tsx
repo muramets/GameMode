@@ -1,12 +1,12 @@
 import React, { useState, useRef, useMemo, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Protocol, Innerface } from './types';
+import type { Protocol, Innerface } from '../types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faMinus, faCog, faHistory } from '@fortawesome/free-solid-svg-icons';
-import { TruncatedTooltip } from '../../components/ui/molecules/TruncatedTooltip';
-import { renderIcon } from '../../utils/iconMapper';
+import { TruncatedTooltip } from '../../../components/ui/molecules/TruncatedTooltip';
+import { renderIcon } from '../../../utils/iconMapper';
 import { motion } from 'framer-motion';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/atoms/Tooltip'; // Keep Tooltip import for other usages
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../../components/ui/atoms/Tooltip'; // Keep Tooltip import for other usages
 
 // Set to true to visualize layout containers during development/debugging
 const DEBUG_LAYOUT = false;

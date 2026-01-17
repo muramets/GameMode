@@ -1,5 +1,5 @@
 import { InnerfaceCard } from './InnerfaceCard';
-import type { Innerface } from '../../protocols/types';
+import type { Innerface } from '../types';
 
 interface InnerfacesGridProps {
     innerfaces: Innerface[];

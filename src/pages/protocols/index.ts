@@ -1,3 +1,1 @@
-export * from './types';
-export * from './ProtocolRow';
-export * from './ProtocolsList';
+export { ProtocolsList } from '../../features/protocols/components/ProtocolsList';

@@ -2,7 +2,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { QuickActionCard } from './QuickActionCard';
-import type { Protocol } from '../../../pages/protocols/types';
+import type { Protocol } from '../../protocols/types';
 
 interface SortableQuickActionCardProps {
     action: Protocol;

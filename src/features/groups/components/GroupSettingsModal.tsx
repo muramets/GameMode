@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
-import { Modal } from '../ui/molecules/Modal';
-import { Input } from '../ui/molecules/Input';
-import { Button } from '../ui/atoms/Button';
-import { useAuth } from '../../contexts/AuthProvider';
-import { useMetadataStore } from '../../stores/metadataStore';
-import { usePersonalityStore } from '../../stores/personalityStore';
-import { getMappedIcon, ICON_PRESETS } from '../../utils/iconMapper';
+import { Modal } from '../../../components/ui/molecules/Modal';
+import { Input } from '../../../components/ui/molecules/Input';
+import { Button } from '../../../components/ui/atoms/Button';
+import { useAuth } from '../../../contexts/AuthProvider';
+import { useMetadataStore } from '../../../stores/metadataStore';
+import { usePersonalityStore } from '../../../stores/personalityStore';
+import { getMappedIcon, ICON_PRESETS } from '../../../utils/iconMapper';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
-import { PRESET_COLORS, GROUP_CONFIG } from '../../constants/common';
+import { PRESET_COLORS, GROUP_CONFIG } from '../../../constants/common';
 import * as Popover from '@radix-ui/react-popover';
 
 interface GroupSettingsModalProps {

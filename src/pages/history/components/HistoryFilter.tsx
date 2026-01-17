@@ -11,9 +11,10 @@ import {
     faList,
     faChartBar,
 } from '@fortawesome/free-solid-svg-icons';
-import type { Protocol, Innerface } from '../../../pages/protocols/types';
-import type { StateData } from '../../../pages/dashboard/components/types';
-import { FilterDropdown } from '../../../components/organisms/FilterDropdown';
+import type { Protocol } from '../../../features/protocols/types';
+import type { Innerface } from '../../../features/innerfaces/types';
+import type { StateData } from '../../../features/dashboard/types';
+import { FilterDropdown } from '../../../components/shared/FilterDropdown';
 import { faMap } from '@fortawesome/free-solid-svg-icons';
 
 export type TimeFilter = 'All time' | 'Today' | 'This week' | 'This month';

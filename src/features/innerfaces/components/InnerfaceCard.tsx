@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../../../components/ui/atoms/Card';
-import type { Innerface } from '../../../pages/protocols/types';
+import type { Innerface } from '../types';
 import { renderIcon } from '../../../utils/iconMapper';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog, faHistory, faArrowUp, faArrowDown } from '@fortawesome/free-solid-svg-icons';

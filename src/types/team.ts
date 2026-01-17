@@ -6,8 +6,9 @@
  * to users' personalities when they join via invite link.
  */
 
-import type { Innerface, Protocol } from '../pages/protocols/types';
-import type { StateData } from '../pages/dashboard/components/types';
+import type { Protocol } from '../features/protocols/types';
+import type { Innerface } from '../features/innerfaces/types';
+import type { StateData } from '../features/dashboard/types';
 
 // ============================================================================
 // CORE ENTITIES

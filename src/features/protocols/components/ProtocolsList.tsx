@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import type { Protocol, Innerface } from './types';
+import type { Protocol, Innerface } from '../types';
 import { ProtocolRow } from './ProtocolRow';
-import { MonkeyTypeLoader } from '../../components/ui/molecules/MonkeyTypeLoader';
-import { ProtocolSettingsModal } from './components/ProtocolSettingsModal';
-import { useScoreContext } from '../../contexts/ScoreProvider';
+import { MonkeyTypeLoader } from '../../../components/ui/molecules/MonkeyTypeLoader';
+import { ProtocolSettingsModal } from './ProtocolSettingsModal';
+import { useScoreContext } from '../../../contexts/ScoreProvider';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faSearch,
@@ -14,10 +14,10 @@ import {
     faBan,
     faCog
 } from '@fortawesome/free-solid-svg-icons';
-import { GroupSettingsModal } from '../../components/organisms/GroupSettingsModal';
-import { ActiveFiltersList } from '../../components/ui/molecules/ActiveFiltersList';
-import { GROUP_CONFIG } from '../../constants/common';
-import { CollapsibleSection } from '../../components/ui/molecules/CollapsibleSection';
+import { GroupSettingsModal } from '../../../features/groups/components/GroupSettingsModal';
+import { ActiveFiltersList } from '../../../components/ui/molecules/ActiveFiltersList';
+import { GROUP_CONFIG } from '../../../constants/common';
+import { CollapsibleSection } from '../../../components/ui/molecules/CollapsibleSection';
 
 // DnD Imports
 import {
@@ -39,12 +39,12 @@ import {
     verticalListSortingStrategy,
     rectSortingStrategy
 } from '@dnd-kit/sortable';
-import { useMetadataStore } from '../../stores/metadataStore';
-import { usePersonalityStore } from '../../stores/personalityStore';
-import { useCollapsedGroups } from '../../hooks/useCollapsedGroups';
+import { useMetadataStore } from '../../../stores/metadataStore';
+import { usePersonalityStore } from '../../../stores/personalityStore';
+import { useCollapsedGroups } from '../../../hooks/useCollapsedGroups';
 
 // --- Interaction Context for Zero-Lag DnD ---
-import { SortableItem } from '../../components/ui/molecules/SortableItem';
+import { SortableItem } from '../../../components/ui/molecules/SortableItem';
 
 interface InteractionContextType {
     justDroppedId: string | null;
@@ -60,7 +60,7 @@ const InteractionContext = React.createContext<InteractionContextType>({
 
 const useInteraction = () => React.useContext(InteractionContext);
 
-import { getMappedIcon } from '../../utils/iconMapper';
+import { getMappedIcon } from '../../../utils/iconMapper';
 
 // --- Helper Components for Performance ---
 

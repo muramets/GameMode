@@ -11,7 +11,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faExclamationTriangle, faPlus, faChevronDown, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { PRESET_COLORS, GROUP_CONFIG } from '../../../constants/common';
 import * as Popover from '@radix-ui/react-popover';
-import { GroupDropdown } from '../../../components/organisms/GroupDropdown';
+import { GroupDropdown } from '../../../features/groups/components/GroupDropdown';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../../components/ui/atoms/Tooltip';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import { renderIcon } from '../../../utils/iconMapper';

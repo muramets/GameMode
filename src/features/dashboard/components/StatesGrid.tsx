@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import type { StateData } from './types';
+import type { StateData } from '../types';
 import { Plus } from 'lucide-react';
 import { CollapsibleSection } from '../../../components/ui/molecules/CollapsibleSection';
 import {
