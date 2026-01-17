@@ -47,7 +47,7 @@ export function ViewerBanner() {
                             <FontAwesomeIcon icon={faEye} />
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-sm" style={{ color: 'var(--bg-color)' }}>Coaching: {activeContext.displayName}</span>
+                            <span className="text-sm font-semibold" style={{ color: 'var(--bg-color)' }}>Coaching: {activeContext.displayName}</span>
                         </div>
                     </div>
                     {/* Exit Button */}

@@ -27,6 +27,9 @@ export function UserProfile() {
         const role = teamRoles.find(r => r.id === activeContext.roleId);
         displayName = role?.name || "Loading Role...";
         displayIcon = role?.icon || 'user';
+    } else if (activeContext?.type === 'viewer') {
+        displayName = activeContext.displayName || "Participant";
+        displayIcon = 'user'; // Or maybe 'eye' but 'user' is safer for general profile look
     } else {
         const activePersonality = personalities.find(p => p.id === activePersonalityId);
         displayName = activePersonality?.name || user?.displayName || user?.email?.split('@')[0] || "Unknown Player";
