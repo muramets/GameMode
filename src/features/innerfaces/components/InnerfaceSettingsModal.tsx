@@ -170,7 +170,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={innerfaceId ? 'Edit Innerface' : 'New Innerface'}
+            title={innerfaceId ? 'Edit Power' : 'New Power'}
             footer={
                 <>
                     {innerfaceId && !isCoachMode ? (
@@ -611,12 +611,12 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                 </div>
 
                 <div className="flex flex-col gap-2">
-                    <InputLabel label="Composition (Protocols)" />
+                    <InputLabel label="Composition (Actions)" />
                     <div className="bg-sub-alt/30 rounded-xl p-3 border border-white/5 h-[300px] flex flex-col gap-3">
                         {/* Search Input */}
                         <Input
                             type="text"
-                            placeholder="Search protocols..."
+                            placeholder="Search actions..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             icon={faSearch}
@@ -630,7 +630,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                                     const filteredProtocols = protocols.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
                                     if (filteredProtocols.length === 0) {
-                                        return <div className="w-full text-center py-8 text-sub/40 italic text-xs">No protocols found</div>;
+                                        return <div className="w-full text-center py-8 text-sub/40 italic text-xs">No actions found</div>;
                                     }
 
                                     const groupedProtocols: Record<string, typeof protocols> = {};

@@ -628,19 +628,22 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
                     <div className="flex items-center justify-between">
                         {/* Switcher */}
                         <div className="bg-sub-alt rounded-lg p-0.5 flex gap-1">
-                            {(['protocols', 'innerfaces', 'states'] as SelectionTab[]).map(tab => (
-                                <button
-                                    key={tab}
-                                    type="button"
-                                    onClick={() => {
-                                        setActiveTab(tab);
-                                        setSearchQuery('');
-                                    }}
-                                    className={`px-2 py-1 rounded-md text-[10px] font-mono uppercase font-bold transition-all ${activeTab === tab ? 'bg-sub text-text-primary shadow-sm' : 'text-sub hover:text-text-primary'}`}
-                                >
-                                    {tab}
-                                </button>
-                            ))}
+                            {(['protocols', 'innerfaces', 'states'] as SelectionTab[]).map(tab => {
+                                const displayName = tab === 'protocols' ? 'actions' : tab === 'innerfaces' ? 'powers' : 'dimensions';
+                                return (
+                                    <button
+                                        key={tab}
+                                        type="button"
+                                        onClick={() => {
+                                            setActiveTab(tab);
+                                            setSearchQuery('');
+                                        }}
+                                        className={`px-2 py-1 rounded-md text-[10px] font-mono uppercase font-bold transition-all ${activeTab === tab ? 'bg-sub text-text-primary shadow-sm' : 'text-sub hover:text-text-primary'}`}
+                                    >
+                                        {displayName}
+                                    </button>
+                                );
+                            })}
                         </div>
 
                         {/* Copy Button */}

@@ -65,42 +65,42 @@ export function Navigation() {
 
                 <Spacer />
 
-                {/* Protocols */}
+                {/* Actions */}
                 <Link
                     draggable={false}
-                    to="/protocols"
+                    to="/actions"
                     onClick={() => {
                         const now = performance.now();
                         (window as unknown as { __navStart: number }).__navStart = now;
                         console.log(`[PERF][1] Navigation: Clicked protocols at ${now.toFixed(2)}ms`);
                     }}
-                    className={`${baseItemClasses} ${isActive('/protocols') ? activeClasses : inactiveClasses}`}
+                    className={`${baseItemClasses} ${isActive('/actions') ? activeClasses : inactiveClasses}`}
                 >
                     <List
                         className="w-3.5 h-3.5"
-                        strokeWidth={isActive('/protocols') ? 3 : 2}
+                        strokeWidth={isActive('/actions') ? 3 : 2}
                     />
-                    <span>protocols</span>
+                    <span>actions</span>
                 </Link>
 
                 <Spacer />
 
-                {/* Innerfaces Group */}
+                {/* Powers Group */}
                 <div
                     className="flex relative group h-full"
                     onMouseLeave={handleMouseLeave}
                 >
-                    {/* Innerfaces Main Link */}
+                    {/* Powers Main Link */}
                     <Link
                         draggable={false}
-                        to="/innerfaces"
-                        className={`${baseItemClasses} z-20 relative ${isActive('/innerfaces') ? activeClasses : inactiveClasses}`}
+                        to="/powers"
+                        className={`${baseItemClasses} z-20 relative ${isActive('/powers') ? activeClasses : inactiveClasses}`}
                     >
                         <BarChart2
                             className="w-3.5 h-3.5"
-                            strokeWidth={isActive('/innerfaces') ? 3 : 2}
+                            strokeWidth={isActive('/powers') ? 3 : 2}
                         />
-                        <span>innerfaces</span>
+                        <span>powers</span>
                     </Link>
 
                     {/* Expand Arrow - Integrated */}

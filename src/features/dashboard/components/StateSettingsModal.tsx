@@ -136,7 +136,7 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={stateId ? 'Edit State' : 'Add State'}
+            title={stateId ? 'Edit Dimension' : 'Add Dimension'}
             onSubmit={handleSubmit}
             footer={
                 <>
@@ -328,10 +328,10 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
                         <div className="bg-sub-alt rounded-lg p-0.5 flex gap-1">
                             <button
                                 type="button"
-                                onClick={() => setActiveTab('innerfaces')}
-                                className={`px-2 py-1 rounded-md text-[10px] font-mono uppercase font-bold transition-all ${activeTab === 'innerfaces' ? 'bg-sub text-text-primary shadow-sm' : 'text-sub hover:text-text-primary'}`}
+                                onClick={() => { setActiveTab('innerfaces'); setSearchQuery(''); }}
+                                className={`px-3 py-1.5 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${activeTab === 'innerfaces' ? 'bg-sub text-text-primary shadow-sm' : 'text-sub hover:text-text-primary'}`}
                             >
-                                Innerfaces
+                                Powers
                             </button>
                             {/* <button
                                 type="button"
@@ -347,7 +347,7 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
                         {/* Search Input */}
                         <Input
                             type="text"
-                            placeholder={activeTab === 'innerfaces' ? "Search innerfaces..." : "Search protocols..."}
+                            placeholder={activeTab === 'innerfaces' ? "Search powers..." : "Search actions..."}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             icon={faSearch}

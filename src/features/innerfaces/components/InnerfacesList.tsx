@@ -5,6 +5,7 @@ import { InnerfaceCard } from './InnerfaceCard';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faGripVertical, faCog } from '@fortawesome/free-solid-svg-icons';
 import { GroupSettingsModal } from '../../../features/groups/components/GroupSettingsModal';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../../components/ui/atoms/Tooltip';
 import {
     DndContext,
     closestCenter,
@@ -439,7 +440,7 @@ export function InnerfacesList() {
     if (isLoading && innerfaces.length === 0) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
-                <div className="text-sub font-mono animate-pulse uppercase tracking-widest text-xs">Loading Innerfaces...</div>
+                <div className="text-sub font-mono animate-pulse uppercase tracking-widest text-xs">Loading Powers...</div>
             </div>
         );
     }
@@ -448,17 +449,25 @@ export function InnerfacesList() {
         <div className="flex flex-col gap-8 w-full pb-12">
             <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-2">
-                    <h1 className="text-2xl font-bold text-text-primary">Innerfaces</h1>
+                    <h1 className="text-2xl font-bold text-text-primary">Powers</h1>
                     <p className="text-sub text-sm">Fundamental metrics and base traits that define your current state.</p>
                 </div>
                 {!isCoachMode && (
-                    <button
-                        onClick={handleCreate}
-                        className="h-[46px] w-[36px] flex items-center justify-center rounded-lg text-sub hover:text-main transition-all cursor-pointer"
-                        title="Add Innerface"
-                    >
-                        <FontAwesomeIcon icon={faPlus} className="text-xl" />
-                    </button>
+                    <TooltipProvider delayDuration={300}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
+                                    onClick={handleCreate}
+                                    className="h-[46px] w-[36px] flex items-center justify-center rounded-lg text-sub hover:text-main transition-all cursor-pointer"
+                                >
+                                    <FontAwesomeIcon icon={faPlus} className="text-xl" />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                                <span className="font-mono text-xs">Add Power</span>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 )}
             </div>
 
@@ -471,13 +480,13 @@ export function InnerfacesList() {
                         >
                             <div className="flex items-center gap-2">
                                 <FontAwesomeIcon icon={faPlus} className="text-sm opacity-50 group-hover:opacity-100 transition-opacity" />
-                                <span className="font-lexend text-sm font-medium opacity-50 group-hover:opacity-100 transition-opacity">Create First Innerface</span>
+                                <span className="font-lexend text-sm font-medium opacity-50 group-hover:opacity-100 transition-opacity">Create First Power</span>
                             </div>
                         </button>
                     )}
                     {isCoachMode && (
                         <div className="col-span-full text-center py-12 text-sub opacity-50 italic">
-                            No innerfaces found for this user.
+                            No powers found for this user.
                         </div>
                     )}
                 </div>

@@ -141,7 +141,7 @@ export function QuickActionsGrid({
                     {/* Zero Protocols Placeholder */}
                     {actions.length === 0 && totalProtocolCount === 0 && (
                         <button
-                            onClick={() => navigate('/protocols')}
+                            onClick={() => navigate('/actions')}
                             className="col-span-full md:col-span-1 h-[70px] flex items-center justify-center text-sm font-mono text-sub opacity-70 border border-dashed border-sub/30 hover:border-sub rounded-lg select-none cursor-pointer w-full hover:bg-sub-alt/5 transition-all duration-200 group"
                         >
                             <span className="opacity-70 group-hover:opacity-100 transition-opacity duration-200 group-hover:text-text-primary">

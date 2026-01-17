@@ -39,14 +39,14 @@ export function AddQuickActionModal({ isOpen, onClose }: AddQuickActionModalProp
             className="!bg-bg-primary"
         >
             <div className="flex flex-col max-h-[60vh]">
-                <p className="text-sm text-sub font-mono -mt-2 mb-4">Pin your most used protocols for quick access.</p>
+                <p className="text-sm text-sub font-mono -mt-2 mb-4">Pin your most used actions for quick access.</p>
 
                 {/* Search */}
                 <div className="sticky top-0 z-10 bg-bg-primary pt-1 pb-3">
                     <Input
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search protocols..."
+                        placeholder="Search actions..."
                         icon={faSearch}
                         fullWidth
                         autoFocus

@@ -18,7 +18,7 @@ import { FilterDropdown } from '../../../components/shared/FilterDropdown';
 import { faMap } from '@fortawesome/free-solid-svg-icons';
 
 export type TimeFilter = 'All time' | 'Today' | 'This week' | 'This month';
-export type TypeFilter = 'All types' | 'Protocols' | 'Manual' | 'System';
+export type TypeFilter = 'All types' | 'Actions' | 'Manual' | 'System';
 export type EffectFilter = 'All effects' | 'Positive' | 'Negative';
 
 type FilterView = 'root' | 'protocol_groups' | 'protocols_list' | 'innerface_groups' | 'innerfaces' | 'states';
@@ -112,19 +112,19 @@ export function HistoryFilter({
     }, [innerfaces, selectedGroup, searchQuery]);
 
     const getProtocolLabel = (ids: string[]) => {
-        if (ids.length === 0) return 'All protocols Check-ins';
+        if (ids.length === 0) return 'All actions Check-ins';
         if (ids.length === 1) return protocols.find(p => p.id.toString() === ids[0])?.title || ids[0];
         return `${ids.length} selected`;
     };
 
     const getInnerfaceLabel = (ids: string[]) => {
-        if (ids.length === 0) return 'All innerfaces';
+        if (ids.length === 0) return 'All powers';
         if (ids.length === 1) return innerfaces.find(i => i.id.toString() === ids[0])?.name.split('.')[0] || ids[0];
         return `${ids.length} selected`;
     };
 
     const getStateLabel = (ids: string[]) => {
-        if (ids.length === 0) return 'All states';
+        if (ids.length === 0) return 'All dimensions';
         if (ids.length === 1) return states.find(s => s.id === ids[0])?.name || ids[0];
         return `${ids.length} selected`;
     };
@@ -174,21 +174,21 @@ export function HistoryFilter({
                     <FilterDropdown.Section title="Specifics" icon={faLayerGroup}>
                         <div className="flex flex-col gap-1 px-1">
                             <FilterDropdown.NavButton
-                                title="State"
+                                title="Dimension"
                                 icon={faMap} // Using faMap for State/Territory metaphor
                                 value={getStateLabel(selectedStateIds)}
                                 onClick={() => setView('states')}
                                 active={selectedStateIds.length > 0}
                             />
                             <FilterDropdown.NavButton
-                                title="Protocol"
+                                title="Action"
                                 icon={faList}
                                 value={getProtocolLabel(selectedProtocolIds)}
                                 onClick={() => setView('protocol_groups')}
                                 active={selectedProtocolIds.length > 0}
                             />
                             <FilterDropdown.NavButton
-                                title="Innerface"
+                                title="Power"
                                 icon={faChartBar}
                                 value={getInnerfaceLabel(selectedInnerfaceIds)}
                                 onClick={() => { setSelectedGroup(null); setView('innerface_groups'); }}
@@ -211,7 +211,7 @@ export function HistoryFilter({
                     <FilterDropdown.Section title="Type" icon={faHistory}>
                         {[
                             { id: 'All types', label: 'All types' },
-                            { id: 'Protocols', label: 'Check-ins' },
+                            { id: 'Actions', label: 'Check-ins' },
                             { id: 'Manual', label: 'Manual Score Adjustments' },
                             { id: 'System', label: 'System Events' }
                         ].map(opt => (
@@ -255,7 +255,7 @@ export function HistoryFilter({
                     />
 
                     <FilterDropdown.Item
-                        label="ALL PROTOCOLS"
+                        label="ALL ACTIONS"
                         isActive={selectedProtocolIds.length === 0}
                         onClick={() => { setSelectedProtocolIds([]); setView('root'); }}
                         className="mx-1 mt-1 font-bold tracking-wider"
@@ -294,7 +294,7 @@ export function HistoryFilter({
             {view === 'protocols_list' && (
                 <div className="animate-in slide-in-from-right-4 duration-200 h-full flex flex-col">
                     <FilterDropdown.SearchHeader
-                        title={selectedGroup || 'Protocols'}
+                        title={selectedGroup || 'Actions'}
                         showSearch={filteredProtocols.length > 5}
                         searchQuery={searchQuery}
                         onSearchChange={setSearchQuery}
@@ -318,7 +318,7 @@ export function HistoryFilter({
                             );
                         })}
                         {filteredProtocols.length === 0 && (
-                            <div className="p-4 text-center text-sub/50 text-xs font-mono">No protocols found</div>
+                            <div className="p-4 text-center text-sub/50 text-xs font-mono">No actions found</div>
                         )}
                     </div>
                 </div>
@@ -335,7 +335,7 @@ export function HistoryFilter({
                     />
 
                     <FilterDropdown.Item
-                        label="ALL INNERFACES"
+                        label="ALL POWERS"
                         isActive={selectedInnerfaceIds.length === 0}
                         onClick={() => { setSelectedInnerfaceIds([]); setView('root'); }}
                         className="mx-1 mt-1 font-bold tracking-wider"
@@ -372,7 +372,7 @@ export function HistoryFilter({
             {view === 'innerfaces' && (
                 <div className="animate-in slide-in-from-right-4 duration-200 h-full flex flex-col">
                     <FilterDropdown.SearchHeader
-                        title={selectedGroup || 'Innerfaces'}
+                        title={selectedGroup || 'Powers'}
                         showSearch={filteredInnerfaces.length > 10}
                         searchQuery={searchQuery}
                         onSearchChange={setSearchQuery}
@@ -395,7 +395,7 @@ export function HistoryFilter({
                             );
                         })}
                         {filteredInnerfaces.length === 0 && (
-                            <div className="p-4 text-center text-sub/50 text-xs font-mono">No innerfaces found</div>
+                            <div className="p-4 text-center text-sub/50 text-xs font-mono">No powers found</div>
                         )}
                     </div>
                 </div>
@@ -404,7 +404,7 @@ export function HistoryFilter({
             {view === 'states' && (
                 <div className="animate-in slide-in-from-right-4 duration-200">
                     <FilterDropdown.SearchHeader
-                        title="Select State"
+                        title="Select Dimension"
                         showSearch={states.length > 10}
                         searchQuery={searchQuery}
                         onSearchChange={setSearchQuery}
@@ -412,7 +412,7 @@ export function HistoryFilter({
                     />
 
                     <FilterDropdown.Item
-                        label="ALL STATES"
+                        label="ALL DIMENSIONS"
                         isActive={selectedStateIds.length === 0}
                         onClick={() => { setSelectedStateIds([]); setView('root'); }}
                         className="mx-1 mt-1 font-bold tracking-wider"
@@ -437,7 +437,7 @@ export function HistoryFilter({
                                 );
                             })}
                         {states.length === 0 && (
-                            <div className="p-4 text-center text-sub/50 text-xs font-mono">No states found</div>
+                            <div className="p-4 text-center text-sub/50 text-xs font-mono">No dimensions found</div>
                         )}
                     </div>
                 </div>

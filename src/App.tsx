@@ -60,7 +60,7 @@ function AppContent() {
               </PrivateRoute>
             )
           } />
-          <Route path="/protocols" element={
+          <Route path="/actions" element={
             (!initialized && user) ? <GlobalLoader /> : (
               <PrivateRoute>
                 <Layout>
@@ -69,7 +69,7 @@ function AppContent() {
               </PrivateRoute>
             )
           } />
-          <Route path="/innerfaces" element={
+          <Route path="/powers" element={
             (!initialized && user) ? <GlobalLoader /> : (
               <PrivateRoute>
                 <Layout>

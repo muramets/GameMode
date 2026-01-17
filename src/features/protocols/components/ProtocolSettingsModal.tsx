@@ -252,7 +252,7 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={protocolId ? 'Edit Protocol' : 'Add Protocol'}
+            title={protocolId ? 'Edit Action' : 'Add Action'}
             onSubmit={handleSubmit}
             footer={
                 <>
@@ -715,12 +715,12 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                 </div>
 
                 <div className="flex flex-col gap-2">
-                    <InputLabel label="Affects Innerfaces" />
+                    <InputLabel label="Affects Powers" />
                     <div className="bg-sub-alt/30 rounded-xl p-3 border border-white/5 h-[300px] flex flex-col gap-3">
                         {/* Search Input */}
                         <Input
                             type="text"
-                            placeholder="Search innerfaces..."
+                            placeholder="Search powers..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             icon={faSearch}

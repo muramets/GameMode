@@ -22,6 +22,7 @@ import { SortableStateCard } from './SortableStateCard';
 import { StateCard } from './StateCard';
 import { useMetadataStore } from '../../../stores/metadataStore';
 import { useState } from 'react';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../../components/ui/atoms/Tooltip';
 
 interface StatesGridProps {
     states: StateData[];
@@ -65,18 +66,26 @@ export function StatesGrid({ states, onAddState, onEdit, onHistory, hasProtocols
 
     return (
         <CollapsibleSection
-            title="Character Stats"
+            title="Dimensions"
             trailing={
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onAddState?.();
-                    }}
-                    title="Add new state"
-                    className="w-10 h-10 flex items-center justify-center rounded-lg text-sub hover:text-text-primary transition-colors duration-200"
-                >
-                    <Plus className="w-5 h-5" />
-                </button>
+                <TooltipProvider delayDuration={300}>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onAddState?.();
+                                }}
+                                className="w-10 h-10 flex items-center justify-center rounded-lg text-sub hover:text-text-primary transition-colors duration-200"
+                            >
+                                <Plus className="w-5 h-5" />
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                            <span className="font-mono text-xs">Add new dimension</span>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
             }
         >
             <DndContext
@@ -116,11 +125,11 @@ export function StatesGrid({ states, onAddState, onEdit, onHistory, hasProtocols
                     {states.length === 0 && (
                         !hasProtocols ? (
                             <button
-                                onClick={() => navigate('/protocols')}
+                                onClick={() => navigate('/actions')}
                                 className="col-span-full md:col-span-1 min-h-[180px] border border-dashed border-sub/30 hover:border-sub rounded-2xl flex flex-col items-center justify-center p-6 text-center select-none cursor-pointer hover:bg-sub-alt/5 transition-all duration-200 group"
                             >
                                 <span className="text-sm font-mono text-sub opacity-70 group-hover:opacity-100 group-hover:text-text-primary transition-all duration-200">
-                                    <span className="font-bold text-main/80 group-hover:text-main">Tip:</span> start by adding your routine via Protocols
+                                    <span className="font-bold text-main/80 group-hover:text-main">Tip:</span> start by adding your routine via Actions
                                 </span>
                             </button>
                         ) : (
@@ -129,7 +138,7 @@ export function StatesGrid({ states, onAddState, onEdit, onHistory, hasProtocols
                                 className="col-span-full md:col-span-1 min-h-[180px] border border-dashed border-sub/30 hover:border-sub rounded-2xl flex flex-col items-center justify-center text-sub hover:text-text-primary transition-all duration-200 group bg-sub-alt/5 hover:bg-sub-alt/10"
                             >
                                 <Plus className="w-8 h-8 opacity-40 group-hover:opacity-100 transition-opacity duration-300" />
-                                <span className="text-sm font-mono mt-3 group-hover:opacity-100 transition-opacity duration-300">Add First State</span>
+                                <span className="text-sm font-mono mt-3 group-hover:opacity-100 transition-opacity duration-300">Add First Dimension</span>
                             </button>
                         )
                     )}

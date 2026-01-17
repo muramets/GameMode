@@ -18,6 +18,7 @@ import { GroupSettingsModal } from '../../../features/groups/components/GroupSet
 import { ActiveFiltersList } from '../../../components/ui/molecules/ActiveFiltersList';
 import { GROUP_CONFIG } from '../../../constants/common';
 import { CollapsibleSection } from '../../../components/ui/molecules/CollapsibleSection';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../../components/ui/atoms/Tooltip';
 
 // DnD Imports
 import {
@@ -674,7 +675,7 @@ export function ProtocolsList() {
             <div className="flex flex-col gap-4">
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-lexend text-text-primary">Protocols</h1>
+                        <h1 className="text-2xl font-lexend text-text-primary">Actions</h1>
                         <p className="text-text-secondary font-mono text-sm mt-1">
                             Manage your routine actions and their impact.
                         </p>
@@ -682,13 +683,21 @@ export function ProtocolsList() {
 
                     <div className="flex items-center gap-2 w-full md:w-auto">
                         <div className="flex items-center gap-0">
-                            <button
-                                onClick={() => { setSelectedProtocolId(null); setIsModalOpen(true); }}
-                                className="h-[46px] w-[36px] flex items-center justify-center rounded-lg text-sub hover:text-main transition-all cursor-pointer"
-                                title="Add Protocol"
-                            >
-                                <FontAwesomeIcon icon={faPlus} className="text-xl" />
-                            </button>
+                            <TooltipProvider delayDuration={300}>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            onClick={() => { setSelectedProtocolId(null); setIsModalOpen(true); }}
+                                            className="h-[46px] w-[36px] flex items-center justify-center rounded-lg text-sub hover:text-main transition-all cursor-pointer"
+                                        >
+                                            <FontAwesomeIcon icon={faPlus} className="text-xl" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">
+                                        <span className="font-mono text-xs">Add Action</span>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
 
                             <div className="relative group">
                                 <button className={`h-[46px] w-[36px] flex items-center justify-center rounded-lg transition-colors cursor-pointer ${activeFilters.length > 0 ? 'text-text-primary' : 'text-sub hover:text-text-primary'}`}>
@@ -711,7 +720,7 @@ export function ProtocolsList() {
                                             <div className="w-4 flex items-center justify-center opacity-70">
                                                 <FontAwesomeIcon icon={faFilter} className="text-[10px]" />
                                             </div>
-                                            <span className="text-xs font-mono lowercase text-text-primary">all protocols</span>
+                                            <span className="text-xs font-mono lowercase text-text-primary">all actions</span>
                                             {activeFilters.length === 0 && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-main shadow-[0_0_8px_rgba(226,183,20,0.5)]"></div>}
                                         </button>
 
@@ -758,7 +767,7 @@ export function ProtocolsList() {
                             </div>
                             <input
                                 type="text"
-                                placeholder="Search protocols..."
+                                placeholder="Search actions..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full md:w-64 pl-10 pr-4 py-3 bg-sub-alt rounded-lg outline-none text-text-primary placeholder:text-sub font-mono text-sm transition-colors duration-150 focus:bg-sub"
@@ -790,7 +799,7 @@ export function ProtocolsList() {
                     >
                         <div className="flex items-center gap-2">
                             <FontAwesomeIcon icon={faPlus} className="text-sm opacity-50 group-hover:opacity-100 transition-opacity" />
-                            <span className="font-lexend text-sm font-medium opacity-50 group-hover:opacity-100 transition-opacity">Create First Protocol</span>
+                            <span className="font-lexend text-sm font-medium opacity-50 group-hover:opacity-100 transition-opacity">Create First Action</span>
                         </div>
                     </button>
                 </div>
