@@ -42,14 +42,15 @@ export function ViewerBanner() {
                     {/* Empty left side for balance */}
                     <div className="w-[20px]" />
 
-                    {/* Viewing Label */}
-                    <div className="flex items-center gap-2">
-                        <FontAwesomeIcon icon={faEye} />
-                        <span>
-                            viewing {activeContext.displayName}
-                        </span>
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-main/20 flex items-center justify-center text-main animate-pulse">
+                            <FontAwesomeIcon icon={faEye} />
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-xs font-mono text-sub uppercase tracking-wider">Coach Mode</span>
+                            <span className="text-sm font-bold text-text-primary">Coaching: {activeContext.displayName}</span>
+                        </div>
                     </div>
-
                     {/* Exit Button */}
                     <button
                         onClick={exitViewerMode}

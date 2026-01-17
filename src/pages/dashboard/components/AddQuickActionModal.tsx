@@ -132,8 +132,10 @@ export function AddQuickActionModal({ isOpen, onClose }: AddQuickActionModalProp
     );
 }
 
+import type { Protocol } from '../../../pages/protocols/types';
+
 // Helper Component for Item Rendering
-function ProtocolItem({ protocol, isPinned, onToggle }: { protocol: any, isPinned: boolean, onToggle: () => void }) {
+function ProtocolItem({ protocol, isPinned, onToggle }: { protocol: Protocol, isPinned: boolean, onToggle: () => void }) {
     const baseColor = protocol.color || '#98c379';
 
     return (

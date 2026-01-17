@@ -25,6 +25,7 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { useMetadataStore } from '../../stores/metadataStore';
+import { usePersonalityStore } from '../../stores/personalityStore';
 import { SortableItem } from '../../components/ui/molecules/SortableItem';
 import { type Innerface } from '../protocols/types';
 import { CollapsibleSection } from '../../components/ui/molecules/CollapsibleSection';
@@ -391,20 +392,18 @@ const InnerfacesDragContainer = React.memo(({
 
 export function InnerfacesPage() {
     const { innerfaces, isLoading } = useScoreContext();
-    // const { user } = useAuth(); // Unused
-    // const { activePersonalityId } = usePersonalityStore(); // Unused
-    const { reorderInnerfaces, reorderInnerfaceGroups, updateInnerface, innerfaceGroupOrder, groupsMetadata } = useMetadataStore();
+    const { activeContext } = usePersonalityStore();
+    const { reorderInnerfaces, reorderInnerfaceGroups, updateInnerface, groupsMetadata, innerfaceGroupOrder } = useMetadataStore();
+    const { isGroupCollapsed, toggleGroup } = useCollapsedGroups('innerfaces');
+    const isCoachMode = activeContext?.type === 'viewer';
 
+    // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedInnerfaceId, setSelectedInnerfaceId] = useState<string | number | null>(null);
-
-    // Group Settings State
     const [isGroupSettingsOpen, setIsGroupSettingsOpen] = useState(false);
-    const [selectedGroup, setSelectedGroup] = useState<string>('');
+    const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 
-    // Persistence
-    const { isGroupCollapsed, toggleGroup } = useCollapsedGroups('innerfaces-collapsed-groups', false);
-
+    // Sorted innerfaces for rendering
     const sortedInnerfaces = useMemo(() => {
         return [...innerfaces].sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999));
     }, [innerfaces]);
@@ -415,6 +414,7 @@ export function InnerfacesPage() {
     }, []);
 
     const handleCreate = () => {
+        if (isCoachMode) return;
         setSelectedInnerfaceId(null);
         setIsModalOpen(true);
     };
@@ -451,26 +451,35 @@ export function InnerfacesPage() {
                     <h1 className="text-2xl font-bold text-text-primary">Innerfaces</h1>
                     <p className="text-sub text-sm">Fundamental metrics and base traits that define your current state.</p>
                 </div>
-                <button
-                    onClick={handleCreate}
-                    className="h-[46px] w-[36px] flex items-center justify-center rounded-lg text-sub hover:text-main transition-all cursor-pointer"
-                    title="Add Innerface"
-                >
-                    <FontAwesomeIcon icon={faPlus} className="text-xl" />
-                </button>
+                {!isCoachMode && (
+                    <button
+                        onClick={handleCreate}
+                        className="h-[46px] w-[36px] flex items-center justify-center rounded-lg text-sub hover:text-main transition-all cursor-pointer"
+                        title="Add Innerface"
+                    >
+                        <FontAwesomeIcon icon={faPlus} className="text-xl" />
+                    </button>
+                )}
             </div>
 
             {sortedInnerfaces.length === 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    <button
-                        onClick={handleCreate}
-                        className="w-full min-h-[120px] border border-dashed border-sub/30 hover:border-sub rounded-xl flex flex-col items-center justify-center gap-2 text-sub hover:text-text-primary transition-all duration-200 group bg-sub-alt/5 hover:bg-sub-alt/10"
-                    >
-                        <div className="flex items-center gap-2">
-                            <FontAwesomeIcon icon={faPlus} className="text-sm opacity-50 group-hover:opacity-100 transition-opacity" />
-                            <span className="font-lexend text-sm font-medium opacity-50 group-hover:opacity-100 transition-opacity">Create First Innerface</span>
+                    {!isCoachMode && (
+                        <button
+                            onClick={handleCreate}
+                            className="w-full min-h-[120px] border border-dashed border-sub/30 hover:border-sub rounded-xl flex flex-col items-center justify-center gap-2 text-sub hover:text-text-primary transition-all duration-200 group bg-sub-alt/5 hover:bg-sub-alt/10"
+                        >
+                            <div className="flex items-center gap-2">
+                                <FontAwesomeIcon icon={faPlus} className="text-sm opacity-50 group-hover:opacity-100 transition-opacity" />
+                                <span className="font-lexend text-sm font-medium opacity-50 group-hover:opacity-100 transition-opacity">Create First Innerface</span>
+                            </div>
+                        </button>
+                    )}
+                    {isCoachMode && (
+                        <div className="col-span-full text-center py-12 text-sub opacity-50 italic">
+                            No innerfaces found for this user.
                         </div>
-                    </button>
+                    )}
                 </div>
             ) : (
                 <InnerfacesDragContainer
@@ -496,7 +505,7 @@ export function InnerfacesPage() {
             <GroupSettingsModal
                 isOpen={isGroupSettingsOpen}
                 onClose={() => setIsGroupSettingsOpen(false)}
-                groupName={selectedGroup}
+                groupName={selectedGroup || ''}
             />
         </div>
     );

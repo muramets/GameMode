@@ -88,12 +88,16 @@ export function StoreSync() {
             // Set context in store for actions to use
             setContext(context);
 
+            console.log('[StoreSync] Subscribing to metadata with context:', contextHash);
             const unsubMetadata = subscribeToMetadata(context);
 
             return () => {
+                console.log('[StoreSync] Cleanup for context:', contextHash);
                 unsubHistory();
                 unsubMetadata();
             };
+        } else {
+            console.log('[StoreSync] Skipping sync - missing user or activeContext', { hasUser: !!user, hasActiveContext: !!activeContext });
         }
     }, [user, contextHash, subscribeToHistory, subscribeToMetadata, setContext, clearHistory]); // Removed activeContext, added contextHash
 

@@ -71,7 +71,7 @@ export function Navigation() {
                     to="/protocols"
                     onClick={() => {
                         const now = performance.now();
-                        (window as any).__navStart = now;
+                        (window as unknown as { __navStart: number }).__navStart = now;
                         console.log(`[PERF][1] Navigation: Clicked protocols at ${now.toFixed(2)}ms`);
                     }}
                     className={`${baseItemClasses} ${isActive('/protocols') ? activeClasses : inactiveClasses}`}

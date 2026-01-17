@@ -60,7 +60,7 @@ export function TeamsDropdown() {
 
     // Filter teams to only show those owned by the user
     // Participants (members) should not see teams in this menu to avoid confusion
-    const ownedTeams = teams.filter(t => t.ownerId === user?.uid);
+    const ownedTeams = React.useMemo(() => teams.filter(t => t.ownerId === user?.uid), [teams, user?.uid]);
 
     // Load roles for each team
     useEffect(() => {

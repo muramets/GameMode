@@ -7,8 +7,9 @@ import {
     faLeaf,
     faCircle
 } from '@fortawesome/free-solid-svg-icons';
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 
-export const GROUP_CONFIG: Record<string, { icon: any; color: string }> = {
+export const GROUP_CONFIG: Record<string, { icon: IconDefinition; color: string }> = {
     Physical: { icon: faDumbbell, color: '#98c379' },
     Mental: { icon: faBrain, color: '#ca4754' },
     Recovery: { icon: faBath, color: '#7fb3d3' },

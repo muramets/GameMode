@@ -1,5 +1,6 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import { CSS } from '@dnd-kit/utilities';
 
 interface SortableItemProps {
@@ -7,8 +8,8 @@ interface SortableItemProps {
     children: (props: {
         setNodeRef: (node: HTMLElement | null) => void;
         setActivatorNodeRef: (node: HTMLElement | null) => void;
-        listeners: any;
-        attributes: any;
+        listeners: SyntheticListenerMap | undefined;
+        attributes: React.HTMLAttributes<HTMLElement>;
         style: React.CSSProperties;
         isDragging: boolean;
     }) => React.ReactNode;

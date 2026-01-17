@@ -574,6 +574,8 @@ export const useTeamStore = create<TeamState>((set, get) => ({
                 batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'states', newId), {
                     ...data,
                     id: newId,
+                    score: 0, // RESET SCORE
+                    yesterdayScore: 0, // RESET HISTORY COPY
                     protocolIds: newProtocolIds,
                     innerfaceIds: newInnerfaceIds,
                     stateIds: newStateIds
@@ -591,6 +593,9 @@ export const useTeamStore = create<TeamState>((set, get) => ({
                 batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'innerfaces', newId), {
                     ...data,
                     id: newId,
+                    initialScore: 0, // RESET BASE LEVEL
+                    currentScore: 0, // RESET CALCULATED SCORE
+                    versionTimestamp: new Date().toISOString(), // SET NEW VERSION TIMESTAMP
                     protocolIds: newProtocolIds
                 });
             });

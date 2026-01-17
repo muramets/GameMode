@@ -53,10 +53,7 @@ export function ScoreProvider({ children }: { children: React.ReactNode }) {
     }, [isLoading, initialized]);
 
     useEffect(() => {
-        let interval: ReturnType<typeof setInterval>;
-
-        // Start filling smoothly
-        interval = setInterval(() => {
+        const interval = setInterval(() => {
             setDisplayProgress(prev => {
                 // If real data is loaded, we accelerate to 100
                 if (!isLoading) {

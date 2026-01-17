@@ -25,6 +25,8 @@ import { PRESET_COLORS } from '../../constants/common';
 import * as Popover from '@radix-ui/react-popover';
 import { getMappedIcon, renderIcon } from '../../utils/iconMapper';
 import type { RoleTemplate } from '../../types/team';
+import type { Innerface, Protocol } from '../../pages/protocols/types';
+import type { StateData } from '../../pages/dashboard/components/types';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../ui/atoms/Tooltip';
 import { CollapsibleSection } from '../ui/molecules/CollapsibleSection';
 
@@ -82,9 +84,9 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
     const role = teamId && roleId ? roles[teamId]?.find(r => r.id === roleId) : null;
     const isOwner = team ? team.ownerId === user?.uid : true;
 
-    const [roleInnerfaces, setRoleInnerfaces] = useState<any[]>([]);
-    const [roleProtocols, setRoleProtocols] = useState<any[]>([]);
-    const [roleStates, setRoleStates] = useState<any[]>([]);
+    const [roleInnerfaces, setRoleInnerfaces] = useState<Innerface[]>([]);
+    const [roleProtocols, setRoleProtocols] = useState<Protocol[]>([]);
+    const [roleStates, setRoleStates] = useState<StateData[]>([]);
 
     // 1. Reset transient UI state on open or role switch
     useEffect(() => {
@@ -160,24 +162,24 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
                     ]);
 
                     const pIds = new Set<string>();
-                    const roleProtosList: any[] = [];
+                    const roleProtosList: Protocol[] = [];
                     protoSnap.forEach(d => {
                         pIds.add(d.id);
-                        roleProtosList.push({ ...d.data(), id: d.id });
+                        roleProtosList.push({ ...d.data(), id: d.id } as Protocol);
                     });
 
                     const iIds = new Set<string>();
-                    const roleIfacesList: any[] = [];
+                    const roleIfacesList: Innerface[] = [];
                     ifaceSnap.forEach(d => {
                         iIds.add(d.id);
-                        roleIfacesList.push({ ...d.data(), id: d.id });
+                        roleIfacesList.push({ ...d.data(), id: d.id } as Innerface);
                     });
 
                     const sIds = new Set<string>();
-                    const roleStatesList: any[] = [];
+                    const roleStatesList: StateData[] = [];
                     stateSnap.forEach(d => {
                         sIds.add(d.id);
-                        roleStatesList.push({ ...d.data(), id: d.id });
+                        roleStatesList.push({ ...d.data(), id: d.id } as StateData);
                     });
 
                     setRoleProtocols(roleProtosList);
@@ -217,21 +219,21 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
         try {
             // Get merged lists for saving
             const mergedProtocols = (() => {
-                const map = new Map<string, any>();
+                const map = new Map<string, Protocol>();
                 roleProtocols.forEach(p => map.set(p.id.toString(), p));
                 protocols.forEach(p => map.set(p.id.toString(), p)); // Local overwrites role
                 return Array.from(map.values());
             })();
 
             const mergedInnerfaces = (() => {
-                const map = new Map<string, any>();
+                const map = new Map<string, Innerface>();
                 roleInnerfaces.forEach(i => map.set(i.id.toString(), i));
                 innerfaces.forEach(i => map.set(i.id.toString(), i));
                 return Array.from(map.values());
             })();
 
             const mergedStates = (() => {
-                const map = new Map<string, any>();
+                const map = new Map<string, StateData>();
                 roleStates.forEach(s => map.set(s.id, s));
                 states.forEach(s => map.set(s.id, s));
                 return Array.from(map.values());
@@ -395,21 +397,21 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
     // Filtered and grouped items for composition view
     // Smart Union: Merge Role items + Personality items
     const mergedProtocols = useMemo(() => {
-        const map = new Map<string, any>();
+        const map = new Map<string, Protocol>();
         roleProtocols.forEach(p => map.set(p.id.toString(), p)); // Base: Role items
         protocols.forEach(p => map.set(p.id.toString(), p));     // Overlay: Personality items (newer)
         return Array.from(map.values());
     }, [roleProtocols, protocols]);
 
     const mergedInnerfaces = useMemo(() => {
-        const map = new Map<string, any>();
+        const map = new Map<string, Innerface>();
         roleInnerfaces.forEach(i => map.set(i.id.toString(), i));
         innerfaces.forEach(i => map.set(i.id.toString(), i));
         return Array.from(map.values());
     }, [roleInnerfaces, innerfaces]);
 
     const mergedStates = useMemo(() => {
-        const map = new Map<string, any>();
+        const map = new Map<string, StateData>();
         roleStates.forEach(s => map.set(s.id, s));
         states.forEach(s => map.set(s.id, s));
         return Array.from(map.values());
@@ -689,15 +691,17 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
                                                 className="mb-2"
                                             >
                                                 <div className="flex flex-wrap gap-2 pt-1 pb-2">
-                                                    {items.map((item: any) => {
+                                                    {items.map((item) => {
                                                         const itemId = item.id.toString();
                                                         const isSelected = (
                                                             (activeTab === 'protocols' && selectedProtocols.has(itemId)) ||
                                                             (activeTab === 'innerfaces' && selectedInnerfaces.has(itemId)) ||
                                                             (activeTab === 'states' && selectedStates.has(itemId))
                                                         );
-                                                        const itemColor = item.color || item.themeColor || 'var(--text-primary)';
-                                                        const itemLabel = item.title || item.name || '';
+                                                        // Use type guards for safe property access
+                                                        const itemColor = 'color' in item && item.color ? item.color : 'var(--text-primary)';
+                                                        const itemLabel = 'title' in item ? item.title : 'name' in item ? item.name : '';
+                                                        const itemDescription = 'description' in item ? item.description : 'hover' in item ? item.hover : '';
 
                                                         return (
                                                             <TooltipProvider key={itemId} delayDuration={300}>
@@ -728,9 +732,9 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
                                                                     <TooltipContent side="top">
                                                                         <div className="flex flex-col gap-0.5">
                                                                             <span className="font-bold text-[10px] uppercase tracking-wider">{itemLabel}</span>
-                                                                            {(item.description || item.hover) && (
+                                                                            {itemDescription && (
                                                                                 <span className="text-[10px] opacity-70 font-mono text-center">
-                                                                                    {item.description || item.hover}
+                                                                                    {itemDescription}
                                                                                 </span>
                                                                             )}
                                                                         </div>

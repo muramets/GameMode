@@ -13,7 +13,7 @@ import { useScoreContext } from '../../contexts/ScoreProvider';
 import { usePersonalityStore } from '../../stores/personalityStore';
 
 export function Dashboard() {
-    const { user } = useAuth();
+    useAuth(); // Keep auth context active
     const { activeContext } = usePersonalityStore();
     const { states, protocols, applyProtocol, isLoading } = useScoreContext();
     const { pinnedProtocolIds, togglePinnedProtocol } = useMetadataStore();

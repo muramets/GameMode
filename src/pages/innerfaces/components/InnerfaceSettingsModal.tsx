@@ -2,10 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Modal } from '../../../components/ui/molecules/Modal';
 import { Input } from '../../../components/ui/molecules/Input';
 import { Button } from '../../../components/ui/atoms/Button';
-import { useAuth } from '../../../contexts/AuthProvider';
+
 import { useMetadataStore } from '../../../stores/metadataStore';
 import { usePersonalityStore } from '../../../stores/personalityStore';
-import { useHistoryStore } from '../../../stores/historyStore';
+
 import { getMappedIcon, ICON_PRESETS } from '../../../utils/iconMapper';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faExclamationTriangle, faPlus, faChevronDown, faTimes } from '@fortawesome/free-solid-svg-icons';
@@ -25,231 +25,94 @@ interface InnerfaceSettingsModalProps {
 
 
 export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: InnerfaceSettingsModalProps) {
-    const { user } = useAuth();
-    const { innerfaces, protocols, addInnerface, updateInnerface, deleteInnerface, groupsMetadata, updateGroupMetadata, updateProtocol } = useMetadataStore();
-    const { activePersonalityId } = usePersonalityStore();
+    const { innerfaces, protocols, addInnerface, updateInnerface, deleteInnerface, groupsMetadata, updateGroupMetadata } = useMetadataStore();
+    const { activeContext } = usePersonalityStore();
+    const isCoachMode = activeContext?.type === 'viewer';
 
-    // Form State
+    const currentInnerface = useMemo(() => innerfaces.find(i => i.id.toString() === innerfaceId?.toString()), [innerfaces, innerfaceId]);
+
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [icon, setIcon] = useState('🔹');
-    const [initialScore, setInitialScore] = useState('5.00');
-    const [color, setColor] = useState('#e2b714');
-    const [hover, setHover] = useState('');
     const [group, setGroup] = useState('');
-    const [protocolIds, setProtocolIds] = useState<(string | number)[]>([]);
-
-    // UI State
-    const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
-    const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
-    const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
-    const [editingGroupIcon, setEditingGroupIcon] = useState<string | null>(null);
-    const [editingGroupColor, setEditingGroupColor] = useState<string | null>(null);
-    const [tempGroupIcon, setTempGroupIcon] = useState('');
-    const [tempGroupColor, setTempGroupColor] = useState('');
-    const [isGroupColorPickerOpen, setIsGroupColorPickerOpen] = useState(false);
-    const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
-    const [popupAnchor, setPopupAnchor] = useState<HTMLElement | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [initialScore, setInitialScore] = useState('0');
+    const [color, setColor] = useState('var(--main-color)');
+    const [icon, setIcon] = useState('brain');
+    const [hover, setHover] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [protocolIds, setProtocolIds] = useState<string[]>([]);
 
+    // UI states
+    const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+
+    // Group editor states
+    const [editingGroupIcon, setEditingGroupIcon] = useState<string | null>(null);
+    const [tempGroupIcon, setTempGroupIcon] = useState('');
+    const [editingGroupColor, setEditingGroupColor] = useState<string | null>(null);
+    const [tempGroupColor, setTempGroupColor] = useState('var(--main-color)');
+    const [isGroupColorPickerOpen, setIsGroupColorPickerOpen] = useState(false);
+    const [popupAnchor, setPopupAnchor] = useState<HTMLElement | null>(null);
+
+    const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+    const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
+
+    // Derived states
     const availableGroups = useMemo(() => {
-        const configGroups = Object.keys(GROUP_CONFIG).filter(g => g !== 'ungrouped');
-        // Collect groups from innerfaces ONLY to keep lists separate
-        const existingIfaceGroups = Array.from(new Set(innerfaces.map(i => i.group))).filter(Boolean) as string[];
-        return Array.from(new Set([...configGroups, ...existingIfaceGroups])).sort();
-    }, [innerfaces]);
+        const groups = new Set<string>(['Physical', 'Mental', 'Emotional', 'Spiritual', 'Social']); // Defaults
+        Object.keys(groupsMetadata).forEach(g => groups.add(g));
+        innerfaces.forEach(i => { if (i.group) groups.add(i.group); });
+        protocols.forEach(p => { if (p.group) groups.add(p.group); });
+        return Array.from(groups).sort();
+    }, [groupsMetadata, innerfaces, protocols]);
 
     useEffect(() => {
-        if (isOpen && innerfaceId) {
-            const innerface = innerfaces.find(i => i.id === innerfaceId);
-            if (innerface) {
-                const parts = innerface.name.split('. ');
-                setName(parts[0]);
-                setDescription(parts.slice(1).join('. ') || '');
-                setIcon(innerface.icon);
-                setInitialScore(innerface.initialScore.toFixed(2));
-                setColor(innerface.color || '#e2b714');
-                setHover(innerface.hover || '');
-                setGroup(innerface.group || '');
-
-                // Merge explicit protocolIds from Innerface AND implicit targets from Protocols
-                const explicitIds = innerface.protocolIds || [];
-                const implicitIds = protocols
-                    .filter(p => p.targets && p.targets.some(t => t.toString() === innerface.id.toString()))
-                    .map(p => p.id);
-
-                setProtocolIds(Array.from(new Set([...explicitIds, ...implicitIds])));
+        if (isOpen) {
+            if (currentInnerface) {
+                setName(currentInnerface.name);
+                setDescription(currentInnerface.description || '');
+                setGroup(currentInnerface.group || '');
+                setInitialScore((currentInnerface.initialScore || 0).toString());
+                setColor(currentInnerface.color || 'var(--main-color)');
+                setIcon(currentInnerface.icon || 'brain');
+                setHover(currentInnerface.hover || '');
+                setProtocolIds((currentInnerface.protocolIds || []).map(String));
+            } else {
+                setName('');
+                setDescription('');
+                setGroup('');
+                setInitialScore('0');
+                setColor('var(--main-color)');
+                setIcon('brain');
+                setHover('');
+                setProtocolIds([]);
             }
-        } else {
-            // Reset for new
-            setName('');
-            setDescription('');
-            setIcon('🔹');
-            setInitialScore('5.00');
-            setColor('#e2b714');
-            setHover('');
-            setGroup('');
-            setProtocolIds([]);
             setIsConfirmingDelete(false);
-            setIsGroupDropdownOpen(false);
-            setIsGroupColorPickerOpen(false);
-            setEditingGroupColor(null);
-            setEditingGroupIcon(null);
+            setSearchQuery('');
         }
-    }, [isOpen, innerfaceId, innerfaces]);
+    }, [isOpen, currentInnerface]);
 
-    const handleUpdateGroupIcon = async (groupName: string, icon: string) => {
-        await updateGroupMetadata(groupName, { icon });
-        setEditingGroupIcon(null);
-    };
-
-    const handleUpdateGroupColor = async (groupName: string, color: string) => {
-        await updateGroupMetadata(groupName, { color });
-        setEditingGroupColor(null);
-        setIsGroupColorPickerOpen(false);
-    };
-
-    const toggleProtocol = (id: string | number) => {
-        setProtocolIds(prev => {
-            const idStr = id.toString();
-            const exists = prev.some(prevId => prevId.toString() === idStr);
-            if (exists) {
-                return prev.filter(prevId => prevId.toString() !== idStr);
-            }
-            return [...prev, id];
-        });
-    };
-
-    const renderGroupIcon = (groupName: string, iconOverride?: string, colorOverride?: string) => {
-        const metadata = groupsMetadata[groupName];
-        const config = GROUP_CONFIG[groupName];
-        const iconStr = iconOverride || metadata?.icon || (config ? 'CONFIG' : 'brain');
-        const colorStr = colorOverride || metadata?.color || config?.color || 'var(--main-color)';
-
-        let iconToRender;
-        if (iconStr === 'CONFIG' && config) {
-            iconToRender = config.icon;
-        } else {
-            iconToRender = getMappedIcon(iconStr) || faPlus;
-        }
-
-        return (
-            <div className="flex items-center justify-center w-full h-full" style={{ color: colorStr }}>
-                <FontAwesomeIcon icon={iconToRender} className="text-sm" />
-            </div>
-        );
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!user || !activePersonalityId) return;
+    const handleSubmit = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        if (!name.trim()) return;
 
         setIsSubmitting(true);
         try {
-            // --- System Event Logging ---
-            // 1. Detect Protocol Changes (Links/Unlinks)
-            if (innerfaceId) {
-                const innerface = innerfaces.find(i => i.id == innerfaceId); // loose comparison for potentially string vs number
-                if (innerface) {
-                    // Current implicit/effective protocols
-                    const currentProtocolIds = new Set([
-                        ...(innerface.protocolIds || []),
-                        ...protocols.filter(p => p.targets?.some(t => t.toString() === innerface.id.toString())).map(p => p.id)
-                    ].map(id => id.toString()));
-
-                    // New selected protocols
-                    const newProtocolIds = new Set(protocolIds.map(id => id.toString()));
-
-                    // Find modifications
-                    const added = protocolIds.filter(id => !currentProtocolIds.has(id.toString()));
-                    const removed = Array.from(currentProtocolIds).filter(id => !newProtocolIds.has(id));
-
-                    // Log additions
-                    for (const pid of added) {
-                        const protocol = protocols.find(p => p.id.toString() === pid.toString());
-                        if (protocol) {
-                            try {
-                                await useHistoryStore.getState().addSystemEvent(
-                                    user.uid,
-                                    activePersonalityId,
-                                    `Linked: ${protocol.title} ↔ ${name}`
-                                );
-                            } catch (e) { console.error("Failed to log system event", e); }
-                        }
-                    }
-
-                    // Log removals
-                    for (const pid of removed) {
-                        const protocol = protocols.find(p => p.id.toString() === pid);
-                        if (protocol) {
-                            try {
-                                await useHistoryStore.getState().addSystemEvent(
-                                    user.uid,
-                                    activePersonalityId,
-                                    `Unlinked: ${protocol.title} ↔ ${name}`
-                                );
-                            } catch (e) { console.error("Failed to log system event", e); }
-                        }
-                    }
-
-                    // 2. Detect Score Changes
-                    const newScoreVal = Number(initialScore);
-                    const currentScoreVal = Number(innerface.initialScore);
-
-                    if (Math.abs(currentScoreVal - newScoreVal) > 0.001) {
-                        try {
-                            await useHistoryStore.getState().addSystemEvent(
-                                user.uid,
-                                activePersonalityId,
-                                `Manual Adjustment: ${name}`,
-                                { from: currentScoreVal, to: newScoreVal }
-                            );
-                        } catch (e) { console.error("Failed to log system event", e); }
-                    }
-                }
-            }
-
-            // 1. Bi-directional Cleanup: Ensure deselected protocols remove this innerface from their 'targets'
-            if (innerfaceId) {
-                const removalPromises = protocols.map(p => {
-                    const isTargeting = p.targets?.some(t => t.toString() === innerfaceId.toString());
-                    const isSelected = protocolIds.some(id => id.toString() === p.id.toString());
-
-                    if (isTargeting && !isSelected) {
-                        // Protocol was targeting this innerface, but is no longer in the selected list
-                        // We must remove the link from the protocol side
-                        const newTargets = (p.targets || []).filter(t => t.toString() !== innerfaceId.toString());
-                        return updateProtocol(p.id, { targets: newTargets });
-                    }
-                    return Promise.resolve();
-                });
-                await Promise.all(removalPromises);
-            }
-
-            const fullName = description ? `${name}. ${description}` : name;
-            const newInitialScore = Number(initialScore);
-            const data: any = {
-                name: fullName,
-                icon,
-                initialScore: newInitialScore,
-                color,
-                hover,
+            const innerfaceData = {
+                name,
+                description,
                 group,
-                protocolIds
+                initialScore: parseFloat(initialScore) || 0,
+                color,
+                icon,
+                hover,
+                protocolIds: protocolIds.map(id => id.toString())
             };
 
-            if (innerfaceId) {
-                const existing = innerfaces.find(i => i.id === innerfaceId);
-                // If initial score changed, update versionTimestamp to trigger Hard Reset
-                if (existing && existing.initialScore !== newInitialScore) {
-                    data.versionTimestamp = new Date().toISOString();
-                }
-                await updateInnerface(innerfaceId, data);
+            if (innerfaceId && currentInnerface) {
+                await updateInnerface(innerfaceId, innerfaceData);
             } else {
-                // For new ones, set versionTimestamp to current time 
-                data.versionTimestamp = new Date().toISOString();
-                await addInnerface(data);
+                await addInnerface(innerfaceData);
             }
             onClose();
         } catch (error) {
@@ -260,36 +123,57 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
     };
 
     const handleDelete = async () => {
-        if (!innerfaceId || !user || !activePersonalityId) return;
-
+        if (!innerfaceId) return;
         if (!isConfirmingDelete) {
             setIsConfirmingDelete(true);
-            // Optional: reset after 3 seconds if not clicked again
-            setTimeout(() => {
-                setIsConfirmingDelete(false);
-            }, 3000);
             return;
         }
 
-        await deleteInnerface(innerfaceId);
-        onClose();
+        setIsSubmitting(true);
+        try {
+            await deleteInnerface(innerfaceId);
+            onClose();
+        } catch (error) {
+            console.error('Failed to delete innerface:', error);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
-    const InputLabel = ({ label }: { label: string }) => (
-        <label className="text-[10px] text-main font-mono font-bold uppercase tracking-[0.2em] opacity-90 px-1">
-            {label}
-        </label>
-    );
+    const handleUpdateGroupIcon = async (groupName: string, newIcon: string) => {
+        await updateGroupMetadata(groupName, { icon: newIcon });
+        setEditingGroupIcon(null);
+    };
+
+    const handleUpdateGroupColor = async (groupName: string, newColor: string) => {
+        await updateGroupMetadata(groupName, { color: newColor });
+        setEditingGroupColor(null);
+    };
+
+    const renderGroupIcon = (groupName: string) => {
+        const meta = groupsMetadata[groupName];
+        const config = GROUP_CONFIG[groupName];
+        const iconName = meta?.icon || config?.icon || 'brain';
+        return renderIcon(iconName);
+    };
+
+    const toggleProtocol = (pId: string | number) => {
+        const idStr = pId.toString();
+        setProtocolIds(prev =>
+            prev.includes(idStr)
+                ? prev.filter(id => id !== idStr)
+                : [...prev, idStr]
+        );
+    };
 
     return (
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={innerfaceId ? 'Edit Innerface' : 'Add Innerface'}
-            onSubmit={handleSubmit}
+            title={innerfaceId ? 'Edit Innerface' : 'New Innerface'}
             footer={
                 <>
-                    {innerfaceId ? (
+                    {innerfaceId && !isCoachMode ? (
                         <Button
                             type="button"
                             variant="danger"
@@ -315,10 +199,11 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                             Cancel
                         </Button>
                         <Button
-                            type="submit"
+                            type="button"
                             variant="primary"
                             size="sm"
                             isLoading={isSubmitting}
+                            onClick={() => handleSubmit()}
                             className="font-bold px-6 py-2 rounded-lg text-[10px] uppercase tracking-wider shadow-[0_0_10px_rgba(226,183,20,0.2)]"
                         >
                             {innerfaceId ? 'Update' : 'Create'}
@@ -815,6 +700,14 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                     </div>
                 </div>
             </div>
-        </Modal>
+        </Modal >
+    );
+}
+
+function InputLabel({ label }: { label: string }) {
+    return (
+        <label className="text-[10px] uppercase tracking-wider font-bold text-sub">
+            {label}
+        </label>
     );
 }

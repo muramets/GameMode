@@ -208,7 +208,7 @@ export function NavButton({ title, icon, value, onClick, active, style }: NavBut
         >
             <div className="flex items-center gap-3">
                 <div className={`w-4 flex justify-center items-center transition-colors ${active ? 'text-main' : 'opacity-70 group-hover/nav:text-[var(--hover-color)]'}`}>
-                    {typeof icon === 'object' && icon !== null && 'icon' in (icon as any) ? (
+                    {typeof icon === 'object' && icon !== null && 'icon' in icon ? (
                         <FontAwesomeIcon icon={icon as IconDefinition} />
                     ) : (
                         icon as ReactNode

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../atoms/Tooltip';
 
-export const TruncatedTooltip = ({ text, className, as: Component = 'div' }: { text: string, className?: string, as?: any }) => {
+export const TruncatedTooltip = ({ text, className, as: Component = 'div' }: { text: string, className?: string, as?: React.ElementType }) => {
     const [isTruncated, setIsTruncated] = useState(false);
 
     const handleMouseEnter = (e: React.MouseEvent<HTMLElement>) => {

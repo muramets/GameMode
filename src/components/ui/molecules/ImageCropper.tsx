@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, useMotionValue } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearchMinus, faSearchPlus } from '@fortawesome/free-solid-svg-icons';
@@ -24,7 +24,7 @@ export function ImageCropper({ imageSrc, onCrop }: ImageCropperProps) {
     const x = useMotionValue(0);
     const y = useMotionValue(0);
 
-    const handleSave = () => {
+    const handleSave = useCallback(() => {
         if (!imageRef.current) return;
 
         const canvas = document.createElement('canvas');
@@ -60,14 +60,14 @@ export function ImageCropper({ imageSrc, onCrop }: ImageCropperProps) {
 
         const base64 = canvas.toDataURL('image/jpeg', 0.85);
         onCrop(base64);
-    };
+    }, [zoom, x, y, onCrop, OUTPUT_SIZE, VIEWPORT_SIZE]);
 
     // Listen for external save trigger from modal footer
     useEffect(() => {
         const handleExternalSave = () => handleSave();
         document.addEventListener('cropper-save', handleExternalSave);
         return () => document.removeEventListener('cropper-save', handleExternalSave);
-    }, [zoom]); // Re-attach when zoom changes to capture current state
+    }, [handleSave]);
 
     return (
         <div className="flex flex-col items-center gap-6 w-full">

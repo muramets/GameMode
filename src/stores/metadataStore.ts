@@ -107,13 +107,13 @@ const isViewerMode = (context: PathContext | null): boolean => {
 };
 
 /**
- * Guard function to prevent mutations in viewer mode.
- * Throws an error if in viewer mode to stop the action.
+ * Guard function to prevent mutations in viewer/coach mode.
+ * Throws an error if in viewer mode AND the action is not explicitly allowed.
  */
-const guardAgainstViewerMode = (context: PathContext | null): void => {
-    if (isViewerMode(context)) {
-        console.warn('[MetadataStore] Blocked mutation in viewer mode');
-        throw new Error('Cannot modify data in viewer mode');
+const guardAgainstViewerMode = (context: PathContext | null, allowInCoachMode: boolean = false): void => {
+    if (isViewerMode(context) && !allowInCoachMode) {
+        console.warn('[MetadataStore] Blocked mutation in viewer/coach mode');
+        throw new Error('Cannot modify data in viewer/coach mode');
     }
 };
 
@@ -151,7 +151,8 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     updateInnerface: async (id: number | string, data: Partial<Innerface>) => {
         try {
             const context = get().context;
-            guardAgainstViewerMode(context);
+            // ALLOW UPDATES IN COACH MODE
+            guardAgainstViewerMode(context, true);
             const docRef = doc(db, `${getPathRoot(context)}/innerfaces/${id}`);
             await updateDoc(docRef, data);
         } catch (err: unknown) {
@@ -202,7 +203,8 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     updateProtocol: async (id: number | string, data: Partial<Protocol>) => {
         try {
             const context = get().context;
-            guardAgainstViewerMode(context);
+            // ALLOW UPDATES IN COACH MODE (needed for bi-directional linking maintenance)
+            guardAgainstViewerMode(context, true);
             const docRef = doc(db, `${getPathRoot(context)}/protocols/${id}`);
             await updateDoc(docRef, data);
         } catch (err: unknown) {
