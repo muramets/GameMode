@@ -5,6 +5,7 @@ import { Button } from '../../../components/ui/atoms/Button';
 
 import { useMetadataStore } from '../../../stores/metadataStore';
 import { usePersonalityStore } from '../../../stores/personalityStore';
+import type { PowerCategory } from '../types';
 
 import { getMappedIcon, ICON_PRESETS } from '../../../utils/iconMapper';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -40,6 +41,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
     const [hover, setHover] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [protocolIds, setProtocolIds] = useState<string[]>([]);
+    const [category, setCategory] = useState<PowerCategory>(null);
 
     // UI states
     const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
@@ -77,6 +79,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                 setIcon(currentInnerface.icon || 'brain');
                 setHover(currentInnerface.hover || '');
                 setProtocolIds((currentInnerface.protocolIds || []).map(String));
+                setCategory(currentInnerface.category || null);
             } else {
                 setName('');
                 setDescription('');
@@ -86,6 +89,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                 setIcon('brain');
                 setHover('');
                 setProtocolIds([]);
+                setCategory(null);
             }
             setIsConfirmingDelete(false);
             setSearchQuery('');
@@ -106,7 +110,8 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                 color,
                 icon,
                 hover,
-                protocolIds: protocolIds.map(id => id.toString())
+                protocolIds: protocolIds.map(id => id.toString()),
+                category
             };
 
             if (innerfaceId && currentInnerface) {
@@ -152,8 +157,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
 
     const renderGroupIcon = (groupName: string) => {
         const meta = groupsMetadata[groupName];
-        const config = GROUP_CONFIG[groupName];
-        const iconName = meta?.icon || config?.icon || 'brain';
+        const iconName = meta?.icon || 'brain';
         return renderIcon(iconName);
     };
 
@@ -232,6 +236,63 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                         onChange={e => setDescription(e.target.value)}
                         placeholder="e.g. Attentional control"
                     />
+                </div>
+
+                {/* Category Selector */}
+                <div className="flex flex-col gap-1.5">
+                    <InputLabel label="Category (Optional)" />
+                    <div className="flex items-center gap-3">
+                        {/* Live Preview Icon */}
+                        <div
+                            className={`w-12 h-12 flex items-center justify-center text-xl shrink-0 transition-all duration-300 ${category === 'foundation'
+                                    ? 'rounded-[30%_70%_70%_30%/30%_30%_70%_70%]' // Squircle for Foundations
+                                    : category === 'skill'
+                                        ? 'rounded-[50%]' // Circle for Skills (percentage for smooth morph)
+                                        : 'rounded-[20%]' // Rounded square for Uncategorized (percentage for smooth morph)
+                                }`}
+                            style={{
+                                backgroundColor: `${color}33`,
+                                color: color,
+                                boxShadow: `0 0 15px ${color}15`
+                            }}
+                        >
+                            {renderIcon(icon)}
+                        </div>
+
+                        {/* Category Buttons */}
+                        <div className="flex-1 bg-sub-alt rounded-lg p-1 flex gap-1">
+                            <button
+                                type="button"
+                                onClick={() => setCategory(null)}
+                                className={`flex-1 px-3 py-2 rounded-md text-xs font-mono uppercase font-bold transition-all ${category === null
+                                    ? 'bg-sub text-text-primary shadow-sm'
+                                    : 'text-sub hover:text-text-primary'
+                                    }`}
+                            >
+                                None
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setCategory('skill')}
+                                className={`flex-1 px-3 py-2 rounded-md text-xs font-mono uppercase font-bold transition-all ${category === 'skill'
+                                    ? 'bg-sub text-text-primary shadow-sm'
+                                    : 'text-sub hover:text-text-primary'
+                                    }`}
+                            >
+                                Skill
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setCategory('foundation')}
+                                className={`flex-1 px-3 py-2 rounded-md text-xs font-mono uppercase font-bold transition-all ${category === 'foundation'
+                                    ? 'bg-sub text-text-primary shadow-sm'
+                                    : 'text-sub hover:text-text-primary'
+                                    }`}
+                            >
+                                Foundation
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="flex flex-col gap-1.5 relative">

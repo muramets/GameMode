@@ -8,7 +8,7 @@ import { usePersonalityStore } from '../../../stores/personalityStore';
 import { useHistoryStore } from '../../../stores/historyStore';
 import { renderIcon, getMappedIcon, ICON_PRESETS } from '../../../utils/iconMapper';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faExclamationTriangle, faPlus, faMinus, faChevronDown, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faExclamationTriangle, faPlus, faChevronDown, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { GROUP_CONFIG, PRESET_COLORS } from '../../../constants/common';
 import * as Popover from '@radix-ui/react-popover';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../../components/ui/atoms/Tooltip';
@@ -562,32 +562,6 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                     <div className="flex flex-col gap-3">
                         <InputLabel label="XP Reward" />
 
-                        {/* Manual Input */}
-                        <div className="flex items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setAction(action === '+' ? '-' : '+')}
-                                className={`w-[42px] h-[42px] shrink-0 rounded-lg flex items-center justify-center transition-colors ${action === '+' ? 'bg-[#98c379]/20 text-[#98c379]' : 'bg-[#ca4754]/20 text-[#ca4754]'}`}
-                            >
-                                <FontAwesomeIcon icon={action === '+' ? faPlus : faMinus} />
-                            </button>
-                            <Input
-                                type="number"
-                                value={xp}
-                                onChange={e => setXp(e.target.value)}
-                                step="1"
-                                min="1"
-                                className="flex-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-center h-[42px] text-lg font-mono font-bold"
-                            />
-                        </div>
-
-                        {/* Separator */}
-                        <div className="relative flex py-1 items-center">
-                            <div className="flex-grow border-t border-white/10"></div>
-                            <span className="flex-shrink-0 mx-2 text-[9px] text-sub/50 uppercase tracking-widest font-mono">or choose preset</span>
-                            <div className="flex-grow border-t border-white/10"></div>
-                        </div>
-
                         {/* Presets */}
                         <div className="grid grid-cols-3 gap-2">
                             <button
@@ -612,6 +586,23 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                                 Hard: 20 XP
                             </button>
                         </div>
+
+                        {/* Separator */}
+                        <div className="relative flex py-1 items-center">
+                            <div className="flex-grow border-t border-white/10"></div>
+                            <span className="flex-shrink-0 mx-2 text-[9px] text-sub/50 uppercase tracking-widest font-mono">or enter manually</span>
+                            <div className="flex-grow border-t border-white/10"></div>
+                        </div>
+
+                        {/* Manual Input */}
+                        <Input
+                            type="number"
+                            value={xp}
+                            onChange={e => setXp(e.target.value)}
+                            step="1"
+                            min="1"
+                            className="w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-center h-[42px] text-lg font-mono font-bold"
+                        />
                     </div>
 
                     {/* Style Row (Color & Icon) */}

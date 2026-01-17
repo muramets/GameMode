@@ -12,9 +12,10 @@ import { TruncatedTooltip } from '../../../components/ui/molecules/TruncatedTool
 interface InnerfaceCardProps {
     innerface: Innerface;
     onEdit?: () => void;
+    forceHover?: boolean;
 }
 
-export function InnerfaceCard({ innerface, onEdit }: InnerfaceCardProps) {
+export function InnerfaceCard({ innerface, onEdit, forceHover }: InnerfaceCardProps) {
     const navigate = useNavigate();
 
     // XP Calculation
@@ -34,10 +35,10 @@ export function InnerfaceCard({ innerface, onEdit }: InnerfaceCardProps) {
     };
 
     return (
-        <Card className="group relative overflow-hidden p-4 flex flex-col justify-between min-h-[120px] hover:-translate-y-[2px] transition-all duration-300 hover:shadow-lg border border-transparent text-left select-none cursor-default">
+        <Card className={`group relative overflow-hidden p-4 flex flex-col justify-between min-h-[120px] transition-all duration-300 border border-transparent text-left select-none cursor-grab active:cursor-grabbing ${forceHover ? '-translate-y-[2px] shadow-lg' : 'hover:-translate-y-[2px] hover:shadow-lg'}`}>
             {/* 1. Dynamic Gradient from Tier Color */}
             <div
-                className="absolute -right-10 -bottom-10 w-48 h-48 blur-[60px] transition-opacity duration-500 opacity-[0.10] group-hover:opacity-[0.20]"
+                className={`absolute -right-10 -bottom-10 w-48 h-48 blur-[60px] transition-opacity duration-500 opacity-[0.10] ${forceHover ? 'opacity-[0.20]' : 'group-hover:opacity-[0.20]'}`}
                 style={{
                     background: `radial-gradient(circle, ${tierColor} 0%, transparent 70%)`
                 }}
@@ -45,7 +46,7 @@ export function InnerfaceCard({ innerface, onEdit }: InnerfaceCardProps) {
 
             {/* Focused Glow */}
             <div
-                className="absolute inset-x-0 top-0 h-24 opacity-0 group-hover:opacity-[0.05] transition-all duration-500 ease-out pointer-events-none"
+                className={`absolute inset-x-0 top-0 h-24 opacity-0 transition-all duration-500 ease-out pointer-events-none ${forceHover ? 'opacity-[0.05]' : 'group-hover:opacity-[0.05]'}`}
                 style={{
                     background: `linear-gradient(to bottom, ${tierColor}, transparent)`
                 }}
@@ -56,7 +57,12 @@ export function InnerfaceCard({ innerface, onEdit }: InnerfaceCardProps) {
                 <div className="flex items-start gap-3 w-full pr-1">
                     {/* Icon */}
                     <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 group-hover:scale-105 transition-transform duration-300"
+                        className={`w-10 h-10 flex items-center justify-center text-lg shrink-0 transition-all duration-300 ${forceHover ? 'scale-105' : 'group-hover:scale-105'} ${innerface.category === 'foundation'
+                            ? 'rounded-[30%_70%_70%_30%/30%_30%_70%_70%]' // Squircle for Foundations
+                            : innerface.category === 'skill'
+                                ? 'rounded-[50%]' // Circle for Skills
+                                : 'rounded-[20%]' // Rounded square for Uncategorized
+                            }`}
                         style={{
                             backgroundColor: `${innerface.color || '#ffffff'}33`,
                             color: innerface.color || '#ffffff',
@@ -77,7 +83,7 @@ export function InnerfaceCard({ innerface, onEdit }: InnerfaceCardProps) {
                             <TruncatedTooltip
                                 as="p"
                                 text={innerface.name.split('.')[1].trim()}
-                                className="text-[10px] text-sub font-mono uppercase tracking-wider opacity-60 truncate mt-0.5 group-hover:opacity-100 group-hover:text-text-primary transition-all duration-300 w-full"
+                                className={`text-[10px] text-sub font-mono uppercase tracking-wider opacity-60 truncate mt-0.5 transition-all duration-300 w-full ${forceHover ? 'opacity-100 text-text-primary' : 'group-hover:opacity-100 group-hover:text-text-primary'}`}
                             />
                         )}
                     </div>
@@ -87,7 +93,7 @@ export function InnerfaceCard({ innerface, onEdit }: InnerfaceCardProps) {
             {/* Middle: Actions & Level Display */}
             <div className="relative z-10 mt-auto mb-3 flex items-end justify-between w-full">
                 {/* Left: Actions (Only visible on hover) */}
-                <div className="flex flex-col gap-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className={`flex flex-col gap-0 opacity-0 transition-opacity duration-300 ${forceHover ? 'opacity-100' : 'group-hover:opacity-100'}`}>
                     <button
                         onClick={handleHistory}
                         className="w-10 h-7 flex items-center justify-start text-sub hover:text-main transition-colors duration-200"
@@ -113,7 +119,7 @@ export function InnerfaceCard({ innerface, onEdit }: InnerfaceCardProps) {
                                     <FontAwesomeIcon icon={currentScore > innerface.initialScore ? faArrowUp : faArrowDown} />
                                 </span>
                             )}
-                            <span className="text-[9px] font-mono text-sub uppercase tracking-widest opacity-40 mb-1 group-hover:text-text-primary group-hover:opacity-100 transition-all duration-300 block">
+                            <span className={`text-[9px] font-mono text-sub uppercase tracking-widest opacity-40 mb-1 transition-all duration-300 block ${forceHover ? 'text-text-primary opacity-100' : 'group-hover:text-text-primary group-hover:opacity-100'}`}>
                                 Lvl
                             </span>
                         </div>
@@ -139,7 +145,7 @@ export function InnerfaceCard({ innerface, onEdit }: InnerfaceCardProps) {
                     />
                 </div>
                 {/* XP Detail (Visible on hover or always small) */}
-                <div className="flex justify-between items-center text-[9px] font-mono text-sub opacity-50 group-hover:opacity-100 group-hover:text-text-primary transition-all duration-200">
+                <div className={`flex justify-between items-center text-[9px] font-mono text-sub opacity-50 transition-all duration-200 ${forceHover ? 'opacity-100 text-text-primary' : 'group-hover:opacity-100 group-hover:text-text-primary'}`}>
                     <span>{currentLevelXP} / 100 XP</span>
                     <span>{totalXP} Total</span>
                 </div>

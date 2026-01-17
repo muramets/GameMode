@@ -1,3 +1,5 @@
+export type PowerCategory = 'skill' | 'foundation' | null;
+
 export interface Innerface {
     id: number | string;
     name: string; // e.g., "Focus. Attentional control"
@@ -10,5 +12,6 @@ export interface Innerface {
     versionTimestamp?: string; // ISO string for hard reset
     order?: number;
     group?: string;
+    category?: PowerCategory; // NEW: Skills, Foundations, or uncategorized
     protocolIds?: (number | string)[];
 }

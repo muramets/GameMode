@@ -34,6 +34,7 @@ interface MetadataState {
     groupsMetadata: Record<string, { icon: string; color?: string }>;
     groupOrder: string[]; // List of protocol group names
     innerfaceGroupOrder: string[]; // List of innerface group names
+    categoryOrder: string[]; // List of category names ('skill', 'foundation', 'uncategorized')
     isLoading: boolean;
     loadedCount: number;
     error: string | null;
@@ -76,7 +77,9 @@ interface MetadataState {
 
     // Innerface Ordering
     reorderInnerfaces: (orderedIds: string[]) => Promise<void>;
+    moveInnerface: (id: string, newGroup: string, orderedIds: string[]) => Promise<void>;
     reorderInnerfaceGroups: (orderedGroups: string[]) => Promise<void>;
+    reorderCategories: (orderedCategories: string[]) => Promise<void>;
 
     // --- Subscriptions ---
     subscribeToMetadata: (context: PathContext) => () => void;
@@ -126,6 +129,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     groupsMetadata: {},
     groupOrder: [],
     innerfaceGroupOrder: [],
+    categoryOrder: [],
     isLoading: true,
     loadedCount: 0,
     error: null,
@@ -152,13 +156,25 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     updateInnerface: async (id: number | string, data: Partial<Innerface>) => {
         try {
             const context = get().context;
+
+            // Optimistic update
+            const currentInnerfaces = get().innerfaces;
+            set({
+                innerfaces: currentInnerfaces.map(i =>
+                    i.id.toString() === id.toString() ? { ...i, ...data } : i
+                )
+            });
+
             // ALLOW UPDATES IN COACH MODE
             guardAgainstViewerMode(context, true);
             const docRef = doc(db, `${getPathRoot(context)}/innerfaces/${id}`);
             await updateDoc(docRef, data);
+
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
+            console.error('[MetadataStore] updateInnerface failed:', err);
             set({ error: message });
+            // Revert optimistic update on error would be ideal, but onSnapshot usually handles correction
         }
     },
 
@@ -426,6 +442,58 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         }
     },
 
+    moveInnerface: async (id: string, newGroup: string, orderedIds: string[]) => {
+        try {
+            const context = get().context;
+            guardAgainstViewerMode(context);
+
+            // Optimistic update
+            const currentInnerfaces = get().innerfaces;
+            const ifaceMap = new Map(currentInnerfaces.map(i => [i.id.toString(), i]));
+
+            // 1. Update Group in Map
+            const targetItem = ifaceMap.get(id);
+            if (targetItem) {
+                targetItem.group = newGroup;
+            }
+
+            // 2. Reconstruct List with new Order
+            const reorderedInnerfaces = orderedIds
+                .map((oid, index) => {
+                    const iface = ifaceMap.get(oid);
+                    return iface ? { ...iface, order: index } : null;
+                })
+                .filter(Boolean) as Innerface[];
+
+            // Add missing items
+            const missingInnerfaces = currentInnerfaces
+                .filter(i => !orderedIds.includes(i.id.toString()))
+                .map((i, idx) => ({ ...i, order: orderedIds.length + idx }));
+
+            set({ innerfaces: [...reorderedInnerfaces, ...missingInnerfaces] });
+
+            // Batch update Firestore
+            const batch = writeBatch(db);
+
+            orderedIds.forEach((oid, index) => {
+                const docRef = doc(db, `${getPathRoot(context)}/innerfaces/${oid}`);
+                if (oid === id) {
+                    // Update BOTH group and order for the moved item
+                    batch.update(docRef, { order: index, group: newGroup });
+                } else {
+                    // Update only order for others
+                    batch.update(docRef, { order: index });
+                }
+            });
+
+            await batch.commit();
+        } catch (err: unknown) {
+            console.error("Failed to move innerface:", err);
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message });
+        }
+    },
+
     reorderInnerfaces: async (orderedIds: string[]) => {
         try {
             const context = get().context;
@@ -550,6 +618,21 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         }
     },
 
+    reorderCategories: async (orderedCategories: string[]) => {
+        try {
+            const context = get().context;
+            guardAgainstViewerMode(context);
+            // Optimistic update
+            set({ categoryOrder: orderedCategories });
+
+            const docRef = doc(db, `${getPathRoot(context)}/settings/categories`);
+            await setDoc(docRef, { order: orderedCategories }, { merge: true });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            set({ error: message });
+        }
+    },
+
     subscribeToMetadata: (context: PathContext) => {
         const pathRoot = getPathRoot(context);
         console.log(`[MetadataStore] Subscribing to: ${pathRoot}`);
@@ -561,6 +644,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             groupsMetadata: {},
             groupOrder: [],
             innerfaceGroupOrder: [],
+            categoryOrder: [],
             pinnedProtocolIds: [],
             isLoading: true,
             loadedCount: 0
@@ -571,8 +655,8 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             loadedSections++;
             console.log(`[MetadataStore] Loaded ${source} (${loadedSections}/7)`);
             set(state => ({ loadedCount: state.loadedCount + 1 }));
-            if (loadedSections >= 7) {
-                console.log(`[MetadataStore] All 7 sections loaded. isLoading -> false`);
+            if (loadedSections >= 8) {
+                console.log(`[MetadataStore] All 8 sections loaded. isLoading -> false`);
                 set({ isLoading: false });
             }
         };
@@ -659,6 +743,20 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             (err) => handleSnapshotError(err, 'settings/innerface_groups')
         );
 
+        const unsubCategorySettings = onSnapshot(
+            doc(db, `${pathRoot}/settings/categories`),
+            (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    set({ categoryOrder: data.order || [] });
+                } else {
+                    set({ categoryOrder: [] });
+                }
+                markLoaded('settings/categories');
+            },
+            (err) => handleSnapshotError(err, 'settings/categories')
+        );
+
         const unsubQuickActions = onSnapshot(
             doc(db, `${pathRoot}/settings/quickActions`),
             (snap) => {
@@ -682,6 +780,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             unsubQuickActions();
             unsubGroupSettings();
             unsubInnerfaceGroupSettings();
+            unsubCategorySettings();
         };
     }
 }));
