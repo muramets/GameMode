@@ -5,12 +5,15 @@ import { useHistoryStore } from './historyStore';
 import { useMetadataStore } from './metadataStore';
 import { usePersonalityStore } from './personalityStore';
 import { useTeamStore } from './teamStore';
+import { usePlanningStore } from './planningStore';
 
 export function StoreSync() {
     const { user } = useAuth();
     const location = useLocation();
     const subscribeToHistory = useHistoryStore(state => state.subscribeToHistory);
     const clearHistory = useHistoryStore(state => state.clearHistory);
+    const subscribeToGoals = usePlanningStore(state => state.subscribeToGoals);
+    const clearGoals = usePlanningStore(state => state.clearGoals);
 
     // Use selectors for stable references
     const subscribeToMetadata = useMetadataStore(state => state.subscribeToMetadata);
@@ -54,13 +57,23 @@ export function StoreSync() {
                 // Ensure UID is present (fallback for migration)
                 const uid = activeContext.uid || user.uid;
                 unsubHistory = subscribeToHistory(uid, activeContext.pid);
+                const unsubGoals = subscribeToGoals(uid, activeContext.pid);
+
+                // Chain unsubs
+                const oldUnsub = unsubHistory;
+                unsubHistory = () => { oldUnsub(); unsubGoals(); };
             } else if (activeContext.type === 'viewer') {
                 // In viewer mode, subscribe to target user's history
                 unsubHistory = subscribeToHistory(activeContext.targetUid, activeContext.personalityId);
+                // Also view their goals
+                const unsubGoals = subscribeToGoals(activeContext.targetUid, activeContext.personalityId);
+                const oldUnsub = unsubHistory;
+                unsubHistory = () => { oldUnsub(); unsubGoals(); };
             } else {
-                // Role context - NO HISTORY
-                // Explicitly clear history to prevent leakage from previous state
+                // Role context - NO HISTORY, NO GOALS (for now, unless roles get goals)
+                // Explicitly clear history and goals to prevent leakage from previous state
                 clearHistory();
+                clearGoals();
 
                 // Subscribe to Role Metadata (for name, icon, etc in UI)
                 const unsubRoles = subscribeToRoles(activeContext.teamId);

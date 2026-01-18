@@ -9,6 +9,7 @@ import { getTierColor } from '../../../utils/colorUtils';
 import { calculateLevel, scoreToXP } from '../../../utils/xpUtils';
 import { getMappedIcon } from '../../../utils/iconMapper';
 import { isToday, isThisMonth, parseISO } from 'date-fns';
+import { WeeklyFocus } from './WeeklyFocus';
 
 export function UserProfile() {
     const { user } = useAuth();
@@ -101,119 +102,130 @@ export function UserProfile() {
 
     return (
         <Card className="group flex flex-col md:flex-row items-center justify-between gap-8 p-6 mb-8 bg-sub-alt rounded-lg shadow-sm border-none hover:scale-[1.02] hover:shadow-xl transition-all duration-300 overflow-hidden">
-            {/* User Info Section */}
-            <div className="flex md:flex-row items-center gap-4 w-full md:w-auto">
-                {/* Avatar */}
-                <div className="relative shrink-0 group/avatar">
-                    {/* Premium Glow Effects */}
-                    {displayAvatar && (
-                        <>
-                            <style>{`
-                                @keyframes avatar-glow-spin {
-                                    0% { transform: rotate(0deg) scale(1); }
-                                    50% { transform: rotate(180deg) scale(1.05); }
-                                    100% { transform: rotate(360deg) scale(1); }
-                                }
-                                @keyframes avatar-glow-counter {
-                                    0% { transform: rotate(360deg) scale(1.05); }
-                                    50% { transform: rotate(180deg) scale(1); }
-                                    100% { transform: rotate(0deg) scale(1.05); }
-                                }
-                                @keyframes avatar-shimmer {
-                                    0% { transform: translateX(-100%) rotate(25deg); opacity: 0; }
-                                    5% { opacity: 1; }
-                                    10% { transform: translateX(200%) rotate(25deg); opacity: 0; }
-                                    100% { transform: translateX(200%) rotate(25deg); opacity: 0; }
-                                }
-                                @keyframes avatar-pulse {
-                                    0%, 100% { transform: scale(1); }
-                                    50% { transform: scale(1.02); }
-                                }
-                            `}</style>
+            {/* Desktop: Group User Info + Separator closely */}
+            <div className="flex md:flex-row items-center gap-6 w-full md:w-auto">
+                {/* User Info Section */}
+                <div className="flex md:flex-row items-center gap-4 w-full md:w-auto">
+                    {/* Avatar */}
+                    <div className="relative shrink-0 group/avatar">
+                        {/* Premium Glow Effects */}
+                        {displayAvatar && (
+                            <>
+                                <style>{`
+                                    @keyframes avatar-glow-spin {
+                                        0% { transform: rotate(0deg) scale(1); }
+                                        50% { transform: rotate(180deg) scale(1.05); }
+                                        100% { transform: rotate(360deg) scale(1); }
+                                    }
+                                    @keyframes avatar-glow-counter {
+                                        0% { transform: rotate(360deg) scale(1.05); }
+                                        50% { transform: rotate(180deg) scale(1); }
+                                        100% { transform: rotate(0deg) scale(1.05); }
+                                    }
+                                    @keyframes avatar-shimmer {
+                                        0% { transform: translateX(-100%) rotate(25deg); opacity: 0; }
+                                        5% { opacity: 1; }
+                                        10% { transform: translateX(200%) rotate(25deg); opacity: 0; }
+                                        100% { transform: translateX(200%) rotate(25deg); opacity: 0; }
+                                    }
+                                    @keyframes avatar-pulse {
+                                        0%, 100% { transform: scale(1); }
+                                        50% { transform: scale(1.02); }
+                                    }
+                                `}</style>
 
-                            {/* Outer Glow Layer (counter-rotation) */}
-                            <div
-                                className="absolute -inset-3 rounded-full blur-[20px] opacity-15 transition-opacity duration-150 group-hover:opacity-25"
-                                style={{
-                                    background: `conic-gradient(from 180deg, ${nextTierColor} 0%, ${tierColor} 50%, ${nextTierColor} 100%)`,
-                                    animation: 'avatar-glow-counter 8s ease-in-out infinite'
-                                }}
-                            />
-
-                            {/* Inner Glow Layer (main rotation) */}
-                            <div
-                                className="absolute -inset-1 rounded-full blur-[14px] opacity-25 transition-opacity duration-150 group-hover:opacity-40"
-                                style={{
-                                    background: `conic-gradient(from 0deg, ${tierColor} 0%, ${nextTierColor} 30%, ${tierColor} 50%, ${nextTierColor} 70%, ${tierColor} 100%)`,
-                                    animation: 'avatar-glow-spin 6s ease-in-out infinite'
-                                }}
-                            />
-                        </>
-                    )}
-
-                    {/* Avatar Container with Pulse */}
-                    <div
-                        className="w-[66px] h-[66px] rounded-full bg-bg-primary flex items-center justify-center text-sub text-2xl overflow-hidden relative shadow-sm border border-white/5 z-10 transition-transform duration-300 group-hover/avatar:scale-105"
-                        style={{
-                            animation: displayAvatar ? 'avatar-pulse 5s ease-in-out infinite' : 'none'
-                        }}
-                    >
-                        {displayAvatar ? (
-                            <img
-                                src={displayAvatar}
-                                alt={displayName}
-                                className="w-full h-full object-cover"
-                            />
-                        ) : (
-                            <FontAwesomeIcon icon={getMappedIcon(displayIcon)} />
-                        )}
-                    </div>
-                </div>
-
-                {/* Details */}
-                <div className="flex flex-col gap-1 flex-1 min-w-0">
-                    <h2 className="text-[1.75rem] leading-none font-normal text-text-primary font-mono m-0 truncate cursor-default select-none">
-                        {displayName}
-                    </h2>
-
-                    {/* Level + Progress Row */}
-                    <div className="flex items-center gap-3 mt-4">
-                        {/* Level Number */}
-                        <div className="flex flex-col items-center leading-none">
-                            <span
-                                className="text-[2rem] font-medium font-mono"
-                                style={{ color: tierColor }}
-                            >
-                                {level}
-                            </span>
-                            <span className="text-[9px] font-mono text-sub uppercase tracking-wider opacity-60 transition-all duration-300 group-hover:text-text-primary group-hover:opacity-100">Level</span>
-                        </div>
-
-                        {/* Progress Bar Container */}
-                        <div className="flex flex-col gap-1.5 w-full max-w-[300px] min-w-[200px]">
-                            <div className="w-full h-[6px] bg-bg-primary rounded-[3px] overflow-hidden">
+                                {/* Outer Glow Layer (counter-rotation) */}
                                 <div
-                                    className="h-full transition-all duration-300 ease-out rounded-[3px]"
+                                    className="absolute -inset-3 rounded-full blur-[20px] opacity-15 transition-opacity duration-150 group-hover:opacity-25"
                                     style={{
-                                        width: `${progress}%`,
-                                        backgroundColor: tierColor
+                                        background: `conic-gradient(from 180deg, ${nextTierColor} 0%, ${tierColor} 50%, ${nextTierColor} 100%)`,
+                                        animation: 'avatar-glow-counter 8s ease-in-out infinite'
                                     }}
                                 />
+
+                                {/* Inner Glow Layer (main rotation) */}
+                                <div
+                                    className="absolute -inset-1 rounded-full blur-[14px] opacity-25 transition-opacity duration-150 group-hover:opacity-40"
+                                    style={{
+                                        background: `conic-gradient(from 0deg, ${tierColor} 0%, ${nextTierColor} 30%, ${tierColor} 50%, ${nextTierColor} 70%, ${tierColor} 100%)`,
+                                        animation: 'avatar-glow-spin 6s ease-in-out infinite'
+                                    }}
+                                />
+                            </>
+                        )}
+
+                        {/* Avatar Container with Pulse */}
+                        <div
+                            className="w-[66px] h-[66px] rounded-full bg-bg-primary flex items-center justify-center text-sub text-2xl overflow-hidden relative shadow-sm border border-white/5 z-10 transition-transform duration-300 group-hover/avatar:scale-105"
+                            style={{
+                                animation: displayAvatar ? 'avatar-pulse 5s ease-in-out infinite' : 'none'
+                            }}
+                        >
+                            {displayAvatar ? (
+                                <img
+                                    src={displayAvatar}
+                                    alt={displayName}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <FontAwesomeIcon icon={getMappedIcon(displayIcon)} />
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Details */}
+                    <div className="flex flex-col gap-1 flex-1 min-w-0">
+                        <h2 className="text-[1.75rem] leading-none font-normal text-text-primary font-mono m-0 truncate cursor-default select-none">
+                            {displayName}
+                        </h2>
+
+                        {/* Level + Progress Row */}
+                        <div className="flex items-center gap-3 mt-4">
+                            {/* Level Number */}
+                            <div className="flex flex-col items-center leading-none">
+                                <span
+                                    className="text-[2rem] font-medium font-mono"
+                                    style={{ color: tierColor }}
+                                >
+                                    {level}
+                                </span>
+                                <span className="text-[9px] font-mono text-sub uppercase tracking-wider opacity-60 transition-all duration-300 group-hover:text-text-primary group-hover:opacity-100">Level</span>
                             </div>
-                            {/* XP Progress Value */}
-                            <div className="flex justify-between items-center text-[10px] font-mono text-sub leading-none w-full">
-                                <span className="opacity-70 transition-all duration-300 group-hover:text-text-primary group-hover:opacity-100">
-                                    {currentLevelXP} / 100 XP
-                                </span>
-                                <span className="opacity-50 transition-all duration-300 tracking-wide group-hover:text-text-primary group-hover:opacity-100">
-                                    {totalXP} Total
-                                </span>
+
+                            {/* Progress Bar Container */}
+                            <div className="flex flex-col gap-1.5 w-full max-w-[300px] min-w-[200px]">
+                                <div className="w-full h-[6px] bg-bg-primary rounded-[3px] overflow-hidden">
+                                    <div
+                                        className="h-full transition-all duration-300 ease-out rounded-[3px]"
+                                        style={{
+                                            width: `${progress}%`,
+                                            backgroundColor: tierColor
+                                        }}
+                                    />
+                                </div>
+                                {/* XP Progress Value */}
+                                <div className="flex justify-between items-center text-[10px] font-mono text-sub leading-none w-full">
+                                    <span className="opacity-70 transition-all duration-300 group-hover:text-text-primary group-hover:opacity-100">
+                                        {currentLevelXP} / 100 XP
+                                    </span>
+                                    <span className="opacity-50 transition-all duration-300 tracking-wide group-hover:text-text-primary group-hover:opacity-100">
+                                        {totalXP} Total
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div className="hidden md:block w-[8px] h-[80px] bg-text-primary opacity-5 rounded-full ml-6 shrink-0 transition-all duration-300"></div>
+
+                {/* Desktop Separator (Vertical) - inside the group for closer proximity */}
+                <div className="hidden md:block w-[6px] h-24 bg-text-primary opacity-5 rounded-full shrink-0"></div>
             </div>
+
+            {/* Weekly Focus Widget (Replaces simple separator) */}
+            <div className="hidden md:flex flex-col items-center justify-center px-6 shrink-0">
+                <WeeklyFocus />
+            </div>
+
 
             {/* Mobile Separator (Horizontal) */}
             <div className="w-full h-[6px] bg-text-primary opacity-5 rounded-full my-6 md:hidden shrink-0"></div>
@@ -250,6 +262,6 @@ export function UserProfile() {
                     </div>
                 </div>
             </div>
-        </Card>
+        </Card >
     );
 }

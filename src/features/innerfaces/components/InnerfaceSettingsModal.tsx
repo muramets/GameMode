@@ -26,7 +26,7 @@ interface InnerfaceSettingsModalProps {
 
 
 export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: InnerfaceSettingsModalProps) {
-    const { innerfaces, protocols, addInnerface, updateInnerface, deleteInnerface, groupsMetadata, updateGroupMetadata } = useMetadataStore();
+    const { innerfaces, protocols, addInnerface, updateInnerface, deleteInnerface, updateProtocol, groupsMetadata, updateGroupMetadata } = useMetadataStore();
     const { activeContext } = usePersonalityStore();
     const isCoachMode = activeContext?.type === 'viewer';
 
@@ -78,7 +78,12 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                 setColor(currentInnerface.color || 'var(--main-color)');
                 setIcon(currentInnerface.icon || 'brain');
                 setHover(currentInnerface.hover || '');
-                setProtocolIds((currentInnerface.protocolIds || []).map(String));
+                // Initialize from both sources (bidirectional safety)
+                const fromInnerface = (currentInnerface.protocolIds || []).map(String);
+                const fromProtocols = protocols
+                    .filter(p => p.targets?.some(t => t.toString() === currentInnerface.id.toString()))
+                    .map(p => p.id.toString());
+                setProtocolIds(Array.from(new Set([...fromInnerface, ...fromProtocols])));
                 setCategory(currentInnerface.category || null);
             } else {
                 setName('');
@@ -115,7 +120,37 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
             };
 
             if (innerfaceId && currentInnerface) {
+                // 1. Update Innerface (Main)
                 await updateInnerface(innerfaceId, innerfaceData);
+
+                // 2. Bidirectional Sync: Update Protocols
+                // We must ensure that for every protocol:
+                // - If it's in protocolIds -> it must have this Innerface in targets
+                // - If it's NOT in protocolIds -> it must NOT have this Innerface in targets
+
+                const finalProtocolIds = new Set(protocolIds.map(String));
+
+                // Batch updates (parallel)
+                const protocolUpdates = protocols.map(async (p) => {
+                    const isSelected = finalProtocolIds.has(p.id.toString());
+                    const currentTargets = (p.targets || []).map(String);
+                    const isLinked = currentTargets.includes(innerfaceId.toString());
+
+                    if (isSelected && !isLinked) {
+                        // Link: Add Innerface ID to Protocol targets
+                        await updateProtocol(p.id, {
+                            targets: [...(p.targets || []), innerfaceId]
+                        });
+                    } else if (!isSelected && isLinked) {
+                        // Unlink: Remove Innerface ID from Protocol targets
+                        await updateProtocol(p.id, {
+                            targets: (p.targets || []).filter(t => t.toString() !== innerfaceId.toString())
+                        });
+                    }
+                });
+
+                await Promise.all(protocolUpdates);
+
             } else {
                 await addInnerface(innerfaceData);
             }
@@ -245,10 +280,10 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                         {/* Live Preview Icon */}
                         <div
                             className={`w-12 h-12 flex items-center justify-center text-xl shrink-0 transition-all duration-300 ${category === 'foundation'
-                                    ? 'rounded-[30%_70%_70%_30%/30%_30%_70%_70%]' // Squircle for Foundations
-                                    : category === 'skill'
-                                        ? 'rounded-[50%]' // Circle for Skills (percentage for smooth morph)
-                                        : 'rounded-[20%]' // Rounded square for Uncategorized (percentage for smooth morph)
+                                ? 'rounded-[30%_70%_70%_30%/30%_30%_70%_70%]' // Squircle for Foundations
+                                : category === 'skill'
+                                    ? 'rounded-[50%]' // Circle for Skills (percentage for smooth morph)
+                                    : 'rounded-[20%]' // Rounded square for Uncategorized (percentage for smooth morph)
                                 }`}
                             style={{
                                 backgroundColor: `${color}33`,
@@ -719,7 +754,10 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                                         >
                                             <div className="flex flex-wrap gap-2 pt-1">
                                                 {groupedProtocols[groupName].map(protocol => {
-                                                    const isActive = protocolIds.some(id => id.toString() === protocol.id.toString());
+                                                    // Check both directions: innerface.protocolIds OR protocol.targets
+                                                    const fromInnerface = protocolIds.some(id => id.toString() === protocol.id.toString());
+                                                    const fromProtocol = protocol.targets?.some((t: string | number) => t.toString() === innerfaceId?.toString());
+                                                    const isActive = fromInnerface || fromProtocol;
                                                     const pColor = protocol.color || 'var(--text-primary)';
                                                     return (
                                                         <TooltipProvider key={protocol.id} delayDuration={300}>

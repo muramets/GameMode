@@ -122,7 +122,7 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                     const added = targets.filter(t => !currentTargets.has(t.toString()));
                     const removed = Array.from(currentTargets).filter(t => !newTargets.has(t));
 
-                    // Log additions
+                    // Log additions + Bidirectional Sync
                     for (const tid of added) {
                         const innerface = innerfaces.find(i => i.id.toString() === tid.toString());
                         if (innerface) {
@@ -132,7 +132,17 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                                     activePersonalityId,
                                     `Linked: ${title} ↔ ${innerface.name.split('.')[0]}`
                                 );
-                            } catch (e) { console.error("Failed to log system event", e); }
+
+                                // Bidirectional Sync: Add this protocol to innerface's protocolIds
+                                const currentProtocolIds = innerface.protocolIds || [];
+                                if (!currentProtocolIds.some(pid => pid.toString() === protocolId.toString())) {
+                                    const newProtocolIds = [...currentProtocolIds, protocolId.toString()];
+                                    await useMetadataStore.getState().updateInnerface(
+                                        innerface.id,
+                                        { protocolIds: newProtocolIds }
+                                    );
+                                }
+                            } catch (e) { console.error("Failed to sync/log system event", e); }
                         }
                     }
 

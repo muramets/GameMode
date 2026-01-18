@@ -1,11 +1,14 @@
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../../../components/ui/atoms/Card';
 import type { Innerface } from '../types';
 import { renderIcon } from '../../../utils/iconMapper';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCog, faHistory, faArrowUp, faArrowDown } from '@fortawesome/free-solid-svg-icons';
+import { faCog, faHistory, faArrowUp, faArrowDown, faBullseye } from '@fortawesome/free-solid-svg-icons';
+import { PlanningModal } from '../../planning/components/PlanningModal';
 import { getTierColor } from '../../../utils/colorUtils';
 import { calculateLevel, scoreToXP } from '../../../utils/xpUtils';
+import { usePlanningStore } from '../../../stores/planningStore';
 
 import { TruncatedTooltip } from '../../../components/ui/molecules/TruncatedTooltip';
 
@@ -17,6 +20,9 @@ interface InnerfaceCardProps {
 
 export function InnerfaceCard({ innerface, onEdit, forceHover }: InnerfaceCardProps) {
     const navigate = useNavigate();
+    const [isPlanningOpen, setIsPlanningOpen] = React.useState(false);
+    const goals = usePlanningStore(state => state.goals);
+    const hasGoal = Boolean(goals[innerface.id]);
 
     // XP Calculation
     const currentScore = innerface.currentScore || innerface.initialScore || 0;
@@ -92,21 +98,38 @@ export function InnerfaceCard({ innerface, onEdit, forceHover }: InnerfaceCardPr
 
             {/* Middle: Actions & Level Display */}
             <div className="relative z-10 mt-auto mb-3 flex items-end justify-between w-full">
-                {/* Left: Actions (Only visible on hover) */}
-                <div className={`flex flex-col gap-0 opacity-0 transition-opacity duration-300 ${forceHover ? 'opacity-100' : 'group-hover:opacity-100'}`}>
+                {/* Left: Actions */}
+                <div className="flex flex-col gap-0">
+                    {/* History - only on hover */}
                     <button
                         onClick={handleHistory}
-                        className="w-10 h-7 flex items-center justify-start text-sub hover:text-main transition-colors duration-200"
+                        className={`w-10 h-7 flex items-center justify-start text-sub hover:text-main transition-all duration-200 opacity-0 ${forceHover ? 'opacity-100' : 'group-hover:opacity-100'}`}
                         title="View History"
                     >
                         <FontAwesomeIcon icon={faHistory} className="text-xs" />
                     </button>
+                    {/* Settings - only on hover */}
                     <button
                         onClick={handleEdit}
-                        className="w-10 h-7 flex items-center justify-start text-sub hover:text-main transition-colors duration-200"
+                        className={`w-10 h-7 flex items-center justify-start text-sub hover:text-main transition-all duration-200 opacity-0 ${forceHover ? 'opacity-100' : 'group-hover:opacity-100'}`}
                         title="Settings"
                     >
                         <FontAwesomeIcon icon={faCog} className="text-xs" />
+                    </button>
+                    {/* Target - always visible when goal set, otherwise on hover */}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsPlanningOpen(true);
+                        }}
+                        className={`w-10 h-7 flex items-center justify-start transition-all duration-200 
+                            ${hasGoal
+                                ? 'opacity-100 text-main hover:text-white'
+                                : `opacity-0 text-sub hover:text-main ${forceHover ? 'opacity-100' : 'group-hover:opacity-100'}`
+                            }`}
+                        title={hasGoal ? "View Goal" : "Set Goal"}
+                    >
+                        <FontAwesomeIcon icon={faBullseye} className="text-xs" />
                     </button>
                 </div>
 
@@ -150,6 +173,12 @@ export function InnerfaceCard({ innerface, onEdit, forceHover }: InnerfaceCardPr
                     <span>{totalXP} Total</span>
                 </div>
             </div>
+
+            <PlanningModal
+                innerface={innerface}
+                isOpen={isPlanningOpen}
+                onClose={() => setIsPlanningOpen(false)}
+            />
         </Card>
     );
 }
