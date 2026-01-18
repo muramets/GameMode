@@ -28,11 +28,11 @@ export function WeeklyFocus() {
     );
 
     return (
-        <div className="flex flex-col items-center gap-3 animate-fade-in cursor-default select-none">
+        <div className="flex flex-col items-start gap-3 animate-fade-in cursor-default select-none min-h-[160px] justify-center">
             <span className="text-[10px] font-mono text-sub uppercase tracking-widest opacity-60">
                 Weekly Focus
             </span>
-            <div className="flex flex-col gap-2 w-full max-w-[200px] min-h-[148px]"> {/* Fixed min-height to prevent layout jump */}
+            <div className={`flex flex-col gap-2 w-full max-w-[200px] transition-all duration-300 ${totalPages > 1 ? 'min-h-[148px]' : ''} justify-center`}>
                 {displayedItems.map(({ protocol, planned, completed, bonus, isCapped, isLowFrequency, periodLabel, realTarget }) => {
                     const isComplete = completed >= planned;
                     const dots = getProgressDots(planned, completed, 5);
@@ -168,14 +168,14 @@ export function WeeklyFocus() {
 
             {/* Pagination Dots */}
             {totalPages > 1 && (
-                <div className="flex gap-1.5 mt-1">
+                <div className="flex gap-1.5 mt-1 self-center">
                     {Array.from({ length: totalPages }).map((_, i) => (
                         <button
                             key={i}
                             onClick={() => setCurrentPage(i)}
                             className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${i === currentPage
-                                    ? 'bg-main scale-125'
-                                    : 'bg-white/10 hover:bg-white/20'
+                                ? 'bg-main scale-125'
+                                : 'bg-white/10 hover:bg-white/20'
                                 }`}
                         />
                     ))}

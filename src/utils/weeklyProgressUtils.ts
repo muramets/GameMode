@@ -173,16 +173,21 @@ export function getWeeklyProgress(
     // Sort:
     // 1. Highest Planned Count first (Prioritize high volume goals as requested)
     // 2. Then by Remaining Count (Incomplete first)
-    return progress.sort((a, b) => {
-        // Primary: Planned count desc
-        if (b.planned !== a.planned) {
-            return b.planned - a.planned;
-        }
-        // Secondary: Remaining desc
-        const remainingA = Math.max(0, a.planned - a.completed);
-        const remainingB = Math.max(0, b.planned - b.completed);
-        return remainingB - remainingA;
-    });
+    // Sort:
+    // 1. Highest Planned Count first (Prioritize high volume goals as requested)
+    // 2. Then by Remaining Count (Incomplete first)
+    return progress
+        .filter(p => p.planned > 0)
+        .sort((a, b) => {
+            // Primary: Planned count desc
+            if (b.planned !== a.planned) {
+                return b.planned - a.planned;
+            }
+            // Secondary: Remaining desc
+            const remainingA = Math.max(0, a.planned - a.completed);
+            const remainingB = Math.max(0, b.planned - b.completed);
+            return remainingB - remainingA;
+        });
 }
 
 /**
