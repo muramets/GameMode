@@ -9,7 +9,6 @@ import { ColorPicker } from '../ui/molecules/ColorPicker';
 import { IconPicker } from '../ui/molecules/IconPicker';
 import { EntitySelector } from '../ui/organisms/EntitySelector';
 import { renderIcon } from '../../utils/iconMapper';
-import * as Tabs from '@radix-ui/react-tabs';
 
 interface StateSettingsModalProps {
     isOpen: boolean;
@@ -36,8 +35,7 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
         description, setDescription,
         icon, setIcon,
         color, setColor,
-        innerfaceIds,
-        protocolIds
+        innerfaceIds
     } = formState;
 
     const {
@@ -45,8 +43,8 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
         isConfirmingDelete
     } = uiState;
 
-    const { innerfaces, protocols } = data;
-    const { handleSubmit, handleDelete, toggleInnerface, toggleProtocol } = handlers;
+    const { innerfaces } = data;
+    const { handleSubmit, handleDelete, toggleInnerface } = handlers;
 
     // Prepare items for EntitySelector
     const innerfaceItems = innerfaces.map(i => ({
@@ -58,17 +56,7 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
         color: i.color
     }));
 
-    const protocolItems = protocols.map(p => ({
-        id: p.id,
-        title: p.title,
-        description: p.description,
-        group: p.group || 'ungrouped',
-        icon: renderIcon(p.icon),
-        color: p.color
-    }));
-
     const innerfaceIdsSet = new Set(innerfaceIds.map(id => id.toString()));
-    const protocolIdsSet = new Set(protocolIds.map(id => id.toString()));
 
     return (
         <Modal
@@ -139,66 +127,40 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
                 </div>
 
                 <div className="flex gap-4">
-                    <div className="w-[100px] flex flex-col gap-1.5 relative">
+                    <div className="flex-1 flex flex-col gap-1.5 relative">
                         <InputLabel label="Color" />
                         <ColorPicker
                             color={color}
                             onChange={setColor}
+                            width="w-full"
+                            height="h-[42px]"
                         />
                     </div>
 
-                    <div className="w-[100px] flex flex-col gap-1.5 relative">
+                    <div className="flex-1 flex flex-col gap-1.5 relative">
                         <InputLabel label="Icon" />
                         <IconPicker
                             icon={icon}
                             onChange={setIcon}
                             color={color}
+                            width="w-full"
+                            height="h-[42px]"
                         />
                     </div>
                 </div>
 
                 {/* Composition Area */}
                 <div className="flex flex-col gap-2">
-                    <InputLabel label="Composition" />
+                    <InputLabel label="Composition (Powers)" />
 
-                    <Tabs.Root defaultValue="innerfaces" className="flex flex-col gap-4">
-                        <Tabs.List className="flex gap-2 p-1 bg-sub-alt/50 rounded-lg border border-white/5">
-                            <Tabs.Trigger
-                                value="innerfaces"
-                                className="flex-1 px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-sub rounded-md transition-all data-[state=active]:bg-main data-[state=active]:text-bg-primary data-[state=active]:font-bold data-[state=active]:shadow-lg hover:text-text-primary outline-none"
-                            >
-                                Powers
-                            </Tabs.Trigger>
-                            <Tabs.Trigger
-                                value="protocols"
-                                className="flex-1 px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-sub rounded-md transition-all data-[state=active]:bg-main data-[state=active]:text-bg-primary data-[state=active]:font-bold data-[state=active]:shadow-lg hover:text-text-primary outline-none"
-                            >
-                                Actions
-                            </Tabs.Trigger>
-                        </Tabs.List>
-
-                        <Tabs.Content value="innerfaces" className="outline-none">
-                            <EntitySelector
-                                items={innerfaceItems}
-                                selectedIds={innerfaceIdsSet}
-                                onToggle={toggleInnerface}
-                                searchPlaceholder="Search powers..."
-                                emptyMessage="No powers found"
-                                height="h-[300px]"
-                            />
-                        </Tabs.Content>
-
-                        <Tabs.Content value="protocols" className="outline-none">
-                            <EntitySelector
-                                items={protocolItems}
-                                selectedIds={protocolIdsSet}
-                                onToggle={toggleProtocol}
-                                searchPlaceholder="Search actions..."
-                                emptyMessage="No actions found"
-                                height="h-[300px]"
-                            />
-                        </Tabs.Content>
-                    </Tabs.Root>
+                    <EntitySelector
+                        items={innerfaceItems}
+                        selectedIds={innerfaceIdsSet}
+                        onToggle={toggleInnerface}
+                        searchPlaceholder="Search powers..."
+                        emptyMessage="Created powers will be visible here"
+                        height="h-[300px]"
+                    />
                 </div>
             </div>
         </Modal>

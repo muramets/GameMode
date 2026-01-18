@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import type { User } from "firebase/auth";
-import { auth } from "../config/firebase";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { auth, db } from "../config/firebase";
 import { AuthContext } from "./AuthContext";
-
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
@@ -20,7 +20,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const signInWithGoogle = async () => {
         try {
             const provider = new GoogleAuthProvider();
-            await signInWithPopup(auth, provider);
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+
+            // Ensure the user document exists in Firestore
+            // This prevents "phantom" (italicized) documents when only subcollections exist
+            const userRef = doc(db, "users", user.uid);
+            const userSnap = await getDoc(userRef);
+
+            if (!userSnap.exists()) {
+                await setDoc(userRef, {
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: user.displayName,
+                    photoURL: user.photoURL,
+                    createdAt: serverTimestamp(),
+                    lastLogin: serverTimestamp()
+                });
+            } else {
+                // Update last login if user already exists
+                await setDoc(userRef, {
+                    lastLogin: serverTimestamp()
+                }, { merge: true });
+            }
         } catch (error) {
             console.error("Error signing in with Google", error);
             throw error;

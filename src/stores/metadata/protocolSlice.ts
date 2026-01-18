@@ -73,6 +73,18 @@ export const createProtocolSlice = (
         }
     },
 
+    restoreProtocol: async (protocol: Protocol) => {
+        try {
+            const context = get().context;
+            guardAgainstViewerMode(context);
+            const docRef = doc(db, `${getPathRoot(context)}/protocols/${protocol.id}`);
+            await setDoc(docRef, protocol);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            showErrorToast(message);
+        }
+    },
+
     togglePinnedProtocol: async (protocolId: string) => {
         try {
             const context = get().context;

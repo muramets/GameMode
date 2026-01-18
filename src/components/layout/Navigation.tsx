@@ -123,7 +123,6 @@ export function Navigation() {
                             bg-transparent z-10 border-none
                             font-mono text-xs leading-none
                             ${isActive('/history') ? 'text-main' : 'text-sub hover:text-text-primary'}
-                            transition-all duration-300 ease-out
                         `}
                         style={{
                             width: (isInnerfacesExpanded || isActive('/history')) ? 'auto' : '0px',
@@ -132,6 +131,7 @@ export function Navigation() {
                             opacity: (isInnerfacesExpanded || isActive('/history')) ? 1 : 0,
                             transform: (isInnerfacesExpanded || isActive('/history')) ? 'translateX(0)' : 'translateX(-10px)',
                             pointerEvents: (isInnerfacesExpanded || isActive('/history')) ? 'auto' : 'none',
+                            transition: 'opacity 300ms ease-in-out 100ms, transform 300ms ease-in-out 100ms',
                         }}
                     >
                         <Clock
@@ -145,13 +145,13 @@ export function Navigation() {
                     <div
                         className={`
                             absolute top-0 left-[85%] h-full bg-sub-alt rounded-r-lg
-                            transition-all duration-300 ease-out
                             z-0 shadow-sm
                         `}
                         style={{
-                            width: (isInnerfacesExpanded || isActive('/history')) ? '120px' : '0px',
-                            opacity: (isInnerfacesExpanded || isActive('/history')) ? 1 : 0,
-                            visibility: (isInnerfacesExpanded || isActive('/history')) ? 'visible' : 'hidden'
+                            width: '120px',
+                            transformOrigin: 'left',
+                            transform: (isInnerfacesExpanded || isActive('/history')) ? 'scaleX(1)' : 'scaleX(0)',
+                            transition: 'transform 300ms ease-in-out',
                         }}
                     />
                 </div>

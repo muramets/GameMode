@@ -42,23 +42,29 @@ export function AddQuickActionModal({ isOpen, onClose }: AddQuickActionModalProp
                 <p className="text-sm text-sub font-mono -mt-2 mb-4">Pin your most used actions for quick access.</p>
 
                 {/* Search */}
-                <div className="sticky top-0 z-10 bg-bg-primary pt-1 pb-3">
-                    <Input
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search actions..."
-                        icon={faSearch}
-                        fullWidth
-                        autoFocus
-                        className="!bg-transparent !border-sub-alt/20 focus:!border-sub-alt/50"
-                    />
-                </div>
+                {protocols.length > 0 && (
+                    <div className="sticky top-0 z-10 bg-bg-primary pt-1 pb-3">
+                        <Input
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search actions..."
+                            icon={faSearch}
+                            fullWidth
+                            autoFocus
+                            className="!bg-transparent !border-sub-alt/20 focus:!border-sub-alt/50"
+                        />
+                    </div>
+                )}
 
                 {/* List */}
                 <div className="overflow-y-auto flex-1 space-y-4 custom-scrollbar pr-1 pb-2">
-                    {filteredProtocols.length === 0 ? (
+                    {protocols.length === 0 ? (
+                        <div className="h-full flex items-center justify-center text-sub/50 font-mono text-xs">
+                            Created actions will appear here
+                        </div>
+                    ) : filteredProtocols.length === 0 ? (
                         <div className="py-12 text-center text-sub/50 font-mono text-xs italic">
-                            No protocols found matching "{searchQuery}"
+                            No matching actions found
                         </div>
                     ) : (
                         (() => {

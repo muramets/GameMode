@@ -20,21 +20,23 @@ export interface MetadataState {
     context: PathContext | null;
     setContext: (context: PathContext | null) => void;
 
-    // --- Actions (Copied from original store) ---
     // Innerfaces
     addInnerface: (innerface: Omit<Innerface, 'id'>) => Promise<void>;
     updateInnerface: (id: number | string, data: Partial<Innerface>) => Promise<void>;
     deleteInnerface: (id: number | string) => Promise<void>;
+    restoreInnerface: (innerface: Innerface) => Promise<void>;
 
     // Protocols
     addProtocol: (protocol: Omit<Protocol, 'id'>) => Promise<void>;
     updateProtocol: (id: number | string, data: Partial<Protocol>) => Promise<void>;
     deleteProtocol: (id: number | string) => Promise<void>;
+    restoreProtocol: (protocol: Protocol) => Promise<void>;
 
     // States
     addState: (state: Omit<StateData, 'id'>) => Promise<void>;
     updateState: (id: string, data: Partial<StateData>) => Promise<void>;
     deleteState: (id: string) => Promise<void>;
+    restoreState: (state: StateData) => Promise<void>;
 
     // Group Actions
     updateGroupMetadata: (groupName: string, metadata: { icon?: string; color?: string }) => Promise<void>;

@@ -36,13 +36,13 @@ export function Modal({ isOpen, onClose, title, children, footer, onSubmit, clas
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-bg-primary/60 backdrop-blur-[4px] animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in">
             <div
                 ref={overlayRef}
                 className="absolute inset-0 transition-opacity"
                 onClick={onClose}
             />
-            <div className={`relative bg-bg-primary/95 backdrop-blur-2xl border border-white/5 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] w-full max-w-md overflow-hidden animate-slide-in-bottom ${className}`}>
+            <div className={`relative bg-bg-primary/95 backdrop-blur-2xl border border-white/5 rounded-2xl shadow-xl w-full max-w-md overflow-hidden ${className}`}>
                 <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
                     <h2 className="text-xs font-mono font-bold uppercase tracking-widest text-text-primary opacity-90">{title}</h2>
                     <button

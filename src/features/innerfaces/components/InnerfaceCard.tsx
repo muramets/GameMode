@@ -2,13 +2,13 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../../../components/ui/atoms/Card';
 import type { Innerface } from '../types';
-import { renderIcon } from '../../../utils/iconMapper';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog, faHistory, faArrowUp, faArrowDown, faBullseye } from '@fortawesome/free-solid-svg-icons';
 import { PlanningModal } from '../../planning/components/PlanningModal';
 import { getTierColor } from '../../../utils/colorUtils';
 import { calculateLevel, scoreToXP } from '../../../utils/xpUtils';
 import { usePlanningStore } from '../../../stores/planningStore';
+import { PowerIcon } from './PowerIcon';
 
 import { TruncatedTooltip } from '../../../components/ui/molecules/TruncatedTooltip';
 
@@ -62,21 +62,13 @@ export function InnerfaceCard({ innerface, onEdit, forceHover }: InnerfaceCardPr
             <div className="flex items-start justify-between relative z-10 w-full mb-1">
                 <div className="flex items-start gap-3 w-full pr-1">
                     {/* Icon */}
-                    <div
-                        className={`w-10 h-10 flex items-center justify-center text-lg shrink-0 transition-all duration-300 ${forceHover ? 'scale-105' : 'group-hover:scale-105'} ${innerface.category === 'foundation'
-                            ? 'rounded-[30%_70%_70%_30%/30%_30%_70%_70%]' // Squircle for Foundations
-                            : innerface.category === 'skill'
-                                ? 'rounded-[50%]' // Circle for Skills
-                                : 'rounded-[20%]' // Rounded square for Uncategorized
-                            }`}
-                        style={{
-                            backgroundColor: `${innerface.color || '#ffffff'}33`,
-                            color: innerface.color || '#ffffff',
-                            boxShadow: `0 0 15px ${innerface.color || '#ffffff'}15`
-                        }}
-                    >
-                        {renderIcon(innerface.icon)}
-                    </div>
+                    <PowerIcon
+                        icon={innerface.icon}
+                        color={innerface.color}
+                        category={innerface.category}
+                        size="w-10 h-10"
+                        className={`transition-all duration-300 ${forceHover ? 'scale-105' : 'group-hover:scale-105'}`}
+                    />
 
                     {/* Title */}
                     <div className="flex flex-col min-w-0 pt-0.5 flex-1 pr-2">

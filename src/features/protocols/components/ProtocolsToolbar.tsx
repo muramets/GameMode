@@ -1,7 +1,7 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faSearch } from '@fortawesome/free-solid-svg-icons';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../../components/ui/atoms/Tooltip';
-import { ProtocolsSearch } from './ProtocolsSearch';
+import { Input } from '../../../components/ui/molecules/Input';
 import { ProtocolsFilterDropdown } from './ProtocolsFilterDropdown';
 
 interface ProtocolsToolbarProps {
@@ -11,6 +11,7 @@ interface ProtocolsToolbarProps {
     activeFilters: string[];
     protocolGroups: string[];
     onToggleFilter: (filter: string) => void;
+    shouldShowSearch?: boolean;
 }
 
 /**
@@ -32,6 +33,7 @@ export function ProtocolsToolbar({
     activeFilters,
     protocolGroups,
     onToggleFilter,
+    shouldShowSearch = true,
 }: ProtocolsToolbarProps) {
     return (
         <div className="flex items-center gap-2 w-full md:w-auto">
@@ -62,7 +64,17 @@ export function ProtocolsToolbar({
             </div>
 
             {/* Поле поиска */}
-            <ProtocolsSearch searchQuery={searchQuery} onSearchChange={onSearchChange} />
+            {shouldShowSearch && (
+                <div className="flex-grow md:flex-grow-0 ml-1">
+                    <Input
+                        icon={faSearch}
+                        placeholder="Search actions..."
+                        value={searchQuery}
+                        onChange={(e) => onSearchChange(e.target.value)}
+                        className="md:w-64"
+                    />
+                </div>
+            )}
         </div>
     );
 }

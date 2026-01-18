@@ -3,6 +3,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useMetadataStore } from '../../../stores/metadataStore';
 import { usePersonalityStore } from '../../../stores/personalityStore';
 import { useHistoryStore } from '../../../stores/historyStore';
+import { useUIStore } from '../../../stores/uiStore';
 import { GROUP_CONFIG } from '../../../constants/common';
 
 interface UseProtocolFormProps {
@@ -20,9 +21,11 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
         addProtocol,
         updateProtocol,
         deleteProtocol,
+        restoreProtocol,
         updateGroupMetadata
     } = useMetadataStore();
     const { activePersonalityId } = usePersonalityStore();
+    const { showToast } = useUIStore();
 
     // Form State
     const [title, setTitle] = useState('');
@@ -168,8 +171,25 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
             return;
         }
 
-        await deleteProtocol(protocolId);
+        // Save protocol copy for undo
+        const protocolCopy = protocols.find(p => p.id === protocolId);
+        if (!protocolCopy) return;
+
+        // ✨ Instant close
         onClose();
+
+        // Delete protocol
+        await deleteProtocol(protocolId);
+
+        // Show undo toast
+        showToast(
+            'Action deleted',
+            'success',
+            'Undo',
+            async () => {
+                await restoreProtocol(protocolCopy);
+            }
+        );
     };
 
     const availableGroups = useMemo(() => {

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import type { Innerface } from '../../innerfaces/types';
 import { MonkeyTypeLoader } from '../../../components/ui/molecules/MonkeyTypeLoader';
 import { ProtocolSettingsModal } from '../../../components/modals/ProtocolSettingsModal';
@@ -15,6 +15,7 @@ import { useProtocolDnD } from '../hooks/useProtocolDnD';
 // New refactored hooks
 import { useProtocolsFiltering } from '../hooks/useProtocolsFiltering';
 import { useProtocolsGrouping } from '../hooks/useProtocolsGrouping';
+import { useConditionalSearch } from '../../../hooks/useConditionalSearch';
 // New refactored components
 import { ProtocolsToolbar } from './ProtocolsToolbar';
 import { ProtocolsContent } from './ProtocolsContent';
@@ -46,6 +47,10 @@ export function ProtocolsList() {
 
     // Collapsed Groups Persistence
     const { isGroupCollapsed, toggleGroup } = useCollapsedGroups('protocols-collapsed-groups', false);
+
+    // Content ref for conditional search
+    const contentRef = useRef<HTMLDivElement>(null);
+    const { shouldShowSearch } = useConditionalSearch(contentRef);
 
     // 1. Data Processing - Create innerface lookup map
     const innerfaceMap = useMemo(() => {
@@ -135,7 +140,7 @@ export function ProtocolsList() {
                     <div>
                         <h1 className="text-2xl font-lexend text-text-primary">Actions</h1>
                         <p className="text-text-secondary font-mono text-sm mt-1">
-                            Manage your routine actions and their impact.
+                            Complete actions and watch your powers grow
                         </p>
                     </div>
 
@@ -150,6 +155,7 @@ export function ProtocolsList() {
                         activeFilters={activeFilters}
                         protocolGroups={protocolGroups as string[]}
                         onToggleFilter={toggleFilter}
+                        shouldShowSearch={shouldShowSearch}
                     />
                 </div>
 
@@ -170,20 +176,31 @@ export function ProtocolsList() {
                 <MonkeyTypeLoader />
             ) : filteredProtocols.length === 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    <button
-                        onClick={() => { setSelectedProtocolId(null); setIsModalOpen(true); }}
-                        className="w-full min-h-[72px] border border-dashed border-sub/30 hover:border-sub rounded-xl flex flex-col items-center justify-center gap-2 text-sub hover:text-text-primary transition-all duration-200 group bg-sub-alt/5 hover:bg-sub-alt/10"
-                    >
-                        <div className="w-10 h-10 rounded-full bg-sub/10 group-hover:bg-sub/20 flex items-center justify-center transition-colors">
-                            <FontAwesomeIcon icon={faPlus} className="text-lg" />
+                    {protocols.length === 0 ? (
+                        <button
+                            onClick={() => { setSelectedProtocolId(null); setIsModalOpen(true); }}
+                            className="w-full min-h-[72px] border border-dashed border-sub/30 hover:border-sub rounded-xl flex flex-col items-center justify-center gap-3 text-sub hover:text-text-primary transition-all duration-200 group bg-sub-alt/5 hover:bg-sub-alt/10 py-6"
+                        >
+                            <FontAwesomeIcon icon={faPlus} className="text-2xl" />
+                            <span className="font-mono text-xs">Add your first action</span>
+                        </button>
+                    ) : (
+                        <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+                            <span className="font-mono text-sm text-sub">No actions matching your filter</span>
+                            <button
+                                onClick={() => toggleFilter('all')}
+                                className="mt-3 font-mono text-xs text-main hover:text-text-primary transition-colors"
+                            >
+                                Clear filters
+                            </button>
                         </div>
-                        <span className="font-mono text-sm">Add your first action</span>
-                    </button>
+                    )}
                 </div>
             ) : (
                 <>
                     {/* Protocols content with DnD */}
                     <ProtocolsContent
+                        ref={contentRef}
                         groupedProtocols={groupedProtocols}
                         innerfaces={innerfaces}
                         isDragEnabled={isDragEnabled}

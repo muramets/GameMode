@@ -85,6 +85,18 @@ export const createInnerfaceSlice = (
         }
     },
 
+    restoreInnerface: async (innerface: Innerface) => {
+        try {
+            const context = get().context;
+            guardAgainstViewerMode(context);
+            const docRef = doc(db, `${getPathRoot(context)}/innerfaces/${innerface.id}`);
+            await setDoc(docRef, innerface);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            showErrorToast(message);
+        }
+    },
+
     moveInnerface: async (id: string, newGroup: string, orderedIds: string[]) => {
         try {
             const context = get().context;

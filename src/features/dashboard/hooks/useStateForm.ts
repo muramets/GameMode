@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useMetadataStore } from '../../../stores/metadataStore';
 import { usePersonalityStore } from '../../../stores/personalityStore';
+import { useUIStore } from '../../../stores/uiStore';
 
 interface UseStateFormProps {
     stateId?: string | null;
@@ -11,13 +12,14 @@ interface UseStateFormProps {
 
 export function useStateForm({ stateId, onClose, isOpen }: UseStateFormProps) {
     const { user } = useAuth();
-    const { states, innerfaces, protocols, addState, updateState, deleteState } = useMetadataStore();
+    const { states, innerfaces, protocols, addState, updateState, deleteState, restoreState } = useMetadataStore();
     const { activePersonalityId } = usePersonalityStore();
+    const { showToast } = useUIStore();
 
     // Form State
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [icon, setIcon] = useState('🔥');
+    const [icon, setIcon] = useState('harmony');
     const [color, setColor] = useState('#ca4754');
     const [innerfaceIds, setInnerfaceIds] = useState<(string | number)[]>([]);
     const [protocolIds, setProtocolIds] = useState<(string | number)[]>([]);
@@ -33,7 +35,7 @@ export function useStateForm({ stateId, onClose, isOpen }: UseStateFormProps) {
             if (state) {
                 setName(state.name);
                 setDescription(state.description || '');
-                setIcon(state.icon || '🔥');
+                setIcon(state.icon || 'harmony');
                 setColor(state.color || '#ca4754');
                 setInnerfaceIds(state.innerfaceIds || []);
                 setProtocolIds(state.protocolIds || []);
@@ -42,7 +44,7 @@ export function useStateForm({ stateId, onClose, isOpen }: UseStateFormProps) {
             // Reset for new
             setName('');
             setDescription('');
-            setIcon('🔥');
+            setIcon('harmony');
             setColor('#ca4754');
             setInnerfaceIds([]);
             setProtocolIds([]);
@@ -87,14 +89,28 @@ export function useStateForm({ stateId, onClose, isOpen }: UseStateFormProps) {
             return;
         }
 
-        setIsSubmitting(true);
+        // Save state copy for undo
+        const stateCopy = states.find(s => s.id === stateId);
+        if (!stateCopy) return;
+
+        // ✨ Instant close
+        onClose();
+
+        // Delete state
         try {
             await deleteState(stateId);
-            onClose();
+
+            // Show undo toast
+            showToast(
+                'Dimension deleted',
+                'success',
+                'Undo',
+                async () => {
+                    await restoreState(stateCopy);
+                }
+            );
         } catch (error) {
             console.error('Failed to delete state:', error);
-        } finally {
-            setIsSubmitting(false);
         }
     };
 

@@ -9,6 +9,7 @@ import { IconPicker } from '../ui/molecules/IconPicker';
 import { EntitySelector } from '../ui/organisms/EntitySelector';
 import { renderIcon } from '../../utils/iconMapper';
 import { InnerfaceGroupSelector } from '../../features/innerfaces/components/InnerfaceGroupSelector';
+import { PowerIcon } from '../../features/innerfaces/components/PowerIcon';
 
 interface InnerfaceSettingsModalProps {
     isOpen: boolean;
@@ -133,26 +134,39 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                     />
                 </div>
 
+                {/* Color & Icon Selectors */}
+                <div className="flex gap-4">
+                    <div className="flex-1 flex flex-col gap-1.5 relative">
+                        <InputLabel label="Color" />
+                        <ColorPicker
+                            color={color}
+                            onChange={setColor}
+                            width="w-full"
+                        />
+                    </div>
+
+                    <div className="flex-1 flex flex-col gap-1.5 relative">
+                        <InputLabel label="Icon" />
+                        <IconPicker
+                            icon={icon}
+                            onChange={setIcon}
+                            color={color}
+                            width="w-full"
+                        />
+                    </div>
+                </div>
+
                 {/* Category Selector */}
                 <div className="flex flex-col gap-1.5">
                     <InputLabel label="Category (Optional)" />
                     <div className="flex items-center gap-3">
                         {/* Live Preview Icon */}
-                        <div
-                            className={`w-12 h-12 flex items-center justify-center text-xl shrink-0 transition-all duration-300 ${category === 'foundation'
-                                ? 'rounded-[30%_70%_70%_30%/30%_30%_70%_70%]' // Squircle for Foundations
-                                : category === 'skill'
-                                    ? 'rounded-[50%]' // Circle for Skills
-                                    : 'rounded-[20%]' // Rounded square for Uncategorized
-                                }`}
-                            style={{
-                                backgroundColor: `${color}33`,
-                                color: color,
-                                boxShadow: `0 0 15px ${color}15`
-                            }}
-                        >
-                            {renderIcon(icon)}
-                        </div>
+                        <PowerIcon
+                            icon={icon}
+                            color={color}
+                            category={category}
+                            size="w-12 h-12 text-xl"
+                        />
 
                         {/* Category Buttons */}
                         <div className="flex-1 bg-sub-alt rounded-lg p-1 flex gap-1">
@@ -218,22 +232,6 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                         />
                     </div>
 
-                    <div className="w-[100px] flex flex-col gap-1.5 relative">
-                        <InputLabel label="Color" />
-                        <ColorPicker
-                            color={color}
-                            onChange={setColor}
-                        />
-                    </div>
-
-                    <div className="w-[100px] flex flex-col gap-1.5 relative">
-                        <InputLabel label="Icon" />
-                        <IconPicker
-                            icon={icon}
-                            onChange={setIcon}
-                            color={color}
-                        />
-                    </div>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
@@ -253,7 +251,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                         selectedIds={protocolIdsSet}
                         onToggle={toggleProtocol}
                         searchPlaceholder="Search actions..."
-                        emptyMessage="No actions found"
+                        emptyMessage="Created actions will be visible here"
                         height="h-[300px]"
                     />
                 </div>

@@ -142,6 +142,28 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                     />
                 </div>
 
+                <div className="flex gap-4">
+                    <div className="flex-1 flex flex-col gap-1.5 relative">
+                        <InputLabel label="Color" />
+                        <ColorPicker
+                            color={color}
+                            onChange={setColor}
+                            width="w-full"
+                            height="h-[42px]"
+                        />
+                    </div>
+                    <div className="flex-1 flex flex-col gap-1.5 relative">
+                        <InputLabel label="Icon" />
+                        <IconPicker
+                            icon={icon}
+                            onChange={setIcon}
+                            color={color}
+                            width="w-full"
+                            height="h-[42px]"
+                        />
+                    </div>
+                </div>
+
                 <div className="flex flex-col gap-1.5">
                     <InputLabel label="Quick Note" />
                     <Input
@@ -164,32 +186,6 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                 <div className="flex flex-col gap-5">
                     {/* XP Reward Selector */}
                     <ProtocolXpSelector xp={xp} onChange={setXp} />
-
-                    {/* Style Row (Color & Icon) */}
-                    <div className="flex gap-4">
-                        {/* Color */}
-                        <div className="w-[80px] flex flex-col gap-1.5 relative">
-                            <InputLabel label="Color" />
-                            <ColorPicker
-                                color={color}
-                                onChange={setColor}
-                                width="w-full"
-                                height="h-[42px]"
-                            />
-                        </div>
-
-                        {/* Icon */}
-                        <div className="w-[80px] flex flex-col gap-1.5 relative">
-                            <InputLabel label="Icon" />
-                            <IconPicker
-                                icon={icon}
-                                onChange={setIcon}
-                                color={color}
-                                width="w-full"
-                                height="h-[42px]"
-                            />
-                        </div>
-                    </div>
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -199,7 +195,7 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                         selectedIds={new Set(targets.map(t => t.toString()))}
                         onToggle={onToggleTarget}
                         searchPlaceholder="Search powers..."
-                        emptyMessage="No innerfaces found"
+                        emptyMessage="Created powers will be visible here"
                         height="h-[300px]"
                     />
                 </div>

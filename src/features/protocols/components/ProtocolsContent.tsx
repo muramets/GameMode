@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import { DndContext, closestCenter, DragOverlay, type SensorDescriptor, type DragStartEvent, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { ProtocolGroup } from './ProtocolGroup';
@@ -45,7 +46,7 @@ interface ProtocolsContentProps {
  * - Можно перетаскивать протоколы внутри одной группы
  * - DnD отключается при активном поиске или фильтре
  */
-export function ProtocolsContent({
+export const ProtocolsContent = forwardRef<HTMLDivElement, ProtocolsContentProps>(function ProtocolsContent({
     groupedProtocols,
     innerfaces,
     isDragEnabled,
@@ -62,7 +63,7 @@ export function ProtocolsContent({
     handleDragStart,
     handleDragEnd,
     interactionValue,
-}: ProtocolsContentProps) {
+}, ref) {
     return (
         <InteractionContext.Provider value={interactionValue}>
             <DndContext
@@ -80,7 +81,7 @@ export function ProtocolsContent({
                     }
                 `}</style>
 
-                <div className="flex flex-col gap-8 pb-20">
+                <div ref={ref} className="flex flex-col gap-8 pb-20">
                     {/* SortableContext для групп (позволяет менять порядок групп) */}
                     <SortableContext
                         items={groupedProtocols.map(([name]) => `group-${name}`)}
@@ -107,6 +108,7 @@ export function ProtocolsContent({
                                     isCollapsed={isGroupCollapsed(groupName)}
                                     onToggleCollapse={() => toggleGroup(groupName)}
                                     isReadOnly={isReadOnly}
+                                    hideHeader={groupedProtocols.length === 1 && groupName === 'ungrouped'}
                                 />
                             );
                         })}
@@ -132,4 +134,4 @@ export function ProtocolsContent({
             </DndContext>
         </InteractionContext.Provider>
     );
-}
+});

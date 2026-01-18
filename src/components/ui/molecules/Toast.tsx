@@ -9,6 +9,8 @@ interface ToastProps {
     duration?: number;
     onClose: () => void;
     type?: 'success' | 'error';
+    actionLabel?: string;
+    onAction?: () => void;
 }
 
 export function Toast({
@@ -17,7 +19,11 @@ export function Toast({
     duration = 5000,
     onClose,
     type = 'success',
+    actionLabel,
+    onAction,
 }: ToastProps) {
+    // Increase duration if action button present
+    const effectiveDuration = actionLabel && onAction ? 7000 : duration;
     const [shouldRender, setShouldRender] = useState(false);
     const [animationClass, setAnimationClass] = useState('');
 
@@ -30,7 +36,7 @@ export function Toast({
 
             const timer = setTimeout(() => {
                 onClose();
-            }, duration);
+            }, effectiveDuration);
             return () => clearTimeout(timer);
         } else if (shouldRender) {
             setTimeout(() => setAnimationClass('animate-fade-out-down'), 0);
@@ -39,12 +45,21 @@ export function Toast({
             }, 300);
             return () => clearTimeout(timer);
         }
-    }, [isVisible, duration, onClose, shouldRender]);
+    }, [isVisible, effectiveDuration, onClose, shouldRender]);
 
     if (!shouldRender) return null;
 
     const bgColor = type === 'success' ? 'bg-correct' : 'bg-error';
     const icon = type === 'success' ? faCheckCircle : faExclamationCircle;
+
+    // Determine if toast should be clickable
+    const isClickable = actionLabel && onAction;
+    const handleToastClick = () => {
+        if (onAction) {
+            onAction();
+            onClose();
+        }
+    };
 
     return createPortal(
         <div
@@ -52,10 +67,23 @@ export function Toast({
             onClick={(e) => e.stopPropagation()}
         >
             <div
-                className={`${bgColor} text-bg-primary pl-4 pr-3 py-3 rounded-lg shadow-lg flex items-center gap-3 min-w-[300px] ${animationClass}`}
+                className={`${bgColor} text-bg-primary pl-4 pr-3 py-3 rounded-lg shadow-lg flex items-center gap-3 min-w-[300px] ${animationClass} ${isClickable ? 'cursor-pointer hover:brightness-110 transition-all' : ''}`}
+                onClick={isClickable ? handleToastClick : undefined}
             >
                 <FontAwesomeIcon icon={icon} className="text-bg-primary flex-shrink-0" />
                 <span className="text-sm font-medium font-mono flex-grow">{message}</span>
+
+                {actionLabel && onAction && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleToastClick();
+                        }}
+                        className="bg-bg-primary/20 hover:bg-bg-primary/30 text-bg-primary font-mono text-xs px-3 py-1 rounded transition-colors font-bold uppercase tracking-wide"
+                    >
+                        {actionLabel}
+                    </button>
+                )}
 
                 <button
                     onClick={(e) => {

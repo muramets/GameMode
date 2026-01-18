@@ -14,8 +14,10 @@ import { Input } from '../../components/ui/molecules/Input';
 import { Button } from '../../components/ui/atoms/Button';
 import { ActiveFiltersList } from '../../components/ui/molecules/ActiveFiltersList';
 import { HistoryEvent } from './components/HistoryEvent';
+import { MonkeyTypeLoader } from '../../components/ui/molecules/MonkeyTypeLoader';
 import type { TimeFilter, TypeFilter, EffectFilter } from './components/HistoryFilter';
 import type { HistoryRecord } from '../../types/history';
+import { useConditionalSearch } from '../../hooks/useConditionalSearch';
 
 export default function HistoryPage() {
     const { innerfaces, protocols, states, groupsMetadata } = useMetadataStore();
@@ -23,8 +25,11 @@ export default function HistoryPage() {
 
     const [searchParams, setSearchParams] = useSearchParams();
 
+    // Content ref for conditional search
+    const contentRef = useRef<HTMLDivElement>(null);
+    const { searchQuery, setSearchQuery, shouldShowSearch } = useConditionalSearch(contentRef);
+
     // Filters state
-    const [searchQuery, setSearchQuery] = useState('');
     // Time filter still uses state (defaults to All time)
     const [timeFilter, setTimeFilter] = useState<TimeFilter>(() => {
         return (location.state as HistoryPageState)?.filterTime || (searchParams.get('time') as TimeFilter) || 'All time';
@@ -252,14 +257,6 @@ export default function HistoryPage() {
         setSelectedStateIds([]);
     };
 
-    if (isLoading && history.length === 0) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="text-sub font-mono animate-pulse uppercase tracking-widest text-xs">Loading Archives...</div>
-            </div>
-        );
-    }
-
     return (
         <div className="flex flex-col gap-8 w-full pb-12">
             {/* Header Mirroring ProtocolsList */}
@@ -272,37 +269,42 @@ export default function HistoryPage() {
                     </p>
                 </div>
 
-                <div className="flex items-stretch gap-2 w-full md:w-auto">
-                    {/* Search Bar */}
-                    <div className="flex-grow md:flex-grow-0 ml-1 md:w-64">
-                        <Input
-                            icon={faSearch}
-                            placeholder="Search timeline..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                    <div className="flex items-center gap-0">
+                        <HistoryFilter
+                            timeFilter={timeFilter}
+                            setTimeFilter={setTimeFilter}
+                            typeFilter={typeFilter}
+                            setTypeFilter={setTypeFilter}
+                            effectFilter={effectFilter}
+                            setEffectFilter={setEffectFilter}
+                            selectedProtocolIds={selectedProtocolIds}
+                            setSelectedProtocolIds={setSelectedProtocolIds}
+                            selectedInnerfaceIds={selectedInnerfaceIds}
+                            setSelectedInnerfaceIds={setSelectedInnerfaceIds}
+                            selectedStateIds={selectedStateIds}
+                            setSelectedStateIds={setSelectedStateIds}
+                            protocols={protocols}
+                            innerfaces={innerfaces}
+                            states={states}
+                            groupsMetadata={groupsMetadata}
+                            hasActiveFilters={hasActiveFilters}
+                            clearFilters={clearFilters}
                         />
                     </div>
 
-                    <HistoryFilter
-                        timeFilter={timeFilter}
-                        setTimeFilter={setTimeFilter}
-                        typeFilter={typeFilter}
-                        setTypeFilter={setTypeFilter}
-                        effectFilter={effectFilter}
-                        setEffectFilter={setEffectFilter}
-                        selectedProtocolIds={selectedProtocolIds}
-                        setSelectedProtocolIds={setSelectedProtocolIds}
-                        selectedInnerfaceIds={selectedInnerfaceIds}
-                        setSelectedInnerfaceIds={setSelectedInnerfaceIds}
-                        selectedStateIds={selectedStateIds}
-                        setSelectedStateIds={setSelectedStateIds}
-                        protocols={protocols}
-                        innerfaces={innerfaces}
-                        states={states}
-                        groupsMetadata={groupsMetadata}
-                        hasActiveFilters={hasActiveFilters}
-                        clearFilters={clearFilters}
-                    />
+                    {/* Search Bar */}
+                    {shouldShowSearch && (
+                        <div className="flex-grow md:flex-grow-0 ml-1">
+                            <Input
+                                icon={faSearch}
+                                placeholder="Search timeline..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="md:w-64"
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -359,46 +361,50 @@ export default function HistoryPage() {
 
             {/* List */}
             {/* History Feed */}
-            <div className="flex flex-col gap-8">
-                {groupedHistory.map(([dateKey, events]) => (
-                    <div key={dateKey} className="flex flex-col gap-4">
-                        <h2 className="text-text-secondary font-mono text-sm pl-1 flex items-baseline">
-                            {getDateLabel(dateKey)}<span className="opacity-50">: {events.length}</span>
-                        </h2>
-                        <div className="flex flex-col gap-2">
-                            <AnimatePresence mode="popLayout">
-                                {events.map((event: HistoryRecord) => {
-                                    const protocol = protocols.find(p => p.id.toString() === event.protocolId.toString());
-                                    return (
-                                        <motion.div
-                                            key={event.id}
-                                            layout
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{
-                                                opacity: 0,
-                                                x: -50,
-                                                height: 0,
-                                                marginBottom: 0,
-                                                filter: 'blur(4px)'
-                                            }}
-                                            transition={{ duration: 0.3 }}
-                                        >
-                                            <HistoryEvent
-                                                event={event}
-                                                innerfaces={innerfaces}
-                                                protocolColor={protocol?.color}
-                                                onDelete={deleteEvent}
-                                                onFilterInnerface={(id) => setSelectedInnerfaceIds([...selectedInnerfaceIds, id])}
-                                            />
-                                        </motion.div>
-                                    );
-                                })}
-                            </AnimatePresence>
+            {(isLoading && history.length === 0) ? (
+                <MonkeyTypeLoader />
+            ) : (
+                <div ref={contentRef} className="flex flex-col gap-8">
+                    {groupedHistory.map(([dateKey, events]) => (
+                        <div key={dateKey} className="flex flex-col gap-4">
+                            <h2 className="text-text-secondary font-mono text-sm pl-1 flex items-baseline">
+                                {getDateLabel(dateKey)}<span className="opacity-50">: {events.length}</span>
+                            </h2>
+                            <div className="flex flex-col gap-2">
+                                <AnimatePresence mode="popLayout">
+                                    {events.map((event: HistoryRecord) => {
+                                        const protocol = protocols.find(p => p.id.toString() === event.protocolId.toString());
+                                        return (
+                                            <motion.div
+                                                key={event.id}
+                                                layout
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{
+                                                    opacity: 0,
+                                                    x: -50,
+                                                    height: 0,
+                                                    marginBottom: 0,
+                                                    filter: 'blur(4px)'
+                                                }}
+                                                transition={{ duration: 0.3 }}
+                                            >
+                                                <HistoryEvent
+                                                    event={event}
+                                                    innerfaces={innerfaces}
+                                                    protocolColor={protocol?.color}
+                                                    onDelete={deleteEvent}
+                                                    onFilterInnerface={(id) => setSelectedInnerfaceIds([...selectedInnerfaceIds, id])}
+                                                />
+                                            </motion.div>
+                                        );
+                                    })}
+                                </AnimatePresence>
+                            </div>
                         </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
 
             {/* Loading Indicator / Sentinel */}
             {hasMore && (

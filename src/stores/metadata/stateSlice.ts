@@ -1,6 +1,6 @@
 import type { StateData } from '../../features/dashboard/types';
 import { db } from '../../config/firebase';
-import { collection, doc, addDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, deleteDoc, writeBatch, setDoc } from 'firebase/firestore';
 import { useUIStore } from '../uiStore';
 import type { MetadataState, PathContext } from './types';
 
@@ -67,6 +67,18 @@ export const createStateSlice = (
                 });
 
             await Promise.all(updates);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            showErrorToast(message);
+        }
+    },
+
+    restoreState: async (state: StateData) => {
+        try {
+            const context = get().context;
+            guardAgainstViewerMode(context);
+            const docRef = doc(db, `${getPathRoot(context)}/states/${state.id}`);
+            await setDoc(docRef, state);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
             showErrorToast(message);

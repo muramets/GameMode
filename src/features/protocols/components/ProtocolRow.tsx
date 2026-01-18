@@ -194,7 +194,7 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
 
                     <motion.div
                         layout
-                        className="flex flex-col items-center gap-1 pointer-events-auto pl-2 border-l border-white/5 overflow-hidden shrink-0"
+                        className="flex flex-col items-center gap-1 pointer-events-auto overflow-hidden shrink-0"
                         style={{
                             opacity: isHovered ? 1 : 0,
                             width: isHovered ? 32 : 0,

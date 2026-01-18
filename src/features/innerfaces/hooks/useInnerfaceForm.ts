@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useMetadataStore } from '../../../stores/metadataStore';
 import { usePersonalityStore } from '../../../stores/personalityStore';
+import { useUIStore } from '../../../stores/uiStore';
 import { GROUP_CONFIG } from '../../../constants/common';
 import type { PowerCategory } from '../types';
 
@@ -18,11 +19,13 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
         addInnerface,
         updateInnerface,
         deleteInnerface,
+        restoreInnerface,
         updateProtocol,
         updateGroupMetadata
     } = useMetadataStore();
 
     const { activeContext } = usePersonalityStore();
+    const { showToast } = useUIStore();
     const isCoachMode = activeContext?.type === 'viewer';
 
     const currentInnerface = useMemo(() =>
@@ -162,14 +165,28 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
             return;
         }
 
-        setIsSubmitting(true);
+        // Save innerface copy for undo
+        const innerfaceCopy = innerfaces.find(i => i.id === innerfaceId);
+        if (!innerfaceCopy) return;
+
+        // ✨ Instant close
+        onClose();
+
+        // Delete innerface
         try {
             await deleteInnerface(innerfaceId);
-            onClose();
+
+            // Show undo toast
+            showToast(
+                'Power deleted',
+                'success',
+                'Undo',
+                async () => {
+                    await restoreInnerface(innerfaceCopy);
+                }
+            );
         } catch (error) {
             console.error('Failed to delete innerface:', error);
-        } finally {
-            setIsSubmitting(false);
         }
     };
 

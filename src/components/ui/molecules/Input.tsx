@@ -23,7 +23,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                         w-full bg-sub-alt focus:bg-sub
                         text-text-primary placeholder:text-sub font-mono text-sm
                         rounded-lg outline-none transition-colors duration-200
-                        py-2.5 ${(icon || leftIcon) ? 'pl-9 pr-4' : 'px-4'}
+                        py-3 ${(icon || leftIcon) ? 'pl-10 pr-4' : 'px-4'}
                         border border-transparent focus:border-white/5
                         ${className}
                     `}

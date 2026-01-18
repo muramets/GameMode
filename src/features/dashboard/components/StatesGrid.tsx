@@ -96,19 +96,18 @@ export function StatesGrid({ states, onAddState, onEdit, onHistory, hasProtocols
                         !hasProtocols ? (
                             <button
                                 onClick={() => navigate('/actions')}
-                                className="col-span-full md:col-span-1 min-h-[180px] border border-dashed border-sub/30 hover:border-sub rounded-2xl flex flex-col items-center justify-center p-6 text-center select-none cursor-pointer hover:bg-sub-alt/5 transition-all duration-200 group"
+                                className="col-span-full md:col-span-1 min-h-[180px] border border-dashed border-sub/30 hover:border-sub rounded-2xl flex flex-col items-center justify-center gap-3 text-sub hover:text-text-primary transition-all duration-200 group bg-sub-alt/5 hover:bg-sub-alt/10 py-6"
                             >
-                                <span className="text-sm font-mono text-sub opacity-70 group-hover:opacity-100 group-hover:text-text-primary transition-all duration-200">
-                                    <span className="font-bold text-main/80 group-hover:text-main">Tip:</span> start by adding your routine via Actions
-                                </span>
+                                <Plus className="w-8 h-8" />
+                                <span className="font-mono text-xs">Start by adding actions</span>
                             </button>
                         ) : (
                             <button
                                 onClick={onAddState}
-                                className="col-span-full md:col-span-1 min-h-[180px] border border-dashed border-sub/30 hover:border-sub rounded-2xl flex flex-col items-center justify-center text-sub hover:text-text-primary transition-all duration-200 group bg-sub-alt/5 hover:bg-sub-alt/10"
+                                className="col-span-full md:col-span-1 min-h-[180px] border border-dashed border-sub/30 hover:border-sub rounded-2xl flex flex-col items-center justify-center gap-3 text-sub hover:text-text-primary transition-all duration-200 group bg-sub-alt/5 hover:bg-sub-alt/10 py-6"
                             >
-                                <Plus className="w-8 h-8 opacity-40 group-hover:opacity-100 transition-opacity duration-300" />
-                                <span className="text-sm font-mono mt-3 group-hover:opacity-100 transition-opacity duration-300">Add First Dimension</span>
+                                <Plus className="w-8 h-8" />
+                                <span className="font-mono text-xs">Add your first dimension</span>
                             </button>
                         )
                     )}

@@ -62,20 +62,22 @@ export function EntitySelector({
     return (
         <div className={`bg-sub-alt/30 rounded-xl p-3 border border-white/5 flex flex-col gap-3 ${height} ${className}`}>
             {/* Search Input */}
-            <Input
-                type="text"
-                placeholder={searchPlaceholder}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                icon={faSearch}
-                className="!bg-sub-alt/50"
-            />
+            {items.length > 0 && (
+                <Input
+                    type="text"
+                    placeholder={searchPlaceholder}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    icon={faSearch}
+                    className="!bg-sub-alt/50"
+                />
+            )}
 
             {/* Scrollable List */}
             <div className="flex-1 overflow-y-auto custom-scrollbar">
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1 h-full">
                     {!filteredAndGroupedItems ? (
-                        <div className="w-full text-center py-8 text-sub/40 italic text-xs">
+                        <div className="w-full h-full flex items-center justify-center text-sub/40 text-xs font-mono">
                             {emptyMessage}
                         </div>
                     ) : (

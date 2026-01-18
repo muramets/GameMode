@@ -16,7 +16,8 @@ export const InnerfaceGroup = React.memo(({
     onGroupEdit,
     groupsMetadata,
     isCollapsed,
-    onToggleCollapse
+    onToggleCollapse,
+    hideHeader
 }: {
     groupName: string;
     innerfaces: Innerface[];
@@ -25,6 +26,7 @@ export const InnerfaceGroup = React.memo(({
     groupsMetadata: Record<string, { icon: string; color?: string }>;
     isCollapsed: boolean;
     onToggleCollapse: () => void;
+    hideHeader?: boolean;
 }) => {
     const staticConfig = GROUP_CONFIG[groupName] || GROUP_CONFIG['ungrouped'];
     const storeMeta = groupsMetadata[groupName];
@@ -42,6 +44,24 @@ export const InnerfaceGroup = React.memo(({
 
     // Memoize the items list creation
     const itemIds = useMemo(() => innerfaces.map(i => String(i.id)), [innerfaces]);
+
+    const content = (
+        <SortableContext items={itemIds} strategy={rectSortingStrategy}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {innerfaces.map((innerface) => (
+                    <DraggableInnerfaceItem
+                        key={innerface.id}
+                        innerface={innerface}
+                        onEdit={onEdit}
+                    />
+                ))}
+            </div>
+        </SortableContext>
+    );
+
+    if (hideHeader) {
+        return <div className="mb-8">{content}</div>;
+    }
 
     return (
         <SortableItem key={`group-${groupName}`} id={`group-${groupName}`}>
@@ -100,19 +120,7 @@ export const InnerfaceGroup = React.memo(({
                         }
                         className={`animate-in fade-in slide-in-from-bottom-2 duration-500`}
                     >
-                        {!isDragging && (
-                            <SortableContext items={itemIds} strategy={rectSortingStrategy}>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                    {innerfaces.map((innerface) => (
-                                        <DraggableInnerfaceItem
-                                            key={innerface.id}
-                                            innerface={innerface}
-                                            onEdit={onEdit}
-                                        />
-                                    ))}
-                                </div>
-                            </SortableContext>
-                        )}
+                        {!isDragging && content}
                     </CollapsibleSection>
                 </div>
             )}

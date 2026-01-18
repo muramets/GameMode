@@ -21,7 +21,8 @@ export const ProtocolGroup = React.memo(({
     groupsMetadata,
     isCollapsed,
     onToggleCollapse,
-    isReadOnly
+    isReadOnly,
+    hideHeader
 }: {
     groupName: string;
     protocols: Protocol[];
@@ -34,6 +35,7 @@ export const ProtocolGroup = React.memo(({
     isCollapsed: boolean;
     onToggleCollapse: () => void;
     isReadOnly: boolean;
+    hideHeader?: boolean;
 }) => {
     const staticConfig = GROUP_CONFIG[groupName] || GROUP_CONFIG['ungrouped'];
     const storeMeta = groupsMetadata[groupName];
@@ -51,6 +53,32 @@ export const ProtocolGroup = React.memo(({
 
     // Memoize the items list creation
     const itemsIds = useMemo(() => protocols.map(p => String(p.id)), [protocols]);
+
+    const content = (
+        <SortableContext
+            items={itemsIds}
+            strategy={rectSortingStrategy}
+            disabled={!isDragEnabled}
+        >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {protocols.map((protocol) => (
+                    <DraggableProtocolItem
+                        key={protocol.id}
+                        protocol={protocol}
+                        innerfaces={innerfaces}
+                        applyProtocol={applyProtocol}
+                        handleEditProtocol={handleEditProtocol}
+                        isDragEnabled={isDragEnabled}
+                        isReadOnly={isReadOnly}
+                    />
+                ))}
+            </div>
+        </SortableContext>
+    );
+
+    if (hideHeader) {
+        return <div className="mb-4">{content}</div>;
+    }
 
     return (
         <SortableItem key={`group-${groupName}`} id={`group-${groupName}`} disabled={!isDragEnabled}>
@@ -110,25 +138,7 @@ export const ProtocolGroup = React.memo(({
                         }
                         className={`animate-in fade-in slide-in-from-bottom-2 duration-500`}
                     >
-                        <SortableContext
-                            items={itemsIds}
-                            strategy={rectSortingStrategy}
-                            disabled={!isDragEnabled}
-                        >
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {protocols.map((protocol) => (
-                                    <DraggableProtocolItem
-                                        key={protocol.id}
-                                        protocol={protocol}
-                                        innerfaces={innerfaces}
-                                        applyProtocol={applyProtocol}
-                                        handleEditProtocol={handleEditProtocol}
-                                        isDragEnabled={isDragEnabled}
-                                        isReadOnly={isReadOnly}
-                                    />
-                                ))}
-                            </div>
-                        </SortableContext>
+                        {content}
                     </CollapsibleSection>
                 </div>
             )}

@@ -102,10 +102,10 @@ export function QuickActionsGrid({
                     {actions.length === 0 && totalProtocolCount > 0 && (
                         <button
                             onClick={onAddAction}
-                            className="col-span-full md:col-span-1 h-[70px] border border-dashed border-sub-alt rounded-lg flex flex-col items-center justify-center text-sub hover:text-text-primary hover:border-sub transition-all group"
+                            className="col-span-full md:col-span-1 h-[70px] border border-dashed border-sub/30 hover:border-sub rounded-lg flex flex-col items-center justify-center gap-2 text-sub hover:text-text-primary transition-all duration-200 group bg-sub-alt/5 hover:bg-sub-alt/10"
                         >
-                            <FontAwesomeIcon icon={faPlus} className="text-lg opacity-50 group-hover:opacity-100" />
-                            <span className="text-xs font-mono mt-1">Add first quick action</span>
+                            <FontAwesomeIcon icon={faPlus} className="text-lg" />
+                            <span className="text-xs font-mono">Add your first quick action</span>
                         </button>
                     )}
 
@@ -113,11 +113,10 @@ export function QuickActionsGrid({
                     {actions.length === 0 && totalProtocolCount === 0 && (
                         <button
                             onClick={() => navigate('/actions')}
-                            className="col-span-full md:col-span-1 h-[70px] flex items-center justify-center text-sm font-mono text-sub opacity-70 border border-dashed border-sub/30 hover:border-sub rounded-lg select-none cursor-pointer w-full hover:bg-sub-alt/5 transition-all duration-200 group"
+                            className="col-span-full md:col-span-1 h-[70px] border border-dashed border-sub/30 hover:border-sub rounded-lg flex flex-col items-center justify-center gap-2 text-sub hover:text-text-primary transition-all duration-200 group bg-sub-alt/5 hover:bg-sub-alt/10"
                         >
-                            <span className="opacity-70 group-hover:opacity-100 transition-opacity duration-200 group-hover:text-text-primary">
-                                <span className="font-bold text-main/80 group-hover:text-main">Tip:</span> create a protocol first to pin it here as a Quick Action
-                            </span>
+                            <FontAwesomeIcon icon={faPlus} className="text-lg" />
+                            <span className="font-mono text-xs">Start by adding actions</span>
                         </button>
                     )}
                 </div>

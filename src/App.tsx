@@ -55,6 +55,8 @@ function AppContent() {
           isVisible={toast.isVisible}
           type={toast.type}
           onClose={hideToast}
+          actionLabel={toast.actionLabel}
+          onAction={toast.onAction}
         />
         <Routes>
           {/* Public routes - always accessible */}

@@ -1,10 +1,12 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { useScoreContext } from '../../../contexts/ScoreContext';
 import { InnerfaceSettingsModal } from '../../../components/modals/InnerfaceSettingsModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faChevronDown, faGripVertical } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faChevronDown, faGripVertical, faSearch } from '@fortawesome/free-solid-svg-icons';
 import { GroupSettingsModal } from '../../../features/groups/components/GroupSettingsModal';
+import { Input } from '../../../components/ui/molecules/Input';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../../components/ui/atoms/Tooltip';
+import { InnerfacesFilterDropdown } from './InnerfacesFilterDropdown';
 import {
     DndContext,
     closestCenter,
@@ -19,6 +21,7 @@ import { InnerfaceGroup } from './InnerfaceGroup';
 import { InnerfacesDragOverlay } from './InnerfacesDragOverlay';
 import { useInnerfaceDnD } from '../hooks/useInnerfaceDnD';
 import { CATEGORY_CONFIG } from '../constants';
+import { useConditionalSearch } from '../../../hooks/useConditionalSearch';
 
 // --- Category Section Header ---
 const CategorySection = React.memo(({
@@ -106,6 +109,34 @@ export function InnerfacesList() {
     const { isGroupCollapsed: isCategoryCollapsed, toggleGroup: toggleCategory } = useCollapsedGroups('innerface-categories');
     const isCoachMode = activeContext?.type === 'viewer';
 
+    // Filter state
+    const [activeFilters, setActiveFilters] = useState<string[]>([]);
+
+    const toggleFilter = useCallback((filter: string) => {
+        if (filter === 'all') {
+            setActiveFilters([]);
+        } else {
+            setActiveFilters(prev =>
+                prev.includes(filter)
+                    ? prev.filter(f => f !== filter)
+                    : [...prev, filter]
+            );
+        }
+    }, []);
+
+    // Extract unique groups
+    const innerfaceGroups = useMemo(() => {
+        const groups = new Set<string>();
+        innerfaces.forEach(i => {
+            if (i.group) groups.add(i.group);
+        });
+        return Array.from(groups).sort();
+    }, [innerfaces]);
+
+    // Content ref for conditional search
+    const contentRef = useRef<HTMLDivElement>(null);
+    const { searchQuery, setSearchQuery, shouldShowSearch } = useConditionalSearch(contentRef);
+
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedInnerfaceId, setSelectedInnerfaceId] = useState<string | number | null>(null);
@@ -127,6 +158,26 @@ export function InnerfacesList() {
         setIsGroupSettingsOpen(true);
     }, []);
 
+    // Filter innerfaces by search query
+    const filteredInnerfaces = useMemo(() => {
+        if (!searchQuery.trim()) return innerfaces;
+        const query = searchQuery.toLowerCase();
+        return innerfaces.filter(innerface =>
+            innerface.name.toLowerCase().includes(query)
+        );
+    }, [innerfaces, searchQuery]);
+
+    // Filter by groups
+    const filteredByGroup = useMemo(() => {
+        if (activeFilters.length === 0) return filteredInnerfaces;
+
+        return filteredInnerfaces.filter(innerface => {
+            if (activeFilters.includes('ungrouped') && !innerface.group) return true;
+            if (innerface.group && activeFilters.includes(innerface.group)) return true;
+            return false;
+        });
+    }, [filteredInnerfaces, activeFilters]);
+
     const {
         sensors,
         activeId,
@@ -142,7 +193,7 @@ export function InnerfacesList() {
         categoryIds,
         activeCategoryOrder
     } = useInnerfaceDnD({
-        innerfaces,
+        innerfaces: filteredByGroup,
         groupOrder: innerfaceGroupOrder,
         categoryOrder,
         onReorderCategories: reorderCategories,
@@ -157,30 +208,53 @@ export function InnerfacesList() {
 
     return (
         <div className="flex flex-col gap-6 w-full">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-lexend text-text-primary">Innerfaces</h1>
                     <p className="text-text-secondary font-mono text-sm mt-1">
-                        Develop your core attributes and skills.
+                        Track skills and foundations you're developing
                     </p>
                 </div>
-                {!isCoachMode && (
-                    <TooltipProvider delayDuration={300}>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <button
-                                    onClick={handleCreate}
-                                    className="h-[46px] w-[36px] flex items-center justify-center rounded-lg text-sub hover:text-main transition-all cursor-pointer"
-                                >
-                                    <FontAwesomeIcon icon={faPlus} className="text-xl" />
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                                <span className="font-mono text-xs">Add Innerface</span>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                )}
+
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                    {!isCoachMode && (
+                        <div className="flex items-center gap-0">
+                            <TooltipProvider delayDuration={300}>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            onClick={handleCreate}
+                                            className="h-[46px] w-[36px] flex items-center justify-center rounded-lg text-sub hover:text-main transition-all cursor-pointer"
+                                        >
+                                            <FontAwesomeIcon icon={faPlus} className="text-xl" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">
+                                        <span className="font-mono text-xs">Add Innerface</span>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+
+                            <InnerfacesFilterDropdown
+                                activeFilters={activeFilters}
+                                innerfaceGroups={innerfaceGroups}
+                                onToggleFilter={toggleFilter}
+                            />
+                        </div>
+                    )}
+
+                    {shouldShowSearch && (
+                        <div className="flex-grow md:flex-grow-0 ml-1">
+                            <Input
+                                icon={faSearch}
+                                placeholder="Search powers..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="md:w-64"
+                            />
+                        </div>
+                    )}
+                </div>
             </div>
 
             <style>{`
@@ -191,79 +265,113 @@ export function InnerfacesList() {
                 }
             `}</style>
 
-            <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-                onDragOver={handleDragOver}
-            >
-                <div className="flex flex-col gap-4">
-                    {/* Special case: Only Uncategorized exists -> Show groups directly */}
-                    {innerfacesByCategory.skill.length === 0 && innerfacesByCategory.foundation.length === 0 && innerfacesByCategory.uncategorized.length > 0 ? (
-                        <SortableContext items={getGroupsForCategory('uncategorized').map(([g]) => `group-${g}`)} strategy={verticalListSortingStrategy}>
-                            {getGroupsForCategory('uncategorized').map(([groupName, groupItems]) => (
-                                <InnerfaceGroup
-                                    key={groupName}
-                                    groupName={groupName}
-                                    innerfaces={groupItems}
-                                    onEdit={handleEdit}
-                                    onGroupEdit={handleGroupEdit}
-                                    groupsMetadata={groupsMetadata}
-                                    isCollapsed={isGroupCollapsed(groupName)}
-                                    onToggleCollapse={() => toggleGroup(groupName)}
-                                />
-                            ))}
-                        </SortableContext>
+            {filteredByGroup.length === 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {innerfaces.length === 0 ? (
+                        <button
+                            onClick={handleCreate}
+                            className="w-full min-h-[120px] border border-dashed border-sub/30 hover:border-sub rounded-xl flex flex-col items-center justify-center gap-3 text-sub hover:text-text-primary transition-all duration-200 group bg-sub-alt/5 hover:bg-sub-alt/10 py-6"
+                        >
+                            <FontAwesomeIcon icon={faPlus} className="text-2xl" />
+                            <span className="font-mono text-xs">Add your first power</span>
+                        </button>
                     ) : (
-                        /* Standard View: Categories -> Groups -> Items */
-                        <SortableContext items={categoryIds} strategy={verticalListSortingStrategy}>
-                            {activeCategoryOrder.map(category => {
-                                const items = innerfacesByCategory[category];
-                                const groups = getGroupsForCategory(category);
-
-                                return (
-                                    <CategorySection
-                                        key={category}
-                                        category={category as 'skill' | 'foundation' | 'uncategorized'}
-                                        count={items.length}
-                                        isCollapsed={isCategoryCollapsed(category)}
-                                        onToggle={() => toggleCategory(category)}
-                                    >
-                                        <SortableContext items={groups.map(([g]) => `group-${g}`)} strategy={verticalListSortingStrategy}>
-                                            {groups.map(([groupName, groupItems]) => (
-                                                <InnerfaceGroup
-                                                    key={groupName}
-                                                    groupName={groupName}
-                                                    innerfaces={groupItems}
-                                                    onEdit={handleEdit}
-                                                    onGroupEdit={handleGroupEdit}
-                                                    groupsMetadata={groupsMetadata}
-                                                    isCollapsed={isGroupCollapsed(groupName)}
-                                                    onToggleCollapse={() => toggleGroup(groupName)}
-                                                />
-                                            ))}
-                                        </SortableContext>
-                                    </CategorySection>
-                                );
-                            })}
-                        </SortableContext>
+                        <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+                            <span className="font-mono text-sm text-sub">No powers matching your filter</span>
+                            <button
+                                onClick={() => toggleFilter('all')}
+                                className="mt-3 font-mono text-xs text-main hover:text-text-primary transition-colors"
+                            >
+                                Clear filters
+                            </button>
+                        </div>
                     )}
                 </div>
-                <DragOverlay dropAnimation={null}>
-                    {activeId ? (
-                        <div className="pointer-events-none transition-none-important">
-                            <InnerfacesDragOverlay
-                                innerface={activeItem}
-                                groupName={activeGroup}
-                                categoryName={activeCategory}
-                                groupsMetadata={groupsMetadata}
-                                isValidDrop={isValidDrop}
-                            />
-                        </div>
-                    ) : null}
-                </DragOverlay>
-            </DndContext>
+            ) : (
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={handleDragOver}
+                >
+                    <div ref={contentRef} className="flex flex-col gap-4">
+                        {/* Special case: Only Uncategorized exists -> Show groups directly */}
+                        {innerfacesByCategory.skill.length === 0 && innerfacesByCategory.foundation.length === 0 && innerfacesByCategory.uncategorized.length > 0 ? (
+                            (() => {
+                                const uncategorizedGroups = getGroupsForCategory('uncategorized');
+                                const hideHeader = uncategorizedGroups.length === 1 && uncategorizedGroups[0][0] === 'ungrouped';
+
+                                return (
+                                    <SortableContext items={uncategorizedGroups.map(([g]) => `group-${g}`)} strategy={verticalListSortingStrategy}>
+                                        {uncategorizedGroups.map(([groupName, groupItems]) => (
+                                            <InnerfaceGroup
+                                                key={groupName}
+                                                groupName={groupName}
+                                                innerfaces={groupItems}
+                                                onEdit={handleEdit}
+                                                onGroupEdit={handleGroupEdit}
+                                                groupsMetadata={groupsMetadata}
+                                                isCollapsed={isGroupCollapsed(groupName)}
+                                                onToggleCollapse={() => toggleGroup(groupName)}
+                                                hideHeader={hideHeader && groupName === 'ungrouped'}
+                                            />
+                                        ))}
+                                    </SortableContext>
+                                );
+                            })()
+                        ) : (
+                            /* Standard View: Categories -> Groups -> Items */
+                            <SortableContext items={categoryIds} strategy={verticalListSortingStrategy}>
+                                {activeCategoryOrder.map(category => {
+                                    const items = innerfacesByCategory[category];
+                                    const groups = getGroupsForCategory(category);
+                                    const hideHeader = groups.length === 1 && groups[0][0] === 'ungrouped';
+
+                                    return (
+                                        <CategorySection
+                                            key={category}
+                                            category={category as 'skill' | 'foundation' | 'uncategorized'}
+                                            count={items.length}
+                                            isCollapsed={isCategoryCollapsed(category)}
+                                            onToggle={() => toggleCategory(category)}
+                                        >
+                                            <SortableContext items={groups.map(([g]) => `group-${g}`)} strategy={verticalListSortingStrategy}>
+                                                {groups.map(([groupName, groupItems]) => (
+                                                    <InnerfaceGroup
+                                                        key={groupName}
+                                                        groupName={groupName}
+                                                        innerfaces={groupItems}
+                                                        onEdit={handleEdit}
+                                                        onGroupEdit={handleGroupEdit}
+                                                        groupsMetadata={groupsMetadata}
+                                                        isCollapsed={isGroupCollapsed(groupName)}
+                                                        onToggleCollapse={() => toggleGroup(groupName)}
+                                                        hideHeader={hideHeader && groupName === 'ungrouped'}
+                                                    />
+                                                ))}
+                                            </SortableContext>
+                                        </CategorySection>
+                                    );
+                                })}
+                            </SortableContext>
+                        )}
+                    </div>
+                    <DragOverlay dropAnimation={null}>
+                        {activeId ? (
+                            <div className="pointer-events-none transition-none-important">
+                                <InnerfacesDragOverlay
+                                    innerface={activeItem}
+                                    groupName={activeGroup}
+                                    categoryName={activeCategory}
+                                    groupsMetadata={groupsMetadata}
+                                    isValidDrop={isValidDrop}
+                                />
+                            </div>
+                        ) : null}
+                    </DragOverlay>
+                </DndContext>
+            )}
 
             {isModalOpen && (
                 <InnerfaceSettingsModal
