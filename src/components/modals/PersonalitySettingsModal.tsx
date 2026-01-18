@@ -29,6 +29,7 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
     const { personalities, updatePersonality, deletePersonality, addPersonality, switchPersonality } = usePersonalityStore();
 
     const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
     const [icon, setIcon] = useState('user');
     const [color, setColor] = useState('#e2b714');
     const [avatar, setAvatar] = useState(''); // URL for avatar
@@ -48,6 +49,7 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
             const p = personalities.find(p => p.id === personalityId);
             if (p) {
                 setName(p.name);
+                setDescription(p.description || '');
                 setIcon(p.icon || 'user');
                 setColor(p.themeColor || '#e2b714');
                 setAvatar(p.avatar || '');
@@ -55,6 +57,7 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
         } else if (isOpen && !personalityId) {
             // New Mode
             setName('');
+            setDescription('');
             setIcon('user');
             setColor('#e2b714');
             setAvatar('');
@@ -72,6 +75,7 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
 
         const data = {
             name,
+            description,
             icon,
             themeColor: color,
             avatar
@@ -316,7 +320,18 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
                         </Popover.Root>
                     </div>
                 </div>
+
+                <div className="flex flex-col gap-1.5 w-full">
+                    <InputLabel label="Description" />
+                    <textarea
+                        value={description}
+                        onChange={e => setDescription(e.target.value)}
+                        placeholder="Brief description..."
+                        className="w-full h-14 bg-sub-alt border border-transparent rounded-lg px-3 py-4 text-sm text-text-primary placeholder:text-sub font-mono focus:outline-none focus:border-white/10 focus:bg-sub transition-colors resize-none"
+                    />
+                </div>
             </div>
-        </Modal>
+
+        </Modal >
     );
 }

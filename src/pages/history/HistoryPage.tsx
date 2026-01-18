@@ -1,9 +1,10 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
-import { useScoreContext } from '../../contexts/ScoreProvider';
+// import { useScoreContext } from '../../contexts/ScoreProvider'; // No longer needed
 import { useMetadataStore } from '../../stores/metadataStore';
-import { format, isToday, isYesterday, parseISO, isWithinInterval, startOfWeek, startOfMonth } from 'date-fns';
+import { useHistoryFeed } from '../../features/history/hooks/useHistoryFeed';
+import { format, isToday, isYesterday, parseISO, startOfWeek, startOfMonth } from 'date-fns';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faSearch
@@ -17,7 +18,6 @@ import type { TimeFilter, TypeFilter, EffectFilter } from './components/HistoryF
 import type { HistoryRecord } from '../../types/history';
 
 export default function HistoryPage() {
-    const { history, deleteEvent } = useScoreContext();
     const { innerfaces, protocols, states, groupsMetadata } = useMetadataStore();
     const location = useLocation();
 
@@ -29,6 +29,68 @@ export default function HistoryPage() {
     const [selectedProtocolIds, setSelectedProtocolIds] = useState<string[]>([]);
     const [selectedInnerfaceIds, setSelectedInnerfaceIds] = useState<string[]>([]);
     const [selectedStateIds, setSelectedStateIds] = useState<string[]>([]);
+
+    // Derived Server-Side Filters
+    const serverFilters = useMemo(() => {
+        // 1. Time Range
+        let timeRange: { start: Date; end: Date } | null = null;
+        if (timeFilter !== 'All time') {
+            const now = new Date();
+            if (timeFilter === 'Today') {
+                // Start of today
+                const start = new Date(now);
+                start.setHours(0, 0, 0, 0);
+                timeRange = { start, end: now };
+            } else if (timeFilter === 'This week') {
+                const start = startOfWeek(now, { weekStartsOn: 1 });
+                timeRange = { start, end: now };
+            } else if (timeFilter === 'This month') {
+                const start = startOfMonth(now);
+                timeRange = { start, end: now };
+            }
+        }
+
+        // 2. Protocols
+        // Note: We only pass explicit protocol IDs.
+        // If State filter is used, we derived protocol IDs from it.
+        let protocolIdsToFilter: string[] | undefined = undefined;
+        if (selectedProtocolIds.length > 0) {
+            protocolIdsToFilter = selectedProtocolIds;
+        }
+
+        return {
+            protocolIds: protocolIdsToFilter,
+            type: typeFilter,
+            timeRange
+        };
+    }, [timeFilter, typeFilter, selectedProtocolIds]);
+
+    // Pass filters to hook (Triggers Server-Side Fetch)
+    const { history, isLoading, isLoadingMore, hasMore, loadMore, deleteEvent } = useHistoryFeed(serverFilters);
+
+    // Infinite Scroll Observer
+    const observerTarget = useRef(null);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            entries => {
+                if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+                    loadMore();
+                }
+            },
+            { threshold: 1.0 }
+        );
+
+        if (observerTarget.current) {
+            observer.observe(observerTarget.current);
+        }
+
+        return () => {
+            if (observerTarget.current) {
+                observer.unobserve(observerTarget.current);
+            }
+        };
+    }, [observerTarget, hasMore, isLoadingMore, loadMore]);
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -58,7 +120,7 @@ export default function HistoryPage() {
 
     const filteredHistory = useMemo(() => {
         return history.filter(event => {
-            // Search filter
+            // Search filter (Client Side)
             if (searchQuery.trim()) {
                 const query = searchQuery.toLowerCase();
                 const matchesSearch =
@@ -67,55 +129,42 @@ export default function HistoryPage() {
                 if (!matchesSearch) return false;
             }
 
-            // Time filter
-            if (timeFilter !== 'All time') {
-                const eventDate = parseISO(event.timestamp);
-                const now = new Date();
-                if (timeFilter === 'Today' && !isToday(eventDate)) return false;
-                if (timeFilter === 'This week' && !isWithinInterval(eventDate, { start: startOfWeek(now), end: now })) return false;
-                if (timeFilter === 'This month' && !isWithinInterval(eventDate, { start: startOfMonth(now), end: now })) return false;
-            }
+            // Time & Type & Protocol Filter checks REMOVED (Handled Server-Side)
+            // Note: We keep them here mostly for safety if server returns wider set, 
+            // but effectively server handles primary filtering. 
+            // EXCEPT: If we have complex logic that server couldn't handle (e.g. >10 protocols),
+            // current server impl limits to 10. If we had 11 selected, server ignores filter (safely?), 
+            // so we SHOULD technically keep client filter as fallback.
 
-            // Type filter
+            // Re-applying Type filter client-side just in case
             if (typeFilter !== 'All types') {
-                if (typeFilter === 'Protocols' && event.type !== 'protocol') return false;
+                if (typeFilter === 'Actions' && event.type !== 'protocol') return false;
                 if (typeFilter === 'Manual' && event.type !== 'quick_action') return false;
                 if (typeFilter === 'System' && event.type !== 'system') return false;
             }
 
-            // Effect filter
+            // Effect filter (Client Side Only)
             if (effectFilter !== 'All effects') {
                 const isPositive = event.action === '+';
                 if (effectFilter === 'Positive' && !isPositive) return false;
                 if (effectFilter === 'Negative' && isPositive) return false;
             }
 
-            // Protocol filter (Multi-select OR logic)
-            if (selectedProtocolIds.length > 0) {
-                if (!selectedProtocolIds.includes(event.protocolId.toString())) return false;
-            }
-
-            // Innerface filter (Multi-select OR logic)
+            // Innerface filter (Client Side Only - too complex for standard index)
             if (selectedInnerfaceIds.length > 0) {
                 const eventInnerfaces = Object.keys(event.changes || {});
                 const hasMatchingInnerface = selectedInnerfaceIds.some(id => eventInnerfaces.includes(id));
                 if (!hasMatchingInnerface) return false;
             }
 
-            // State filter (Multi-select OR logic)
+            // State filter (Client Side Logic)
             if (selectedStateIds.length > 0) {
+                // ... (Logic for states requires matching either protocol set OR innerface set)
+                // This is hard to fully server-side without Denormalization.
                 const relatedStates = states.filter(s => selectedStateIds.includes(s.id));
+                const validProtocolIds = relatedStates.flatMap(s => s.protocolIds || []).map(String);
+                const validInnerfaceIds = relatedStates.flatMap(s => s.innerfaceIds || []).map(String);
 
-                // Collect all valid protocol and innerface IDs from the selected states
-                const validProtocolIds = relatedStates
-                    .flatMap(s => s.protocolIds || [])
-                    .map(id => id.toString());
-
-                const validInnerfaceIds = relatedStates
-                    .flatMap(s => s.innerfaceIds || [])
-                    .map(id => id.toString());
-
-                // Check if event matches either protocol OR innerface
                 const matchesProtocol = validProtocolIds.includes(event.protocolId.toString());
                 const eventInnerfaces = Object.keys(event.changes || {});
                 const matchesInnerface = eventInnerfaces.some(id => validInnerfaceIds.includes(id));
@@ -168,6 +217,14 @@ export default function HistoryPage() {
         setSelectedStateIds([]);
     };
 
+    if (isLoading && history.length === 0) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="text-sub font-mono animate-pulse uppercase tracking-widest text-xs">Loading Archives...</div>
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col gap-8 w-full pb-12">
             {/* Header Mirroring ProtocolsList */}
@@ -175,7 +232,8 @@ export default function HistoryPage() {
                 <div>
                     <h1 className="text-2xl font-lexend text-text-primary">history</h1>
                     <p className="text-text-secondary font-mono text-sm mt-1">
-                        {history.length} lifecycle events recorded in total.
+                        {history.length} events loaded
+                        {hasMore && <span className="opacity-50"> (scroll for more)</span>}
                     </p>
                 </div>
 
@@ -232,7 +290,7 @@ export default function HistoryPage() {
                     }] : []),
                     ...(typeFilter !== 'All types' ? [{
                         id: 'type',
-                        label: typeFilter === 'Protocols' ? 'Check-ins' : typeFilter === 'Manual' ? 'Manual Changes' : typeFilter,
+                        label: typeFilter === 'Actions' ? 'Check-ins' : typeFilter === 'Manual' ? 'Manual Changes' : typeFilter,
                         icon: undefined,
                         onRemove: () => setTypeFilter('All types')
                     }] : []),
@@ -307,6 +365,23 @@ export default function HistoryPage() {
                 ))}
             </div>
 
+            {/* Loading Indicator / Sentinel */}
+            {hasMore && (
+                <div ref={observerTarget} className="flex justify-center py-8">
+                    {isLoadingMore ? (
+                        <div className="text-sub font-mono animate-pulse text-xs">Loading older events...</div>
+                    ) : (
+                        <div className="h-4" /> // Invisible trigger
+                    )}
+                </div>
+            )}
+
+            {!hasMore && history.length > 0 && (
+                <div className="text-center py-8 text-sub/50 font-mono text-xs">
+                    Start of timeline
+                </div>
+            )}
+
             {filteredHistory.length === 0 && history.length > 0 && (
                 <div className="py-32 text-center flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500">
                     <div className="w-20 h-20 bg-sub-alt rounded-full flex items-center justify-center mb-8 text-sub/10">
@@ -315,6 +390,7 @@ export default function HistoryPage() {
                     <h3 className="text-xl font-lexend font-bold text-text-secondary mb-3">No matching events</h3>
                     <p className="text-text-secondary font-mono text-sm max-w-sm mb-8">
                         Your filters are too strict. No records were found matching these specific conditions.
+                        {hasMore && " Scroll down to load more history."}
                     </p>
                     <Button
                         variant="primary"

@@ -60,23 +60,16 @@ export function useScores() {
     }, [user, activePersonalityId, protocols, addCheckin]);
 
     const calculateInnerfaceScore = useCallback((innerfaceId: number | string) => {
-        // Use loose equality or string conversion to match mixed types (string vs number)
         const innerface = innerfaces.find(i => i.id.toString() === innerfaceId.toString());
         if (!innerface) return 0;
+        // Optimization: Use persistent score if available
+        if (innerface.currentScore !== undefined) {
+            return innerface.currentScore;
+        }
 
-        const totalChange = history.reduce((sum, record) => {
-            // Only count if record has changes for this innerface 
-            // AND if record is newer than the innerface's versionTimestamp (Hard Reset)
-            if (record.changes && record.changes[innerfaceId] !== undefined) {
-                if (!innerface.versionTimestamp || record.timestamp > innerface.versionTimestamp) {
-                    return sum + record.changes[innerfaceId];
-                }
-            }
-            return sum;
-        }, 0);
-
-        return Math.max(0, innerface.initialScore + totalChange);
-    }, [history, innerfaces]);
+        // Fallback for pre-migration or missing score
+        return Math.max(0, innerface.initialScore);
+    }, [innerfaces]);
 
     const innerfacesWithScores = useMemo(() => {
         return innerfaces.map(innerface => ({
@@ -113,26 +106,33 @@ export function useScores() {
         return count > 0 ? total / count : 0;
     }, [states, calculateInnerfaceScore]);
 
+    // Used for "Yesterday's Score" to calculate daily progress (+5 etc)
     const calculateInnerfaceScoreAtDate = useCallback((innerfaceId: number | string, date: Date) => {
         const innerface = innerfaces.find(i => i.id.toString() === innerfaceId.toString());
         if (!innerface) return 0;
 
-        const endOfDay = new Date(date);
-        endOfDay.setHours(23, 59, 59, 999);
+        // Start with CURRENT score
+        let simulatedScore = innerface.currentScore ?? innerface.initialScore;
 
-        const totalChange = history.reduce((sum, record) => {
+        // If we want score at END of 'date', we must REVERSE changes that happened AFTER 'date'
+        const targetEndTime = new Date(date);
+        targetEndTime.setHours(23, 59, 59, 999);
+
+        // Iterate history (newest first) and un-apply changes until we reach target time
+        for (const record of history) {
             const recordDate = new Date(record.timestamp);
-            if (recordDate > endOfDay) return sum;
-
-            if (record.changes && record.changes[innerfaceId] !== undefined) {
-                if (!innerface.versionTimestamp || record.timestamp > innerface.versionTimestamp) {
-                    return sum + record.changes[innerfaceId];
-                }
+            if (recordDate <= targetEndTime) {
+                // We reached the target time, stop reversing
+                break;
             }
-            return sum;
-        }, 0);
 
-        return Math.max(0, innerface.initialScore + totalChange);
+            // Reverse this record's effect
+            if (record.changes && record.changes[innerfaceId] !== undefined) {
+                simulatedScore -= record.changes[innerfaceId];
+            }
+        }
+
+        return Math.max(0, simulatedScore);
     }, [history, innerfaces]);
 
     const calculateStateScoreAtDate = useCallback((stateId: string, date: Date, visited = new Set<string>()): number => {

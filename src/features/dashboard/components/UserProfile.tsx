@@ -8,7 +8,7 @@ import { useScoreContext } from '../../../contexts/ScoreProvider';
 import { getTierColor } from '../../../utils/colorUtils';
 import { calculateLevel, scoreToXP } from '../../../utils/xpUtils';
 import { getMappedIcon } from '../../../utils/iconMapper';
-import { isToday, isThisMonth, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { WeeklyFocus } from './WeeklyFocus';
 
 export function UserProfile() {
@@ -16,12 +16,14 @@ export function UserProfile() {
     const navigate = useNavigate();
     const { personalities, activePersonalityId, activeContext } = usePersonalityStore();
     const { roles } = useTeamStore();
-    const { innerfaces, history } = useScoreContext();
+    const { innerfaces } = useScoreContext();
 
     // Determine display data based on context (Role vs Personality)
     let displayName = "Unknown";
     let displayAvatar: string | undefined;
     let displayIcon: string = 'user';
+
+    let activePersonality;
 
     if (activeContext?.type === 'role') {
         const teamRoles = roles[activeContext.teamId] || [];
@@ -32,7 +34,7 @@ export function UserProfile() {
         displayName = activeContext.displayName || "Participant";
         displayIcon = 'user'; // Or maybe 'eye' but 'user' is safer for general profile look
     } else {
-        const activePersonality = personalities.find(p => p.id === activePersonalityId);
+        activePersonality = personalities.find(p => p.id === activePersonalityId);
         displayName = activePersonality?.name || user?.displayName || user?.email?.split('@')[0] || "Unknown Player";
         displayAvatar = activePersonality?.avatar;
         displayIcon = activePersonality?.icon || 'user';
@@ -51,25 +53,24 @@ export function UserProfile() {
     const { level, currentLevelXP, progress } = calculateLevel(totalXP);
     const tierColor = getTierColor(level);
 
-    // 2. Check-ins today/month from history
-    const stats = history.reduce((acc, record) => {
-        // Exclude system events (re-linking, starting point changes, etc.) from daily/monthly stats
-        if (record.type === 'system') return acc;
+    // 2. Check-ins today/month from Personality Stats (Efficient Read)
+    const stats = { checkinsToday: 0, xpToday: 0, checkinsMonth: 0, xpMonth: 0 };
 
-        const recordDate = parseISO(record.timestamp);
-        // Use XP if available, else derive from weight
-        const recordXP = record.xp ?? Math.round(record.weight * 100);
+    // We only have stats for Personalities, not Roles (yet)
+    if (activeContext?.type !== 'role' && activePersonality?.stats) {
+        const todayStr = format(new Date(), 'yyyy-MM-dd');
+        const monthStr = format(new Date(), 'yyyy-MM');
 
-        if (isToday(recordDate)) {
-            acc.checkinsToday += 1;
-            acc.xpToday += recordXP;
+        if (activePersonality.stats.lastDailyUpdate === todayStr) {
+            stats.checkinsToday = activePersonality.stats.dailyCheckins;
+            stats.xpToday = activePersonality.stats.dailyXp;
         }
-        if (isThisMonth(recordDate)) {
-            acc.checkinsMonth += 1;
-            acc.xpMonth += recordXP;
+
+        if (activePersonality.stats.lastMonthlyUpdate === monthStr) {
+            stats.checkinsMonth = activePersonality.stats.monthlyCheckins;
+            stats.xpMonth = activePersonality.stats.monthlyXp;
         }
-        return acc;
-    }, { checkinsToday: 0, xpToday: 0, checkinsMonth: 0, xpMonth: 0 });
+    }
 
     const handleNavigateToHistory = (timeFilter?: string) => {
         navigate('/history', { state: { filterTime: timeFilter } });
