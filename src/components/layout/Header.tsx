@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useAuth } from '../../contexts/AuthProvider';
+import { useAuth } from '../../contexts/AuthContext';
 import { PersonalityDropdown } from './PersonalityDropdown';
-import { TeamsDropdown } from './TeamsDropdown';
-// import { faKeyboard, faCrown, faInfo, faCog } from '@fortawesome/free-solid-svg-icons';
+import { TeamsDropdown } from '../../features/teams/components/TeamsDropdown';
+
 import { LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
 

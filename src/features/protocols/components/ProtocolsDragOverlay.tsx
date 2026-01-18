@@ -1,0 +1,93 @@
+import React, { useState, useMemo } from 'react';
+import { useDndMonitor } from '@dnd-kit/core';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faGripVertical, faBan } from '@fortawesome/free-solid-svg-icons';
+import { ProtocolRow } from './ProtocolRow';
+import type { Protocol } from '../types';
+import type { Innerface } from '../../innerfaces/types';
+
+const noOp = () => { };
+
+export const ProtocolsDragOverlay = React.memo(({
+    activeProtocol,
+    activeGroup,
+    innerfaces,
+    groupedProtocols
+}: {
+    activeProtocol: Protocol | null,
+    activeGroup: string | null,
+    innerfaces: Innerface[],
+    groupedProtocols: [string, Protocol[]][]
+}) => {
+    const [isInvalid, setIsInvalid] = useState(false);
+
+    // Memoize the source group to avoid repeating this lookup 60 times/sec
+    const sourceGroup = useMemo(() => {
+        if (!activeProtocol) return null;
+        return groupedProtocols.find(([, ps]) => ps.find(p => p.id === activeProtocol.id))?.[0];
+    }, [activeProtocol, groupedProtocols]);
+
+    useDndMonitor({
+        onDragOver: ({ over }) => {
+            if (!over || !sourceGroup) {
+                if (isInvalid) setIsInvalid(false);
+                return;
+            }
+            const overId = String(over.id);
+            // Ignore hovering over the active item itself, but ensure we reset invalid state
+            if (overId === String(activeProtocol?.id)) {
+                if (isInvalid) setIsInvalid(false);
+                return;
+            }
+
+            let targetGroup: string | undefined;
+            if (overId.startsWith('group-')) {
+                targetGroup = overId.replace('group-', '');
+            } else {
+                targetGroup = groupedProtocols.find(([, ps]) => ps.find(p => String(p.id) === overId))?.[0];
+            }
+
+            // Boolean flip optimization: Only re-render if validity changes
+            const newInvalid = targetGroup !== sourceGroup;
+            if (newInvalid !== isInvalid) {
+                setIsInvalid(newInvalid);
+            }
+        },
+        onDragEnd: () => setIsInvalid(false),
+        onDragCancel: () => setIsInvalid(false),
+    });
+
+    if (activeGroup) {
+        return (
+            <div className="w-full bg-bg-primary/90 p-4 rounded-lg border border-sub/20 shadow-2xl scale-105 cursor-grabbing z-50">
+                <div className="flex items-center gap-3 text-2xl font-bold text-text-primary">
+                    <FontAwesomeIcon icon={faGripVertical} className="text-sm text-text-primary mr-2" />
+                    <span>{activeGroup}</span>
+                </div>
+            </div>
+        );
+    }
+
+    if (!activeProtocol) return null;
+
+    return (
+        <div className={`w-full shadow-2xl z-50 transition-transform duration-200 ${isInvalid ? 'scale-95 cursor-not-allowed' : 'opacity-90 cursor-grabbing'}`}>
+            <ProtocolRow
+                protocol={activeProtocol}
+                innerfaces={innerfaces}
+                onLevelUp={noOp}
+                onLevelDown={noOp}
+                onEdit={noOp}
+                isDisabled={true}
+            />
+            {isInvalid && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50 rounded-xl overflow-hidden">
+                    <div className="absolute inset-0 bg-red-500/10 backdrop-blur-[2px]" />
+                    <div className="relative z-10 bg-bg-primary/40 backdrop-blur-md text-[#ca4754] rounded-full w-12 h-12 flex items-center justify-center shadow-[0_0_20px_rgba(202,71,84,0.3)] border border-[#ca4754]/20 animate-in zoom-in duration-200">
+                        <FontAwesomeIcon icon={faBan} className="text-xl" />
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+});

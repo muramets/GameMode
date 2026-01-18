@@ -1,20 +1,13 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
 import { useScores } from '../features/protocols/hooks/useScores';
-import { useTeamStore } from '../stores/teamStore';
+import { useTeamStore, useRoleStore } from '../stores/team';
 import { usePersonalityStore } from '../stores/personalityStore';
-
-interface ScoreContextType extends ReturnType<typeof useScores> {
-    initialized: boolean;
-    progress: number;
-    resetInitialized: () => void;
-}
-
-const ScoreContext = createContext<ScoreContextType | null>(null);
+import { ScoreContext } from './ScoreContext';
 
 export function ScoreProvider({ children }: { children: React.ReactNode }) {
     const scoreData = useScores();
     const teamsLoading = useTeamStore(state => state.isLoading);
-    const roles = useTeamStore(state => state.roles);
+    const roles = useRoleStore(state => state.roles);
     const personalitiesLoading = usePersonalityStore(state => state.isLoading);
     const activeContext = usePersonalityStore(state => state.activeContext);
     const [initialized, setInitialized] = useState(false);
@@ -36,15 +29,16 @@ export function ScoreProvider({ children }: { children: React.ReactNode }) {
     const isLoading = scoreData.isLoading || teamsLoading || personalitiesLoading || isRoleMetadataMissing;
 
     // Track previous loading state to detect transitions
-    const wasLoadingRef = React.useRef(isLoading);
+    const wasLoadingRef = useRef(isLoading);
 
     // Reset progress only when TRANSITIONING from not-loading to loading
-    React.useLayoutEffect(() => {
+    useLayoutEffect(() => {
         const wasLoading = wasLoadingRef.current;
         wasLoadingRef.current = isLoading;
 
         // Only reset if we're starting a NEW loading cycle (was false, now true)
         if (isLoading && !wasLoading && initialized) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setDisplayProgress(0);
             // We DO NOT set initialized(false) here. 
             // Doing so causes infinite loops if background fetches toggle isLoading.
@@ -57,10 +51,8 @@ export function ScoreProvider({ children }: { children: React.ReactNode }) {
             setDisplayProgress(prev => {
                 // If real data is loaded, we accelerate to 100
                 if (!isLoading) {
-                    if (prev >= 100) {
-                        clearInterval(interval);
-                        return 100;
-                    }
+                    // If we are close to completion or just finished loading, jump to 100
+                    if (prev >= 90) return 100;
                     return Math.min(100, prev + 5); // Fast finish
                 }
 
@@ -82,14 +74,6 @@ export function ScoreProvider({ children }: { children: React.ReactNode }) {
 
     // Listener for completion
     useEffect(() => {
-        // If real data is loaded, we allow the progress to finish
-        if (!isLoading) {
-            // If we are stuck at 90+ but data is ready, force finish
-            if (displayProgress >= 90 && displayProgress < 100) {
-                setDisplayProgress(100);
-            }
-        }
-
         if (displayProgress >= 100 && !isLoading) {
             const timer = setTimeout(() => {
                 setInitialized(true);
@@ -118,12 +102,4 @@ export function ScoreProvider({ children }: { children: React.ReactNode }) {
             {children}
         </ScoreContext.Provider>
     );
-}
-
-export function useScoreContext() {
-    const context = useContext(ScoreContext);
-    if (!context) {
-        throw new Error('useScoreContext must be used within a ScoreProvider');
-    }
-    return context;
 }

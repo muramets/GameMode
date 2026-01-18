@@ -12,6 +12,7 @@ export type Theme = {
     errorExtraColor?: string;
     colorfulErrorColor?: string;
     colorfulErrorExtraColor?: string;
+    correctColor?: string;
 };
 
 function hexToRgb(hex: string): string | null {
@@ -67,5 +68,5 @@ export const applyTheme = (theme: Theme) => {
     setVar('error-extra-color', theme.errorExtraColor || '#7e2a33');
     setVar('colorful-error-color', theme.colorfulErrorColor || '#ca4754');
     setVar('colorful-error-extra-color', theme.colorfulErrorExtraColor || '#7e2a33');
-    setVar('correct-color', '#98c379'); // Fixed for now
+    setVar('correct-color', theme.correctColor || '#98c379');
 };

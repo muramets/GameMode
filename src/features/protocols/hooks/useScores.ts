@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { useAuth } from '../../../contexts/AuthProvider';
+import { useAuth } from '../../../contexts/AuthContext';
 import { useHistoryStore } from '../../../stores/historyStore';
 import { useMetadataStore } from '../../../stores/metadataStore';
 import { usePersonalityStore } from '../../../stores/personalityStore';
@@ -204,6 +204,6 @@ export function useScores() {
         states: statesWithScores,
         isLoading,
         loadingProgress,
-        resetHistory: () => console.log('Reset history not implemented yet for Firestore'),
+        resetHistory: () => console.warn('Reset history not implemented yet for Firestore'),
     }), [history, applyProtocol, deleteEvent, innerfacesWithScores, protocols, statesWithScores, isLoading, loadingProgress]);
 }

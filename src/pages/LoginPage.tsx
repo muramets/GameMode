@@ -11,7 +11,7 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../contexts/AuthProvider';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/atoms/Button';
 
 // Google icon as SVG

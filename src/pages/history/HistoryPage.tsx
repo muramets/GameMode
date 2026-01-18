@@ -1,7 +1,7 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useLocation } from 'react-router-dom';
-// import { useScoreContext } from '../../contexts/ScoreProvider'; // No longer needed
+import { useLocation, useSearchParams } from 'react-router-dom';
+
 import { useMetadataStore } from '../../stores/metadataStore';
 import { useHistoryFeed } from '../../features/history/hooks/useHistoryFeed';
 import { format, isToday, isYesterday, parseISO, startOfWeek, startOfMonth } from 'date-fns';
@@ -21,14 +21,54 @@ export default function HistoryPage() {
     const { innerfaces, protocols, states, groupsMetadata } = useMetadataStore();
     const location = useLocation();
 
+    const [searchParams, setSearchParams] = useSearchParams();
+
     // Filters state
     const [searchQuery, setSearchQuery] = useState('');
-    const [timeFilter, setTimeFilter] = useState<TimeFilter>('All time');
+    // Time filter still uses state (defaults to All time)
+    const [timeFilter, setTimeFilter] = useState<TimeFilter>(() => {
+        return (location.state as HistoryPageState)?.filterTime || (searchParams.get('time') as TimeFilter) || 'All time';
+    });
     const [typeFilter, setTypeFilter] = useState<TypeFilter>('All types');
     const [effectFilter, setEffectFilter] = useState<EffectFilter>('All effects');
-    const [selectedProtocolIds, setSelectedProtocolIds] = useState<string[]>([]);
-    const [selectedInnerfaceIds, setSelectedInnerfaceIds] = useState<string[]>([]);
-    const [selectedStateIds, setSelectedStateIds] = useState<string[]>([]);
+
+    // Derived from URL
+    const selectedProtocolIds = useMemo(() => searchParams.getAll('protocolId'), [searchParams]);
+    const selectedInnerfaceIds = useMemo(() => searchParams.getAll('innerfaceId'), [searchParams]);
+    const selectedStateIds = useMemo(() => searchParams.getAll('stateId'), [searchParams]);
+
+    interface HistoryPageState {
+        filterStateId?: string;
+        filterInnerfaceId?: string;
+        filterTime?: TimeFilter;
+    }
+
+    const setSelectedProtocolIds = useCallback((ids: string[]) => {
+        setSearchParams((prev: URLSearchParams) => {
+            const newParams = new URLSearchParams(prev);
+            newParams.delete('protocolId');
+            ids.forEach(id => newParams.append('protocolId', id));
+            return newParams;
+        });
+    }, [setSearchParams]);
+
+    const setSelectedInnerfaceIds = useCallback((ids: string[]) => {
+        setSearchParams((prev: URLSearchParams) => {
+            const newParams = new URLSearchParams(prev);
+            newParams.delete('innerfaceId');
+            ids.forEach(id => newParams.append('innerfaceId', id));
+            return newParams;
+        });
+    }, [setSearchParams]);
+
+    const setSelectedStateIds = useCallback((ids: string[]) => {
+        setSearchParams((prev: URLSearchParams) => {
+            const newParams = new URLSearchParams(prev);
+            newParams.delete('stateId');
+            ids.forEach(id => newParams.append('stateId', id));
+            return newParams;
+        });
+    }, [setSearchParams]);
 
     // Derived Server-Side Filters
     const serverFilters = useMemo(() => {
@@ -81,42 +121,37 @@ export default function HistoryPage() {
             { threshold: 1.0 }
         );
 
-        if (observerTarget.current) {
-            observer.observe(observerTarget.current);
+        const currentTarget = observerTarget.current;
+
+        if (currentTarget) {
+            observer.observe(currentTarget);
         }
 
         return () => {
-            if (observerTarget.current) {
-                observer.unobserve(observerTarget.current);
+            if (currentTarget) {
+                observer.unobserve(currentTarget);
             }
         };
     }, [observerTarget, hasMore, isLoadingMore, loadMore]);
 
+    // Initialize from location state (fallback for complex navigations not using URL)
+    // Initialize from location state (fallback for complex navigations not using URL)
     useEffect(() => {
-        const params = new URLSearchParams(location.search);
-        const protocolId = params.get('protocolId');
-        const innerfaceId = params.get('innerfaceId') || location.state?.filterInnerfaceId;
-        const stateId = location.state?.filterStateId;
-        const filterTime = location.state?.filterTime;
-
-        if (protocolId) {
-            setSelectedProtocolIds([protocolId]);
+        const state = location.state as HistoryPageState;
+        if (state?.filterStateId) {
+            const sid = state.filterStateId;
+            if (!selectedStateIds.includes(sid)) {
+                setSelectedStateIds([sid]);
+            }
         }
-        if (innerfaceId) {
-            setSelectedInnerfaceIds([innerfaceId.toString()]);
+        // Note: filterInnerfaceId etc handled by URL ideally, but if legacy state passed:
+        if (state?.filterInnerfaceId) {
+            const iid = state.filterInnerfaceId;
+            if (!selectedInnerfaceIds.includes(iid.toString())) {
+                setSelectedInnerfaceIds([iid.toString()]);
+            }
         }
-        if (stateId) {
-            setSelectedStateIds([stateId]);
-        }
-        if (filterTime) {
-            setTimeFilter(filterTime);
-        }
-
-        // Clean up URL/State
-        if (protocolId || innerfaceId || location.state) {
-            window.history.replaceState({}, document.title, location.pathname);
-        }
-    }, [location, states]);
+    }, [location.state, selectedStateIds, selectedInnerfaceIds, setSelectedStateIds, setSelectedInnerfaceIds]);
 
     const filteredHistory = useMemo(() => {
         return history.filter(event => {
@@ -153,7 +188,7 @@ export default function HistoryPage() {
             // Innerface filter (Client Side Only - too complex for standard index)
             if (selectedInnerfaceIds.length > 0) {
                 const eventInnerfaces = Object.keys(event.changes || {});
-                const hasMatchingInnerface = selectedInnerfaceIds.some(id => eventInnerfaces.includes(id));
+                const hasMatchingInnerface = selectedInnerfaceIds.some((id: string) => eventInnerfaces.includes(id));
                 if (!hasMatchingInnerface) return false;
             }
 
@@ -174,14 +209,14 @@ export default function HistoryPage() {
 
             return true;
         });
-    }, [history, searchQuery, timeFilter, typeFilter, effectFilter, selectedProtocolIds, selectedInnerfaceIds, selectedStateIds, states]);
+    }, [history, searchQuery, typeFilter, effectFilter, selectedInnerfaceIds, selectedStateIds, states]);
 
     const groupedHistory = useMemo(() => {
         const groups: Record<string, typeof filteredHistory> = {};
 
         filteredHistory.forEach(event => {
             const date = parseISO(event.timestamp);
-            let dateKey = format(date, 'yyyy-MM-dd');
+            const dateKey = format(date, 'yyyy-MM-dd');
 
             if (!groups[dateKey]) {
                 groups[dateKey] = [];
@@ -304,19 +339,19 @@ export default function HistoryPage() {
                         id: `protocol-${id}`,
                         label: protocols.find(p => p.id.toString() === id)?.title || id,
                         icon: undefined,
-                        onRemove: () => setSelectedProtocolIds(selectedProtocolIds.filter(pid => pid !== id))
+                        onRemove: () => setSelectedProtocolIds(selectedProtocolIds.filter((pid: string) => pid !== id))
                     })),
                     ...selectedInnerfaceIds.map(id => ({
                         id: `innerface-${id}`,
                         label: innerfaces.find(i => i.id.toString() === id)?.name.split('.')[0] || id,
                         icon: undefined,
-                        onRemove: () => setSelectedInnerfaceIds(selectedInnerfaceIds.filter(iid => iid !== id))
+                        onRemove: () => setSelectedInnerfaceIds(selectedInnerfaceIds.filter((iid: string) => iid !== id))
                     })),
                     ...selectedStateIds.map(id => ({
                         id: `state-${id}`,
                         label: states.find(s => s.id === id)?.name || id,
                         icon: undefined,
-                        onRemove: () => setSelectedStateIds(selectedStateIds.filter(sid => sid !== id))
+                        onRemove: () => setSelectedStateIds(selectedStateIds.filter((sid: string) => sid !== id))
                     }))
                 ]}
                 onClearAll={hasActiveFilters ? clearFilters : undefined}

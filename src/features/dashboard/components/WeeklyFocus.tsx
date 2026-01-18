@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { usePlanningStore } from '../../../stores/planningStore';
-import { useScoreContext } from '../../../contexts/ScoreProvider';
+import { useScoreContext } from '../../../contexts/ScoreContext';
 import { renderIcon } from '../../../utils/iconMapper';
 import { getWeeklyProgress, getProgressDots } from '../../../utils/weeklyProgressUtils';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';

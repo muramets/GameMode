@@ -1,4 +1,4 @@
-import { useScoreContext } from '../../../contexts/ScoreProvider';
+import { useScoreContext } from '../../../contexts/ScoreContext';
 
 export const GlobalLoader = () => {
     const { progress } = useScoreContext();

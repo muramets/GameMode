@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { FormEvent } from 'react';
 import { Modal } from '../../../components/ui/molecules/Modal';
 import { Input } from '../../../components/ui/molecules/Input';
 import { Button } from '../../../components/ui/atoms/Button';
-import { useAuth } from '../../../contexts/AuthProvider';
+import { useAuth } from '../../../contexts/AuthContext';
 import { useMetadataStore } from '../../../stores/metadataStore';
 import { usePersonalityStore } from '../../../stores/personalityStore';
 import { getMappedIcon, ICON_PRESETS } from '../../../utils/iconMapper';
@@ -35,8 +35,16 @@ export function GroupSettingsModal({ isOpen, onClose, groupName }: GroupSettings
     const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
 
+    const prevIsOpen = useRef(isOpen);
+    const prevGroupName = useRef(groupName);
+
+    // Initial load logic
     useEffect(() => {
-        if (isOpen && groupName) {
+        const hasOpened = isOpen && !prevIsOpen.current;
+        const groupChanged = groupName !== prevGroupName.current;
+
+        if (isOpen && (hasOpened || groupChanged)) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setName(groupName);
             const metadata = groupsMetadata[groupName];
             const config = GROUP_CONFIG[groupName];
@@ -44,6 +52,9 @@ export function GroupSettingsModal({ isOpen, onClose, groupName }: GroupSettings
             setIcon(metadata?.icon || (config ? config.icon.iconName : 'brain'));
             setColor(metadata?.color || config?.color || '#e2b714');
         }
+
+        prevIsOpen.current = isOpen;
+        prevGroupName.current = groupName;
     }, [isOpen, groupName, groupsMetadata]);
 
     const handleSave = async (e: FormEvent) => {

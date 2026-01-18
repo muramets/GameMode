@@ -117,7 +117,7 @@ export function getWeeklyProgress(
                         if (isWithinInterval(parseISO(r.timestamp), weekRange)) {
                             completed++;
                         }
-                    } catch { }
+                    } catch { /* ignore */ }
                 }
             });
 
@@ -152,7 +152,7 @@ export function getWeeklyProgress(
                         if (isWithinInterval(parseISO(r.timestamp), mainItem.range)) {
                             completed++;
                         }
-                    } catch { }
+                    } catch { /* ignore */ }
                 }
             });
 

@@ -6,23 +6,16 @@ import { CollapsibleSection } from '../../../components/ui/molecules/Collapsible
 import {
     DndContext,
     closestCenter,
-    KeyboardSensor,
-    PointerSensor,
-    useSensor,
-    useSensors,
     DragOverlay,
-    type DragEndEvent
 } from '@dnd-kit/core';
 import {
-    arrayMove,
     SortableContext,
-    sortableKeyboardCoordinates,
     rectSortingStrategy
 } from '@dnd-kit/sortable';
 import { SortableQuickActionCard } from './SortableQuickActionCard';
 import { QuickActionCard } from './QuickActionCard';
 import { useMetadataStore } from '../../../stores/metadataStore';
-import { useState } from 'react';
+import { useSortableList } from '../../../hooks/useSortableList';
 
 interface QuickActionsGridProps {
     actions: Protocol[];
@@ -42,34 +35,12 @@ export function QuickActionsGrid({
     isDisabled
 }: QuickActionsGridProps) {
     const { reorderQuickActions } = useMetadataStore();
-    const [activeId, setActiveId] = useState<string | null>(null);
     const navigate = useNavigate();
 
-    const sensors = useSensors(
-        useSensor(PointerSensor, {
-            activationConstraint: {
-                distance: 3
-            }
-        }),
-        useSensor(KeyboardSensor, {
-            coordinateGetter: sortableKeyboardCoordinates,
-        })
-    );
-
-    const handleDragEnd = (event: DragEndEvent) => {
-        const { active, over } = event;
-        setActiveId(null);
-
-        if (active.id !== over?.id) {
-            const oldIndex = actions.findIndex((a) => a.id === active.id);
-            const newIndex = actions.findIndex((a) => a.id === over?.id);
-
-            if (oldIndex !== -1 && newIndex !== -1) {
-                const newOrder = arrayMove(actions, oldIndex, newIndex);
-                reorderQuickActions(newOrder.map(a => a.id.toString()));
-            }
-        }
-    };
+    const { sensors, activeId, handleDragStart, handleDragEnd } = useSortableList({
+        items: actions,
+        onReorder: reorderQuickActions
+    });
 
     return (
         <CollapsibleSection
@@ -90,7 +61,7 @@ export function QuickActionsGrid({
             <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
-                onDragStart={(event) => setActiveId(String(event.active.id))}
+                onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
             >
                 <DragOverlay dropAnimation={null}>
@@ -154,3 +125,4 @@ export function QuickActionsGrid({
         </CollapsibleSection>
     );
 }
+

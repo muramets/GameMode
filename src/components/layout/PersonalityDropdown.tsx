@@ -1,19 +1,18 @@
 import React, { useState } from 'react';
 import { usePersonalityStore } from '../../stores/personalityStore';
-import { useAuth } from '../../contexts/AuthProvider';
+import { useAuth } from '../../contexts/AuthContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog, faPlus, faCheck, faPen, faEye } from '@fortawesome/free-solid-svg-icons';
 import { getMappedIcon } from '../../utils/iconMapper';
 import { PersonalitySettingsModal } from '../modals/PersonalitySettingsModal';
 
-import { useTeamStore } from '../../stores/teamStore';
+import { useRoleStore } from '../../stores/team';
 import type { TeamRole } from '../../types/team';
-
 
 export function PersonalityDropdown() {
     const { user } = useAuth();
     const { personalities, activePersonalityId, switchPersonality, activeContext } = usePersonalityStore();
-    const { roles } = useTeamStore();
+    const { roles } = useRoleStore();
 
     // UI Local State
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);

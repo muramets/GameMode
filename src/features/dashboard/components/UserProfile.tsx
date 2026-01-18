@@ -1,10 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Card } from '../../../components/ui/atoms/Card';
-import { useAuth } from '../../../contexts/AuthProvider';
+import { useAuth } from '../../../contexts/AuthContext';
 import { usePersonalityStore } from '../../../stores/personalityStore';
-import { useTeamStore } from '../../../stores/teamStore';
-import { useScoreContext } from '../../../contexts/ScoreProvider';
+import { useRoleStore } from '../../../stores/team';
+import { useScoreContext } from '../../../contexts/ScoreContext';
 import { getTierColor } from '../../../utils/colorUtils';
 import { calculateLevel, scoreToXP } from '../../../utils/xpUtils';
 import { getMappedIcon } from '../../../utils/iconMapper';
@@ -15,7 +15,7 @@ export function UserProfile() {
     const { user } = useAuth();
     const navigate = useNavigate();
     const { personalities, activePersonalityId, activeContext } = usePersonalityStore();
-    const { roles } = useTeamStore();
+    const { roles } = useRoleStore();
     const { innerfaces } = useScoreContext();
 
     // Determine display data based on context (Role vs Personality)

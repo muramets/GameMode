@@ -5,24 +5,17 @@ import { CollapsibleSection } from '../../../components/ui/molecules/Collapsible
 import {
     DndContext,
     closestCenter,
-    KeyboardSensor,
-    PointerSensor,
-    useSensor,
-    useSensors,
     DragOverlay,
-    type DragEndEvent
 } from '@dnd-kit/core';
 import {
-    arrayMove,
     SortableContext,
-    sortableKeyboardCoordinates,
     rectSortingStrategy
 } from '@dnd-kit/sortable';
 import { SortableStateCard } from './SortableStateCard';
 import { StateCard } from './StateCard';
 import { useMetadataStore } from '../../../stores/metadataStore';
-import { useState } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../../components/ui/atoms/Tooltip';
+import { useSortableList } from '../../../hooks/useSortableList';
 
 interface StatesGridProps {
     states: StateData[];
@@ -34,35 +27,12 @@ interface StatesGridProps {
 
 export function StatesGrid({ states, onAddState, onEdit, onHistory, hasProtocols = false }: StatesGridProps) {
     const { reorderStates } = useMetadataStore();
-    const [activeId, setActiveId] = useState<string | null>(null);
     const navigate = useNavigate();
 
-    const sensors = useSensors(
-        useSensor(PointerSensor, {
-            // Require movement of 3px before drag starts to prevent accidental drags on click
-            activationConstraint: {
-                distance: 3
-            }
-        }),
-        useSensor(KeyboardSensor, {
-            coordinateGetter: sortableKeyboardCoordinates,
-        })
-    );
-
-    const handleDragEnd = (event: DragEndEvent) => {
-        const { active, over } = event;
-        setActiveId(null);
-
-        if (active.id !== over?.id) {
-            const oldIndex = states.findIndex((s) => s.id === active.id);
-            const newIndex = states.findIndex((s) => s.id === over?.id);
-
-            if (oldIndex !== -1 && newIndex !== -1) {
-                const newOrder = arrayMove(states, oldIndex, newIndex);
-                reorderStates(newOrder.map(s => s.id));
-            }
-        }
-    };
+    const { sensors, activeId, handleDragStart, handleDragEnd } = useSortableList({
+        items: states,
+        onReorder: reorderStates
+    });
 
     return (
         <CollapsibleSection
@@ -91,7 +61,7 @@ export function StatesGrid({ states, onAddState, onEdit, onHistory, hasProtocols
             <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
-                onDragStart={(event) => setActiveId(String(event.active.id))}
+                onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
             >
                 <DragOverlay dropAnimation={null}>
@@ -147,3 +117,4 @@ export function StatesGrid({ states, onAddState, onEdit, onHistory, hasProtocols
         </CollapsibleSection>
     );
 }
+

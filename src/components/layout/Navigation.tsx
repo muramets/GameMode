@@ -40,7 +40,7 @@ export function Navigation() {
     // Style matching #testConfig .textButton from test.scss
     // px-3 (1em), gap-2 (0.5em icon gap), duration 125ms
     // Font: 11px (0.7rem approx) to match "smaller" look, leading-tight (1.25)
-    const baseItemClasses = "flex items-center gap-2 px-3 h-full border-none bg-transparent cursor-pointer font-mono text-[11px] transition-colors duration-[125ms] outline-none leading-tight select-none";
+    const baseItemClasses = "flex items-center gap-2 px-3 h-full border-none bg-transparent cursor-pointer font-mono text-[11px] transition-colors duration-125 outline-none leading-tight select-none";
     const activeClasses = "text-main hover:text-text-primary";
     const inactiveClasses = "text-text-secondary hover:text-text-primary";
 
@@ -69,11 +69,7 @@ export function Navigation() {
                 <Link
                     draggable={false}
                     to="/actions"
-                    onClick={() => {
-                        const now = performance.now();
-                        (window as unknown as { __navStart: number }).__navStart = now;
-                        console.log(`[PERF][1] Navigation: Clicked protocols at ${now.toFixed(2)}ms`);
-                    }}
+
                     className={`${baseItemClasses} ${isActive('/actions') ? activeClasses : inactiveClasses}`}
                 >
                     <List
@@ -127,7 +123,7 @@ export function Navigation() {
                             bg-transparent z-10 border-none
                             font-mono text-xs leading-none
                             ${isActive('/history') ? 'text-main' : 'text-sub hover:text-text-primary'}
-                            transition-all duration-300 ease-[cubic-bezier(0.4,0.0,0.2,1)]
+                            transition-all duration-300 ease-out
                         `}
                         style={{
                             width: (isInnerfacesExpanded || isActive('/history')) ? 'auto' : '0px',
@@ -149,7 +145,7 @@ export function Navigation() {
                     <div
                         className={`
                             absolute top-0 left-[85%] h-full bg-sub-alt rounded-r-lg
-                            transition-all duration-[300ms] ease-[cubic-bezier(0.4,0.0,0.2,1)]
+                            transition-all duration-300 ease-out
                             z-0 shadow-sm
                         `}
                         style={{

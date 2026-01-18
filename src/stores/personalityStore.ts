@@ -45,15 +45,23 @@ interface PersonalityState {
 export const usePersonalityStore = create<PersonalityState>((set, get) => ({
     personalities: [],
     activePersonalityId: localStorage.getItem('active_personality_id'),
-    activeContext: localStorage.getItem('active_context')
-        ? JSON.parse(localStorage.getItem('active_context')!)
-        : (localStorage.getItem('active_personality_id') ? { // Fallback for migration
-            type: 'personality',
-            pid: localStorage.getItem('active_personality_id')!,
-            // We don't have UID here easily without auth context passed or stored. 
-            // We'll rely on switchPersonality to fix this if it's broken.
-            uid: ''
-        } as any : null),
+    activeContext: (() => {
+        const stored = localStorage.getItem('active_context');
+        if (stored) {
+            try {
+                return JSON.parse(stored) as ActiveContext;
+            } catch {
+                return null;
+            }
+        }
+        // Migration fallback for old localStorage format
+        const oldPid = localStorage.getItem('active_personality_id');
+        if (oldPid) {
+            // Note: uid will be fixed on next switchPersonality call
+            return { type: 'personality' as const, uid: '', pid: oldPid };
+        }
+        return null;
+    })(),
     isLoading: true,
     error: null,
 
@@ -244,7 +252,7 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
             }
 
             // Create default
-            console.log('Creating Default Personality and migrating data...');
+
             const defaultId = 'main-personality';
 
             // We do existing data migration here implicitly or explicitly?

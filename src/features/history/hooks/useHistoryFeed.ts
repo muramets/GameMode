@@ -10,10 +10,11 @@ import {
     doc,
     deleteDoc,
     QueryDocumentSnapshot,
-    type DocumentData
+    type DocumentData,
+    type QueryConstraint
 } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
-import { useAuth } from '../../../contexts/AuthProvider';
+import { useAuth } from '../../../contexts/AuthContext';
 import { usePersonalityStore } from '../../../stores/personalityStore';
 import type { HistoryRecord } from '../../../types/history';
 
@@ -55,7 +56,7 @@ export function useHistoryFeed(filters: HistoryFilters = {}) {
                 // Note: Firestore requires Composite Indexes for combinations of Eq + Range/Sort.
                 // We prioritize 'timestamp' sort.
 
-                const constraints: any[] = [];
+                const constraints: QueryConstraint[] = [];
 
                 // 1. Protocol Filter (Use 'in' operator, max 10)
                 if (filters.protocolIds && filters.protocolIds.length > 0 && filters.protocolIds.length <= 10) {
@@ -97,14 +98,17 @@ export function useHistoryFeed(filters: HistoryFilters = {}) {
                     setHasMore(false);
                 }
 
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error("History feed error:", err);
+                const message = err instanceof Error ? err.message : 'Unknown error';
+                const code = (err as { code?: string })?.code;
+
                 // If error is 'failed-precondition', it usually means missing index.
                 // We should notify developer, but for user we might fallback or show error.
-                if (err.code === 'failed-precondition') {
-                    console.warn("Missing Index for query!", err.message);
+                if (code === 'failed-precondition') {
+                    console.warn("Missing Index for query!", message);
                 }
-                setError(err.message);
+                setError(message);
             } finally {
                 setIsLoading(false);
             }
@@ -112,7 +116,7 @@ export function useHistoryFeed(filters: HistoryFilters = {}) {
 
         fetchFirstPage();
 
-    }, [user, activePersonalityId, JSON.stringify(filters)]); // Deep compare params simple
+    }, [user, activePersonalityId, filters]);
 
     const loadMore = useCallback(async () => {
         if (!user || !activePersonalityId || isLoadingMore || !hasMore || !lastDocRef.current) return;
@@ -122,7 +126,7 @@ export function useHistoryFeed(filters: HistoryFilters = {}) {
             const historyRef = collection(db, 'users', user.uid, 'personalities', activePersonalityId, 'history');
 
             // Re-construct same query constraints
-            const constraints: any[] = [];
+            const constraints: QueryConstraint[] = [];
             if (filters.protocolIds && filters.protocolIds.length > 0 && filters.protocolIds.length <= 10) {
                 constraints.push(where('protocolId', 'in', filters.protocolIds));
             }
@@ -163,13 +167,13 @@ export function useHistoryFeed(filters: HistoryFilters = {}) {
                     setHasMore(false);
                 }
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Load more error:", err);
-            setError(err.message);
+            setError(err instanceof Error ? err.message : 'Unknown error');
         } finally {
             setIsLoadingMore(false);
         }
-    }, [user, activePersonalityId, isLoadingMore, hasMore, JSON.stringify(filters)]);
+    }, [user, activePersonalityId, isLoadingMore, hasMore, filters]);
 
     const deleteEvent = useCallback(async (id: string) => {
         if (!user || !activePersonalityId) return;

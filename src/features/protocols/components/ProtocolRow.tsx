@@ -1,6 +1,7 @@
 import React, { useState, useRef, useMemo, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Protocol, Innerface } from '../types';
+import type { Protocol } from '../types';
+import type { Innerface } from '../../innerfaces/types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faMinus, faCog, faHistory } from '@fortawesome/free-solid-svg-icons';
 import { TruncatedTooltip } from '../../../components/ui/molecules/TruncatedTooltip';

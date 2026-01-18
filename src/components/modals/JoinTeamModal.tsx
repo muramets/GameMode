@@ -10,8 +10,8 @@ import { useState, useEffect } from 'react';
 import { Modal } from '../ui/molecules/Modal';
 import { Input } from '../ui/molecules/Input';
 import { Button } from '../ui/atoms/Button';
-import { useAuth } from '../../contexts/AuthProvider';
-import { useTeamStore } from '../../stores/teamStore';
+import { useAuth } from '../../contexts/AuthContext';
+import { useInviteStore } from '../../stores/team';
 import { usePersonalityStore } from '../../stores/personalityStore';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faLink, faCheck, faSpinner, faExclamationCircle } from '@fortawesome/free-solid-svg-icons';
@@ -31,7 +31,7 @@ const InputLabel = ({ label }: { label: string }) => (
 
 export function JoinTeamModal({ isOpen, onClose }: JoinTeamModalProps) {
     const { user } = useAuth();
-    const { getInviteInfo, joinTeam } = useTeamStore();
+    const { getInviteInfo, joinTeam } = useInviteStore();
     const { switchPersonality } = usePersonalityStore();
 
     const [inviteCode, setInviteCode] = useState('');

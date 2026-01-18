@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthProvider';
+import { useAuth } from '../contexts/AuthContext';
 import { useHistoryStore } from './historyStore';
 import { useMetadataStore } from './metadataStore';
 import { usePersonalityStore } from './personalityStore';
-import { useTeamStore } from './teamStore';
+import { useTeamStore, useRoleStore } from './team';
 import { usePlanningStore } from './planningStore';
 
 export function StoreSync() {
@@ -19,7 +19,7 @@ export function StoreSync() {
     const subscribeToMetadata = useMetadataStore(state => state.subscribeToMetadata);
     const setContext = useMetadataStore(state => state.setContext);
     const subscribeToTeams = useTeamStore(state => state.subscribeToTeams);
-    const subscribeToRoles = useTeamStore(state => state.subscribeToRoles);
+    const subscribeToRoles = useRoleStore(state => state.subscribeToRoles);
 
     const ensureDefaultPersonality = usePersonalityStore(state => state.ensureDefaultPersonality);
     const loadPersonalities = usePersonalityStore(state => state.loadPersonalities);
@@ -101,18 +101,15 @@ export function StoreSync() {
             // Set context in store for actions to use
             setContext(context);
 
-            console.log('[StoreSync] Subscribing to metadata with context:', contextHash);
             const unsubMetadata = subscribeToMetadata(context);
 
             return () => {
-                console.log('[StoreSync] Cleanup for context:', contextHash);
                 unsubHistory();
                 unsubMetadata();
             };
-        } else {
-            console.log('[StoreSync] Skipping sync - missing user or activeContext', { hasUser: !!user, hasActiveContext: !!activeContext });
         }
-    }, [user, contextHash, subscribeToHistory, subscribeToMetadata, setContext, clearHistory]); // Removed activeContext, added contextHash
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user, contextHash, subscribeToHistory, subscribeToMetadata, setContext, clearHistory, clearGoals, subscribeToGoals, subscribeToRoles]);
 
     return null;
 }

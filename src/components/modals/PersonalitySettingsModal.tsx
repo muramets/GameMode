@@ -1,15 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
-import type { FormEvent } from 'react';
 import { Modal } from '../ui/molecules/Modal';
 import { Input } from '../ui/molecules/Input';
 import { Button } from '../ui/atoms/Button';
-import { useAuth } from '../../contexts/AuthProvider';
-import { usePersonalityStore } from '../../stores/personalityStore';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faExclamationTriangle, faUser } from '@fortawesome/free-solid-svg-icons';
-import { PRESET_COLORS } from '../../constants/common';
-import * as Popover from '@radix-ui/react-popover';
+import { ColorPicker } from '../ui/molecules/ColorPicker';
 import { ImageCropper } from '../ui/molecules/ImageCropper';
+import { usePersonalityForm } from '../../features/personalities/hooks/usePersonalityForm';
 
 // Moved outside to avoid recreating on each render
 const InputLabel = ({ label }: { label: string }) => (
@@ -25,114 +21,43 @@ interface PersonalitySettingsModalProps {
 }
 
 export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: PersonalitySettingsModalProps) {
-    const { user } = useAuth();
-    const { personalities, updatePersonality, deletePersonality, addPersonality, switchPersonality } = usePersonalityStore();
+    const {
+        formState,
+        uiState,
+        refs,
+        handlers
+    } = usePersonalityForm({ personalityId, onClose, isOpen });
 
-    const [name, setName] = useState('');
-    const [description, setDescription] = useState('');
-    const [icon, setIcon] = useState('user');
-    const [color, setColor] = useState('#e2b714');
-    const [avatar, setAvatar] = useState(''); // URL for avatar
+    const {
+        name, setName,
+        description, setDescription,
+        color, setColor,
+        avatar, setAvatar
+    } = formState;
 
-    const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
-    const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+    const {
+        isConfirmingDelete,
+        isCropping,
+        tempImage
+    } = uiState;
 
-    const [tempImage, setTempImage] = useState<string | null>(null);
-    const [isCropping, setIsCropping] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const { fileInputRef } = refs;
 
+    const {
+        handleSubmit,
+        handleDelete,
+        handleFileSelect,
+        handleCropComplete,
+        handleCancelCrop
+    } = handlers;
 
-    // Sync form state with props when modal opens - intentional pattern for modal forms
-    useEffect(() => {
-        /* eslint-disable react-hooks/set-state-in-effect */
-        if (isOpen && personalityId) {
-            const p = personalities.find(p => p.id === personalityId);
-            if (p) {
-                setName(p.name);
-                setDescription(p.description || '');
-                setIcon(p.icon || 'user');
-                setColor(p.themeColor || '#e2b714');
-                setAvatar(p.avatar || '');
-            }
-        } else if (isOpen && !personalityId) {
-            // New Mode
-            setName('');
-            setDescription('');
-            setIcon('user');
-            setColor('#e2b714');
-            setAvatar('');
-        }
-        setIsConfirmingDelete(false);
-        setIsColorPickerOpen(false);
-        setTempImage(null);
-        setIsCropping(false);
-        /* eslint-enable react-hooks/set-state-in-effect */
-    }, [isOpen, personalityId, personalities]);
-
-    const handleSubmit = async (e: FormEvent) => {
-        e.preventDefault();
-        if (!user || !name.trim()) return;
-
-        const data = {
-            name,
-            description,
-            icon,
-            themeColor: color,
-            avatar
-        };
-
-        try {
-            if (personalityId) {
-                await updatePersonality(user.uid, personalityId, data);
-            } else {
-                const newId = await addPersonality(user.uid, name, data);
-                await switchPersonality(user.uid, newId);
-            }
-            onClose();
-        } catch (err) {
-            console.error(err);
-        }
-    };
-
-    const handleDelete = async () => {
-        if (!personalityId || !user) return;
-
-        if (!isConfirmingDelete) {
-            setIsConfirmingDelete(true);
-            setTimeout(() => setIsConfirmingDelete(false), 3000);
-            return;
-        }
-
-        await deletePersonality(user.uid, personalityId);
-        onClose();
-    };
-
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            const file = e.target.files[0];
-            const reader = new FileReader();
-            reader.onload = () => {
-                setTempImage(reader.result as string);
-                setIsCropping(true);
-            };
-            reader.readAsDataURL(file);
-            // Reset input so same file can be selected again
-            e.target.value = '';
-        }
-    };
-
-    const handleCropComplete = (croppedBase64: string) => {
-        setAvatar(croppedBase64);
-        setIsCropping(false);
-        setTempImage(null);
-    };
 
     // If cropping, show the cropper instead of the normal form
     if (isCropping && tempImage) {
         return (
             <Modal
                 isOpen={isOpen}
-                onClose={() => { setIsCropping(false); setTempImage(null); }}
+                onClose={handleCancelCrop}
                 title="Adjust Avatar"
                 className="max-w-md"
                 footer={
@@ -141,7 +66,7 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
                             type="button"
                             variant="neutral"
                             size="sm"
-                            onClick={() => { setIsCropping(false); setTempImage(null); }}
+                            onClick={handleCancelCrop}
                             className="text-[10px] uppercase tracking-wider font-bold px-4 py-2"
                         >
                             Cancel
@@ -165,7 +90,7 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
                 <ImageCropper
                     imageSrc={tempImage}
                     onCrop={handleCropComplete}
-                    onCancel={() => { setIsCropping(false); setTempImage(null); }}
+                    onCancel={handleCancelCrop}
                 />
             </Modal>
         );
@@ -280,44 +205,10 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
                     {/* Color */}
                     <div className="w-[60px] flex flex-col gap-1.5 relative">
                         <InputLabel label="Color" />
-                        <Popover.Root open={isColorPickerOpen} onOpenChange={setIsColorPickerOpen}>
-                            <Popover.Trigger asChild>
-                                <button
-                                    type="button"
-                                    className="h-[42px] w-full bg-sub-alt rounded-lg border border-transparent hover:bg-sub focus:border-white/5 transition-colors flex items-center justify-center relative"
-                                >
-                                    <div
-                                        className="w-5 h-5 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.3)] transition-transform duration-200 active:scale-90"
-                                        style={{ backgroundColor: color }}
-                                    />
-                                </button>
-                            </Popover.Trigger>
-
-                            <Popover.Portal>
-                                <Popover.Content
-                                    className="z-[100] p-2 bg-bg-secondary border border-white/5 rounded-xl shadow-2xl flex flex-wrap justify-center gap-2 animate-in fade-in zoom-in-95 duration-200 w-[180px] max-h-[160px] overflow-y-auto custom-scrollbar"
-                                    sideOffset={8}
-                                >
-                                    {PRESET_COLORS.map((preset: string) => (
-                                        <button
-                                            key={preset}
-                                            type="button"
-                                            onClick={() => {
-                                                setColor(preset);
-                                                setIsColorPickerOpen(false);
-                                            }}
-                                            className="w-6 h-6 rounded-full hover:scale-110 transition-transform shadow-sm relative group shrink-0"
-                                            style={{ backgroundColor: preset }}
-                                        >
-                                            {color === preset && (
-                                                <div className="absolute inset-0 rounded-full border-2 border-white/50" />
-                                            )}
-                                        </button>
-                                    ))}
-                                    <Popover.Arrow className="fill-current text-white/5" />
-                                </Popover.Content>
-                            </Popover.Portal>
-                        </Popover.Root>
+                        <ColorPicker
+                            color={color}
+                            onChange={setColor}
+                        />
                     </div>
                 </div>
 

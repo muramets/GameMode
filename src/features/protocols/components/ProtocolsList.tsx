@@ -1,568 +1,42 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import type { Protocol, Innerface } from '../types';
-import { ProtocolRow } from './ProtocolRow';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import type { Innerface } from '../../innerfaces/types';
 import { MonkeyTypeLoader } from '../../../components/ui/molecules/MonkeyTypeLoader';
-import { ProtocolSettingsModal } from './ProtocolSettingsModal';
-import { useScoreContext } from '../../../contexts/ScoreProvider';
+import { ProtocolSettingsModal } from '../../../components/modals/ProtocolSettingsModal';
+import { useScoreContext } from '../../../contexts/ScoreContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-    faSearch,
-    faPlus,
-    faFilter,
-    faCircle,
-    faGripVertical,
-    faBan,
-    faCog
-} from '@fortawesome/free-solid-svg-icons';
+import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import { GroupSettingsModal } from '../../../features/groups/components/GroupSettingsModal';
 import { ActiveFiltersList } from '../../../components/ui/molecules/ActiveFiltersList';
 import { GROUP_CONFIG } from '../../../constants/common';
-import { CollapsibleSection } from '../../../components/ui/molecules/CollapsibleSection';
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../../components/ui/atoms/Tooltip';
-
-// DnD Imports
-import {
-    DndContext,
-    closestCenter,
-    KeyboardSensor,
-    PointerSensor,
-    useSensor,
-    useSensors,
-    type DragEndEvent,
-    DragOverlay,
-    type DragStartEvent,
-    useDndMonitor
-} from '@dnd-kit/core';
-import {
-    arrayMove,
-    SortableContext,
-    sortableKeyboardCoordinates,
-    verticalListSortingStrategy,
-    rectSortingStrategy
-} from '@dnd-kit/sortable';
 import { useMetadataStore } from '../../../stores/metadataStore';
 import { usePersonalityStore } from '../../../stores/personalityStore';
 import { useCollapsedGroups } from '../../../hooks/useCollapsedGroups';
-
-// --- Interaction Context for Zero-Lag DnD ---
-import { SortableItem } from '../../../components/ui/molecules/SortableItem';
-
-interface InteractionContextType {
-    justDroppedId: string | null;
-    isDragging: boolean;
-    clearJustDropped: () => void;
-}
-
-const InteractionContext = React.createContext<InteractionContextType>({
-    justDroppedId: null,
-    isDragging: false,
-    clearJustDropped: () => { }
-});
-
-const useInteraction = () => React.useContext(InteractionContext);
-
-import { getMappedIcon } from '../../../utils/iconMapper';
-
-// --- Helper Components for Performance ---
-
-const DraggableProtocolItem = React.memo(({
-    protocol,
-    innerfaces,
-    applyProtocol,
-    handleEditProtocol,
-    isDragEnabled,
-    isReadOnly
-}: {
-    protocol: Protocol;
-    innerfaces: Innerface[];
-    applyProtocol: (id: string | number, direction: '+' | '-') => void;
-    handleEditProtocol: (id: string | number) => void;
-    isDragEnabled: boolean;
-    isReadOnly: boolean;
-}) => {
-    const { justDroppedId, isDragging, clearJustDropped } = useInteraction();
-    const isJustDropped = String(protocol.id) === justDroppedId;
-
-    // Disable heavy interactions if ANY item is dragging (global lock) or if this specific item was just dropped
-    const shouldDisableInteractions = isDragging || isJustDropped;
-
-    return (
-        <SortableItem key={protocol.id} id={String(protocol.id)} disabled={!isDragEnabled}>
-            {({ setNodeRef, listeners, attributes, style, isDragging }) => (
-                <div
-                    ref={setNodeRef}
-                    style={{
-                        ...style,
-                        opacity: isDragging ? 0 : 1,
-                        transition: isDragging ? 'none' : style.transition,
-                        willChange: 'transform' // Hardware acceleration hint
-                    }}
-                    {...listeners}
-                    {...attributes}
-                    // Handle mouse leave to clear the "just dropped" state
-                    onMouseLeave={() => {
-                        if (isJustDropped) {
-                            clearJustDropped();
-                        }
-                    }}
-                >
-                    <ProtocolRow
-                        protocol={protocol}
-                        innerfaces={innerfaces}
-                        onLevelUp={(id: string | number) => applyProtocol(id, '+')}
-                        onLevelDown={(id: string | number) => applyProtocol(id, '-')}
-                        onEdit={handleEditProtocol}
-                        isDisabled={shouldDisableInteractions}
-                        isReadOnly={isReadOnly}
-                    />
-                </div>
-            )}
-        </SortableItem>
-    );
-}, (prev, next) => {
-    // Custom comparison to avoid re-renders on ID unrelated changes
-    return prev.protocol === next.protocol &&
-        prev.innerfaces === next.innerfaces &&
-        prev.isDragEnabled === next.isDragEnabled &&
-        prev.isReadOnly === next.isReadOnly;
-});
-
-const ProtocolGroup = React.memo(({
-    groupName,
-    protocols,
-    innerfaces,
-    isDragEnabled,
-    applyProtocol,
-    handleEditProtocol,
-    onGroupEdit,
-    groupsMetadata,
-    isCollapsed,
-    onToggleCollapse,
-    isReadOnly
-}: {
-    groupName: string;
-    protocols: Protocol[];
-    innerfaces: Innerface[];
-    isDragEnabled: boolean;
-    applyProtocol: any;
-    handleEditProtocol: any;
-    onGroupEdit: (groupName: string) => void;
-    groupsMetadata: Record<string, { icon: string; color?: string }>;
-    isCollapsed: boolean;
-    onToggleCollapse: () => void;
-    isReadOnly: boolean;
-}) => {
-    const staticConfig = GROUP_CONFIG[groupName] || GROUP_CONFIG['ungrouped'];
-    const storeMeta = groupsMetadata[groupName];
-
-    let icon = staticConfig.icon;
-    let color = staticConfig.color;
-
-    if (storeMeta) {
-        if (storeMeta.icon) {
-            const mapped = getMappedIcon(storeMeta.icon);
-            if (mapped) icon = mapped;
-        }
-        if (storeMeta.color) color = storeMeta.color;
-    }
-
-    // Memoize the items list creation
-    const itemsIds = useMemo(() => protocols.map(p => String(p.id)), [protocols]);
-
-    // Memoize the items list creation
-
-    return (
-        <SortableItem key={`group-${groupName}`} id={`group-${groupName}`} disabled={!isDragEnabled}>
-            {({ setNodeRef, setActivatorNodeRef, listeners, attributes, style, isDragging }) => (
-                <div
-                    ref={setNodeRef}
-                    style={{
-                        ...style,
-                        opacity: isDragging ? 0 : 1,
-                        willChange: 'transform' // Hardware acceleration hint
-                    }}
-                    className="mb-4"
-                >
-                    <CollapsibleSection
-                        key={groupName}
-                        isOpen={!isCollapsed}
-                        onToggle={onToggleCollapse}
-                        dragHandle={
-                            isDragEnabled && (
-                                <div
-                                    ref={setActivatorNodeRef}
-                                    {...listeners}
-                                    {...attributes}
-                                    className="cursor-grab active:cursor-grabbing text-sub hover:text-text-primary active:text-text-primary px-1 -ml-2 opacity-0 group-hover:opacity-100 transition-all duration-200"
-                                    title="Drag to reorder group"
-                                    onPointerDown={(e) => {
-                                        e.stopPropagation();
-                                        listeners?.onPointerDown?.(e);
-                                    }}
-                                >
-                                    <FontAwesomeIcon icon={faGripVertical} className="text-sm" />
-                                </div>
-                            )
-                        }
-                        title={
-                            <div className="flex items-center gap-3">
-                                {icon && <FontAwesomeIcon icon={icon} style={{ color: color }} className="text-lg opacity-80" />}
-                                <span className={groupName === 'ungrouped' ? 'opacity-50' : ''}>{groupName}</span>
-                                <span className="text-xs font-mono font-normal opacity-40 bg-sub/20 px-2 py-0.5 rounded-full ml-auto md:ml-0">
-                                    {protocols.length}
-                                </span>
-                            </div>
-                        }
-                        trailing={
-                            groupName !== 'ungrouped' && (
-                                <button
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-sub hover:text-text-primary p-2 ml-2"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onGroupEdit(groupName);
-                                    }}
-                                    title="Group Settings"
-                                >
-                                    <FontAwesomeIcon icon={faCog} className="text-sm" />
-                                </button>
-                            )
-                        }
-                        className={`animate-in fade-in slide-in-from-bottom-2 duration-500`}
-                    >
-                        <SortableContext
-                            items={itemsIds}
-                            strategy={rectSortingStrategy}
-                            disabled={!isDragEnabled}
-                        >
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {protocols.map((protocol) => (
-                                    <DraggableProtocolItem
-                                        key={protocol.id}
-                                        protocol={protocol}
-                                        innerfaces={innerfaces}
-                                        applyProtocol={applyProtocol}
-                                        handleEditProtocol={handleEditProtocol}
-                                        isDragEnabled={isDragEnabled}
-                                        isReadOnly={isReadOnly}
-                                    />
-                                ))}
-                            </div>
-                        </SortableContext>
-                    </CollapsibleSection>
-                </div>
-            )}
-        </SortableItem>
-    );
-});
-
-
-const noOp = () => { };
-
-// ProtocolsDragOverlay: Decoupled component to avoid root re-renders during drag moves
-const ProtocolsDragOverlay = React.memo(({
-    activeProtocol,
-    activeGroup,
-    innerfaces,
-    groupedProtocols
-}: {
-    activeProtocol: Protocol | null,
-    activeGroup: string | null,
-    innerfaces: Innerface[],
-    groupedProtocols: [string, Protocol[]][]
-}) => {
-    const [isInvalid, setIsInvalid] = useState(false);
-
-    // Memoize the source group to avoid repeating this lookup 60 times/sec
-    const sourceGroup = useMemo(() => {
-        if (!activeProtocol) return null;
-        return groupedProtocols.find(([_, ps]) => ps.find(p => p.id === activeProtocol.id))?.[0];
-    }, [activeProtocol, groupedProtocols]);
-
-    useDndMonitor({
-        onDragOver: ({ over }) => {
-            if (!over || !sourceGroup) {
-                if (isInvalid) setIsInvalid(false);
-                return;
-            }
-            const overId = String(over.id);
-            // Ignore hovering over the active item itself, but ensure we reset invalid state
-            if (overId === String(activeProtocol?.id)) {
-                if (isInvalid) setIsInvalid(false);
-                return;
-            }
-
-            let targetGroup: string | undefined;
-            if (overId.startsWith('group-')) {
-                targetGroup = overId.replace('group-', '');
-            } else {
-                targetGroup = groupedProtocols.find(([_, ps]) => ps.find(p => String(p.id) === overId))?.[0];
-            }
-
-            // Boolean flip optimization: Only re-render if validity changes
-            const newInvalid = targetGroup !== sourceGroup;
-            if (newInvalid !== isInvalid) {
-                setIsInvalid(newInvalid);
-            }
-        },
-        onDragEnd: () => setIsInvalid(false),
-        onDragCancel: () => setIsInvalid(false),
-    });
-
-    if (activeGroup) {
-        return (
-            <div className="w-full bg-bg-primary/90 p-4 rounded-lg border border-sub/20 shadow-2xl scale-105 cursor-grabbing z-50">
-                <div className="flex items-center gap-3 text-2xl font-bold text-text-primary">
-                    <FontAwesomeIcon icon={faGripVertical} className="text-sm text-text-primary mr-2" />
-                    <span>{activeGroup}</span>
-                </div>
-            </div>
-        );
-    }
-
-    if (!activeProtocol) return null;
-
-    return (
-        <div className={`w-full shadow-2xl z-50 transition-transform duration-200 ${isInvalid ? 'scale-95 cursor-not-allowed' : 'opacity-90 cursor-grabbing'}`}>
-            <ProtocolRow
-                protocol={activeProtocol}
-                innerfaces={innerfaces}
-                onLevelUp={noOp}
-                onLevelDown={noOp}
-                onEdit={noOp}
-                isDisabled={true}
-            />
-            {isInvalid && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50 rounded-xl overflow-hidden">
-                    <div className="absolute inset-0 bg-red-500/10 backdrop-blur-[2px]" />
-                    <div className="relative z-10 bg-bg-primary/40 backdrop-blur-md text-[#ca4754] rounded-full w-12 h-12 flex items-center justify-center shadow-[0_0_20px_rgba(202,71,84,0.3)] border border-[#ca4754]/20 animate-in zoom-in duration-200">
-                        <FontAwesomeIcon icon={faBan} className="text-xl" />
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-});
-
-// Optimized Protocols Content - Pure List View
-const ProtocolsContent = React.memo(({
-    groupedProtocols,
-    innerfaces,
-    renderedCount,
-    isDragEnabled,
-    applyProtocol,
-    handleEditProtocol,
-    onGroupEdit,
-    groupsMetadata,
-    isGroupCollapsed,
-    toggleGroup,
-    isReadOnly
-}: {
-    groupedProtocols: [string, Protocol[]][];
-    innerfaces: Innerface[];
-    renderedCount: number;
-    isDragEnabled: boolean;
-    applyProtocol: (id: string | number, direction: '+' | '-') => void;
-    handleEditProtocol: (id: string | number) => void;
-    onGroupEdit: (groupName: string) => void;
-    groupsMetadata: Record<string, { icon: string; color?: string }>;
-    isGroupCollapsed: (groupName: string) => boolean;
-    toggleGroup: (groupName: string) => void;
-    isReadOnly: boolean;
-}) => {
-    const sortableGroupIds = useMemo(() => groupedProtocols.map(([name]) => `group-${name}`), [groupedProtocols]);
-
-    let currentRenderCount = 0;
-    return (
-        <div className="flex flex-col gap-8 pb-20">
-            <SortableContext
-                items={sortableGroupIds}
-                strategy={verticalListSortingStrategy}
-                disabled={!isDragEnabled}
-            >
-                {groupedProtocols.map(([groupName, groupProtocols]) => {
-                    if (currentRenderCount >= renderedCount) return null;
-                    const protocolsToShow = groupProtocols.slice(0, renderedCount - currentRenderCount);
-                    currentRenderCount += protocolsToShow.length;
-                    if (protocolsToShow.length === 0) return null;
-
-                    return (
-                        <ProtocolGroup
-                            key={groupName}
-                            groupName={groupName}
-                            protocols={protocolsToShow}
-                            innerfaces={innerfaces}
-                            isDragEnabled={isDragEnabled}
-                            applyProtocol={applyProtocol}
-                            handleEditProtocol={handleEditProtocol}
-                            onGroupEdit={onGroupEdit}
-                            groupsMetadata={groupsMetadata}
-                            isCollapsed={isGroupCollapsed(groupName)}
-                            onToggleCollapse={() => toggleGroup(groupName)}
-                            isReadOnly={isReadOnly}
-                        />
-                    );
-                })}
-            </SortableContext>
-
-            {groupedProtocols.reduce((acc, [, protos]) => acc + protos.length, 0) > renderedCount && (
-                <div className="py-4 text-center text-xs text-sub opacity-50">
-                    Loading rest...
-                </div>
-            )}
-        </div>
-    );
-});
-
-// Isolated Container for DnD State
-const ProtocolsDragContainer = React.memo(({
-    groupedProtocols,
-    innerfaces,
-    onReorderGroups,
-    onReorderProtocols,
-    children
-}: {
-    groupedProtocols: [string, Protocol[]][];
-    innerfaces: Innerface[];
-    onReorderGroups: (newOrder: string[]) => void;
-    onReorderProtocols: (newOrder: string[]) => void;
-    children: React.ReactNode;
-}) => {
-    /**
-     * ATOMIC DND ARCHITECTURE
-     * This component isolates drag state to prevent parent re-renders (ProtocolsList).
-     * It uses a global lock (InteractionContext) to freeze hover effects during sorting,
-     * maintaining 60fps even with expensive sub-components.
-     */
-    // konsolidate DnD state to ensure atomic updates
-    const [active, setActive] = useState<{
-        id: string | null;
-        protocol: Protocol | null;
-        group: string | null;
-    }>({ id: null, protocol: null, group: null });
-
-    const [justDroppedId, setJustDroppedId] = useState<string | null>(null);
-
-    const sensors = useSensors(
-        useSensor(PointerSensor, {
-            activationConstraint: {
-                distance: 8 // Enable clicks by requiring 8px movement for drag start
-            }
-        }),
-        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-    );
-
-    const handleDragStart = useCallback((event: DragStartEvent) => {
-        const id = String(event.active.id);
-        setJustDroppedId(null);
-
-        let protocol: Protocol | null = null;
-        let group: string | null = null;
-
-        if (id.startsWith('group-')) {
-            group = id.replace('group-', '');
-        } else {
-            for (const [, ps] of groupedProtocols) {
-                const found = ps.find((x: Protocol) => String(x.id) === id);
-                if (found) { protocol = found; break; }
-            }
-        }
-
-        setActive({ id, protocol, group });
-    }, [groupedProtocols]);
-
-    const handleDragEnd = useCallback((event: DragEndEvent) => {
-        const { active: dndActive, over } = event;
-        const activeIdStr = String(dndActive.id);
-        const overIdStr = over ? String(over.id) : null;
-
-        setActive({ id: null, protocol: null, group: null });
-        setJustDroppedId(activeIdStr);
-
-        if (!over || activeIdStr === overIdStr) return;
-
-        if (activeIdStr.startsWith('group-') && overIdStr?.startsWith('group-')) {
-            const activeGrp = activeIdStr.replace('group-', '');
-            const overGrp = overIdStr.replace('group-', '');
-            const currentNames = groupedProtocols.map(([name]) => name);
-            const oldIdx = currentNames.indexOf(activeGrp);
-            const newIdx = currentNames.indexOf(overGrp);
-            if (oldIdx !== -1 && newIdx !== -1) {
-                onReorderGroups(arrayMove(currentNames, oldIdx, newIdx));
-            }
-        } else if (!activeIdStr.startsWith('group-') && overIdStr && !overIdStr.startsWith('group-')) {
-            const sourceEntry = groupedProtocols.find(([, ps]) => ps.some((p: Protocol) => p.id.toString() === activeIdStr));
-            if (!sourceEntry) return;
-            const [, groupItems] = sourceEntry;
-            if (groupItems.some((p: Protocol) => p.id.toString() === overIdStr)) {
-                const oldIdx = groupItems.findIndex((p: Protocol) => p.id.toString() === activeIdStr);
-                const newIdx = groupItems.findIndex((p: Protocol) => p.id.toString() === overIdStr);
-                onReorderProtocols(arrayMove(groupItems, oldIdx, newIdx).map((p: Protocol) => p.id.toString()));
-            }
-        }
-    }, [groupedProtocols, onReorderGroups, onReorderProtocols]);
-
-    const clearJustDropped = useCallback(() => setJustDroppedId(null), []);
-
-    const interactionValue = useMemo(() => ({
-        justDroppedId,
-        isDragging: !!active.id,
-        clearJustDropped
-    }), [justDroppedId, active.id, clearJustDropped]);
-
-    return (
-        <InteractionContext.Provider value={interactionValue}>
-            <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-            >
-                <style>{`
-                    .transition-none-important, 
-                    .transition-none-important * { 
-                        transition: none !important; 
-                        animation: none !important;
-                    }
-                `}</style>
-
-                {children}
-
-                {active.id && <div className="fixed inset-0 z-40 bg-transparent pointer-events-auto" />}
-
-                <DragOverlay dropAnimation={null}>
-                    {active.id ? (
-                        <div className="pointer-events-none transition-none-important">
-                            <ProtocolsDragOverlay
-                                activeProtocol={active.protocol}
-                                activeGroup={active.group}
-                                innerfaces={innerfaces}
-                                groupedProtocols={groupedProtocols}
-                            />
-                        </div>
-                    ) : null}
-                </DragOverlay>
-            </DndContext>
-        </InteractionContext.Provider>
-    );
-});
+import { useProtocolDnD } from '../hooks/useProtocolDnD';
+// New refactored hooks
+import { useProtocolsFiltering } from '../hooks/useProtocolsFiltering';
+import { useProtocolsGrouping } from '../hooks/useProtocolsGrouping';
+// New refactored components
+import { ProtocolsToolbar } from './ProtocolsToolbar';
+import { ProtocolsContent } from './ProtocolsContent';
 
 export function ProtocolsList() {
     const { applyProtocol, innerfaces, protocols } = useScoreContext();
-    // const { user } = useAuth(); // Unused
     const { activeContext } = usePersonalityStore();
     const { reorderProtocols, reorderGroups, groupOrder, groupsMetadata, isLoading } = useMetadataStore();
 
     // Simplified loading logic: Minimum 500ms display time
-    const [minTimeMet, setMinTimeMet] = useState(false);
+    // Simplified loading logic: Minimum 500ms display time ONLY if loading is actually needed
+    const [minTimeMet, setMinTimeMet] = useState(!isLoading);
     useEffect(() => {
-        const timer = setTimeout(() => setMinTimeMet(true), 500);
-        return () => clearTimeout(timer);
-    }, []);
+        if (!minTimeMet) {
+            const timer = setTimeout(() => setMinTimeMet(true), 500);
+            return () => clearTimeout(timer);
+        }
+    }, [minTimeMet]);
 
     const isReady = minTimeMet && !isLoading;
 
-    const [searchQuery, setSearchQuery] = useState('');
-    const [activeFilters, setActiveFilters] = useState<string[]>([]);
+    // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedProtocolId, setSelectedProtocolId] = useState<string | number | null>(null);
 
@@ -573,55 +47,40 @@ export function ProtocolsList() {
     // Collapsed Groups Persistence
     const { isGroupCollapsed, toggleGroup } = useCollapsedGroups('protocols-collapsed-groups', false);
 
-    // 1. Data Processing - Root Level (Static during drag)
+    // 1. Data Processing - Create innerface lookup map
     const innerfaceMap = useMemo(() => {
         const map = new Map<string, Innerface>();
         innerfaces.forEach((i: Innerface) => map.set(i.id.toString(), i));
         return map;
     }, [innerfaces]);
 
-    const filteredProtocols = useMemo(() => {
-        let filtered = protocols;
-        if (activeFilters.length > 0) {
-            filtered = filtered.filter((p: Protocol) => {
-                if (activeFilters.includes('ungrouped') && !p.group) return true;
-                if (p.group && activeFilters.includes(p.group)) return true;
-                return false;
-            });
-        }
-        if (!searchQuery.trim()) return filtered;
-        const query = searchQuery.toLowerCase();
-        return filtered.filter((protocol: Protocol) => {
-            if (protocol.title.toLowerCase().includes(query)) return true;
-            if (protocol.group?.toLowerCase().includes(query)) return true;
-            return protocol.targets.some((id: string | number) => innerfaceMap.get(id.toString())?.name.toLowerCase().includes(query));
-        });
-    }, [protocols, searchQuery, activeFilters, innerfaceMap]);
+    // 2. Use filtering hook (handles search + filters)
+    const {
+        searchQuery,
+        setSearchQuery,
+        activeFilters,
+        toggleFilter,
+        removeFilter,
+        filteredProtocols,
+    } = useProtocolsFiltering(protocols, innerfaceMap);
 
-    const groupedProtocols = useMemo(() => {
-        const groups: Record<string, Protocol[]> = {};
-        const sortedProtocols = [...filteredProtocols].sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999));
-        sortedProtocols.forEach(p => {
-            const groupName = p.group || 'ungrouped';
-            if (!groups[groupName]) groups[groupName] = [];
-            groups[groupName].push(p);
-        });
-        const dynamicSortOrder = groupOrder.length > 0 ? groupOrder : Object.keys(GROUP_CONFIG);
-        return Object.entries(groups).sort(([keyA], [keyB]) => {
-            const indexA = dynamicSortOrder.indexOf(keyA);
-            const indexB = dynamicSortOrder.indexOf(keyB);
-            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-            if (indexA !== -1) return -1;
-            if (indexB !== -1) return 1;
-            return keyA.localeCompare(keyB);
-        });
-    }, [filteredProtocols, groupOrder]);
+    // 3. Use grouping hook (handles grouping + sorting)
+    const { groupedProtocols, protocolGroups } = useProtocolsGrouping(
+        filteredProtocols,
+        groupOrder
+    );
 
     const isDragEnabled = !searchQuery.trim() && (activeFilters.length === 0 || activeFilters.length === 1 && activeFilters[0] === 'ungrouped');
     const isReadOnly = activeContext?.type === 'role' || activeContext?.type === 'viewer';
 
     const [renderedCount, setRenderedCount] = useState(20);
-    useEffect(() => { setRenderedCount(20); }, [filteredProtocols]);
+    const [prevFilteredProtocols, setPrevFilteredProtocols] = useState(filteredProtocols);
+
+    if (filteredProtocols !== prevFilteredProtocols) {
+        setPrevFilteredProtocols(filteredProtocols);
+        setRenderedCount(20);
+    }
+
     useEffect(() => {
         if (renderedCount < filteredProtocols.length) {
             const timer = setTimeout(() => setRenderedCount(prev => Math.min(prev + 200, filteredProtocols.length)), 0);
@@ -647,28 +106,27 @@ export function ProtocolsList() {
         reorderProtocols(newItemIds);
     }, [reorderProtocols]);
 
-    // Extract unique groups
-    const protocolGroups = useMemo(() => {
-        const groups = new Set(protocols.map((p: Protocol) => p.group).filter(Boolean));
-        return Array.from(groups).sort((a, b) => {
-            if (!a || !b) return 0;
-            const idxA = groupOrder.indexOf(a as string);
-            const idxB = groupOrder.indexOf(b as string);
-            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-            if (idxA !== -1) return -1;
-            if (idxB !== -1) return 1;
-            return (a as string).localeCompare(b as string);
-        });
-    }, [protocols, groupOrder]);
+    // Note: protocolGroups now comes from useProtocolsGrouping hook
+    // Note: toggleFilter and removeFilter now come from useProtocolsFiltering hook
 
-    const toggleFilter = (filter: string) => {
-        if (filter === 'all') { setActiveFilters([]); return; }
-        setActiveFilters(prev => prev.includes(filter) ? prev.filter(f => f !== filter) : [...prev, filter]);
-    };
+    const {
+        sensors,
+        active,
+        justDroppedId,
+        clearJustDropped,
+        handleDragStart,
+        handleDragEnd
+    } = useProtocolDnD({
+        groupedProtocols,
+        onReorderGroups,
+        onReorderProtocols
+    });
 
-    const removeFilter = (filter: string) => {
-        setActiveFilters(prev => prev.filter(f => f !== filter));
-    };
+    const interactionValue = useMemo(() => ({
+        justDroppedId,
+        isDragging: !!active.id,
+        clearJustDropped
+    }), [justDroppedId, active.id, clearJustDropped]);
 
     return (
         <div className="flex flex-col gap-6 w-full">
@@ -681,99 +139,18 @@ export function ProtocolsList() {
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-2 w-full md:w-auto">
-                        <div className="flex items-center gap-0">
-                            <TooltipProvider delayDuration={300}>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <button
-                                            onClick={() => { setSelectedProtocolId(null); setIsModalOpen(true); }}
-                                            className="h-[46px] w-[36px] flex items-center justify-center rounded-lg text-sub hover:text-main transition-all cursor-pointer"
-                                        >
-                                            <FontAwesomeIcon icon={faPlus} className="text-xl" />
-                                        </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top">
-                                        <span className="font-mono text-xs">Add Action</span>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-
-                            <div className="relative group">
-                                <button className={`h-[46px] w-[36px] flex items-center justify-center rounded-lg transition-colors cursor-pointer ${activeFilters.length > 0 ? 'text-text-primary' : 'text-sub hover:text-text-primary'}`}>
-                                    <div className="relative">
-                                        <FontAwesomeIcon icon={faFilter} className="text-xl" />
-                                        {activeFilters.length > 0 && (
-                                            <div className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-main rounded-full flex items-center justify-center text-[9px] text-bg-primary font-bold border border-bg-primary">
-                                                {activeFilters.length}
-                                            </div>
-                                        )}
-                                    </div>
-                                </button>
-
-                                <div className="absolute top-full right-0 mt-2 w-48 bg-sub-alt rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 p-2 transform origin-top-right border border-white/5">
-                                    <div className="flex flex-col">
-                                        <button
-                                            onClick={() => toggleFilter('all')}
-                                            className={`flex items-center gap-2 w-full text-left px-3 py-2.5 rounded-md transition-all group/item ${activeFilters.length === 0 ? 'bg-sub/30' : 'hover:bg-sub/20'}`}
-                                        >
-                                            <div className="w-4 flex items-center justify-center opacity-70">
-                                                <FontAwesomeIcon icon={faFilter} className="text-[10px]" />
-                                            </div>
-                                            <span className="text-xs font-mono lowercase text-text-primary">all actions</span>
-                                            {activeFilters.length === 0 && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-main shadow-[0_0_8px_rgba(226,183,20,0.5)]"></div>}
-                                        </button>
-
-                                        <div className="h-px bg-white/5 my-1 mx-2"></div>
-
-                                        {protocolGroups.map(group => {
-                                            const config = GROUP_CONFIG[group as string];
-                                            const isActive = activeFilters.includes(group as string);
-                                            return (
-                                                <button
-                                                    key={group as string}
-                                                    onClick={() => toggleFilter(group as string)}
-                                                    className={`flex items-center gap-2 w-full text-left px-3 py-2.5 rounded-md transition-all group/item ${isActive ? 'bg-sub/30' : 'hover:bg-sub/20'}`}
-                                                >
-                                                    <div className="w-4 flex items-center justify-center">
-                                                        {config ? <FontAwesomeIcon icon={config.icon} style={{ color: config.color }} className="text-[10px]" /> : <div className="w-1.5 h-1.5 rounded-full bg-sub"></div>}
-                                                    </div>
-                                                    <span className={`text-xs font-mono lowercase ${isActive ? 'text-text-primary' : 'text-sub'}`}>{group as string}</span>
-                                                    {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-main shadow-[0_0_8px_rgba(226,183,20,0.5)]"></div>}
-                                                </button>
-                                            );
-                                        })}
-
-                                        <div className="h-px bg-white/5 my-1 mx-2"></div>
-
-                                        <button
-                                            onClick={() => toggleFilter('ungrouped')}
-                                            className={`flex items-center gap-2 w-full text-left px-3 py-2.5 rounded-md transition-all group/item ${activeFilters.includes('ungrouped') ? 'bg-sub/30' : 'hover:bg-sub/20'}`}
-                                        >
-                                            <div className="w-4 flex items-center justify-center">
-                                                <FontAwesomeIcon icon={faCircle} className="text-[10px] text-sub" />
-                                            </div>
-                                            <span className={`text-xs font-mono lowercase ${activeFilters.includes('ungrouped') ? 'text-text-primary' : 'text-sub'}`}>ungrouped</span>
-                                            {activeFilters.includes('ungrouped') && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-main shadow-[0_0_8px_rgba(226,183,20,0.5)]"></div>}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="relative group flex-grow md:flex-grow-0 ml-1">
-                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-sub pointer-events-none">
-                                <FontAwesomeIcon icon={faSearch} className="text-sm" />
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="Search actions..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full md:w-64 pl-10 pr-4 py-3 bg-sub-alt rounded-lg outline-none text-text-primary placeholder:text-sub font-mono text-sm transition-colors duration-150 focus:bg-sub"
-                            />
-                        </div>
-                    </div>
+                    {/* Toolbar: Add button, Filter dropdown, Search */}
+                    <ProtocolsToolbar
+                        onAddProtocol={() => {
+                            setSelectedProtocolId(null);
+                            setIsModalOpen(true);
+                        }}
+                        searchQuery={searchQuery}
+                        onSearchChange={setSearchQuery}
+                        activeFilters={activeFilters}
+                        protocolGroups={protocolGroups as string[]}
+                        onToggleFilter={toggleFilter}
+                    />
                 </div>
 
                 <ActiveFiltersList
@@ -785,7 +162,7 @@ export function ProtocolsList() {
                         color: GROUP_CONFIG[filter]?.color,
                         onRemove: () => removeFilter(filter)
                     }))}
-                    onClearAll={() => setActiveFilters([])}
+                    onClearAll={() => toggleFilter('all')}
                 />
             </div>
 
@@ -797,44 +174,51 @@ export function ProtocolsList() {
                         onClick={() => { setSelectedProtocolId(null); setIsModalOpen(true); }}
                         className="w-full min-h-[72px] border border-dashed border-sub/30 hover:border-sub rounded-xl flex flex-col items-center justify-center gap-2 text-sub hover:text-text-primary transition-all duration-200 group bg-sub-alt/5 hover:bg-sub-alt/10"
                     >
-                        <div className="flex items-center gap-2">
-                            <FontAwesomeIcon icon={faPlus} className="text-sm opacity-50 group-hover:opacity-100 transition-opacity" />
-                            <span className="font-lexend text-sm font-medium opacity-50 group-hover:opacity-100 transition-opacity">Create First Action</span>
+                        <div className="w-10 h-10 rounded-full bg-sub/10 group-hover:bg-sub/20 flex items-center justify-center transition-colors">
+                            <FontAwesomeIcon icon={faPlus} className="text-lg" />
                         </div>
+                        <span className="font-mono text-sm">Add your first action</span>
                     </button>
                 </div>
             ) : (
-                <ProtocolsDragContainer
-                    groupedProtocols={groupedProtocols}
-                    innerfaces={innerfaces}
-                    onReorderGroups={onReorderGroups}
-                    onReorderProtocols={onReorderProtocols}
-                >
+                <>
+                    {/* Protocols content with DnD */}
                     <ProtocolsContent
                         groupedProtocols={groupedProtocols}
                         innerfaces={innerfaces}
                         isDragEnabled={isDragEnabled}
+                        isReadOnly={isReadOnly}
                         applyProtocol={applyProtocol}
                         handleEditProtocol={handleEditProtocol}
                         onGroupEdit={handleGroupEdit}
-                        renderedCount={renderedCount}
                         groupsMetadata={groupsMetadata}
                         isGroupCollapsed={isGroupCollapsed}
                         toggleGroup={toggleGroup}
-                        isReadOnly={isReadOnly}
+                        renderedCount={renderedCount}
+                        sensors={sensors}
+                        active={active}
+                        handleDragStart={handleDragStart}
+                        handleDragEnd={handleDragEnd}
+                        interactionValue={interactionValue}
                     />
-                </ProtocolsDragContainer>
+                </>
             )}
 
             {isModalOpen && (
-                <ProtocolSettingsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} protocolId={selectedProtocolId} />
+                <ProtocolSettingsModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    protocolId={selectedProtocolId}
+                />
             )}
 
-            <GroupSettingsModal
-                isOpen={isGroupSettingsOpen}
-                onClose={() => setIsGroupSettingsOpen(false)}
-                groupName={selectedGroup}
-            />
+            {isGroupSettingsOpen && selectedGroup && (
+                <GroupSettingsModal
+                    isOpen={isGroupSettingsOpen}
+                    onClose={() => setIsGroupSettingsOpen(false)}
+                    groupName={selectedGroup}
+                />
+            )}
         </div>
     );
 }

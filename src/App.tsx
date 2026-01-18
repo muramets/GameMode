@@ -1,12 +1,16 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthProvider';
+import { AuthProvider } from './contexts/AuthProvider';
+import { useAuth } from './contexts/AuthContext';
 import { QueryProvider } from './contexts/QueryProvider';
 import { Layout } from './components/layout/Layout';
-import { ScoreProvider, useScoreContext } from './contexts/ScoreProvider';
+import { ScoreProvider } from './contexts/ScoreProvider';
+import { useScoreContext } from './contexts/ScoreContext';
 import { StoreSync } from './stores/StoreSync';
 import { TooltipProvider } from './components/ui/atoms/Tooltip';
 import { GlobalLoader } from './components/ui/molecules/GlobalLoader';
+import { Toast } from './components/ui/molecules/Toast';
+import { useUIStore } from './stores/uiStore';
 import { applyTheme } from './utils/themeManager';
 import { themes } from './styles/themes';
 
@@ -29,6 +33,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 function AppContent() {
   const { initialized } = useScoreContext();
   const { user, loading: authLoading } = useAuth();
+  const { toast, hideToast } = useUIStore();
 
   // Logic: 
   // 1. Auth Loading -> Show Loader
@@ -45,6 +50,12 @@ function AppContent() {
     <TooltipProvider delayDuration={300}>
       <Router>
         <StoreSync />
+        <Toast
+          message={toast.message}
+          isVisible={toast.isVisible}
+          type={toast.type}
+          onClose={hideToast}
+        />
         <Routes>
           {/* Public routes - always accessible */}
           <Route path="/login" element={<LoginPage />} />
@@ -100,14 +111,7 @@ function App() {
     applyTheme(themes.serika_dark);
   }, []);
 
-  useEffect(() => {
-    // Log performance metrics on mount
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const navStart = (window as any).__navStart;
-    if (navStart) {
-      console.log(`[PERF][2] App: Rendering shell at ${performance.now().toFixed(2)}ms (Delta: ${(performance.now() - navStart).toFixed(2)}ms)`);
-    }
-  }, []);
+
 
   return (
     <QueryProvider>

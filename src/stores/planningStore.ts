@@ -6,8 +6,7 @@ import {
     setDoc,
     deleteDoc,
     query,
-    onSnapshot,
-    Timestamp
+    onSnapshot
 } from 'firebase/firestore';
 import type { PlanningGoal } from '../features/planning/types';
 

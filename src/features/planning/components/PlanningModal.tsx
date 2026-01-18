@@ -1,15 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
 import type { Innerface } from '../../innerfaces/types';
-import { useScoreContext } from '../../../contexts/ScoreProvider';
-import { usePlanningStore } from '../../../stores/planningStore';
-import { useAuth } from '../../../contexts/AuthProvider';
-import { usePersonalityStore } from '../../../stores/personalityStore';
 import { Modal } from '../../../components/ui/molecules/Modal';
 import { Button } from '../../../components/ui/atoms/Button';
-import { getInterpolatedColor, getLevelGradient } from '../../../utils/colorUtils';
-import { renderIcon } from '../../../utils/iconMapper';
-import { calculateLevel, scoreToXP } from '../../../utils/xpUtils';
 import type { PlanningPeriod } from '../types';
+import { usePlanningLogic } from '../hooks/usePlanningLogic';
+import { PlanningActionList } from './PlanningActionList';
 
 interface PlanningModalProps {
     innerface: Innerface;
@@ -26,217 +20,53 @@ const PERIOD_LABELS: Record<PlanningPeriod, string> = {
     'year': 'Year'
 };
 
-export function PlanningModal({ innerface, isOpen, onClose }: PlanningModalProps) {
-    const { user } = useAuth();
-    const { activePersonalityId, activeContext } = usePersonalityStore();
-    const { goals, setGoal } = usePlanningStore();
-    const { protocols } = useScoreContext();
+const SectionLabel = ({ label }: { label: string }) => (
+    <label className="text-[10px] uppercase tracking-wider font-bold text-main mb-2 block">
+        {label}
+    </label>
+);
 
-    const currentScore = innerface.currentScore || innerface.initialScore || 0;
-    // Use same calculation as InnerfaceCard for color consistency
-    const totalXP = scoreToXP(currentScore);
-    const { level: currentLevel } = calculateLevel(totalXP);
-    const currentColor = getInterpolatedColor(currentLevel);
+export function PlanningModal(props: PlanningModalProps) {
+    const {
+        // State
+        currentScore,
+        targetScore,
+        period,
+        setPeriod,
+        isSubmitting,
+        isCustomizing,
+        setIsCustomizing,
+        actionCounts,
+        setActionCounts,
 
-    // Local State
-    const [targetScore, setTargetScore] = useState<number>(currentScore);
-    const [period, setPeriod] = useState<PlanningPeriod>('week');
-    const [balance, setBalance] = useState<Record<string, number>>({});
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isCustomizing, setIsCustomizing] = useState(false);
-    const [actionCounts, setActionCounts] = useState<Record<string, number>>({});
+        // Protocol Data
+        linkedProtocols,
+        pointsNeeded,
+        getSmartCounts,
 
-    // Interactive Progress Bar Refs
-    const progressBarRef = useRef<HTMLDivElement>(null);
-    const [isDragging, setIsDragging] = useState(false);
+        // Handlers
+        handleSave,
+        handleMouseDown,
+        progressBarRef,
 
-    // Reset loop when opening
-    useEffect(() => {
-        if (isOpen) {
-            // "Always open at +1"
-            const defaultTarget = Math.floor(currentScore) + 1;
-            setTargetScore(defaultTarget);
-
-            // Check if there is a saved goal
-            const existing = goals[innerface.id];
-            if (existing) {
-                setPeriod(existing.period);
-                setBalance(existing.balance || {});
-                if (existing.targetScore) {
-                    setTargetScore(existing.targetScore);
-                }
-                // Load saved action plan if exists
-                if (existing.actionCounts && Object.keys(existing.actionCounts).length > 0) {
-                    setIsCustomizing(true);
-                    setActionCounts(existing.actionCounts);
-                } else {
-                    setIsCustomizing(false);
-                    setActionCounts({});
-                }
-            } else {
-                // Reset to defaults
-                setIsCustomizing(false);
-                setActionCounts({});
-                const defaultBalance: Record<string, number> = {};
-                (innerface.protocolIds || []).forEach(pid => {
-                    defaultBalance[pid] = 1.0;
-                });
-                setBalance(defaultBalance);
-            }
-        }
-    }, [isOpen, innerface.id, innerface.protocolIds, goals, currentScore]);
-
-    const linkedProtocols = protocols.filter(p => {
-        const fromInnerface = (innerface.protocolIds || []).map(String).includes(p.id.toString());
-        const fromProtocol = (p.targets || []).map(String).includes(innerface.id.toString());
-        return fromInnerface || fromProtocol;
-    });
-
-    // Smart algorithm: find optimal combination closest to goal
-    const getSmartCounts = () => {
-        const xpNeeded = Math.round(pointsNeeded * 100);
-        if (xpNeeded <= 0) return {};
-
-        const sorted = [...linkedProtocols].sort((a, b) =>
-            ((b.weight || 0.1) * 100) - ((a.weight || 0.1) * 100)
-        );
-        const counts: Record<string, number> = {};
-        sorted.forEach(p => counts[p.id] = 0);
-
-        // Simple greedy: start with highest XP, then fill with smaller ones
-        let remaining = xpNeeded;
-        for (const p of sorted) {
-            const xp = Math.round((p.weight || 0.1) * 100);
-            if (remaining > 0 && xp <= remaining) {
-                // Use this action only if it doesn't overshoot alone
-                const useCount = Math.floor(remaining / xp);
-                counts[p.id] = Math.min(useCount, 999);
-                remaining -= counts[p.id] * xp;
-            }
-        }
-
-        // Check total
-        let total = sorted.reduce((sum, p) => sum + counts[p.id] * Math.round((p.weight || 0.1) * 100), 0);
-
-        // If we haven't met the goal, add the smallest action that gets us there
-        if (total < xpNeeded) {
-            // Sort by XP ascending to find smallest
-            const ascending = [...sorted].reverse();
-            for (const p of ascending) {
-                const xp = Math.round((p.weight || 0.1) * 100);
-                while (total < xpNeeded && counts[p.id] < 999) {
-                    counts[p.id]++;
-                    total += xp;
-                }
-                if (total >= xpNeeded) break;
-            }
-        }
-
-        return counts;
-    };
-
-    const handleSave = async () => {
-        if (!user || !activePersonalityId) return;
-        setIsSubmitting(true);
-        try {
-            // Determine which counts to save: custom or smart
-            // Determine which counts to save: custom or smart
-            const countsToSave = isCustomizing ? actionCounts : getSmartCounts();
-            const uid = activeContext?.type === 'personality' && activeContext.uid ? activeContext.uid : user.uid;
-
-            await setGoal(uid, activePersonalityId, {
-                innerfaceId: innerface.id,
-                targetScore,
-                period,
-                balance,
-                actionCounts: countsToSave
-            });
-            onClose();
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-
-    // --- Interactive Progress Bar Logic ---
-    // Slider range: current score (left edge) to current + 10 (right edge)
-    const minScore = currentScore;
-    const maxScore = currentScore + 10;
-    const scoreRange = maxScore - minScore;
-
-    const handleProgressInteraction = (clientX: number) => {
-        if (!progressBarRef.current) return;
-        const rect = progressBarRef.current.getBoundingClientRect();
-        const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
-        const percentage = x / rect.width;
-
-        // Map 0-1 to minScore-maxScore
-        const rawScore = minScore + percentage * scoreRange;
-
-        // Snap to 0.1
-        const roundedScore = Math.round(rawScore * 10) / 10;
-
-        setTargetScore(roundedScore);
-    };
-
-    const handleMouseDown = (e: React.MouseEvent) => {
-        e.stopPropagation(); // Stop dnd-kit or parent drag
-        setIsDragging(true);
-        handleProgressInteraction(e.clientX);
-    };
-
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (isDragging) {
-                e.stopPropagation();
-                handleProgressInteraction(e.clientX);
-            }
-        };
-        const handleMouseUp = (e: MouseEvent) => {
-            if (isDragging) {
-                e.stopPropagation();
-                setIsDragging(false);
-            }
-        };
-
-        if (isDragging) {
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
-        }
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-        };
-    }, [isDragging, currentScore]);
+        // Colors & Visualization
+        currentColor,
+        targetColor,
+        scoreGradient,
+        targetPercent
+    } = usePlanningLogic(props);
 
     // Prevent drag propagation on range inputs
     const stopPropagation = (e: React.PointerEvent | React.MouseEvent) => {
         e.stopPropagation();
     };
 
-    const pointsNeeded = Math.max(0, targetScore - currentScore);
-    // Use same calculation as currentLevel for consistency
-    const targetXP = scoreToXP(targetScore);
-    const { level: targetLevel } = calculateLevel(targetXP);
-    const targetColor = getInterpolatedColor(targetLevel);
-    const scoreGradient = getLevelGradient(currentLevel, targetLevel);
 
-    // Progress calculation for visual bar (relative to range)
-    // 0% = currentScore, 100% = currentScore + 10
-    const targetPercent = ((targetScore - minScore) / scoreRange) * 100;
-
-    const SectionLabel = ({ label }: { label: string }) => (
-        <label className="text-[10px] uppercase tracking-wider font-bold text-main mb-2 block">
-            {label}
-        </label>
-    );
 
     return (
         <Modal
-            isOpen={isOpen}
-            onClose={onClose}
+            isOpen={props.isOpen}
+            onClose={props.onClose}
             title={`Start Planning`}
             onSubmit={handleSave}
             footer={
@@ -244,7 +74,7 @@ export function PlanningModal({ innerface, isOpen, onClose }: PlanningModalProps
                     <Button
                         variant="neutral"
                         size="sm"
-                        onClick={onClose}
+                        onClick={props.onClose}
                         disabled={isSubmitting}
                         className="text-[10px] uppercase tracking-wider font-bold px-4 py-2 !transition-none"
                     >
@@ -264,8 +94,8 @@ export function PlanningModal({ innerface, isOpen, onClose }: PlanningModalProps
         >
             <div
                 className="flex flex-col gap-8 px-1"
-                onPointerDown={(e) => e.stopPropagation()}
-                onMouseDown={(e) => e.stopPropagation()}
+                onPointerDown={stopPropagation}
+                onMouseDown={stopPropagation}
             >
 
                 {/* 1. Target Goal (Interactive Bar) */}
@@ -417,133 +247,15 @@ export function PlanningModal({ innerface, isOpen, onClose }: PlanningModalProps
                         )}
                     </div>
 
-                    {linkedProtocols.length > 0 ? (
-                        <>
-                            {/* XP Progress Bar */}
-                            {(() => {
-                                const xpNeeded = Math.round(pointsNeeded * 100);
-
-                                // Use smart counts if not customizing, otherwise use manual
-                                const smartCounts = getSmartCounts();
-                                const displayCounts = isCustomizing ? actionCounts : smartCounts;
-
-                                // Calculate current XP
-                                const currentXP = linkedProtocols.reduce((sum, p) => {
-                                    const count = displayCounts[p.id] || 0;
-                                    const xp = Math.round((p.weight || 0.1) * 100);
-                                    return sum + (count * xp);
-                                }, 0);
-
-                                const isGoalMet = currentXP >= xpNeeded;
-
-                                return (
-                                    <>
-                                        <div className="mb-3 p-3 rounded-xl bg-sub-alt/30">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[10px] text-sub font-mono uppercase tracking-wider">
-                                                    {isCustomizing ? 'Your Plan' : 'Smart Plan'}
-                                                </span>
-                                                <span className={`text-sm font-mono font-bold ${isGoalMet ? 'text-green-400' : 'text-main'}`}>
-                                                    {currentXP}/{xpNeeded} XP {isGoalMet ? '✓' : ''}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {/* Action List */}
-                                        <div className="flex flex-col gap-1.5 max-h-[180px] overflow-y-auto custom-scrollbar pr-1">
-                                            {linkedProtocols
-                                                .sort((a, b) => ((b.weight || 0.1) * 100) - ((a.weight || 0.1) * 100))
-                                                .map(p => {
-                                                    const xp = Math.round((p.weight || 0.1) * 100);
-                                                    const count = displayCounts[p.id] || 0;
-                                                    const isNeeded = count > 0;
-                                                    const iconColor = p.color || 'var(--main-color)';
-
-                                                    // Handler that auto-switches to custom mode
-                                                    const handleCountChange = (delta: number) => {
-                                                        if (!isCustomizing) {
-                                                            // First click: initialize from smart and switch to custom
-                                                            setActionCounts({ ...smartCounts });
-                                                            setIsCustomizing(true);
-                                                        }
-                                                        setActionCounts(prev => ({
-                                                            ...prev,
-                                                            [p.id]: Math.max(0, Math.min(10, (prev[p.id] ?? smartCounts[p.id] ?? 0) + delta))
-                                                        }));
-                                                    };
-
-                                                    return (
-                                                        <div
-                                                            key={p.id}
-                                                            className={`group flex items-center justify-between p-2.5 rounded-xl transition-all duration-300
-                                                            ${isNeeded
-                                                                    ? 'bg-sub-alt/30 hover:bg-sub-alt/40 hover:-translate-y-0.5 hover:shadow-lg'
-                                                                    : 'bg-sub-alt/10 opacity-60 hover:opacity-80'
-                                                                }`}
-                                                        >
-                                                            {/* Left: Icon and info */}
-                                                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                                <div className="relative w-8 h-8 flex-shrink-0 rounded-lg overflow-hidden">
-                                                                    {isNeeded && (
-                                                                        <div
-                                                                            className="absolute inset-0 blur-sm opacity-40"
-                                                                            style={{ backgroundColor: iconColor }}
-                                                                        />
-                                                                    )}
-                                                                    <div
-                                                                        className="relative w-full h-full rounded-lg flex items-center justify-center bg-black/30"
-                                                                        style={{ color: isNeeded ? iconColor : 'var(--sub-color)' }}
-                                                                    >
-                                                                        {renderIcon(p.icon)}
-                                                                    </div>
-                                                                </div>
-                                                                <div className="flex flex-col min-w-0">
-                                                                    <span className={`text-xs font-medium truncate ${isNeeded ? 'text-text-primary' : 'text-sub'}`}>
-                                                                        {p.title}
-                                                                    </span>
-                                                                    <span className="text-[9px] text-sub">
-                                                                        +{xp} XP each
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Right: Always show controls */}
-                                                            <div className="flex items-center gap-1 flex-shrink-0">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => handleCountChange(-1)}
-                                                                    onMouseDown={stopPropagation}
-                                                                    className="w-6 h-6 rounded flex items-center justify-center text-sub hover:text-text-primary hover:bg-sub-alt/50 text-xs"
-                                                                >
-                                                                    −
-                                                                </button>
-                                                                <span className={`w-6 text-center text-sm font-mono font-medium ${count > 0 ? 'text-main' : 'text-sub'}`}>
-                                                                    {count}
-                                                                </span>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => handleCountChange(1)}
-                                                                    onMouseDown={stopPropagation}
-                                                                    className="w-6 h-6 rounded flex items-center justify-center text-sub hover:text-text-primary hover:bg-sub-alt/50 text-xs"
-                                                                >
-                                                                    +
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                        </div>
-                                    </>
-                                );
-                            })()}
-                        </>
-                    ) : (
-                        <div className="group py-8 text-center border border-dashed border-sub/30 hover:border-sub rounded-xl cursor-default select-none">
-                            <span className="text-sm font-mono text-sub opacity-70 group-hover:opacity-100 group-hover:text-text-primary transition-opacity">
-                                <span className="font-bold text-main/80 group-hover:text-main">Tip:</span> link actions in Power Settings
-                            </span>
-                        </div>
-                    )}
+                    <PlanningActionList
+                        linkedProtocols={linkedProtocols}
+                        isCustomizing={isCustomizing}
+                        actionCounts={actionCounts}
+                        smartCounts={getSmartCounts()}
+                        setActionCounts={setActionCounts}
+                        setIsCustomizing={setIsCustomizing}
+                        pointsNeeded={pointsNeeded}
+                    />
                 </div>
 
             </div>

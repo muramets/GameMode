@@ -63,6 +63,9 @@ export default {
                 'slide-in-bottom': 'slideInBottom 0.25s ease-out',
                 'shimmer': 'shimmer 2s linear infinite',
             },
+            transitionDuration: {
+                '125': '125ms',
+            },
         },
     },
     plugins: [

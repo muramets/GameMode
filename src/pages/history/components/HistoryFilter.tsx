@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { GROUP_CONFIG } from '../../../constants/common';
 import { renderIcon } from '../../../utils/iconMapper';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -69,10 +69,11 @@ export function HistoryFilter({
     const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Reset search when view changes
-    useEffect(() => {
+    // Helper to switch view and reset search
+    const changeView = (newView: FilterView) => {
+        setView(newView);
         setSearchQuery('');
-    }, [view]);
+    };
 
     // Group protocols
     const protocolGroups = useMemo(() => {
@@ -177,21 +178,21 @@ export function HistoryFilter({
                                 title="Dimension"
                                 icon={faMap} // Using faMap for State/Territory metaphor
                                 value={getStateLabel(selectedStateIds)}
-                                onClick={() => setView('states')}
+                                onClick={() => changeView('states')}
                                 active={selectedStateIds.length > 0}
                             />
                             <FilterDropdown.NavButton
                                 title="Action"
                                 icon={faList}
                                 value={getProtocolLabel(selectedProtocolIds)}
-                                onClick={() => setView('protocol_groups')}
+                                onClick={() => changeView('protocol_groups')}
                                 active={selectedProtocolIds.length > 0}
                             />
                             <FilterDropdown.NavButton
                                 title="Power"
                                 icon={faChartBar}
                                 value={getInnerfaceLabel(selectedInnerfaceIds)}
-                                onClick={() => { setSelectedGroup(null); setView('innerface_groups'); }}
+                                onClick={() => { setSelectedGroup(null); changeView('innerface_groups'); }}
                                 active={selectedInnerfaceIds.length > 0}
                             />
                         </div>
@@ -251,13 +252,13 @@ export function HistoryFilter({
                         showSearch={false}
                         searchQuery={searchQuery}
                         onSearchChange={setSearchQuery}
-                        onBack={() => setView('root')}
+                        onBack={() => changeView('root')}
                     />
 
                     <FilterDropdown.Item
                         label="ALL ACTIONS"
                         isActive={selectedProtocolIds.length === 0}
-                        onClick={() => { setSelectedProtocolIds([]); setView('root'); }}
+                        onClick={() => { setSelectedProtocolIds([]); changeView('root'); }}
                         className="mx-1 mt-1 font-bold tracking-wider"
                     />
 
@@ -281,7 +282,7 @@ export function HistoryFilter({
                                         )
                                     }
                                     value={""}
-                                    onClick={() => { setSelectedGroup(group); setView('protocols_list'); }}
+                                    onClick={() => { setSelectedGroup(group); changeView('protocols_list'); }}
                                     active={false}
                                     style={color ? { '--hover-color': color } as React.CSSProperties : undefined}
                                 />
@@ -298,7 +299,7 @@ export function HistoryFilter({
                         showSearch={filteredProtocols.length > 5}
                         searchQuery={searchQuery}
                         onSearchChange={setSearchQuery}
-                        onBack={() => setView('protocol_groups')}
+                        onBack={() => changeView('protocol_groups')}
                     />
 
                     <div className="flex flex-col gap-0.5 mt-1 px-1">
@@ -331,13 +332,13 @@ export function HistoryFilter({
                         showSearch={false}
                         searchQuery={searchQuery}
                         onSearchChange={setSearchQuery}
-                        onBack={() => setView('root')}
+                        onBack={() => changeView('root')}
                     />
 
                     <FilterDropdown.Item
                         label="ALL POWERS"
                         isActive={selectedInnerfaceIds.length === 0}
-                        onClick={() => { setSelectedInnerfaceIds([]); setView('root'); }}
+                        onClick={() => { setSelectedInnerfaceIds([]); changeView('root'); }}
                         className="mx-1 mt-1 font-bold tracking-wider"
                     />
 
@@ -359,7 +360,7 @@ export function HistoryFilter({
                                         )
                                     }
                                     value={""}
-                                    onClick={() => { setSelectedGroup(group); setView('innerfaces'); }}
+                                    onClick={() => { setSelectedGroup(group); changeView('innerfaces'); }}
                                     active={false}
                                     style={color ? { '--hover-color': color } as React.CSSProperties : undefined}
                                 />
@@ -376,7 +377,7 @@ export function HistoryFilter({
                         showSearch={filteredInnerfaces.length > 10}
                         searchQuery={searchQuery}
                         onSearchChange={setSearchQuery}
-                        onBack={() => setView('innerface_groups')}
+                        onBack={() => changeView('innerface_groups')}
                     />
 
                     <div className="flex flex-col gap-0.5 mt-1 px-1">
@@ -408,13 +409,13 @@ export function HistoryFilter({
                         showSearch={states.length > 10}
                         searchQuery={searchQuery}
                         onSearchChange={setSearchQuery}
-                        onBack={() => setView('root')}
+                        onBack={() => changeView('root')}
                     />
 
                     <FilterDropdown.Item
                         label="ALL DIMENSIONS"
                         isActive={selectedStateIds.length === 0}
-                        onClick={() => { setSelectedStateIds([]); setView('root'); }}
+                        onClick={() => { setSelectedStateIds([]); changeView('root'); }}
                         className="mx-1 mt-1 font-bold tracking-wider"
                     />
 

@@ -90,11 +90,11 @@ export function HistoryEvent({ event, innerfaces, protocolColor, onDelete, onFil
                         </span>
 
                         {/* Show details for system events (e.g. score adjustments) */}
-                        {isSystem && (event as any).details?.from !== undefined && (
+                        {isSystem && event.details?.from !== undefined && event.details?.to !== undefined && (
                             <>
                                 <span className="opacity-20">•</span>
                                 <span className="text-sub">
-                                    {(event as any).details.from.toFixed(2)} → <span className="text-text-primary">{(event as any).details.to.toFixed(2)}</span>
+                                    {event.details.from.toFixed(2)} → <span className="text-text-primary">{event.details.to.toFixed(2)}</span>
                                 </span>
                             </>
                         )}
