@@ -219,11 +219,11 @@ export function UserProfile() {
 
                 {/* Desktop Separator (Vertical) - inside the group for closer proximity */}
                 <div className="hidden md:block w-[6px] h-24 bg-text-primary opacity-5 rounded-full shrink-0"></div>
-            </div>
 
-            {/* Weekly Focus Widget (Replaces simple separator) */}
-            <div className="hidden md:flex flex-col items-center justify-center px-6 shrink-0">
-                <WeeklyFocus />
+                {/* Weekly Focus Widget (Replaces simple separator) */}
+                <div className="hidden md:flex flex-col items-center justify-center px-6 shrink-0">
+                    <WeeklyFocus />
+                </div>
             </div>
 
 
