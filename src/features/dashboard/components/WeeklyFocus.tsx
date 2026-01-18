@@ -38,11 +38,11 @@ export function WeeklyFocus() {
                     const dots = getProgressDots(planned, completed, 5);
 
                     // Crown Color Logic:
-                    // Green (#98c379) = Complete & Real Goal Met (or no cap)
-                    // Orange (#d19a66) = Complete (7/7) but technically Capped (real needed > 7)
-                    // Gold (#E2B714) = In Progress
-                    const crownColor = isCapped ? '#d19a66' : '#98c379';
-                    const progressColor = isComplete ? crownColor : '#E2B714';
+                    // Green = Complete & Real Goal Met (or no cap)
+                    // Orange = Complete (7/7) but technically Capped (real needed > 7)
+                    // Gold = In Progress
+                    const crownColor = isCapped ? 'var(--warning-color, #d19a66)' : 'var(--correct-color)';
+                    const progressColor = isComplete ? crownColor : 'var(--main-color)';
 
                     // Find last check-in note for this protocol
                     const lastRecord = history.find(r =>
@@ -65,9 +65,9 @@ export function WeeklyFocus() {
                                             ${completed > 0 ? '' : 'grayscale opacity-50'}
                                         `}
                                         style={{
-                                            backgroundColor: `${protocol.color || '#ffffff'}33`,
+                                            backgroundColor: `color-mix(in srgb, ${protocol.color || '#ffffff'} 20%, transparent)`,
                                             color: protocol.color || 'var(--text-color)',
-                                            boxShadow: `0 0 10px ${protocol.color || '#ffffff'}15`
+                                            boxShadow: `0 0 10px color-mix(in srgb, ${protocol.color || '#ffffff'} 8%, transparent)`
                                         }}
                                     >
                                         {renderIcon(protocol.icon)}
@@ -95,7 +95,7 @@ export function WeeklyFocus() {
 
                                         {isCapped && (
                                             <div className="pt-2 border-t border-white/10">
-                                                <p className="text-[9px] text-[#d19a66] uppercase tracking-wider mb-0.5 font-bold">
+                                                <p className="text-[9px] uppercase tracking-wider mb-0.5 font-bold" style={{ color: 'var(--warning-color, #d19a66)' }}>
                                                     Maximum Effort! 🔥
                                                 </p>
                                                 <p className="text-[10px] text-sub">
@@ -109,7 +109,7 @@ export function WeeklyFocus() {
                                         {lastNote && (
                                             <div className="pt-2 border-t border-white/10">
                                                 <p className="text-[9px] text-sub uppercase tracking-wider mb-0.5">Quick Note</p>
-                                                <p className="text-[10px] italic text-[#E2B714]">"{lastNote}"</p>
+                                                <p className="text-[10px] italic" style={{ color: 'var(--main-color)' }}>"{lastNote}"</p>
                                             </div>
                                         )}
 

@@ -56,9 +56,9 @@ export function HistoryEvent({ event, innerfaces, protocolColor, onDelete, onFil
             <div
                 className="relative w-14 h-14 flex items-center justify-center rounded-2xl text-2xl shrink-0 transition-all duration-500 z-10 group-hover:scale-105"
                 style={{
-                    backgroundColor: `${effectiveColor}33`, // 20% opacity like ProtocolRow's icon background
+                    backgroundColor: `color-mix(in srgb, ${effectiveColor} 20%, transparent)`, // 20% opacity like ProtocolRow's icon background
                     color: effectiveColor,
-                    boxShadow: `0 0 20px ${effectiveColor}15`
+                    boxShadow: `0 0 20px color-mix(in srgb, ${effectiveColor} 8%, transparent)`
                 }}
             >
                 {/* Glow layer on hover */}

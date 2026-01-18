@@ -106,7 +106,7 @@ export function EntitySelector({
                                                                 : 'bg-sub-alt border-transparent text-sub hover:text-text-primary hover:bg-sub'
                                                                 }`}
                                                             style={isActive ? {
-                                                                backgroundColor: `${itemColor}33`,
+                                                                backgroundColor: `color-mix(in srgb, ${itemColor} 20%, transparent)`,
                                                                 color: itemColor,
                                                                 boxShadow: `0 4px 8px rgba(0,0,0,0.2)`,
                                                                 borderColor: 'transparent'

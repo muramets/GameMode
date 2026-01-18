@@ -99,7 +99,7 @@ export function GroupSettingsModal({ isOpen, onClose, groupName }: GroupSettings
                         type="submit"
                         variant="primary"
                         size="sm"
-                        className="font-bold px-6 py-2 rounded-lg text-[10px] uppercase tracking-wider shadow-[0_0_10px_rgba(226,183,20,0.2)]"
+                        className="font-bold px-6 py-2 rounded-lg text-[10px] uppercase tracking-wider shadow-[0_0_10px_rgba(var(--main-color-rgb),0.2)]"
                     >
                         Save Changes
                     </Button>

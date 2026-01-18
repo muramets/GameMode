@@ -1,5 +1,4 @@
 import { renderIcon } from '../../../utils/iconMapper';
-import { resolveColor } from '../../../utils/colorUtils';
 import type { PowerCategory } from '../types';
 
 interface PowerIconProps {
@@ -19,8 +18,6 @@ export function PowerIcon({
     className = '',
     glowSize = '15px'
 }: PowerIconProps) {
-    const hexColor = resolveColor(color);
-
     const shapeClass = category === 'foundation'
         ? 'rounded-[30%_70%_70%_30%/30%_30%_70%_70%]' // Squircle for Foundations
         : category === 'skill'
@@ -31,14 +28,14 @@ export function PowerIcon({
         <div
             className={`relative flex items-center justify-center text-lg shrink-0 transition-all duration-300 bg-sub-alt overflow-hidden ${size} ${shapeClass} ${className}`}
             style={{
-                boxShadow: `0 0 ${glowSize} ${hexColor}15`
+                boxShadow: `0 0 ${glowSize} color-mix(in srgb, ${color || '#ffffff'} 8%, transparent)`
             }}
         >
             {/* Colored overlay */}
             <div
                 className="absolute inset-0 transition-colors duration-300"
                 style={{
-                    backgroundColor: `${hexColor}33`
+                    backgroundColor: `color-mix(in srgb, ${color || '#ffffff'} 20%, transparent)`
                 }}
             />
             {/* Icon */}

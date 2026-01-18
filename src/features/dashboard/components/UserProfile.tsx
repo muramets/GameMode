@@ -82,7 +82,7 @@ export function UserProfile() {
         return (
             <span
                 className="text-xs font-mono"
-                style={{ color: isPositive ? '#98c379' : '#ca4754' }}
+                style={{ color: isPositive ? 'var(--correct-color)' : 'var(--error-color)' }}
             >
                 {isPositive ? '+' : ''}{xp} XP{isTotal ? ' total' : ''}
             </span>

@@ -106,9 +106,9 @@ export function InviteJoinCard({
                             <div
                                 className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0"
                                 style={{
-                                    backgroundColor: `${inviteData.teamColor || '#ffffff'}33`,
+                                    backgroundColor: `color-mix(in srgb, ${inviteData.teamColor || '#ffffff'} 20%, transparent)`,
                                     color: inviteData.teamColor || 'var(--main-color)',
-                                    boxShadow: `0 0 15px ${inviteData.teamColor || '#ffffff'}15`
+                                    boxShadow: `0 0 15px color-mix(in srgb, ${inviteData.teamColor || '#ffffff'} 8%, transparent)`
                                 }}
                             >
                                 {teamIconDef ? (

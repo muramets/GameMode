@@ -155,14 +155,14 @@ export function QuickActionCard({ action, onAction, onDelete, isDisabled }: { ac
                                 layout
                                 initial={false}
                                 animate={{
-                                    backgroundColor: effectiveHoverSide === 'right' ? '#98c37933' :
-                                        effectiveHoverSide === 'left' ? '#ca475433' :
-                                            `${action.color || '#ffffff'}33`,
-                                    boxShadow: effectiveHoverSide === 'right' ? '0 0 10px #98c37933' :
-                                        effectiveHoverSide === 'left' ? '0 0 10px #ca475433' :
-                                            `0 0 10px ${action.color || '#ffffff'}15`,
-                                    color: effectiveHoverSide === 'right' ? '#98c379' :
-                                        effectiveHoverSide === 'left' ? '#ca4754' :
+                                    backgroundColor: effectiveHoverSide === 'right' ? 'color-mix(in srgb, var(--correct-color) 20%, transparent)' :
+                                        effectiveHoverSide === 'left' ? 'color-mix(in srgb, var(--error-color) 20%, transparent)' :
+                                            `color-mix(in srgb, ${action.color || '#ffffff'} 20%, transparent)`,
+                                    boxShadow: effectiveHoverSide === 'right' ? '0 0 10px color-mix(in srgb, var(--correct-color) 20%, transparent)' :
+                                        effectiveHoverSide === 'left' ? '0 0 10px color-mix(in srgb, var(--error-color) 20%, transparent)' :
+                                            `0 0 10px color-mix(in srgb, ${action.color || '#ffffff'} 8%, transparent)`,
+                                    color: effectiveHoverSide === 'right' ? 'var(--correct-color)' :
+                                        effectiveHoverSide === 'left' ? 'var(--error-color)' :
                                             action.color || 'var(--text-primary)'
                                 }}
                                 transition={{
@@ -180,7 +180,7 @@ export function QuickActionCard({ action, onAction, onDelete, isDisabled }: { ac
                             <motion.span
                                 layout
                                 ref={titleRef}
-                                className={`truncate text-center transition-colors duration-300 origin-left ${effectiveFeedbackType === 'plus' || effectiveHoverSide === 'right' ? 'text-[#98c379]' : effectiveFeedbackType === 'minus' || effectiveHoverSide === 'left' ? 'text-[#ca4754]' : ''
+                                className={`truncate text-center transition-colors duration-300 origin-left ${effectiveFeedbackType === 'plus' || effectiveHoverSide === 'right' ? 'text-correct' : effectiveFeedbackType === 'minus' || effectiveHoverSide === 'left' ? 'text-error' : ''
                                     }`}
                             >
                                 {action.title}

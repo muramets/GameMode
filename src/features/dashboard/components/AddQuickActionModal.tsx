@@ -142,7 +142,7 @@ import type { Protocol } from '../../protocols/types';
 
 // Helper Component for Item Rendering
 function ProtocolItem({ protocol, isPinned, onToggle }: { protocol: Protocol, isPinned: boolean, onToggle: () => void }) {
-    const baseColor = protocol.color || '#98c379';
+    const baseColor = protocol.color || 'var(--correct-color)';
 
     return (
         <div
@@ -157,7 +157,7 @@ function ProtocolItem({ protocol, isPinned, onToggle }: { protocol: Protocol, is
                 <div
                     className="w-10 h-10 rounded-lg flex items-center justify-center text-lg shadow-sm"
                     style={{
-                        backgroundColor: `${baseColor}15`,
+                        backgroundColor: `color-mix(in srgb, ${baseColor} 8%, transparent)`,
                         color: baseColor
                     }}
                 >

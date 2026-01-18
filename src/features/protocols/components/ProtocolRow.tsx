@@ -126,9 +126,9 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
                         animate={{ marginLeft: isHovered ? 16 : 0 }}
                         transition={{ duration: 0.3, ease: "easeOut" }}
                         style={{
-                            backgroundColor: `${protocol.color || '#ffffff'}33`,
+                            backgroundColor: `color-mix(in srgb, ${protocol.color || '#ffffff'} 20%, transparent)`,
                             color: protocol.color || 'var(--text-color)',
-                            boxShadow: `0 0 15px ${protocol.color || '#ffffff'}15`
+                            boxShadow: `0 0 15px color-mix(in srgb, ${protocol.color || '#ffffff'} 8%, transparent)`
                         }}
                     >
                         {renderIcon(protocol.icon)}
@@ -164,9 +164,9 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
                                 <div
                                     className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-transform hover:scale-110 duration-200 pointer-events-auto"
                                     style={{
-                                        backgroundColor: `${innerface.color || '#ffffff'}1A`,
+                                        backgroundColor: `color-mix(in srgb, ${innerface.color || '#ffffff'} 10%, transparent)`,
                                         color: innerface.color || '#ffffff',
-                                        boxShadow: `0 0 10px ${innerface.color || '#ffffff'}0D`
+                                        boxShadow: `0 0 10px color-mix(in srgb, ${innerface.color || '#ffffff'} 5%, transparent)`
                                     }}
                                 >
                                     <div className="text-[0.7rem]"> {renderIcon(innerface.icon)} </div>

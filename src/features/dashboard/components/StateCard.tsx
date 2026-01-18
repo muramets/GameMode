@@ -83,9 +83,9 @@ export function StateCard({
                     <div
                         className="w-10 h-10 rounded-xl flex items-center justify-center text-[1.2rem] shrink-0 relative z-20 transition-colors duration-300"
                         style={{
-                            backgroundColor: `${state.color || '#ffffff'}33`,
+                            backgroundColor: `color-mix(in srgb, ${state.color || '#ffffff'} 20%, transparent)`,
                             color: state.color || '#ffffff',
-                            boxShadow: `0 0 15px ${state.color || '#ffffff'}15` // Subtle glow to separate from background
+                            boxShadow: `0 0 15px color-mix(in srgb, ${state.color || '#ffffff'} 8%, transparent)` // Subtle glow to separate from background
                         }}
                     >
                         {renderIcon(state.icon || '')}
@@ -166,7 +166,7 @@ export function StateCard({
                         style={{
                             width: `${progress}%`,
                             backgroundColor: displayColor,
-                            boxShadow: `0 0 10px ${displayColor}40`
+                            boxShadow: `0 0 10px color-mix(in srgb, ${displayColor} 25%, transparent)`
                         }}
                     />
                 </div>

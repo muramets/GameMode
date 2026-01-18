@@ -22,21 +22,21 @@ export function ProtocolXpSelector({ xp, onChange }: ProtocolXpSelectorProps) {
                 <button
                     type="button"
                     onClick={() => onChange('1')}
-                    className={`px-2 py-3 rounded-xl border text-[10px] font-mono uppercase tracking-wide transition-all ${xp === '1' ? 'bg-[#e2b714] border-[#e2b714] text-bg-primary font-bold shadow-[0_0_15px_rgba(226,183,20,0.3)]' : 'bg-sub-alt border-transparent text-sub hover:text-text-primary hover:bg-sub'}`}
+                    className={`px-2 py-3 rounded-xl border text-[10px] font-mono uppercase tracking-wide transition-all ${xp === '1' ? 'bg-main border-main text-bg-primary font-bold shadow-[0_0_15px_rgba(var(--main-color-rgb),0.3)]' : 'bg-sub-alt border-transparent text-sub hover:text-text-primary hover:bg-sub'}`}
                 >
                     Easy: 1 XP
                 </button>
                 <button
                     type="button"
                     onClick={() => onChange('5')}
-                    className={`px-2 py-3 rounded-xl border text-[10px] font-mono uppercase tracking-wide transition-all ${xp === '5' ? 'bg-[#e2b714] border-[#e2b714] text-bg-primary font-bold shadow-[0_0_15px_rgba(226,183,20,0.3)]' : 'bg-sub-alt border-transparent text-sub hover:text-text-primary hover:bg-sub'}`}
+                    className={`px-2 py-3 rounded-xl border text-[10px] font-mono uppercase tracking-wide transition-all ${xp === '5' ? 'bg-main border-main text-bg-primary font-bold shadow-[0_0_15px_rgba(var(--main-color-rgb),0.3)]' : 'bg-sub-alt border-transparent text-sub hover:text-text-primary hover:bg-sub'}`}
                 >
                     Medium: 5 XP
                 </button>
                 <button
                     type="button"
                     onClick={() => onChange('20')}
-                    className={`px-2 py-3 rounded-xl border text-[10px] font-mono uppercase tracking-wide transition-all ${xp === '20' ? 'bg-[#e2b714] border-[#e2b714] text-bg-primary font-bold shadow-[0_0_15px_rgba(226,183,20,0.3)]' : 'bg-sub-alt border-transparent text-sub hover:text-text-primary hover:bg-sub'}`}
+                    className={`px-2 py-3 rounded-xl border text-[10px] font-mono uppercase tracking-wide transition-all ${xp === '20' ? 'bg-main border-main text-bg-primary font-bold shadow-[0_0_15px_rgba(var(--main-color-rgb),0.3)]' : 'bg-sub-alt border-transparent text-sub hover:text-text-primary hover:bg-sub'}`}
                 >
                     Hard: 20 XP
                 </button>
