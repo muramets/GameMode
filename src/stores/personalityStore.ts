@@ -67,6 +67,7 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
 
     loadPersonalities: async (uid) => {
         try {
+            console.debug("Loading personalities started", { uid });
             set({ isLoading: true });
             const colRef = collection(db, 'users', uid, 'personalities');
             const q = query(colRef, orderBy('lastActiveAt', 'desc'));
@@ -82,6 +83,7 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
 
     updatePersonality: async (uid, personalityId, data) => {
         try {
+            console.log("Updating personality", { uid, personalityId, changes: Object.keys(data) });
             const docRef = doc(db, 'users', uid, 'personalities', personalityId);
             await updateDoc(docRef, data);
 
@@ -109,6 +111,8 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
 
             await setDoc(doc(db, 'users', uid, 'personalities', id), newPersonality);
 
+            console.log("Created new personality", { uid, name, id });
+
             set(state => ({
                 personalities: [newPersonality, ...state.personalities]
             }));
@@ -129,6 +133,7 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
             });
 
             const context: ActiveContext = { type: 'personality', uid, pid: personalityId };
+            console.log("Switching context to Personality", { uid, pid: personalityId });
             localStorage.setItem('active_personality_id', personalityId);
             localStorage.setItem('active_context', JSON.stringify(context));
 
@@ -143,6 +148,7 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
     },
 
     switchToRole: (teamId, roleId) => {
+        console.log("Switching context to Role", { teamId, roleId });
         const context: ActiveContext = { type: 'role', teamId, roleId };
         localStorage.setItem('active_personality_id', roleId); // Reuse this for simple ID tracking
         localStorage.setItem('active_context', JSON.stringify(context));
@@ -202,6 +208,7 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
 
     deletePersonality: async (uid, id) => {
         try {
+            console.log("Deleting personality", { uid, id });
             await deleteDoc(doc(db, 'users', uid, 'personalities', id));
             set(state => ({
                 personalities: state.personalities.filter(p => p.id !== id),
@@ -219,6 +226,7 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
     },
 
     ensureDefaultPersonality: async (uid, forceReset = false) => {
+        console.debug("Ensuring default personality", { uid, forceReset });
         const { personalities, loadPersonalities, switchPersonality } = get();
 
         // If not loaded yet, try loading

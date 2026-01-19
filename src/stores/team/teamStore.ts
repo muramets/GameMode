@@ -44,6 +44,7 @@ export const useTeamStore = create<TeamState>((set, get) => ({
 
     loadTeams: async (uid) => {
         try {
+            console.debug("Loading teams", { uid });
             set({ isLoading: true });
 
             // Query teams where user is owner OR member
@@ -79,6 +80,7 @@ export const useTeamStore = create<TeamState>((set, get) => ({
 
     createTeam: async (uid, data) => {
         try {
+            console.log("Creating team", { uid, teamName: data.name });
             const teamRef = doc(collection(db, 'teams'));
             const team: Team = {
                 id: teamRef.id,

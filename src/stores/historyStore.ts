@@ -49,6 +49,7 @@ export const useHistoryStore = create<HistoryState>((set) => ({
 
     addCheckin: async (uid, pid, record) => {
         try {
+            console.log("Adding check-in", { uid, pid, protocol: record.protocolName });
             await runTransaction(db, async (transaction) => {
                 // 1. Create History Reference
                 const historyRef = doc(collection(db, 'users', uid, 'personalities', pid, 'history'));
@@ -58,6 +59,8 @@ export const useHistoryStore = create<HistoryState>((set) => ({
                     ...record,
                     serverTimestamp: Timestamp.now()
                 });
+
+                console.debug("Transaction: Record created", { protocol: record.protocolName });
 
                 // 3. Update Innerface Scores using 'changes' map
                 if (record.changes) {
@@ -132,6 +135,7 @@ export const useHistoryStore = create<HistoryState>((set) => ({
 
     addSystemEvent: async (uid, pid, message, details = {}) => {
         try {
+            console.log("Adding system event", { uid, pid, message });
             const historyRef = collection(db, 'users', uid, 'personalities', pid, 'history');
             await addDoc(historyRef, {
                 type: 'system',
@@ -155,6 +159,7 @@ export const useHistoryStore = create<HistoryState>((set) => ({
 
     deleteCheckin: async (uid, pid, id) => {
         try {
+            console.log("Deleting check-in", { uid, pid, id });
             await runTransaction(db, async (transaction) => {
                 const historyRef = doc(db, 'users', uid, 'personalities', pid, 'history', id);
                 const historyDoc = await transaction.get(historyRef);
@@ -241,7 +246,10 @@ export const useHistoryStore = create<HistoryState>((set) => ({
             orderBy('timestamp', 'desc')
         );
 
+        console.debug("Subscribing to history (last 7 days)", { uid, pid });
+
         const unsubscribe = onSnapshot(q, (snapshot) => {
+            console.debug("History snapshot received", { count: snapshot.size, source: snapshot.metadata.fromCache ? 'cache' : 'server' });
             const records: HistoryRecord[] = [];
             snapshot.forEach((doc) => {
                 records.push({ id: doc.id, ...doc.data() } as HistoryRecord);

@@ -29,6 +29,7 @@ export const useInviteStore = create<InviteState>((set) => ({
 
     generateInviteLink: async (teamId, roleId, uid, options = {}) => {
         try {
+            console.log("Generating invite link", { teamId, roleId, singleUse: !!options.singleUse });
             // 1. Check if role already has an active invite code
             const roleRef = doc(db, 'teams', teamId, 'roles', roleId);
             const roleDoc = await getDoc(roleRef);
@@ -89,6 +90,7 @@ export const useInviteStore = create<InviteState>((set) => ({
 
     getInviteInfo: async (inviteCode) => {
         try {
+            console.debug("Fetching invite info", { inviteCode });
             const inviteDoc = await getDoc(doc(db, 'team_invites', inviteCode));
             if (!inviteDoc.exists()) return null;
 
@@ -120,6 +122,7 @@ export const useInviteStore = create<InviteState>((set) => ({
 
     joinTeam: async (uid, inviteCode) => {
         try {
+            console.log("Joining team via invite", { uid, inviteCode });
             set({ isLoading: true });
             // 1. Validate invite
             const inviteDoc = await getDoc(doc(db, 'team_invites', inviteCode));
@@ -314,6 +317,8 @@ export const useInviteStore = create<InviteState>((set) => ({
             // the listener in useTeamStore should catch it.
 
             set({ isLoading: false });
+
+            console.log("Successfully joined team", { uid, teamId: invite.teamId, personalityId });
 
             return personalityId;
         } catch (err: unknown) {

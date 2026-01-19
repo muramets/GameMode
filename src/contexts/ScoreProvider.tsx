@@ -38,6 +38,7 @@ export function ScoreProvider({ children }: { children: React.ReactNode }) {
 
         // Only reset if we're starting a NEW loading cycle (was false, now true)
         if (isLoading && !wasLoading && initialized) {
+            console.debug("ScoreProvider: Loading cycle restarted (resetting visual progress)");
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setDisplayProgress(0);
             // We DO NOT set initialized(false) here. 
@@ -76,6 +77,7 @@ export function ScoreProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         if (displayProgress >= 100 && !isLoading) {
             const timer = setTimeout(() => {
+                console.debug("ScoreProvider: Initialization complete (Progress 100%)");
                 setInitialized(true);
             }, 500); // Short settling time at 100%
             return () => clearTimeout(timer);

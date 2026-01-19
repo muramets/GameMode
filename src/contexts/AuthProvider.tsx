@@ -11,6 +11,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            if (currentUser) {
+                console.debug("Auth state changed: User signed in", { uid: currentUser.uid });
+            } else {
+                console.debug("Auth state changed: User signed out");
+            }
             setUser(currentUser);
             setLoading(false);
         });
@@ -19,6 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const signInWithGoogle = async () => {
         try {
+            console.log("Initiating Google Sign-In...");
             const provider = new GoogleAuthProvider();
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
@@ -29,6 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const userSnap = await getDoc(userRef);
 
             if (!userSnap.exists()) {
+                console.log("Creating new user profile document", { uid: user.uid });
                 await setDoc(userRef, {
                     uid: user.uid,
                     email: user.email,
@@ -38,11 +45,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     lastLogin: serverTimestamp()
                 });
             } else {
+                console.debug("User document exists, updating lastLogin", { uid: user.uid });
                 // Update last login if user already exists
                 await setDoc(userRef, {
                     lastLogin: serverTimestamp()
                 }, { merge: true });
             }
+            console.log("User successfully initialized", { uid: user.uid });
         } catch (error) {
             console.error("Error signing in with Google", error);
             throw error;
@@ -51,6 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const logout = async () => {
         try {
+            console.log("Signing out user...");
             await signOut(auth);
         } catch (error) {
             console.error("Error signing out", error);
