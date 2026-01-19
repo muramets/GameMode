@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import type { IconProp } from '@fortawesome/fontawesome-svg-core';
 import { getIcon } from '../../../config/iconRegistry';
 
 // Global (session-level) set to track already loaded avatar URLs
-// We use this because browser cache check (img.complete) is unreliable for Firebase URLs 
-// which often trigger revalidation requests (304), causing delays and FOUC/blinks.
+// We use this to decide if we should use a fade-in animation or an instant show.
 const sessionLoadedCache = new Set<string>();
 
 interface AvatarProps {
@@ -17,9 +16,10 @@ interface AvatarProps {
 }
 
 /**
- * Avatar component that handles smooth transitions from a placeholder icon
- * to the actual image. It uses a session-level cache to skip animations
- * for already loaded images, providing "instant" feel even if browser revalidates.
+ * Avatar component with a layered loading strategy:
+ * 1. Layer 1 (Bottom): Fallback icon, visible until the image is definitely painted.
+ * 2. Layer 2 (Top): The <img> tag. If cached in session, it's opacity:1 immediately.
+ * This prevents "holes" during rapid unmount/mount cycles while the browser repaints.
  */
 export function Avatar({
     src,
@@ -28,9 +28,10 @@ export function Avatar({
     className = '',
     style = {}
 }: AvatarProps) {
+    // Stable key per src ensures clean lifecycle for each image
     return (
         <AvatarInner
-            key={src} // Remount on src change to ensure fresh state
+            key={src || 'no-src'}
             src={src}
             alt={alt}
             fallbackIcon={fallbackIcon}
@@ -41,74 +42,67 @@ export function Avatar({
 }
 
 function AvatarInner({ src, alt, fallbackIcon, className, style }: any) {
-    const debugId = src?.slice(-5);
+    // isLoaded tracks if the CURRENT <img> instance has fired onLoad.
+    const [isLoaded, setIsLoaded] = useState(false);
 
-    // Determine if we should consider this loaded immediately
-    const startLoaded = !!src && sessionLoadedCache.has(src);
+    // wasCached is locked at mount time. It decides if we skip the fade-in.
+    // If true, we show the image at opacity 100% immediately.
+    const wasCached = useMemo(() => !!src && sessionLoadedCache.has(src), [src]);
 
-    if (src) {
-        console.log(`[Avatar ${debugId}] Mount. startLoaded: ${startLoaded}. Cache size: ${sessionLoadedCache.size}`);
-    }
-
-    // If it's already in our session cache, we treat it as loaded instantly.
-    // This allows the browser to do its network revalidation (304) in the background
-    // while we show the image tag. The image tag will show the previous cached version 
-    // or wait slightly, but efficiently avoids the "fade-in" animation reset.
-    const [isLoaded, setIsLoaded] = useState(startLoaded);
-
-    // We only animate if we didn't start loaded
-    const [shouldAnimate] = useState(!startLoaded);
-
-    const handleLoad = () => {
-        if (src) {
-            console.log(`[Avatar ${debugId}] handleLoad triggered.`);
-            sessionLoadedCache.add(src);
-        }
-        setIsLoaded(true);
-    };
-
-    // Fallback logic for when src changes or error
     useEffect(() => {
         if (!src) return;
 
-        console.log(`[Avatar ${debugId}] Effect run.`);
-
-        // Native check just in case (for first loads that might be fast memory/disk cache)
+        // Native check: if memory cache is instant, mark as loaded quickly
         const img = new Image();
         img.src = src;
         if (img.complete) {
-            console.log(`[Avatar ${debugId}] img.complete is TRUE in effect.`);
-            handleLoad();
+            sessionLoadedCache.add(src);
+            setIsLoaded(true);
         }
-
-        return () => {
-            console.log(`[Avatar ${debugId}] Unmount.`);
-        };
     }, [src]);
+
+    const handleLoad = () => {
+        if (src) sessionLoadedCache.add(src);
+        setIsLoaded(true);
+    };
 
     const iconDef = typeof fallbackIcon === 'string' ? getIcon(fallbackIcon) : fallbackIcon;
 
     return (
-        <div className={`relative flex items-center justify-center overflow-hidden ${className}`} style={style}>
-            {/* Fallback - visible if loading or error */}
-            {(!src || !isLoaded) && (
-                <div className="absolute inset-0 flex items-center justify-center">
+        <div
+            className={`relative flex items-center justify-center overflow-hidden bg-bg-primary/50 ${className}`}
+            style={style}
+        >
+            {/* 
+              Layer 1: Fallback Icon (Z-0)
+              Always rendered underneath. It acts as the background until the image paints.
+            */}
+            {!isLoaded && (
+                <div className="absolute inset-0 flex items-center justify-center text-sub/30 z-0">
                     <FontAwesomeIcon icon={iconDef} />
                 </div>
             )}
 
-            {/* Image */}
+            {/* 
+              Layer 2: Actual Image (Z-10)
+              Rendered on top. 
+              - If wasCached=true: Opacity 100 immediately.
+              - If wasCached=false: Opacity 0 -> 100 (Fade in)
+            */}
             {src && (
                 <img
                     src={src}
                     alt={alt}
                     onLoad={handleLoad}
-                    className={`w-full h-full object-cover ${shouldAnimate && !startLoaded ? 'animate-fade-in' : ''} ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-                    style={shouldAnimate && !startLoaded ? { animation: 'fadeIn 0.5s ease-out forwards' } : undefined}
+                    className={`w-full h-full object-cover z-10 ${wasCached
+                            ? 'opacity-100' // INSTANT SHOW
+                            : (isLoaded ? 'opacity-100 transition-opacity duration-500' : 'opacity-0') // FADE IN
+                        }`}
                 />
             )}
-            {/* Inline keyframe style for independence */}
-            {(shouldAnimate && !startLoaded) && (
+
+            {/* Fade-in animation styles for new images only (backward compatibility) */}
+            {!wasCached && isLoaded && (
                 <style>{`
                     @keyframes fadeIn {
                         from { opacity: 0; }
