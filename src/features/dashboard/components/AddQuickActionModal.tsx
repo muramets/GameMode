@@ -59,11 +59,11 @@ export function AddQuickActionModal({ isOpen, onClose }: AddQuickActionModalProp
                 {/* List */}
                 <div className="overflow-y-auto flex-1 space-y-4 custom-scrollbar pr-1 pb-2">
                     {protocols.length === 0 ? (
-                        <div className="h-full flex items-center justify-center text-sub/50 font-mono text-xs">
+                        <div className="h-full flex items-center justify-center text-sub font-mono text-sm">
                             Created actions will appear here
                         </div>
                     ) : filteredProtocols.length === 0 ? (
-                        <div className="py-12 text-center text-sub/50 font-mono text-xs italic">
+                        <div className="py-12 text-center text-sub font-mono text-sm italic">
                             No matching actions found
                         </div>
                     ) : (

@@ -77,7 +77,7 @@ export function EntitySelector({
             <div className="flex-1 overflow-y-auto custom-scrollbar">
                 <div className="flex flex-col gap-1 h-full">
                     {!filteredAndGroupedItems ? (
-                        <div className="w-full h-full flex items-center justify-center text-sub/40 text-xs font-mono">
+                        <div className="w-full h-full flex items-center justify-center text-sub text-sm font-mono">
                             {emptyMessage}
                         </div>
                     ) : (

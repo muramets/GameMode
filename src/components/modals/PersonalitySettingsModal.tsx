@@ -38,7 +38,8 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
     const {
         isConfirmingDelete,
         isCropping,
-        tempImage
+        tempImage,
+        isSubmitting
     } = uiState;
 
     const { fileInputRef } = refs;
@@ -131,7 +132,8 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
                             type="submit"
                             variant="primary"
                             size="sm"
-                            disabled={!name.trim()}
+                            disabled={!name.trim() || isSubmitting}
+                            isLoading={isSubmitting}
                             className="font-bold px-6 py-2 rounded-lg text-[10px] uppercase tracking-wider shadow-[0_0_10px_rgba(226,183,20,0.2)]"
                         >
                             {personalityId ? 'Save' : 'Create'}

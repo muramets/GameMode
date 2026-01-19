@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { FormEvent, ChangeEvent } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { usePersonalityStore } from '../../../stores/personalityStore';
+import { uploadAvatar } from '../../../utils/storageUtils';
 
 interface UsePersonalityFormProps {
     personalityId: string | null;
@@ -18,12 +19,14 @@ export function usePersonalityForm({ personalityId, onClose, isOpen }: UsePerson
     const [description, setDescription] = useState('');
     const [icon, setIcon] = useState('user');
     const [color, setColor] = useState('#e2b714');
-    const [avatar, setAvatar] = useState(''); // URL for avatar
+    const [avatar, setAvatar] = useState('');
 
     // UI State
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
     const [tempImage, setTempImage] = useState<string | null>(null);
     const [isCropping, setIsCropping] = useState(false);
+    const [avatarFile, setAvatarFile] = useState<Blob | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -58,6 +61,7 @@ export function usePersonalityForm({ personalityId, onClose, isOpen }: UsePerson
             setIsConfirmingDelete(false);
             setTempImage(null);
             setIsCropping(false);
+            setAvatarFile(null);
         }
 
         prevIsOpen.current = isOpen;
@@ -68,15 +72,24 @@ export function usePersonalityForm({ personalityId, onClose, isOpen }: UsePerson
         e.preventDefault();
         if (!user || !name.trim()) return;
 
-        const data = {
-            name,
-            description,
-            icon,
-            iconColor: color,
-            avatar
-        };
-
+        setIsSubmitting(true);
         try {
+            let finalAvatarUrl = avatar;
+
+            // If we have a new file to upload
+            if (avatarFile) {
+                // Upload to Storage
+                finalAvatarUrl = await uploadAvatar(user.uid, avatarFile);
+            }
+
+            const data = {
+                name,
+                description,
+                icon,
+                iconColor: color,
+                avatar: finalAvatarUrl
+            };
+
             if (personalityId) {
                 await updatePersonality(user.uid, personalityId, data);
             } else {
@@ -86,6 +99,8 @@ export function usePersonalityForm({ personalityId, onClose, isOpen }: UsePerson
             onClose();
         } catch (err) {
             console.error(err);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -116,8 +131,15 @@ export function usePersonalityForm({ personalityId, onClose, isOpen }: UsePerson
         }
     };
 
-    const handleCropComplete = (croppedBase64: string) => {
-        setAvatar(croppedBase64);
+    const handleCropComplete = async (croppedImage: string) => {
+        // Update UI preview immediately
+        setAvatar(croppedImage);
+
+        // Prepare file blob for storage upload
+        const res = await fetch(croppedImage);
+        const blob = await res.blob();
+        setAvatarFile(blob);
+
         setIsCropping(false);
         setTempImage(null);
     };
@@ -138,7 +160,8 @@ export function usePersonalityForm({ personalityId, onClose, isOpen }: UsePerson
         uiState: {
             isConfirmingDelete,
             isCropping,
-            tempImage
+            tempImage,
+            isSubmitting
         },
         refs: {
             fileInputRef
