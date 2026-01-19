@@ -1,13 +1,14 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import type { Innerface } from '../../innerfaces/types';
 import { MonkeyTypeLoader } from '../../../components/ui/molecules/MonkeyTypeLoader';
+import { getIcon } from '../../../config/iconRegistry';
 import { ProtocolSettingsModal } from '../../../components/modals/ProtocolSettingsModal';
 import { useScoreContext } from '../../../contexts/ScoreContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import { GroupSettingsModal } from '../../../features/groups/components/GroupSettingsModal';
 import { ActiveFiltersList } from '../../../components/ui/molecules/ActiveFiltersList';
-import { GROUP_CONFIG } from '../../../constants/common';
+import { getGroupConfig } from '../../../constants/common';
 import { useMetadataStore } from '../../../stores/metadataStore';
 import { usePersonalityStore } from '../../../stores/personalityStore';
 import { useCollapsedGroups } from '../../../hooks/useCollapsedGroups';
@@ -93,6 +94,10 @@ export function ProtocolsList() {
         }
     }, [renderedCount, filteredProtocols.length]);
 
+    const handleCloseModal = useCallback(() => {
+        setIsModalOpen(false);
+    }, []);
+
     const handleEditProtocol = useCallback((id: string | number) => {
         setSelectedProtocolId(id);
         setIsModalOpen(true);
@@ -154,9 +159,12 @@ export function ProtocolsList() {
                         onSearchChange={setSearchQuery}
                         activeFilters={activeFilters}
                         protocolGroups={protocolGroups as string[]}
+                        groupsMetadata={groupsMetadata}
                         onToggleFilter={toggleFilter}
                         shouldShowSearch={shouldShowSearch}
                         isModalOpen={isModalOpen}
+                        hasUngrouped={protocols.some(p => !p.group)}
+                        hasProtocols={protocols.length > 0}
                     />
                 </div>
 
@@ -165,8 +173,8 @@ export function ProtocolsList() {
                     filters={activeFilters.map(filter => ({
                         id: filter,
                         label: filter,
-                        icon: GROUP_CONFIG[filter]?.icon,
-                        color: GROUP_CONFIG[filter]?.color,
+                        icon: getIcon(groupsMetadata[filter]?.icon || getGroupConfig(filter)?.icon || 'layer-group'),
+                        color: groupsMetadata[filter]?.color || getGroupConfig(filter)?.color,
                         onRemove: () => removeFilter(filter)
                     }))}
                     onClearAll={() => toggleFilter('all')}
@@ -225,7 +233,7 @@ export function ProtocolsList() {
             {isModalOpen && (
                 <ProtocolSettingsModal
                     isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
+                    onClose={handleCloseModal}
                     protocolId={selectedProtocolId}
                 />
             )}

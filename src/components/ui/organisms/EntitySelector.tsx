@@ -1,17 +1,15 @@
 import React, { useState, useMemo } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import { CollapsibleSection } from '../molecules/CollapsibleSection';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../atoms/Tooltip';
 import { Input } from '../molecules/Input';
-import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 
 export interface EntityItem {
     id: string | number;
     title: string;
     description?: string;
     group?: string;
-    icon?: IconDefinition | React.ReactNode;
+    icon?: React.ReactNode;
     color?: string;
 }
 
@@ -95,7 +93,7 @@ export function EntitySelector({
                                         const itemColor = item.color || 'var(--text-primary)';
 
                                         return (
-                                            <TooltipProvider key={item.id} delayDuration={300}>
+                                            <TooltipProvider key={item.id} delayDuration={500}>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
                                                         <button
@@ -113,11 +111,7 @@ export function EntitySelector({
                                                             } : undefined}
                                                         >
                                                             <span style={{ color: isActive ? 'currentColor' : itemColor }}>
-                                                                {/* Handle both IconDefinition and JSX (like generic emoji) */}
-                                                                {/* If it's a valid React element, render it. If it's an object with iconName (IconDefinition), render FontAwesomeIcon */}
-                                                                {React.isValidElement(item.icon) ? item.icon : (
-                                                                    item.icon && <FontAwesomeIcon icon={item.icon as IconDefinition} />
-                                                                )}
+                                                                {item.icon}
                                                             </span>
                                                             <span className="truncate max-w-[120px]">
                                                                 {item.title.split('.')[0]}

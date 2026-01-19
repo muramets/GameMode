@@ -1,16 +1,23 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import type { FormEvent } from 'react';
+import type { User } from 'firebase/auth';
 import { Modal } from '../../../components/ui/molecules/Modal';
 import { Input } from '../../../components/ui/molecules/Input';
 import { Button } from '../../../components/ui/atoms/Button';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useMetadataStore } from '../../../stores/metadataStore';
 import { usePersonalityStore } from '../../../stores/personalityStore';
-import { getIcon, ICON_REGISTRY } from '../../../config/iconRegistry';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes } from '@fortawesome/free-solid-svg-icons';
-import { PRESET_COLORS, GROUP_CONFIG } from '../../../constants/common';
-import * as Popover from '@radix-ui/react-popover';
+
+import { getGroupConfig } from '../../../constants/common';
+import { useUIStore } from '../../../stores/uiStore';
+import { ColorPicker } from '../../../components/ui/molecules/ColorPicker';
+import { IconPicker } from '../../../components/ui/molecules/IconPicker';
+import { ConfirmButton } from '../../../components/ui/molecules/ConfirmButton';
+
+interface GroupMetadata {
+    icon: string;
+    color?: string;
+}
 
 interface GroupSettingsModalProps {
     isOpen: boolean;
@@ -27,35 +34,107 @@ const InputLabel = ({ label }: { label: string }) => (
 export function GroupSettingsModal({ isOpen, onClose, groupName }: GroupSettingsModalProps) {
     const { user } = useAuth();
     const { activePersonalityId } = usePersonalityStore();
-    const { updateGroupMetadata, renameGroup, groupsMetadata } = useMetadataStore();
+    const { updateGroupMetadata, renameGroup, deleteGroup, groupsMetadata } = useMetadataStore();
+    const { showToast } = useUIStore();
 
-    const [name, setName] = useState('');
-    const [icon, setIcon] = useState('');
-    const [color, setColor] = useState('');
-    const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
-    const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
-
-    const prevIsOpen = useRef(isOpen);
-    const prevGroupName = useRef(groupName);
-
-    // Initial load logic
-    useEffect(() => {
-        const hasOpened = isOpen && !prevIsOpen.current;
-        const groupChanged = groupName !== prevGroupName.current;
-
-        if (isOpen && (hasOpened || groupChanged)) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setName(groupName);
-            const metadata = groupsMetadata[groupName];
-            const config = GROUP_CONFIG[groupName];
-
-            setIcon(metadata?.icon || (config ? config.icon.iconName : 'brain'));
-            setColor(metadata?.color || config?.color || '#e2b714');
+    const handleDelete = async () => {
+        onClose();
+        try {
+            await deleteGroup(groupName);
+            showToast('Group deleted', 'success');
+        } catch (error) {
+            console.error('Failed to delete group:', error);
+            showToast('Failed to delete group', 'error');
         }
+    };
 
-        prevIsOpen.current = isOpen;
-        prevGroupName.current = groupName;
-    }, [isOpen, groupName, groupsMetadata]);
+    const formId = `group-settings-form-${groupName}`;
+
+    return (
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title={`Edit Group: ${groupName}`}
+            footer={
+                <div className="flex items-center justify-between w-full">
+                    <ConfirmButton
+                        onConfirm={handleDelete}
+                    />
+
+                    <div className="flex items-center gap-2 ml-auto">
+                        <Button
+                            type="button"
+                            variant="neutral"
+                            size="sm"
+                            onClick={onClose}
+                            className="text-[10px] uppercase tracking-wider font-bold px-4 py-2"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            form={formId}
+                            variant="primary"
+                            size="sm"
+                            className="font-bold px-6 py-2 rounded-lg text-[10px] uppercase tracking-wider shadow-[0_0_10px_rgba(var(--main-color-rgb),0.2)]"
+                        >
+                            Save Changes
+                        </Button>
+                    </div>
+                </div>
+            }
+        >
+            {isOpen && (
+                <GroupSettingsForm
+                    formId={formId}
+                    groupName={groupName}
+                    onClose={onClose}
+                    updateGroupMetadata={updateGroupMetadata}
+                    renameGroup={renameGroup}
+                    groupsMetadata={groupsMetadata}
+                    user={user}
+                    activePersonalityId={activePersonalityId}
+                />
+            )}
+        </Modal>
+    );
+}
+
+interface GroupSettingsFormProps {
+    formId: string;
+    groupName: string;
+    onClose: () => void;
+    updateGroupMetadata: (groupName: string, data: Partial<GroupMetadata>) => Promise<void>;
+    renameGroup: (oldName: string, newName: string) => Promise<void>;
+    groupsMetadata: Record<string, GroupMetadata>;
+    user: User | null;
+    activePersonalityId: string | null;
+}
+
+function GroupSettingsForm({
+    formId,
+    groupName,
+    onClose,
+    updateGroupMetadata,
+    renameGroup,
+    groupsMetadata,
+    user,
+    activePersonalityId,
+}: GroupSettingsFormProps) {
+    const [name, setName] = useState(groupName);
+
+    // Initialize complex state derived from metadata/config
+    const [icon, setIcon] = useState(() => {
+        const metadata = groupsMetadata[groupName];
+        const config = getGroupConfig(groupName);
+        return metadata?.icon || config?.icon || 'brain';
+    });
+
+    const [color, setColor] = useState(() => {
+        const metadata = groupsMetadata[groupName];
+        const config = getGroupConfig(groupName);
+        return metadata?.color || config?.color || '#e2b714';
+    });
 
     const handleSave = async (e: FormEvent) => {
         e.preventDefault();
@@ -66,7 +145,7 @@ export function GroupSettingsModal({ isOpen, onClose, groupName }: GroupSettings
             await renameGroup(groupName, name.trim());
         }
 
-        // 2. Update Metadata (use new name if renamed, otherwise old name)
+        // 2. Update Metadata
         const targetName = name.trim() !== '' ? name.trim() : groupName;
         await updateGroupMetadata(targetName, {
             icon,
@@ -76,36 +155,8 @@ export function GroupSettingsModal({ isOpen, onClose, groupName }: GroupSettings
         onClose();
     };
 
-
-
     return (
-        <Modal
-            isOpen={isOpen}
-            onClose={onClose}
-            title={`Edit Group: ${groupName}`}
-            onSubmit={handleSave}
-            footer={
-                <div className="flex items-center gap-2 ml-auto">
-                    <Button
-                        type="button"
-                        variant="neutral"
-                        size="sm"
-                        onClick={onClose}
-                        className="text-[10px] uppercase tracking-wider font-bold px-4 py-2"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        type="submit"
-                        variant="primary"
-                        size="sm"
-                        className="font-bold px-6 py-2 rounded-lg text-[10px] uppercase tracking-wider shadow-[0_0_10px_rgba(var(--main-color-rgb),0.2)]"
-                    >
-                        Save Changes
-                    </Button>
-                </div>
-            }
-        >
+        <form id={formId} onSubmit={handleSave} className="contents">
             <div className="flex flex-col gap-5 max-h-[60vh] overflow-y-auto custom-scrollbar px-1">
                 {/* Name Input */}
                 <div className="flex flex-col gap-1.5">
@@ -123,134 +174,32 @@ export function GroupSettingsModal({ isOpen, onClose, groupName }: GroupSettings
                 </div>
 
                 <div className="flex gap-4">
+                    {/* Color Picker */}
+                    <div className="w-24 flex flex-col gap-1.5 relative">
+                        <InputLabel label="Color" />
+                        <ColorPicker
+                            color={color}
+                            onChange={setColor}
+                            width="w-full"
+                            height="h-[42px]"
+                            align="start"
+                        />
+                    </div>
+
                     {/* Icon Input & Picker */}
                     <div className="w-24 flex flex-col gap-1.5 relative">
                         <InputLabel label="Icon" />
-                        <Popover.Root open={isIconPickerOpen} onOpenChange={setIsIconPickerOpen}>
-                            <Popover.Trigger asChild>
-                                <div className="relative group/icon bg-sub-alt rounded-lg transition-colors duration-200 focus-within:bg-sub border border-transparent focus-within:border-white/5 cursor-pointer"
-                                    onClick={() => setIsIconPickerOpen(true)}
-                                >
-                                    {getIcon(icon) && (
-                                        <div
-                                            className="absolute inset-0 flex items-center justify-center pointer-events-none transition-colors duration-200"
-                                            style={{ color: color }}
-                                        >
-                                            <FontAwesomeIcon icon={getIcon(icon)} className="text-sm" />
-                                        </div>
-                                    )}
-                                    <Input
-                                        type="text"
-                                        value={icon}
-                                        onChange={e => {
-                                            const val = e.target.value;
-                                            // Relaxed length limit to allow typing names like 'physical', but constrain emojis if needed
-                                            // Emojis are usually length 1-2. Preset names are longer.
-                                            // Let's just allow typing.
-                                            setIcon(val);
-                                        }}
-                                        className={`text-center text-lg p-0 h-[42px] relative z-10 ${getIcon(icon) ? '!text-transparent !caret-text-primary' : ''} !bg-transparent focus:!bg-transparent !border-none outline-none cursor-pointer`}
-                                        onClick={(e) => {
-                                            e.stopPropagation(); // Prevent trigger if we want to type? 
-                                            // Actually user wants "click on Icon input" to open picker.
-                                            // If we want typing, focus logic might need to be careful.
-                                            // Let's open picker on click, typing still works if focused.
-                                            setIsIconPickerOpen(true);
-                                        }}
-                                    />
-                                </div>
-                            </Popover.Trigger>
-                            <Popover.Portal>
-                                <Popover.Content
-                                    className="z-[100] p-2 bg-sub-alt/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl flex flex-col gap-2 min-w-[200px] animate-in fade-in zoom-in-95 duration-200"
-                                    sideOffset={5}
-                                    align="start"
-                                >
-                                    <div className="flex items-center justify-between px-1">
-                                        <span className="text-[9px] font-mono text-sub uppercase">Select Icon</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsIconPickerOpen(false)}
-                                            className="text-sub hover:text-text-primary transition-colors cursor-pointer"
-                                        >
-                                            <FontAwesomeIcon icon={faTimes} className="text-[10px]" />
-                                        </button>
-                                    </div>
-                                    <div className="grid grid-cols-5 gap-1.5 max-h-[160px] overflow-y-auto pr-1">
-                                        {ICON_REGISTRY.map(entry => (
-                                            <button
-                                                key={entry.id}
-                                                type="button"
-                                                onClick={() => {
-                                                    setIcon(entry.id);
-                                                    setIsIconPickerOpen(false);
-                                                }}
-                                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10 cursor-pointer ${icon === entry.id ? 'bg-white/20 text-text-primary ring-1 ring-white/30' : 'text-sub'}`}
-                                                style={{ color: icon === entry.id ? color : undefined }}
-                                                title={entry.id}
-                                            >
-                                                <FontAwesomeIcon icon={entry.icon} className="text-sm" />
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <Popover.Arrow className="fill-current text-white/10" />
-                                </Popover.Content>
-                            </Popover.Portal>
-                        </Popover.Root>
-                    </div>
-
-                    {/* Color Picker */}
-                    <div className="flex flex-col gap-1.5 relative">
-                        <InputLabel label="Color" />
-                        <Popover.Root open={isColorPickerOpen} onOpenChange={setIsColorPickerOpen}>
-                            <Popover.Trigger asChild>
-                                <button
-                                    type="button"
-                                    className="h-[42px] w-[50px] bg-sub-alt rounded-lg border border-transparent hover:bg-sub focus:border-white/5 transition-colors flex items-center justify-center relative cursor-pointer outline-none"
-                                >
-                                    <div
-                                        className="w-5 h-5 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.3)] transition-transform duration-200 active:scale-90"
-                                        style={{ backgroundColor: color }}
-                                    />
-                                </button>
-                            </Popover.Trigger>
-                            <Popover.Portal>
-                                <Popover.Content
-                                    className="z-[100] p-2 bg-sub-alt/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl flex flex-col gap-2 min-w-[124px] animate-in fade-in zoom-in-95 duration-200"
-                                    sideOffset={5}
-                                    align="start"
-                                >
-                                    <div className="flex items-center justify-between px-1">
-                                        <span className="text-[9px] font-mono text-sub uppercase">Preset</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsColorPickerOpen(false)}
-                                            className="text-sub hover:text-text-primary transition-colors cursor-pointer"
-                                        >
-                                            <FontAwesomeIcon icon={faTimes} className="text-[10px]" />
-                                        </button>
-                                    </div>
-                                    <div className="grid grid-cols-4 gap-1.5">
-                                        {PRESET_COLORS.map(c => (
-                                            <button
-                                                key={c}
-                                                type="button"
-                                                onClick={() => {
-                                                    setColor(c);
-                                                    setIsColorPickerOpen(false);
-                                                }}
-                                                className={`w-5 h-5 rounded-full transition-transform hover:scale-125 hover:ring-2 hover:ring-white/30 cursor-pointer ${color === c ? 'ring-2 ring-white/50' : ''}`}
-                                                style={{ backgroundColor: c }}
-                                            />
-                                        ))}
-                                    </div>
-                                    <Popover.Arrow className="fill-current text-white/10" />
-                                </Popover.Content>
-                            </Popover.Portal>
-                        </Popover.Root>
+                        <IconPicker
+                            icon={icon}
+                            onChange={setIcon}
+                            color={color}
+                            width="w-full"
+                            height="h-[42px]"
+                            align="start"
+                        />
                     </div>
                 </div>
             </div>
-        </Modal>
+        </form>
     );
 }

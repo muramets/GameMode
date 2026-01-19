@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Modal as UIModal } from '../ui/molecules/Modal';
 import { Input } from '../ui/molecules/Input';
 import { Button } from '../ui/atoms/Button';
@@ -61,21 +61,22 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
     const [copied, setCopied] = useState(false);
     const wasGeneratingRef = useRef(false);
 
-    const copyInvite = () => {
+    const copyInvite = useCallback(() => {
         if (inviteLink) {
             navigator.clipboard.writeText(inviteLink);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         }
-    };
+    }, [inviteLink]);
 
     // Auto-copy only when invite link is generated (not when loading existing one)
     useEffect(() => {
         if (inviteLink && wasGeneratingRef.current && !isGeneratingInvite) {
-            copyInvite();
+            // Defer the state update (inside copyInvite) to next tick to avoid "setState in effect" warning
+            setTimeout(() => copyInvite(), 0);
         }
         wasGeneratingRef.current = isGeneratingInvite;
-    }, [inviteLink, isGeneratingInvite]);
+    }, [inviteLink, isGeneratingInvite, copyInvite]);
 
 
 

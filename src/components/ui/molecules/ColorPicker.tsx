@@ -41,7 +41,7 @@ export function ColorPicker({
             </Popover.Trigger>
             <Popover.Portal>
                 <Popover.Content
-                    className="z-[100] p-2 bg-sub-alt/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl flex flex-col gap-2 min-w-[124px] animate-in fade-in zoom-in-95 duration-200"
+                    className="z-[100] p-2 bg-sub-alt border border-white/10 rounded-xl shadow-2xl flex flex-col gap-2 min-w-[124px] animate-in fade-in zoom-in-95 duration-200"
                     sideOffset={sideOffset}
                     align={align}
                 >

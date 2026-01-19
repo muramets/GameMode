@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronDown, faTimes, faPlus } from '@fortawesome/free-solid-svg-icons';
 import * as Popover from '@radix-ui/react-popover';
 import { GroupDropdown } from '../../groups/components/GroupDropdown';
 import { Input } from '../../../components/ui/molecules/Input';
 import { getIcon } from '../../../config/iconRegistry';
-import { GROUP_CONFIG, PRESET_COLORS } from '../../../constants/common';
+import { DEFAULT_GROUPS_ORDER, PRESET_COLORS, getGroupConfig } from '../../../constants/common';
 import { IconPicker } from '../../../components/ui/molecules/IconPicker';
 
 interface ProtocolGroupSelectorProps {
@@ -37,6 +37,7 @@ export function ProtocolGroupSelector({
     const [tempGroupColor, setTempGroupColor] = useState('');
     const [isGroupColorPickerOpen, setIsGroupColorPickerOpen] = useState(false);
     const [popupAnchor, setPopupAnchor] = useState<HTMLElement | null>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     const handleUpdateGroupIcon = async (groupName: string, icon: string) => {
         await onUpdateMetadata(groupName, { icon });
@@ -50,20 +51,13 @@ export function ProtocolGroupSelector({
 
     const renderGroupIcon = (groupName: string, iconOverride?: string, colorOverride?: string) => {
         const metadata = groupsMetadata[groupName];
-        const config = GROUP_CONFIG[groupName];
-        const iconStr = iconOverride || metadata?.icon || (config ? 'CONFIG' : 'brain');
+        const config = getGroupConfig(groupName);
+        const iconStr = iconOverride || metadata?.icon || config?.icon || 'brain';
         const colorStr = colorOverride || metadata?.color || config?.color || 'var(--main-color)';
-
-        let iconToRender;
-        if (iconStr === 'CONFIG' && config) {
-            iconToRender = config.icon;
-        } else {
-            iconToRender = getIcon(iconStr);
-        }
 
         return (
             <div className="flex items-center justify-center w-full h-full" style={{ color: colorStr }}>
-                <FontAwesomeIcon icon={iconToRender} className="text-sm" />
+                <FontAwesomeIcon icon={getIcon(iconStr)} className="text-sm" />
             </div>
         );
     };
@@ -80,15 +74,22 @@ export function ProtocolGroupSelector({
                     <div className="relative w-full" onClick={(e) => {
                         e.stopPropagation();
                         setIsGroupDropdownOpen(true);
+                        inputRef.current?.focus();
                     }}>
                         <Input
+                            ref={inputRef}
                             type="text"
                             value={group}
                             onChange={e => {
                                 setGroup(e.target.value);
                                 setIsGroupDropdownOpen(true);
                             }}
-                            onFocus={() => setIsGroupDropdownOpen(true)}
+                            onFocus={(e) => {
+                                setIsGroupDropdownOpen(true);
+                                // Move cursor to end
+                                const val = e.target.value;
+                                e.target.setSelectionRange(val.length, val.length);
+                            }}
                             placeholder="no group"
                             className="pr-8"
                             leftIcon={
@@ -96,8 +97,8 @@ export function ProtocolGroupSelector({
                                     <div
                                         className="w-2 h-2 rounded-full"
                                         style={{
-                                            backgroundColor: groupsMetadata[group]?.color || GROUP_CONFIG[group]?.color || 'var(--main-color)',
-                                            boxShadow: `0 0 8px ${groupsMetadata[group]?.color || GROUP_CONFIG[group]?.color || 'var(--main-color)'}`
+                                            backgroundColor: groupsMetadata[group]?.color || getGroupConfig(group)?.color || 'var(--main-color)',
+                                            boxShadow: `0 0 8px ${groupsMetadata[group]?.color || getGroupConfig(group)?.color || 'var(--main-color)'}`
                                         }}
                                     />
                                 ) : undefined
@@ -110,18 +111,32 @@ export function ProtocolGroupSelector({
                 )}
             >
                 <div className="p-1">
-                    {availableGroups
-                        .filter(g => g.toLowerCase().includes(group.toLowerCase()))
-                        .map(g => {
+                    {(() => {
+                        const defaultGroups = DEFAULT_GROUPS_ORDER.filter(g => availableGroups.includes(g));
+                        const otherGroups = availableGroups.filter(g => !DEFAULT_GROUPS_ORDER.includes(g)).sort();
+
+                        // Filter by search query
+                        const filterFn = (g: string) => g.toLowerCase().includes(group.toLowerCase());
+                        const filteredDefault = defaultGroups.filter(filterFn);
+                        const filteredOther = otherGroups.filter(filterFn);
+
+                        const renderGroupItem = (g: string) => {
                             const metadata = groupsMetadata[g];
-                            const config = GROUP_CONFIG[g];
+                            const config = getGroupConfig(g);
                             const gColor = metadata?.color || config?.color || 'var(--main-color)';
+                            const isActiveGroup = group === g;
+                            const isColorPickerOpen = isGroupColorPickerOpen && editingGroupColor === g;
 
                             return (
                                 <div key={g} className="relative">
                                     <GroupDropdown.Item
                                         label={g}
-                                        isActive={group === g}
+                                        isActive={isActiveGroup}
+                                        showTooltip={false}
+                                        isLowercase={false}
+                                        onMouseDown={(e) => {
+                                            if (!editingGroupColor) e.preventDefault();
+                                        }}
                                         onClick={() => {
                                             if (!editingGroupColor) {
                                                 setGroup(g);
@@ -139,14 +154,16 @@ export function ProtocolGroupSelector({
                                             }
                                         }}
                                         indicatorColor={gColor}
+                                        isIndicatorActive={isColorPickerOpen}
                                         icon={
-                                            <div onClick={(e) => e.stopPropagation()}>
+                                            <div onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
                                                 <IconPicker
-                                                    icon={metadata?.icon || (GROUP_CONFIG[g] ? 'CONFIG' : 'brain')}
+                                                    icon={metadata?.icon || config?.icon || 'brain'}
+                                                    color={gColor}
                                                     onChange={(icon) => handleUpdateGroupIcon(g, icon)}
                                                     width="w-8"
                                                     height="h-8"
-                                                    className="bg-black/40 group-hover/item-container:bg-black/60 hover:scale-105 border border-white/5 hover:border-white/20"
+                                                    className={`${isColorPickerOpen ? 'bg-sub' : 'bg-sub-alt/60'} hover:!bg-sub data-[state=open]:!bg-sub hover:scale-105 border border-white/5 hover:border-white/20 transition-colors duration-200`}
                                                     triggerContent={renderGroupIcon(g)}
                                                 />
                                             </div>
@@ -154,7 +171,25 @@ export function ProtocolGroupSelector({
                                     />
                                 </div>
                             );
-                        })}
+                        };
+
+                        const renderSectionHeader = (label: string) => (
+                            <div className="flex items-center px-2 py-2 mt-1">
+                                <span className="text-[10px] font-bold text-sub/40 uppercase tracking-widest">{label}</span>
+                                <div className="h-px bg-white/5 flex-1 ml-3" />
+                            </div>
+                        );
+
+                        return (
+                            <>
+                                {filteredDefault.length > 0 && renderSectionHeader('Default')}
+                                {filteredDefault.map(renderGroupItem)}
+
+                                {filteredOther.length > 0 && renderSectionHeader('Custom')}
+                                {filteredOther.map(renderGroupItem)}
+                            </>
+                        );
+                    })()}
 
                     {/* Add New Option */}
                     {group.trim() !== '' && !availableGroups.some(g => g.toLowerCase() === group.toLowerCase()) && (
@@ -168,6 +203,7 @@ export function ProtocolGroupSelector({
                                 }
                                 tooltipText={`Create group: ${group}`}
                                 isActive={false}
+                                isLowercase={false}
                                 indicatorColor={tempGroupColor}
                                 onIndicatorClick={(e) => {
                                     if (isGroupColorPickerOpen && editingGroupColor === 'NEW') {
@@ -180,6 +216,7 @@ export function ProtocolGroupSelector({
                                         if (!tempGroupColor) setTempGroupColor('#e2b714');
                                     }
                                 }}
+                                onMouseDown={(e) => e.preventDefault()}
                                 onClick={() => {
                                     if (tempGroupIcon.trim()) {
                                         handleUpdateGroupIcon(group, tempGroupIcon);
@@ -198,9 +235,13 @@ export function ProtocolGroupSelector({
                                             className="bg-main/10 border border-main/20 hover:bg-main hover:text-bg-primary transition-all pb-0.5"
                                             triggerContent={
                                                 tempGroupIcon ? (
-                                                    <FontAwesomeIcon icon={getIcon(tempGroupIcon)} className="text-sm" />
+                                                    <div className="flex items-center justify-center w-full h-full text-text-primary">
+                                                        <FontAwesomeIcon icon={getIcon(tempGroupIcon)} className="text-sm" />
+                                                    </div>
                                                 ) : (
-                                                    <FontAwesomeIcon icon={faPlus} className="text-sm" />
+                                                    <div className="flex items-center justify-center w-full h-full text-text-primary">
+                                                        <FontAwesomeIcon icon={faPlus} className="text-sm" />
+                                                    </div>
                                                 )
                                             }
                                         />
@@ -218,7 +259,7 @@ export function ProtocolGroupSelector({
                         {popupAnchor && <Popover.Anchor virtualRef={{ current: popupAnchor }} />}
                         <Popover.Portal>
                             <Popover.Content
-                                className="z-[100] p-2 bg-sub-alt/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl flex flex-col gap-2 min-w-[124px] animate-in fade-in zoom-in-95 duration-200"
+                                className="z-[100] p-2 bg-sub-alt border border-white/10 rounded-xl shadow-2xl flex flex-col gap-2 min-w-[124px] animate-in fade-in zoom-in-95 duration-200"
                                 sideOffset={5}
                                 align="start"
                                 onInteractOutside={(e) => {
@@ -254,7 +295,7 @@ export function ProtocolGroupSelector({
                                                 }
                                                 setIsGroupColorPickerOpen(false);
                                             }}
-                                            className={`w-5 h-5 rounded-full transition-transform hover:scale-125 hover:ring-2 hover:ring-white/30 cursor-pointer ${(editingGroupColor === 'NEW' ? tempGroupColor : (editingGroupColor ? (groupsMetadata[editingGroupColor]?.color || GROUP_CONFIG[editingGroupColor]?.color) : '')) === c
+                                            className={`w-5 h-5 rounded-full transition-transform hover:scale-125 hover:ring-2 hover:ring-white/30 cursor-pointer ${(editingGroupColor === 'NEW' ? tempGroupColor : (editingGroupColor ? (groupsMetadata[editingGroupColor]?.color || getGroupConfig(editingGroupColor)?.color) : '')) === c
                                                 ? 'ring-2 ring-white/50'
                                                 : ''
                                                 }`}

@@ -42,6 +42,9 @@ export function StoreSync() {
             // Always start listening to teams (needed for loading to complete)
             const unsubTeams = subscribeToTeams(user.uid);
             return () => unsubTeams();
+        } else {
+            // Clear personality store on logout/no-user to prevent stale data
+            usePersonalityStore.getState().reset();
         }
     }, [user, ensureDefaultPersonality, loadPersonalities, subscribeToTeams, isInviteRoute]);
 

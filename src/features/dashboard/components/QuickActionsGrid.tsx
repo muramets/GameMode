@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { useTooltipSuppression } from '../../../hooks/useTooltipSuppression';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import type { Protocol } from '../../protocols/types';
@@ -41,6 +42,7 @@ export function QuickActionsGrid({
     const { reorderQuickActions } = useMetadataStore();
     const navigate = useNavigate();
     const [localOpen, setLocalOpen] = useState(false);
+    const suppressTooltip = useTooltipSuppression(isModalOpen);
 
     const { sensors, activeId, handleDragStart, handleDragEnd } = useSortableList({
         items: actions,
@@ -53,7 +55,7 @@ export function QuickActionsGrid({
             trailing={
                 <TooltipProvider delayDuration={1000}>
                     <Tooltip
-                        open={isModalOpen ? false : localOpen}
+                        open={isModalOpen || suppressTooltip ? false : localOpen}
                         onOpenChange={setLocalOpen}
                     >
                         <TooltipTrigger asChild>

@@ -1,9 +1,9 @@
 import { Modal } from '../ui/molecules/Modal';
 import { Input } from '../ui/molecules/Input';
 import { Button } from '../ui/atoms/Button';
+import { ConfirmButton } from '../ui/molecules/ConfirmButton';
 import { AppIcon } from '../ui/atoms/AppIcon';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
+
 
 import { useProtocolForm } from '../../features/protocols/hooks/useProtocolForm';
 import { ColorPicker } from '../ui/molecules/ColorPicker';
@@ -47,7 +47,7 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
         color, setColor
     } = formState;
 
-    const { isConfirmingDelete, isSubmitting } = uiState;
+    const { isSubmitting } = uiState;
 
 
 
@@ -83,17 +83,10 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
             footer={
                 <>
                     {protocolId ? (
-                        <Button
-                            type="button"
-                            variant="danger"
-                            size="sm"
-                            onClick={handleDelete}
+                        <ConfirmButton
+                            onConfirm={handleDelete}
                             disabled={isSubmitting}
-                            leftIcon={<FontAwesomeIcon icon={isConfirmingDelete ? faExclamationTriangle : faTrash} />}
-                            className="text-[10px] uppercase tracking-wider font-bold px-3 py-2 transition-all duration-200"
-                        >
-                            {isConfirmingDelete ? 'Are you sure?' : 'Delete'}
-                        </Button>
+                        />
                     ) : <div />}
 
                     <div className="flex items-center gap-2">
@@ -181,6 +174,7 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                     availableGroups={availableGroups}
                     groupsMetadata={groupsMetadata}
                     onUpdateMetadata={handleUpdateGroupMetadata}
+
                 />
 
                 <div className="flex flex-col gap-5">

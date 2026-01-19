@@ -76,7 +76,7 @@ export function FilterDropdown({
         >
             {trigger(isOpen, hasActiveFilters)}
 
-            <div className={`absolute ${placement} mt-3 ${width} bg-sub-alt/95 backdrop-blur-2xl rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-300 z-50 px-1 py-2 transform border border-white/5 divide-y divide-white/5 overflow-hidden ${isOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible -translate-y-2'}`}>
+            <div className={`absolute ${placement} mt-3 ${width} bg-sub-alt rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-300 z-50 px-1 py-2 transform border border-white/5 divide-y divide-white/5 overflow-hidden ${isOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible -translate-y-2'}`}>
                 <div className={`${maxHeight} overflow-y-auto custom-scrollbar`}>
                     {children}
                 </div>
@@ -243,7 +243,7 @@ function SearchHeader({ title, showSearch, searchQuery, onSearchChange, onBack, 
     }, [showSearch]);
 
     return (
-        <div className="pb-2 border-b border-white/5 mb-2 sticky top-0 bg-sub-alt/95 backdrop-blur-xl z-10">
+        <div className="pb-2 border-b border-white/5 mb-2 sticky top-0 bg-sub-alt z-10">
             <div className="flex items-center gap-2 px-1 py-1 mb-2">
                 <button
                     onClick={onBack}

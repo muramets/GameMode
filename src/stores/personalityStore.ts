@@ -3,7 +3,6 @@ import { db } from '../config/firebase';
 import {
     collection,
     doc,
-    setDoc,
     getDoc,
     getDocs,
     deleteDoc,
@@ -12,6 +11,8 @@ import {
     orderBy,
 } from 'firebase/firestore';
 import type { Personality } from '../types/personality';
+import { GROUP_CONFIG, DEFAULT_GROUPS_ORDER } from '../constants/common';
+import { writeBatch } from 'firebase/firestore';
 
 export type ActiveContext =
     | { type: 'personality'; uid: string; pid: string }
@@ -40,6 +41,7 @@ interface PersonalityState {
 
     // Migration helper
     ensureDefaultPersonality: (uid: string, forceReset?: boolean) => Promise<string>; // Returns ID of active personality
+    reset: () => void;
 }
 
 export const usePersonalityStore = create<PersonalityState>((set, get) => ({
@@ -109,9 +111,28 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
                 ...extraData
             };
 
-            await setDoc(doc(db, 'users', uid, 'personalities', id), newPersonality);
+            const batch = writeBatch(db);
 
-            console.log("Created new personality", { uid, name, id });
+            // 1. Create Personality Doc
+            const personalityRef = doc(db, 'users', uid, 'personalities', id);
+            batch.set(personalityRef, newPersonality);
+
+            // 2. Seed Default Groups
+            DEFAULT_GROUPS_ORDER.forEach(groupName => {
+                const config = GROUP_CONFIG[groupName];
+                if (config) {
+                    const groupRef = doc(db, 'users', uid, 'personalities', id, 'groups', groupName);
+                    batch.set(groupRef, config);
+                }
+            });
+
+            // 3. Seed Group Order Settings
+            const groupSettingsRef = doc(db, 'users', uid, 'personalities', id, 'settings', 'groups');
+            batch.set(groupSettingsRef, { order: DEFAULT_GROUPS_ORDER });
+
+            await batch.commit();
+
+            console.log("Created new personality with default groups", { uid, name, id });
 
             set(state => ({
                 personalities: [newPersonality, ...state.personalities]
@@ -225,14 +246,23 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
         }
     },
 
+    reset: () => {
+        set({
+            personalities: [],
+            activePersonalityId: null,
+            activeContext: null,
+            error: null,
+            isLoading: false
+        });
+    },
+
     ensureDefaultPersonality: async (uid, forceReset = false) => {
         console.debug("Ensuring default personality", { uid, forceReset });
-        const { personalities, loadPersonalities, switchPersonality } = get();
+        const { switchPersonality } = get();
 
-        // If not loaded yet, try loading
-        if (personalities.length === 0) {
-            await loadPersonalities(uid);
-        }
+        // Always load fresh data to ensure we aren't working with stale state
+        // This is critical for the "delete DB -> relogin" flow
+        await get().loadPersonalities(uid);
 
         // Check activeContext AFTER ensuring data is loaded
         const { activeContext: recheckedContext } = get();
@@ -260,14 +290,12 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
             }
 
             // Create default
-
             const defaultId = 'main-personality';
+            const batch = writeBatch(db);
 
-            // We do existing data migration here implicitly or explicitly?
-            // The plan said: "If no personalities exist, create a 'Default' one and trigger data migration"
-            // For safety, let's create the document first.
-
-            await setDoc(doc(db, 'users', uid, 'personalities', defaultId), {
+            // 1. Create Personality Doc
+            const personalityRef = doc(db, 'users', uid, 'personalities', defaultId);
+            batch.set(personalityRef, {
                 id: defaultId,
                 name: 'Main',
                 description: 'My primary self',
@@ -275,6 +303,21 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
                 createdAt: Date.now(),
                 lastActiveAt: Date.now()
             });
+
+            // 2. Seed Default Groups
+            DEFAULT_GROUPS_ORDER.forEach(groupName => {
+                const config = GROUP_CONFIG[groupName];
+                if (config) {
+                    const groupRef = doc(db, 'users', uid, 'personalities', defaultId, 'groups', groupName);
+                    batch.set(groupRef, config);
+                }
+            });
+
+            // 3. Seed Group Order Settings
+            const groupSettingsRef = doc(db, 'users', uid, 'personalities', defaultId, 'settings', 'groups');
+            batch.set(groupSettingsRef, { order: DEFAULT_GROUPS_ORDER });
+
+            await batch.commit();
 
             // reload to get the new state
             await loadPersonalities(uid);

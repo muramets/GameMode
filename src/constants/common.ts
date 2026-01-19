@@ -1,30 +1,35 @@
-import {
-    faDumbbell,
-    faBrain,
-    faBath,
-    faMugHot,
-    faBookOpen,
-    faLeaf,
-    faCircle
-} from '@fortawesome/free-solid-svg-icons';
-import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
+export const GROUP_CONFIG: Record<string, { icon: string; color: string }> = {
+    Body: { icon: 'person-walking', color: '#98c379' },
+    Mind: { icon: 'yin-yang', color: '#e6934a' },
+    Growth: { icon: 'chart-line', color: '#e2b714' },
+    Rest: { icon: 'umbrella-beach', color: '#7fb3d3' },
+    Substances: { icon: 'smoking', color: '#ca4754' },
+    Ungrouped: { icon: 'circle', color: '#d1d0c5' },
+    Business: { icon: 'list-check', color: '#c678dd' },
+};
 
-export const GROUP_CONFIG: Record<string, { icon: IconDefinition; color: string }> = {
-    Physical: { icon: faDumbbell, color: 'var(--correct-color)' },
-    Mental: { icon: faBrain, color: 'var(--error-color)' },
-    Recovery: { icon: faBath, color: '#7fb3d3' },
-    Work: { icon: faMugHot, color: 'var(--main-color)' },
-    Learning: { icon: faBookOpen, color: 'var(--main-color)' },
-    Substances: { icon: faLeaf, color: 'var(--error-color)' },
-    ungrouped: { icon: faCircle, color: 'var(--sub-color)' },
+export const DEFAULT_GROUPS_ORDER = [
+    'Body',
+    'Mind',
+    'Growth',
+    'Business',
+    'Rest',
+    'Substances',
+    'Ungrouped',
+];
+
+export const getGroupConfig = (name?: string | null) => {
+    if (!name) return GROUP_CONFIG['Ungrouped'];
+    const key = Object.keys(GROUP_CONFIG).find(k => k.toLowerCase() === name.toLowerCase());
+    return key ? GROUP_CONFIG[key] : GROUP_CONFIG['Ungrouped'];
 };
 
 export const PRESET_COLORS = [
-    '#e2b714', // Yellow (Focus)
-    '#ca4754', // Red (Mental)
-    '#98c379', // Green (Physical)
-    '#7fb3d3', // Blue (Business)
-    '#e6934a', // Orange (Energy)
+    '#e2b714', // Yellow
+    '#ca4754', // Red
+    '#98c379', // Green
+    '#7fb3d3', // Blue 
+    '#e6934a', // Orange
     '#c678dd', // Purple
     '#d19a66', // Light Orange
     '#56b6c2', // Cyan

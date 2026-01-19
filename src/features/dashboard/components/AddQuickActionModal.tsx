@@ -43,7 +43,7 @@ export function AddQuickActionModal({ isOpen, onClose }: AddQuickActionModalProp
 
                 {/* Search */}
                 {protocols.length > 0 && (
-                    <div className="sticky top-0 z-10 bg-bg-primary pt-1 pb-3">
+                    <div className="bg-bg-primary pt-1 pb-3">
                         <Input
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -57,7 +57,10 @@ export function AddQuickActionModal({ isOpen, onClose }: AddQuickActionModalProp
                 )}
 
                 {/* List */}
-                <div className="overflow-y-auto flex-1 space-y-4 custom-scrollbar pr-1 pb-2">
+                <div
+                    className="overflow-y-auto flex-1 space-y-4 custom-scrollbar pr-1 pb-2"
+                    style={{ transform: 'translateZ(0)', willChange: 'transform' }}
+                >
                     {protocols.length === 0 ? (
                         <div className="h-full flex items-center justify-center text-sub font-mono text-sm">
                             Created actions will appear here

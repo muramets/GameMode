@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { useTooltipSuppression } from '../../../hooks/useTooltipSuppression';
 import type { StateData } from '../types';
 import { Plus } from 'lucide-react';
 import { CollapsibleSection } from '../../../components/ui/molecules/CollapsibleSection';
@@ -31,6 +32,7 @@ export function StatesGrid({ states, onAddState, onEdit, onHistory, hasProtocols
     const { reorderStates } = useMetadataStore();
     const navigate = useNavigate();
     const [localOpen, setLocalOpen] = useState(false);
+    const suppressTooltip = useTooltipSuppression(isModalOpen);
 
     const { sensors, activeId, handleDragStart, handleDragEnd } = useSortableList({
         items: states,
@@ -43,7 +45,7 @@ export function StatesGrid({ states, onAddState, onEdit, onHistory, hasProtocols
             trailing={
                 <TooltipProvider delayDuration={1000}>
                     <Tooltip
-                        open={isModalOpen ? false : localOpen}
+                        open={isModalOpen || suppressTooltip ? false : localOpen}
                         onOpenChange={setLocalOpen}
                     >
                         <TooltipTrigger asChild>

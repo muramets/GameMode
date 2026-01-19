@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { GROUP_CONFIG } from '../../../constants/common';
+import { getGroupConfig } from '../../../constants/common';
+import { getIcon } from '../../../config/iconRegistry';
 import { AppIcon } from '../../../components/ui/atoms/AppIcon';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -264,7 +265,7 @@ export function HistoryFilter({
 
                     <div className="flex flex-col gap-0.5 mt-2 px-1">
                         {protocolGroups.map(group => {
-                            const config = GROUP_CONFIG[group] || GROUP_CONFIG['ungrouped'];
+                            const config = getGroupConfig(group);
                             const meta = groupsMetadata[group];
 
                             // Resolve color: Metadata > Config > Default
@@ -278,7 +279,7 @@ export function HistoryFilter({
                                         meta?.icon ? (
                                             <div style={{ color: color }}><AppIcon id={meta.icon} /></div>
                                         ) : (
-                                            config ? <FontAwesomeIcon icon={config.icon} /> : <div className="w-1.5 h-1.5 rounded-full bg-sub/50" />
+                                            config ? <FontAwesomeIcon icon={getIcon(config.icon)} /> : <div className="w-1.5 h-1.5 rounded-full bg-sub/50" />
                                         )
                                     }
                                     value={""}
@@ -344,7 +345,7 @@ export function HistoryFilter({
 
                     <div className="flex flex-col gap-0.5 mt-2 px-1">
                         {innerfaceGroups.map(group => {
-                            const config = GROUP_CONFIG[group] || GROUP_CONFIG['ungrouped'];
+                            const config = getGroupConfig(group);
                             const meta = groupsMetadata[group];
                             const color = meta?.color || config?.color;
 
@@ -356,7 +357,7 @@ export function HistoryFilter({
                                         meta?.icon ? (
                                             <div style={{ color: color }}><AppIcon id={meta.icon} /></div>
                                         ) : (
-                                            config ? <FontAwesomeIcon icon={config.icon} /> : <div className="w-1.5 h-1.5 rounded-full bg-sub/50" />
+                                            config ? <FontAwesomeIcon icon={getIcon(config.icon)} /> : <div className="w-1.5 h-1.5 rounded-full bg-sub/50" />
                                         )
                                     }
                                     value={""}

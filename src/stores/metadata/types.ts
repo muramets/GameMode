@@ -41,6 +41,7 @@ export interface MetadataState {
     // Group Actions
     updateGroupMetadata: (groupName: string, metadata: { icon?: string; color?: string }) => Promise<void>;
     renameGroup: (oldName: string, newName: string) => Promise<void>;
+    deleteGroup: (groupName: string) => Promise<void>;
 
     // Quick Actions
     togglePinnedProtocol: (protocolId: string) => Promise<void>;

@@ -82,9 +82,9 @@ export const ProtocolsDragOverlay = React.memo(({
             />
             {isInvalid && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50 rounded-xl overflow-hidden">
-                    <div className="absolute inset-0 bg-red-500/10 backdrop-blur-[2px]" />
+                    <div className="absolute inset-0 bg-red-500/10" />
                     <div
-                        className="relative z-10 bg-bg-primary/40 backdrop-blur-md rounded-full w-12 h-12 flex items-center justify-center animate-in zoom-in duration-200"
+                        className="relative z-10 bg-bg-primary/90 rounded-full w-12 h-12 flex items-center justify-center animate-in zoom-in duration-200"
                         style={{
                             color: 'var(--error-color)',
                             borderColor: 'color-mix(in srgb, var(--error-color) 20%, transparent)',

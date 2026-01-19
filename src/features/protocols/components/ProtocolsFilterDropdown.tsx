@@ -1,32 +1,46 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faFilter,
-    faCircle,
 } from '@fortawesome/free-solid-svg-icons';
-import { GROUP_CONFIG } from '../../../constants/common';
+import { getGroupConfig } from '../../../constants/common';
+import { getIcon } from '../../../config/iconRegistry';
 
 interface ProtocolsFilterDropdownProps {
     activeFilters: string[];
     protocolGroups: string[];
+    groupsMetadata: Record<string, { icon: string; color?: string }>;
+    hasUngrouped: boolean;
     onToggleFilter: (filter: string) => void;
 }
 
 /**
  * Компонент dropdown меню для фильтрации протоколов по группам
- * 
- * Функциональность:
- * - Отображает badge с количеством активных фильтров
- * - Показывается при hover на кнопку фильтра
- * - Позволяет выбрать несколько групп одновременно
- * - "All actions" сбрасывает все фильтры
- * - "Ungrouped" - специальный фильтр для протоколов без группы
- * - Активные фильтры подсвечиваются с индикатором
  */
 export function ProtocolsFilterDropdown({
     activeFilters,
     protocolGroups,
+    groupsMetadata,
+    hasUngrouped,
     onToggleFilter,
 }: ProtocolsFilterDropdownProps) {
+    const getGroupVisuals = (groupName: string) => {
+        const staticConfig = getGroupConfig(groupName);
+        const storeMeta = groupsMetadata[groupName];
+
+        let icon = staticConfig ? getIcon(staticConfig.icon) : getIcon('circle');
+        let color = staticConfig?.color || '#d1d0c5';
+
+        if (storeMeta) {
+            if (storeMeta.icon) {
+                const mapped = getIcon(storeMeta.icon);
+                if (mapped) icon = mapped;
+            }
+            if (storeMeta.color) color = storeMeta.color;
+        }
+
+        return { icon, color };
+    };
+
     return (
         <div className="relative group">
             {/* Кнопка фильтра с badge количества */}
@@ -64,37 +78,34 @@ export function ProtocolsFilterDropdown({
                         )}
                     </button>
 
-                    {/* Разделитель */}
-                    <div className="h-px bg-white/5 my-1 mx-2"></div>
+                    {/* Разделитель - показываем только если есть другие пункты */}
+                    {(protocolGroups.length > 0 || hasUngrouped) && (
+                        <div className="h-px bg-white/5 my-1 mx-2"></div>
+                    )}
 
-                    {/* Список групп из GROUP_CONFIG */}
                     {protocolGroups.map(group => {
-                        const config = GROUP_CONFIG[group as string];
-                        const isActive = activeFilters.includes(group as string);
+                        const { icon, color } = getGroupVisuals(group);
+                        const isActive = activeFilters.includes(group);
                         return (
                             <button
-                                key={group as string}
-                                onClick={() => onToggleFilter(group as string)}
+                                key={group}
+                                onClick={() => onToggleFilter(group)}
                                 className={`flex items-center gap-2 w-full text-left px-3 py-2.5 rounded-md transition-all group/item ${isActive ? 'bg-sub/30' : 'hover:bg-sub/20'
                                     }`}
                             >
-                                {/* Иконка группы с цветом из конфига */}
+                                {/* Иконка группы */}
                                 <div className="w-4 flex items-center justify-center">
-                                    {config ? (
-                                        <FontAwesomeIcon
-                                            icon={config.icon}
-                                            style={{ color: config.color }}
-                                            className="text-[10px]"
-                                        />
-                                    ) : (
-                                        <div className="w-1.5 h-1.5 rounded-full bg-sub"></div>
-                                    )}
+                                    <FontAwesomeIcon
+                                        icon={icon}
+                                        style={{ color }}
+                                        className="text-[10px]"
+                                    />
                                 </div>
                                 <span
                                     className={`text-xs font-mono lowercase ${isActive ? 'text-text-primary' : 'text-sub'
                                         }`}
                                 >
-                                    {group as string}
+                                    {group}
                                 </span>
                                 {/* Индикатор активности */}
                                 {isActive && (
@@ -104,29 +115,31 @@ export function ProtocolsFilterDropdown({
                         );
                     })}
 
-                    {/* Разделитель */}
-                    <div className="h-px bg-white/5 my-1 mx-2"></div>
-
                     {/* Опция "Ungrouped" - протоколы без группы */}
-                    <button
-                        onClick={() => onToggleFilter('ungrouped')}
-                        className={`flex items-center gap-2 w-full text-left px-3 py-2.5 rounded-md transition-all group/item ${activeFilters.includes('ungrouped') ? 'bg-sub/30' : 'hover:bg-sub/20'
-                            }`}
-                    >
-                        <div className="w-4 flex items-center justify-center">
-                            <FontAwesomeIcon icon={faCircle} className="text-[10px] text-sub" />
-                        </div>
-                        <span
-                            className={`text-xs font-mono lowercase ${activeFilters.includes('ungrouped') ? 'text-text-primary' : 'text-sub'
+                    {hasUngrouped && (
+                        <button
+                            onClick={() => onToggleFilter('ungrouped')}
+                            className={`flex items-center gap-2 w-full text-left px-3 py-2.5 rounded-md transition-all group/item ${activeFilters.includes('ungrouped') ? 'bg-sub/30' : 'hover:bg-sub/20'
                                 }`}
                         >
-                            ungrouped
-                        </span>
-                        {/* Индикатор активности */}
-                        {activeFilters.includes('ungrouped') && (
-                            <div className="ml-auto w-1.5 h-1.5 rounded-full bg-main shadow-[0_0_8px_rgba(226,183,20,0.5)]"></div>
-                        )}
-                    </button>
+                            <div className="w-4 flex items-center justify-center">
+                                {(() => {
+                                    const { icon, color } = getGroupVisuals('ungrouped');
+                                    return <FontAwesomeIcon icon={icon} style={{ color }} className="text-[10px]" />;
+                                })()}
+                            </div>
+                            <span
+                                className={`text-xs font-mono lowercase ${activeFilters.includes('ungrouped') ? 'text-text-primary' : 'text-sub'
+                                    }`}
+                            >
+                                ungrouped
+                            </span>
+                            {/* Индикатор активности */}
+                            {activeFilters.includes('ungrouped') && (
+                                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-main shadow-[0_0_8px_rgba(226,183,20,0.5)]"></div>
+                            )}
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

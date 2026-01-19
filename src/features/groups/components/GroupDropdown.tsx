@@ -64,7 +64,7 @@ export function GroupDropdown({
                 {trigger(isOpen)}
             </div>
 
-            <div className={`absolute ${placement} mt-3 ${width} bg-sub-alt/95 backdrop-blur-2xl rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-300 z-50 px-1 py-2 transform border border-white/5 divide-y divide-white/5 overflow-hidden ${isOpen ? 'opacity-100 visible translate-y-0 text-sm' : 'opacity-0 invisible -translate-y-2 text-sm'}`}>
+            <div className={`absolute ${placement} mt-3 ${width} bg-sub-alt rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-300 z-50 px-1 py-2 transform border border-white/5 divide-y divide-white/5 overflow-hidden ${isOpen ? 'opacity-100 visible translate-y-0 text-sm' : 'opacity-0 invisible -translate-y-2 text-sm'}`}>
                 <div className={`${maxHeight} overflow-y-auto custom-scrollbar`}>
                     {children}
                 </div>
@@ -77,7 +77,8 @@ interface ItemProps {
     label: ReactNode;
     tooltipText?: string;
     isActive: boolean;
-    onClick: () => void;
+    onClick?: () => void;
+    onMouseDown?: (e: React.MouseEvent) => void;
     onIndicatorClick?: (e: React.MouseEvent) => void;
     onIconClick?: () => void;
     icon?: ReactNode;
@@ -86,6 +87,9 @@ interface ItemProps {
     showCheck?: boolean;
     className?: string;
     indicatorColor?: string;
+    isIndicatorActive?: boolean;
+    showTooltip?: boolean;
+    isLowercase?: boolean;
 }
 
 export function Item({
@@ -93,6 +97,7 @@ export function Item({
     tooltipText,
     isActive,
     onClick,
+    onMouseDown,
     onIndicatorClick,
     onIconClick,
     icon,
@@ -100,7 +105,10 @@ export function Item({
     showIndicator = true,
     showCheck = false,
     className = "",
-    indicatorColor
+    indicatorColor,
+    isIndicatorActive = false,
+    showTooltip = false,
+    isLowercase = true,
 }: ItemProps) {
     return (
         <div
@@ -119,7 +127,7 @@ export function Item({
                     disabled={!onIndicatorClick}
                     className="w-8 h-8 flex items-center justify-center transition-all shrink-0 group/indicator cursor-pointer ml-1"
                 >
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center transition-all group-hover/indicator:bg-white/10">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${isIndicatorActive ? 'bg-sub' : 'bg-sub-alt/60'} group-hover/indicator:bg-sub`}>
                         <div
                             className={`w-3.5 h-3.5 rounded-full transition-all ${isActive
                                 ? 'bg-main shadow-[0_0_8px_var(--main-color)]'
@@ -133,19 +141,24 @@ export function Item({
 
             <button
                 onClick={onClick}
+                onMouseDown={onMouseDown}
                 type="button"
                 className={`flex-1 flex items-center gap-3 py-2.5 min-w-0 ${showIndicator ? (icon ? 'pr-2 pl-1' : 'pr-3 pl-1') : (icon ? 'pr-2 pl-3' : 'px-3')}`}
             >
-                <TooltipProvider delayDuration={400}>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <span className="flex-1 text-left lowercase truncate font-mono text-[11px]">{label}</span>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="text-[10px] font-mono">
-                            {tooltipText || (typeof label === 'string' ? label : '')}
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
+                {showTooltip || (tooltipText && tooltipText !== label) ? (
+                    <TooltipProvider delayDuration={400}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <span className={`flex-1 text-left truncate font-mono text-[11px] ${isLowercase ? 'lowercase' : ''}`}>{label}</span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-[10px] font-mono">
+                                {tooltipText || (typeof label === 'string' ? label : '')}
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                ) : (
+                    <span className={`flex-1 text-left truncate font-mono text-[11px] ${isLowercase ? 'lowercase' : ''}`}>{label}</span>
+                )}
 
                 {icon && (
                     <div

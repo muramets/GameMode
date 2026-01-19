@@ -102,4 +102,58 @@ export const createGroupSlice = (
             showErrorToast(message);
         }
     },
+
+    deleteGroup: async (groupName: string) => {
+        try {
+            const context = get().context;
+            guardAgainstViewerMode(context);
+            const batch = writeBatch(db);
+            const pathRoot = getPathRoot(context);
+
+            // 1. Update Innerfaces
+            const innerfaces = get().innerfaces;
+            innerfaces.forEach(i => {
+                if (i.group === groupName) {
+                    const docRef = doc(db, `${pathRoot}/innerfaces/${i.id}`);
+                    batch.update(docRef, { group: '' });
+                }
+            });
+
+            // 2. Update Protocols
+            const protocols = get().protocols;
+            protocols.forEach(p => {
+                if (p.group === groupName) {
+                    const docRef = doc(db, `${pathRoot}/protocols/${p.id}`);
+                    batch.update(docRef, { group: '' });
+                }
+            });
+
+            // 3. Delete Group Metadata
+            const groupMetaRef = doc(db, `${pathRoot}/groups/${groupName}`);
+            batch.delete(groupMetaRef);
+
+            // 4. Update Sort Orders
+            const groupOrder = get().groupOrder;
+            if (groupOrder.includes(groupName)) {
+                const newOrder = groupOrder.filter(g => g !== groupName);
+                const orderRef = doc(db, `${pathRoot}/settings/groups`);
+                batch.set(orderRef, { order: newOrder }, { merge: true });
+                set({ groupOrder: newOrder });
+            }
+
+            const innerfaceGroupOrder = get().innerfaceGroupOrder;
+            if (innerfaceGroupOrder.includes(groupName)) {
+                const newOrder = innerfaceGroupOrder.filter(g => g !== groupName);
+                const orderRef = doc(db, `${pathRoot}/settings/app`);
+                batch.set(orderRef, { innerfaceGroupOrder: newOrder }, { merge: true });
+                set({ innerfaceGroupOrder: newOrder });
+            }
+
+            await batch.commit();
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            console.error("Failed to delete group:", err);
+            showErrorToast(message);
+        }
+    },
 });

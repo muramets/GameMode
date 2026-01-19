@@ -1,6 +1,7 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faSearch } from '@fortawesome/free-solid-svg-icons';
 import { useState } from 'react';
+import { useTooltipSuppression } from '../../../hooks/useTooltipSuppression';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../../components/ui/atoms/Tooltip';
 import { Input } from '../../../components/ui/molecules/Input';
 import { ProtocolsFilterDropdown } from './ProtocolsFilterDropdown';
@@ -11,9 +12,12 @@ interface ProtocolsToolbarProps {
     onSearchChange: (query: string) => void;
     activeFilters: string[];
     protocolGroups: string[];
+    groupsMetadata: Record<string, { icon: string; color?: string }>;
     onToggleFilter: (filter: string) => void;
     shouldShowSearch?: boolean;
     isModalOpen?: boolean;
+    hasUngrouped: boolean;
+    hasProtocols: boolean;
 }
 
 /**
@@ -34,11 +38,15 @@ export function ProtocolsToolbar({
     onSearchChange,
     activeFilters,
     protocolGroups,
+    groupsMetadata,
     onToggleFilter,
     shouldShowSearch = true,
     isModalOpen = false,
+    hasUngrouped,
+    hasProtocols,
 }: ProtocolsToolbarProps) {
     const [localOpen, setLocalOpen] = useState(false);
+    const suppressTooltip = useTooltipSuppression(isModalOpen);
 
     return (
         <div className="flex items-center gap-2 w-full md:w-auto">
@@ -46,7 +54,7 @@ export function ProtocolsToolbar({
                 {/* Кнопка "Add Protocol" с tooltip */}
                 <TooltipProvider delayDuration={1000}>
                     <Tooltip
-                        open={isModalOpen ? false : localOpen}
+                        open={isModalOpen || suppressTooltip ? false : localOpen}
                         onOpenChange={setLocalOpen}
                     >
                         <TooltipTrigger asChild>
@@ -69,11 +77,15 @@ export function ProtocolsToolbar({
                 </TooltipProvider>
 
                 {/* Dropdown фильтр */}
-                <ProtocolsFilterDropdown
-                    activeFilters={activeFilters}
-                    protocolGroups={protocolGroups}
-                    onToggleFilter={onToggleFilter}
-                />
+                {hasProtocols && (
+                    <ProtocolsFilterDropdown
+                        activeFilters={activeFilters}
+                        protocolGroups={protocolGroups}
+                        groupsMetadata={groupsMetadata}
+                        onToggleFilter={onToggleFilter}
+                        hasUngrouped={hasUngrouped}
+                    />
+                )}
             </div>
 
             {/* Поле поиска */}

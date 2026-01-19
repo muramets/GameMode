@@ -5,7 +5,7 @@ import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import { SortableItem } from '../../../components/ui/molecules/SortableItem';
 import { CollapsibleSection } from '../../../components/ui/molecules/CollapsibleSection';
 import { DraggableInnerfaceItem } from './DraggableInnerfaceItem';
-import { GROUP_CONFIG } from '../../../constants/common';
+import { getGroupConfig } from '../../../constants/common';
 import { getIcon } from '../../../config/iconRegistry';
 import type { Innerface } from '../types';
 
@@ -28,11 +28,11 @@ export const InnerfaceGroup = React.memo(({
     onToggleCollapse: () => void;
     hideHeader?: boolean;
 }) => {
-    const staticConfig = GROUP_CONFIG[groupName] || GROUP_CONFIG['ungrouped'];
+    const staticConfig = getGroupConfig(groupName);
     const storeMeta = groupsMetadata[groupName];
 
-    let icon = staticConfig.icon;
-    let color = staticConfig.color;
+    let icon = staticConfig ? getIcon(staticConfig.icon) : getIcon('circle');
+    let color = staticConfig?.color || '#d1d0c5';
 
     if (storeMeta) {
         if (storeMeta.icon) {

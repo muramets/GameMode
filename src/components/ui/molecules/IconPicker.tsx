@@ -80,16 +80,6 @@ export function IconPicker({
         };
     }, [tabsContainer, searchQuery, activeCategory]); // Re-run when these change to ensure accuracy
 
-    // Auto-select category when opening
-    useEffect(() => {
-        if (isOpen && !searchQuery) {
-            const currentEntry = ICON_REGISTRY.find(e => e.id === icon);
-            if (currentEntry) {
-                setActiveCategory(currentEntry.category);
-            }
-        }
-    }, [isOpen, icon]);
-
     const handleSelect = (iconId: string) => {
         onChange(iconId);
         setIsOpen(false);
@@ -98,7 +88,15 @@ export function IconPicker({
 
     const handleOpenChange = (open: boolean) => {
         setIsOpen(open);
-        if (!open) {
+        if (open) {
+            // Auto-select category when opening
+            if (!searchQuery) {
+                const currentEntry = ICON_REGISTRY.find(e => e.id === icon);
+                if (currentEntry) {
+                    setActiveCategory(currentEntry.category);
+                }
+            }
+        } else {
             setSearchQuery('');
         }
     };
@@ -145,7 +143,7 @@ export function IconPicker({
             </Popover.Trigger>
             <Popover.Portal>
                 <Popover.Content
-                    className="z-[100] p-3 bg-sub-alt/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl flex flex-col gap-2 w-[320px] animate-in fade-in zoom-in-95 duration-200"
+                    className="z-[100] p-3 bg-sub-alt border border-white/10 rounded-xl shadow-2xl flex flex-col gap-2 w-[320px] animate-in fade-in zoom-in-95 duration-200"
                     sideOffset={sideOffset}
                     align={align}
                 >

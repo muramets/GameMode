@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useMetadataStore } from '../../../stores/metadataStore';
 import { usePersonalityStore } from '../../../stores/personalityStore';
 import { useUIStore } from '../../../stores/uiStore';
-import { GROUP_CONFIG } from '../../../constants/common';
+import { getGroupConfig } from '../../../constants/common';
 import type { PowerCategory } from '../types';
 
 interface UseInnerfaceFormProps {
@@ -21,7 +21,8 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
         deleteInnerface,
         restoreInnerface,
         updateProtocol,
-        updateGroupMetadata
+        updateGroupMetadata,
+        deleteGroup
     } = useMetadataStore();
 
     const { activeContext } = usePersonalityStore();
@@ -45,7 +46,7 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
 
     // UI/Flow State
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+
 
     // Group Dropdown State (Extracted to keep Modal clean, or could be kept in Modal?)
     // Keeping basic state here might be useful if we want to reset it on close
@@ -53,7 +54,7 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
 
     // Available Groups Calculation
     const availableGroups = useMemo(() => {
-        const groups = new Set<string>(['Physical', 'Mental', 'Emotional', 'Spiritual', 'Social']);
+        const groups = new Set<string>();
         Object.keys(groupsMetadata).forEach(g => groups.add(g));
         innerfaces.forEach(i => { if (i.group) groups.add(i.group); });
         protocols.forEach(p => { if (p.group) groups.add(p.group); });
@@ -92,7 +93,7 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
                 setProtocolIds([]);
                 setCategory(null);
             }
-            setIsConfirmingDelete(false);
+
             setIsGroupDropdownOpen(false);
         }
     }, [isOpen, currentInnerface, protocols]);
@@ -160,10 +161,7 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
 
     const handleDelete = async () => {
         if (!innerfaceId) return;
-        if (!isConfirmingDelete) {
-            setIsConfirmingDelete(true);
-            return;
-        }
+
 
         // Save innerface copy for undo
         const innerfaceCopy = innerfaces.find(i => i.id === innerfaceId);
@@ -192,10 +190,10 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
 
     // Group Metadata Helpers
     const getGroupColor = (g: string) =>
-        groupsMetadata[g]?.color || GROUP_CONFIG[g]?.color || 'var(--main-color)';
+        groupsMetadata[g]?.color || getGroupConfig(g)?.color || 'var(--main-color)';
 
     const getGroupIcon = (g: string) =>
-        groupsMetadata[g]?.icon || GROUP_CONFIG[g]?.icon?.iconName || 'brain';
+        groupsMetadata[g]?.icon || getGroupConfig(g)?.icon || 'brain';
 
     return {
         formState: {
@@ -211,7 +209,7 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
         },
         uiState: {
             isSubmitting,
-            isConfirmingDelete,
+
             isGroupDropdownOpen, setIsGroupDropdownOpen,
             isCoachMode
         },
@@ -223,6 +221,7 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
         handlers: {
             handleSubmit,
             handleDelete,
+            handleDeleteGroup: deleteGroup,
             toggleProtocol,
             updateGroupMetadata
         },

@@ -7,6 +7,7 @@ import { GroupSettingsModal } from '../../../features/groups/components/GroupSet
 import { Input } from '../../../components/ui/molecules/Input';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../../components/ui/atoms/Tooltip';
 import { InnerfacesFilterDropdown } from './InnerfacesFilterDropdown';
+import { useTooltipSuppression } from '../../../hooks/useTooltipSuppression';
 import {
     DndContext,
     closestCenter,
@@ -124,13 +125,21 @@ export function InnerfacesList() {
         }
     }, []);
 
-    // Extract unique groups
-    const innerfaceGroups = useMemo(() => {
+    // Extract unique groups and check for ungrouped
+    const { innerfaceGroups, hasUngrouped } = useMemo(() => {
         const groups = new Set<string>();
+        let ungrouped = false;
         innerfaces.forEach(i => {
-            if (i.group) groups.add(i.group);
+            if (i.group) {
+                groups.add(i.group);
+            } else {
+                ungrouped = true;
+            }
         });
-        return Array.from(groups).sort();
+        return {
+            innerfaceGroups: Array.from(groups).sort(),
+            hasUngrouped: ungrouped
+        };
     }, [innerfaces]);
 
     // Content ref for conditional search
@@ -143,6 +152,11 @@ export function InnerfacesList() {
     const [isGroupSettingsOpen, setIsGroupSettingsOpen] = useState(false);
     const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
     const [localOpen, setLocalOpen] = useState(false);
+    const suppressTooltip = useTooltipSuppression(isModalOpen);
+
+    const handleCloseModal = useCallback(() => {
+        setIsModalOpen(false);
+    }, []);
 
     const handleCreate = useCallback(() => {
         setIsModalOpen(true);
@@ -204,14 +218,14 @@ export function InnerfacesList() {
 
 
     if (isLoading) {
-        return <div className="text-center text-sub dark:text-gray-400 py-10">Loading innerfaces...</div>;
+        return <div className="text-center text-sub dark:text-gray-400 py-10">Loading powers...</div>;
     }
 
     return (
         <div className="flex flex-col gap-6 w-full">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-lexend text-text-primary">Innerfaces</h1>
+                    <h1 className="text-2xl font-lexend text-text-primary">Powers</h1>
                     <p className="text-text-secondary font-mono text-sm mt-1">
                         Track skills and foundations you're developing
                     </p>
@@ -222,7 +236,7 @@ export function InnerfacesList() {
                         <div className="flex items-center gap-0">
                             <TooltipProvider delayDuration={1000}>
                                 <Tooltip
-                                    open={isModalOpen ? false : localOpen}
+                                    open={isModalOpen || suppressTooltip ? false : localOpen}
                                     onOpenChange={setLocalOpen}
                                 >
                                     <TooltipTrigger asChild>
@@ -244,11 +258,15 @@ export function InnerfacesList() {
                                 </Tooltip>
                             </TooltipProvider>
 
-                            <InnerfacesFilterDropdown
-                                activeFilters={activeFilters}
-                                innerfaceGroups={innerfaceGroups}
-                                onToggleFilter={toggleFilter}
-                            />
+                            {innerfaces.length > 0 && (
+                                <InnerfacesFilterDropdown
+                                    activeFilters={activeFilters}
+                                    innerfaceGroups={innerfaceGroups}
+                                    groupsMetadata={groupsMetadata}
+                                    hasUngrouped={hasUngrouped}
+                                    onToggleFilter={toggleFilter}
+                                />
+                            )}
                         </div>
                     )}
 
@@ -385,7 +403,7 @@ export function InnerfacesList() {
             {isModalOpen && (
                 <InnerfaceSettingsModal
                     isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
+                    onClose={handleCloseModal}
                     innerfaceId={selectedInnerfaceId}
                 />
             )}

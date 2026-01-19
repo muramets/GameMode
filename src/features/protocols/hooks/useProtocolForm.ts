@@ -4,7 +4,7 @@ import { useMetadataStore } from '../../../stores/metadataStore';
 import { usePersonalityStore } from '../../../stores/personalityStore';
 import { useHistoryStore } from '../../../stores/historyStore';
 import { useUIStore } from '../../../stores/uiStore';
-import { GROUP_CONFIG } from '../../../constants/common';
+
 
 interface UseProtocolFormProps {
     protocolId?: number | string | null;
@@ -22,7 +22,9 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
         updateProtocol,
         deleteProtocol,
         restoreProtocol,
-        updateGroupMetadata
+
+        updateGroupMetadata,
+        deleteGroup
     } = useMetadataStore();
     const { activePersonalityId } = usePersonalityStore();
     const { showToast } = useUIStore();
@@ -39,7 +41,7 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
     const [color, setColor] = useState('#e2b714');
 
     // UI State
-    const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Initialize Form
@@ -69,7 +71,7 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
             setXp('1');
             setTargets([]);
             setColor('#e2b714');
-            setIsConfirmingDelete(false);
+            setColor('#e2b714');
         }
     }, [isOpen, protocolId, protocols]);
 
@@ -165,12 +167,6 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
     const handleDelete = async () => {
         if (!protocolId) return;
 
-        if (!isConfirmingDelete) {
-            setIsConfirmingDelete(true);
-            setTimeout(() => setIsConfirmingDelete(false), 3000);
-            return;
-        }
-
         // Save protocol copy for undo
         const protocolCopy = protocols.find(p => p.id === protocolId);
         if (!protocolCopy) return;
@@ -193,12 +189,14 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
     };
 
     const availableGroups = useMemo(() => {
-        const configGroups = Object.keys(GROUP_CONFIG).filter(g => g !== 'ungrouped');
-        const existingGroups = Array.from(new Set(protocols.map(p => p.group))).filter(Boolean) as string[];
-        return Array.from(new Set([...configGroups, ...existingGroups])).sort();
-    }, [protocols]);
+        const groups = new Set<string>();
+        Object.keys(groupsMetadata).forEach(g => groups.add(g));
+        innerfaces.forEach(i => { if (i.group) groups.add(i.group); });
+        protocols.forEach(p => { if (p.group) groups.add(p.group); });
+        return Array.from(groups).sort();
+    }, [groupsMetadata, innerfaces, protocols]);
 
-    const handleUpdateGroupMetadata = async (groupName: string, data: { icon?: string; color?: string }) => {
+    const handleGroupMetadataUpdate = async (groupName: string, data: { icon?: string; color?: string }) => {
         await updateGroupMetadata(groupName, data);
     };
 
@@ -216,7 +214,6 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
             color, setColor
         },
         uiState: {
-            isConfirmingDelete,
             isSubmitting
         },
         // Data
@@ -226,6 +223,7 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
         // Handlers
         handleSubmit,
         handleDelete,
-        handleUpdateGroupMetadata
+        handleDeleteGroup: deleteGroup,
+        handleUpdateGroupMetadata: handleGroupMetadataUpdate
     };
 }

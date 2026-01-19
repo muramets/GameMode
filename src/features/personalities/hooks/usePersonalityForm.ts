@@ -3,6 +3,7 @@ import type { FormEvent, ChangeEvent } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { usePersonalityStore } from '../../../stores/personalityStore';
 import { uploadAvatar } from '../../../utils/storageUtils';
+import { resizeImage } from '../../../utils/imageUtils';
 
 interface UsePersonalityFormProps {
     personalityId: string | null;
@@ -43,7 +44,6 @@ export function usePersonalityForm({ personalityId, onClose, isOpen }: UsePerson
             if (personalityId) {
                 const p = personalities.find(p => p.id === personalityId);
                 if (p) {
-                    // eslint-disable-next-line react-hooks/set-state-in-effect
                     setName(p.name);
                     setDescription(p.description || '');
                     setIcon(p.icon || 'user');
@@ -138,7 +138,16 @@ export function usePersonalityForm({ personalityId, onClose, isOpen }: UsePerson
         // Prepare file blob for storage upload
         const res = await fetch(croppedImage);
         const blob = await res.blob();
-        setAvatarFile(blob);
+
+        // Resize image before setting it for upload (max 512x512)
+        try {
+            const resizedBlob = await resizeImage(blob, 512, 512);
+            setAvatarFile(resizedBlob);
+        } catch (error) {
+            console.error('Failed to resize image:', error);
+            // Fallback to original blob if resize fails
+            setAvatarFile(blob);
+        }
 
         setIsCropping(false);
         setTempImage(null);

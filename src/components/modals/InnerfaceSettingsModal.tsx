@@ -1,8 +1,8 @@
 import { Modal } from '../ui/molecules/Modal';
 import { Input } from '../ui/molecules/Input';
 import { Button } from '../ui/atoms/Button';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
+import { ConfirmButton } from '../ui/molecules/ConfirmButton';
+
 import { useInnerfaceForm } from '../../features/innerfaces/hooks/useInnerfaceForm';
 import { ColorPicker } from '../ui/molecules/ColorPicker';
 import { IconPicker } from '../ui/molecules/IconPicker';
@@ -45,7 +45,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
 
     const {
         isSubmitting,
-        isConfirmingDelete,
+
         isCoachMode
     } = uiState;
 
@@ -75,17 +75,10 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
             footer={
                 <>
                     {innerfaceId && !isCoachMode ? (
-                        <Button
-                            type="button"
-                            variant="danger"
-                            size="sm"
-                            onClick={handleDelete}
+                        <ConfirmButton
+                            onConfirm={handleDelete}
                             disabled={isSubmitting}
-                            leftIcon={<FontAwesomeIcon icon={isConfirmingDelete ? faExclamationTriangle : faTrash} />}
-                            className="text-[10px] uppercase tracking-wider font-bold px-3 py-2 transition-all duration-200"
-                        >
-                            {isConfirmingDelete ? 'Are you sure?' : 'Delete'}
-                        </Button>
+                        />
                     ) : <div />}
 
                     <div className="flex items-center gap-2">
@@ -112,7 +105,10 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                 </>
             }
         >
-            <div className="flex flex-col gap-5 max-h-[60vh] overflow-y-auto custom-scrollbar px-1">
+            <div
+                className="flex flex-col gap-5 max-h-[60vh] overflow-y-auto custom-scrollbar px-1"
+                style={{ transform: 'translateZ(0)', willChange: 'transform' }}
+            >
                 <div className="flex flex-col gap-1.5">
                     <InputLabel label="Name" />
                     <Input
@@ -210,6 +206,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                     availableGroups={availableGroups}
                     groupsMetadata={groupsMetadata}
                     onUpdateMetadata={updateGroupMetadata}
+
                 />
 
                 <div className="flex gap-4">

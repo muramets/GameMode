@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { allThemes } from '../../styles/allThemes';
 import { setTheme, getCurrentTheme, hexToHSL, getFavorites, toggleFavorite } from '../../utils/themeManager';
 import { ThemeButton } from './components/ThemeButton';
@@ -9,6 +9,10 @@ import { CollapsibleSection } from '../../components/ui/molecules/CollapsibleSec
 import { usePersonalityStore } from '../../stores/personalityStore';
 import { useRoleStore } from '../../stores/team';
 import { useAuth } from '../../contexts/AuthContext';
+import type { Personality } from '../../types/personality';
+import type { User } from 'firebase/auth';
+import type { ActiveContext } from '../../stores/personalityStore';
+import type { TeamRole } from '../../types/team';
 
 export function SettingsPage() {
     const { user } = useAuth();
@@ -35,22 +39,56 @@ export function SettingsPage() {
     // Unified entity for theme data
     const themeEntity = activePersonality || activeRole;
 
-    const [currentThemeName, setCurrentThemeName] = useState(getCurrentTheme());
-    const [searchQuery, setSearchQuery] = useState('');
-    const [favorites, setFavorites] = useState<string[]>(getFavorites());
+    // Use a key to force re-mounting when the active entity changes,
+    // which allows us to initialize state directly from the new entity data.
+    const entityKey = themeEntity ? (activePersonality ? `p-${activePersonality.id}` : `r-${activeRole?.id}`) : 'guest';
 
-    // Sync state with entity data when it loads
-    useEffect(() => {
-        if (themeEntity) {
-            if (themeEntity.currentTheme && themeEntity.currentTheme !== currentThemeName) {
-                setTheme(themeEntity.currentTheme);
-                setCurrentThemeName(themeEntity.currentTheme);
-            }
-            if (themeEntity.favThemes) {
-                setFavorites(themeEntity.favThemes);
-            }
-        }
-    }, [themeEntity]);
+    return (
+        <SettingsContent
+            key={entityKey}
+            themeEntity={themeEntity}
+            user={user}
+            activePersonality={activePersonality}
+            activeRole={activeRole}
+            activeContext={activeContext}
+            updatePersonality={updatePersonality}
+            updateRole={updateRole}
+        />
+    );
+}
+
+interface SettingsContentProps {
+    themeEntity: { currentTheme?: string; favThemes?: string[] } | null;
+    user: User | null;
+    activePersonality: Personality | null;
+    activeRole: TeamRole | null;
+    activeContext: ActiveContext | null;
+    updatePersonality: (uid: string, pid: string, data: Partial<Personality>) => Promise<void>;
+    updateRole: (teamId: string, roleId: string, data: Partial<TeamRole>) => Promise<void>;
+}
+
+function SettingsContent({
+    themeEntity,
+    user,
+    activePersonality,
+    activeRole,
+    activeContext,
+    updatePersonality,
+    updateRole
+}: SettingsContentProps) {
+    // Initialize state directly from props. Because of the key in parent, 
+    // this component remounts when entity changes, so this logic runs fresh.
+    const [currentThemeName, setCurrentThemeName] = useState(() => {
+        if (themeEntity?.currentTheme) return themeEntity.currentTheme;
+        return getCurrentTheme();
+    });
+
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const [favorites, setFavorites] = useState<string[]>(() => {
+        if (themeEntity?.favThemes) return themeEntity.favThemes;
+        return getFavorites();
+    });
 
     const handleThemeChange = async (name: string) => {
         setTheme(name);
@@ -68,7 +106,7 @@ export function SettingsPage() {
             const currentFavs = activePersonality.favThemes || [];
             const isFav = currentFavs.includes(name);
             const newFavs = isFav
-                ? currentFavs.filter(t => t !== name)
+                ? currentFavs.filter((t: string) => t !== name)
                 : [...currentFavs, name];
 
             setFavorites(newFavs);
@@ -77,7 +115,7 @@ export function SettingsPage() {
             const currentFavs = activeRole.favThemes || [];
             const isFav = currentFavs.includes(name);
             const newFavs = isFav
-                ? currentFavs.filter(t => t !== name)
+                ? currentFavs.filter((t: string) => t !== name)
                 : [...currentFavs, name];
 
             setFavorites(newFavs);

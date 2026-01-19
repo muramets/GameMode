@@ -5,7 +5,7 @@ import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import { SortableItem } from '../../../components/ui/molecules/SortableItem';
 import { CollapsibleSection } from '../../../components/ui/molecules/CollapsibleSection';
 import { DraggableProtocolItem } from './DraggableProtocolItem';
-import { GROUP_CONFIG } from '../../../constants/common';
+import { getGroupConfig } from '../../../constants/common';
 import { getIcon } from '../../../config/iconRegistry';
 import type { Protocol } from '../types';
 import type { Innerface } from '../../innerfaces/types';
@@ -37,11 +37,11 @@ export const ProtocolGroup = React.memo(({
     isReadOnly: boolean;
     hideHeader?: boolean;
 }) => {
-    const staticConfig = GROUP_CONFIG[groupName] || GROUP_CONFIG['ungrouped'];
+    const staticConfig = getGroupConfig(groupName);
     const storeMeta = groupsMetadata[groupName];
 
-    let icon = staticConfig.icon;
-    let color = staticConfig.color;
+    let icon = staticConfig ? getIcon(staticConfig.icon) : getIcon('circle');
+    let color = staticConfig?.color || '#d1d0c5';
 
     if (storeMeta) {
         if (storeMeta.icon) {

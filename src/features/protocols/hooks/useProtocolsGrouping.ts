@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { Protocol } from '../types';
-import { GROUP_CONFIG } from '../../../constants/common';
+
 
 /**
  * Hook для группировки и сортировки протоколов
@@ -44,7 +44,7 @@ export function useProtocolsGrouping(
         // Используем groupOrder из store, если он есть, иначе fallback к GROUP_CONFIG
         const dynamicSortOrder = groupOrder.length > 0
             ? groupOrder
-            : Object.keys(GROUP_CONFIG);
+            : [];
 
         // Шаг 4: Сортируем группы согласно заданному порядку
         return Object.entries(groups).sort(([keyA], [keyB]) => {
