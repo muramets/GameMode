@@ -51,10 +51,35 @@ export const useHistoryStore = create<HistoryState>((set) => ({
         try {
             console.log("Adding check-in", { uid, pid, protocol: record.protocolName });
             await runTransaction(db, async (transaction) => {
-                // 1. Create History Reference
+                // 1. Prepare Reads (Refs & Data)
                 const historyRef = doc(collection(db, 'users', uid, 'personalities', pid, 'history'));
+                const personalityRef = doc(db, 'users', uid, 'personalities', pid);
 
-                // 2. Write History Record
+                // READ: Personality
+                const personalityDoc = await transaction.get(personalityRef);
+
+                // READ: Innerfaces
+                const innerfaceUpdates: { ref: any, currentScore: number, weight: number }[] = [];
+                if (record.changes) {
+                    for (const [innerfaceId, weight] of Object.entries(record.changes)) {
+                        const innerfaceRef = doc(db, 'users', uid, 'personalities', pid, 'innerfaces', innerfaceId);
+                        const innerfaceDoc = await transaction.get(innerfaceRef);
+
+                        if (innerfaceDoc.exists()) {
+                            const data = innerfaceDoc.data();
+                            const currentScore = data.currentScore ?? data.initialScore ?? 0;
+                            innerfaceUpdates.push({
+                                ref: innerfaceRef,
+                                currentScore,
+                                weight: Number(weight)
+                            });
+                        }
+                    }
+                }
+
+                // 2. Writes (Must happen AFTER all reads)
+
+                // WRITE: History Record
                 transaction.set(historyRef, {
                     ...record,
                     serverTimestamp: Timestamp.now()
@@ -62,24 +87,13 @@ export const useHistoryStore = create<HistoryState>((set) => ({
 
                 console.debug("Transaction: Record created", { protocol: record.protocolName });
 
-                // 3. Update Innerface Scores using 'changes' map
-                if (record.changes) {
-                    for (const [innerfaceId, weight] of Object.entries(record.changes)) {
-                        const innerfaceRef = doc(db, 'users', uid, 'personalities', pid, 'innerfaces', innerfaceId);
-                        const innerfaceDoc = await transaction.get(innerfaceRef);
-
-                        if (innerfaceDoc.exists()) {
-                            const currentScore = innerfaceDoc.data().currentScore || innerfaceDoc.data().initialScore || 0;
-                            const newScore = Math.max(0, currentScore + Number(weight));
-                            transaction.update(innerfaceRef, { currentScore: newScore });
-                        }
-                    }
+                // WRITE: Innerface Updates
+                for (const update of innerfaceUpdates) {
+                    const newScore = Math.max(0, update.currentScore + update.weight);
+                    transaction.update(update.ref, { currentScore: newScore });
                 }
 
-                // 4. Update Personality Stats (Efficient Counting)
-                const personalityRef = doc(db, 'users', uid, 'personalities', pid);
-                const personalityDoc = await transaction.get(personalityRef);
-
+                // WRITE: Personality Stats
                 if (personalityDoc.exists()) {
                     const pData = personalityDoc.data() as Personality;
                     const todayStr = format(new Date(), 'yyyy-MM-dd');

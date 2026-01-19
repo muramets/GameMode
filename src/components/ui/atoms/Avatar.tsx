@@ -6,7 +6,7 @@ import { getIcon } from '../../../config/iconRegistry';
 
 // Global (session-level) set to track already loaded avatar URLs
 // We use this to decide if we should use a fade-in animation or an instant show.
-// const sessionLoadedCache = new Set<string>();
+const sessionLoadedCache = new Set<string>();
 
 interface AvatarProps {
     src?: string;
@@ -43,17 +43,28 @@ export function Avatar({
 
 function AvatarInner({ src, alt, fallbackIcon = 'user', className, style }: AvatarProps) {
     // isLoaded tracks if the CURRENT <img> instance has fired onLoad.
-    // Always start as false to ensure the fade-in animation plays.
-    const [isLoaded, setIsLoaded] = useState(false);
+    // Initialize based on session cache to avoid "pop-in" for already loaded images
+    const [isLoaded, setIsLoaded] = useState(() => {
+        if (!src) return false;
+        return sessionLoadedCache.has(src);
+    });
 
     useEffect(() => {
         if (!src) return;
+
+        // If already known in cache, strictly speaking we are "loaded",
+        // but the <img> tag will handle the actual display.
+        // We can skip the pre-loader checks if we trust the cache, 
+        // but keeping it ensures redundancy if the cache was wrong (unlikely).
+        // For performance, we can skip if already cached.
+        if (sessionLoadedCache.has(src)) return;
 
         const img = new Image();
         img.src = src;
 
         const onLoad = () => {
             setIsLoaded(true);
+            sessionLoadedCache.add(src);
         };
 
         if (img.complete) {
@@ -69,6 +80,7 @@ function AvatarInner({ src, alt, fallbackIcon = 'user', className, style }: Avat
 
     const handleLoad = () => {
         setIsLoaded(true);
+        if (src) sessionLoadedCache.add(src);
     };
 
     const iconDef = typeof fallbackIcon === 'string' ? getIcon(fallbackIcon) : fallbackIcon;
@@ -89,7 +101,7 @@ function AvatarInner({ src, alt, fallbackIcon = 'user', className, style }: Avat
             {/* 
               Layer 2: Actual Image (Z-10)
               Rendered on top. 
-              Always fades in: Opacity 0 -> 100
+              Fades in only if not pre-cached (opacity 0 -> 100)
             */}
             {src && (
                 <img

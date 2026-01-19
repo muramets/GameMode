@@ -40,8 +40,9 @@ export function UserProfile() {
     }
 
     // 1. Level calculation: Average of Innerfaces only (States are derivative, so excluding them avoids double counting)
+    const activeInnerfaces = innerfaces.filter(i => !i.deletedAt);
     const allScores = [
-        ...innerfaces.map(i => i.currentScore || 0)
+        ...activeInnerfaces.map(i => i.currentScore || 0)
     ];
 
     const averageScore = allScores.length > 0

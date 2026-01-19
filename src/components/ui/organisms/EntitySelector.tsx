@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { faSearch, faLink, faLinkSlash } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { CollapsibleSection } from '../molecules/CollapsibleSection';
@@ -74,10 +74,7 @@ export function EntitySelector({
 
     const showSearch = viewMode === 'active' ? activeCount > 0 : deletedCount > 0;
 
-    // Reset search when switching views
-    useEffect(() => {
-        setSearchQuery('');
-    }, [viewMode]);
+
 
     return (
         <div className={`bg-sub-alt/30 rounded-xl p-3 border border-white/5 flex flex-col gap-3 ${height} ${className}`}>
@@ -86,7 +83,10 @@ export function EntitySelector({
                 <div className="flex bg-sub-alt/50 p-1 rounded-lg">
                     <button
                         type="button"
-                        onClick={() => setViewMode('active')}
+                        onClick={() => {
+                            setViewMode('active');
+                            setSearchQuery('');
+                        }}
                         className={`flex-1 py-1 text-[10px] font-mono font-bold uppercase tracking-wider rounded-md transition-all ${viewMode === 'active'
                             ? 'bg-main text-black shadow-sm'
                             : 'text-sub hover:text-text-primary'
@@ -96,7 +96,10 @@ export function EntitySelector({
                     </button>
                     <button
                         type="button"
-                        onClick={() => setViewMode('archived')}
+                        onClick={() => {
+                            setViewMode('archived');
+                            setSearchQuery('');
+                        }}
                         className={`flex-1 py-1 text-[10px] font-mono font-bold uppercase tracking-wider rounded-md transition-all ${viewMode === 'archived'
                             ? 'bg-sub text-text-primary shadow-sm'
                             : 'text-sub hover:text-text-primary'
