@@ -7,7 +7,7 @@ import { useInnerfaceForm } from '../../features/innerfaces/hooks/useInnerfaceFo
 import { ColorPicker } from '../ui/molecules/ColorPicker';
 import { IconPicker } from '../ui/molecules/IconPicker';
 import { EntitySelector } from '../ui/organisms/EntitySelector';
-import { renderIcon } from '../../utils/iconMapper';
+import { AppIcon } from '../ui/atoms/AppIcon';
 import { InnerfaceGroupSelector } from '../../features/innerfaces/components/InnerfaceGroupSelector';
 import { PowerIcon } from '../../features/innerfaces/components/PowerIcon';
 
@@ -60,7 +60,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
         title: p.title,
         description: p.description,
         group: p.group || 'ungrouped',
-        icon: renderIcon(p.icon),
+        icon: <AppIcon id={p.icon} />,
         color: p.color
     }));
 

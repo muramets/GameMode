@@ -4,7 +4,7 @@ import { faChevronDown, faTimes, faPlus } from '@fortawesome/free-solid-svg-icon
 import * as Popover from '@radix-ui/react-popover';
 import { GroupDropdown } from '../../groups/components/GroupDropdown';
 import { Input } from '../../../components/ui/molecules/Input';
-import { getMappedIcon } from '../../../utils/iconMapper';
+import { getIcon } from '../../../config/iconRegistry';
 import { GROUP_CONFIG, PRESET_COLORS } from '../../../constants/common';
 import { IconPicker } from '../../../components/ui/molecules/IconPicker';
 
@@ -58,7 +58,7 @@ export function ProtocolGroupSelector({
         if (iconStr === 'CONFIG' && config) {
             iconToRender = config.icon;
         } else {
-            iconToRender = getMappedIcon(iconStr) || faPlus;
+            iconToRender = getIcon(iconStr);
         }
 
         return (
@@ -198,7 +198,7 @@ export function ProtocolGroupSelector({
                                             className="bg-main/10 border border-main/20 hover:bg-main hover:text-bg-primary transition-all pb-0.5"
                                             triggerContent={
                                                 tempGroupIcon ? (
-                                                    <FontAwesomeIcon icon={getMappedIcon(tempGroupIcon) || faPlus} className="text-sm" />
+                                                    <FontAwesomeIcon icon={getIcon(tempGroupIcon)} className="text-sm" />
                                                 ) : (
                                                     <FontAwesomeIcon icon={faPlus} className="text-sm" />
                                                 )

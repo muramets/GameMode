@@ -6,7 +6,7 @@ import { SortableItem } from '../../../components/ui/molecules/SortableItem';
 import { CollapsibleSection } from '../../../components/ui/molecules/CollapsibleSection';
 import { DraggableProtocolItem } from './DraggableProtocolItem';
 import { GROUP_CONFIG } from '../../../constants/common';
-import { getMappedIcon } from '../../../utils/iconMapper';
+import { getIcon } from '../../../config/iconRegistry';
 import type { Protocol } from '../types';
 import type { Innerface } from '../../innerfaces/types';
 
@@ -45,7 +45,7 @@ export const ProtocolGroup = React.memo(({
 
     if (storeMeta) {
         if (storeMeta.icon) {
-            const mapped = getMappedIcon(storeMeta.icon);
+            const mapped = getIcon(storeMeta.icon);
             if (mapped) icon = mapped;
         }
         if (storeMeta.color) color = storeMeta.color;

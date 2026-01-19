@@ -15,7 +15,7 @@ import { useInviteStore } from '../../stores/team';
 import { usePersonalityStore } from '../../stores/personalityStore';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faLink, faCheck, faSpinner, faExclamationCircle } from '@fortawesome/free-solid-svg-icons';
-import { getMappedIcon } from '../../utils/iconMapper';
+import { getIcon } from '../../config/iconRegistry';
 
 interface JoinTeamModalProps {
     isOpen: boolean;
@@ -124,8 +124,8 @@ export function JoinTeamModal({ isOpen, onClose }: JoinTeamModalProps) {
         }
     };
 
-    const teamIconDef = previewData?.teamIcon ? getMappedIcon(previewData.teamIcon) : null;
-    const roleIconDef = previewData?.roleIcon ? getMappedIcon(previewData.roleIcon) : null;
+    const teamIconDef = previewData?.teamIcon ? getIcon(previewData.teamIcon) : null;
+    const roleIconDef = previewData?.roleIcon ? getIcon(previewData.roleIcon) : null;
 
     return (
         <Modal

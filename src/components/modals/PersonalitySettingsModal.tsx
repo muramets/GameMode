@@ -1,6 +1,7 @@
 import { Modal } from '../ui/molecules/Modal';
 import { Input } from '../ui/molecules/Input';
 import { Button } from '../ui/atoms/Button';
+import { Avatar } from '../ui/atoms/Avatar';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faExclamationTriangle, faUser } from '@fortawesome/free-solid-svg-icons';
 import { ColorPicker } from '../ui/molecules/ColorPicker';
@@ -159,18 +160,12 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
                                 onChange={handleFileSelect}
                             />
 
-                            {avatar ? (
-                                <img
-                                    src={avatar}
-                                    alt="Avatar"
-                                    className="w-full h-full object-cover transition-all duration-150 group-hover:brightness-110"
-                                />
-                            ) : (
-                                <FontAwesomeIcon
-                                    icon={faUser}
-                                    className="text-sub text-3xl opacity-50 transition-all duration-150 group-hover:opacity-100 group-hover:text-bg-primary"
-                                />
-                            )}
+                            <Avatar
+                                src={avatar}
+                                alt="Avatar"
+                                fallbackIcon={faUser}
+                                className="w-full h-full text-sub text-3xl group-hover:brightness-110"
+                            />
                         </div>
 
                         {/* Delete Button */}

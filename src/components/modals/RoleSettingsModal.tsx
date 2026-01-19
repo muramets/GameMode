@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Modal as UIModal } from '../ui/molecules/Modal';
 import { Input } from '../ui/molecules/Input';
 import { Button } from '../ui/atoms/Button';
-import { renderIcon } from '../../utils/iconMapper';
+import { AppIcon } from '../ui/atoms/AppIcon';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faExclamationTriangle, faLink, faCopy, faCheck } from '@fortawesome/free-solid-svg-icons';
 import { useRoleForm } from '../../features/teams/hooks/useRoleForm';
@@ -85,7 +85,7 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
         title: p.title,
         description: p.description,
         group: p.group || 'ungrouped',
-        icon: renderIcon(p.icon),
+        icon: <AppIcon id={p.icon} />,
         color: p.color
     }));
 
@@ -94,7 +94,7 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
         title: i.name,
         description: i.hover || '',
         group: i.group || 'ungrouped',
-        icon: renderIcon(i.icon),
+        icon: <AppIcon id={i.icon} />,
         color: i.color
     }));
 
@@ -103,7 +103,7 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
         title: s.name,
         description: s.description || '',
         group: 'States',
-        icon: renderIcon(s.icon || 'circle'),
+        icon: <AppIcon id={s.icon || 'circle'} />,
         color: s.color
     }));
 

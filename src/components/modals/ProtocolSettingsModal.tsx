@@ -1,7 +1,7 @@
 import { Modal } from '../ui/molecules/Modal';
 import { Input } from '../ui/molecules/Input';
 import { Button } from '../ui/atoms/Button';
-import { renderIcon } from '../../utils/iconMapper';
+import { AppIcon } from '../ui/atoms/AppIcon';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 
@@ -69,7 +69,7 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
         title: i.name,
         description: i.hover || i.name,
         group: i.group,
-        icon: renderIcon(i.icon), // Returns JSX
+        icon: <AppIcon id={i.icon} />, // Returns JSX
         color: i.color
     }));
 

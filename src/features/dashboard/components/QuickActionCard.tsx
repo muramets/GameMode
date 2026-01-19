@@ -4,7 +4,7 @@ import { faTimes, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Protocol } from '../../protocols/types';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, TooltipPortal } from '../../../components/ui/atoms/Tooltip';
-import { renderIcon } from '../../../utils/iconMapper'; // Need to import this utility
+import { AppIcon } from '../../../components/ui/atoms/AppIcon';
 
 export function QuickActionCard({ action, onAction, onDelete, isDisabled }: { action: Protocol; onAction?: (direction: '+' | '-') => void; onDelete?: () => void; isDisabled?: boolean }) {
     const [hoverSide, setHoverSide] = useState<'left' | 'right' | null>(null);
@@ -173,7 +173,7 @@ export function QuickActionCard({ action, onAction, onDelete, isDisabled }: { ac
                                 className={`rounded-md flex items-center justify-center shrink-0 relative z-20 h-6 w-6`}
                             >
                                 <span className={`text-[0.65rem] opacity-90 flex items-center justify-center`}>
-                                    {renderIcon(action.icon)}
+                                    <AppIcon id={action.icon} />
                                 </span>
                             </motion.div>
 

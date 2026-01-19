@@ -6,7 +6,7 @@ import { SortableItem } from '../../../components/ui/molecules/SortableItem';
 import { CollapsibleSection } from '../../../components/ui/molecules/CollapsibleSection';
 import { DraggableInnerfaceItem } from './DraggableInnerfaceItem';
 import { GROUP_CONFIG } from '../../../constants/common';
-import { getMappedIcon } from '../../../utils/iconMapper';
+import { getIcon } from '../../../config/iconRegistry';
 import type { Innerface } from '../types';
 
 export const InnerfaceGroup = React.memo(({
@@ -36,7 +36,7 @@ export const InnerfaceGroup = React.memo(({
 
     if (storeMeta) {
         if (storeMeta.icon) {
-            const mapped = getMappedIcon(storeMeta.icon);
+            const mapped = getIcon(storeMeta.icon);
             if (mapped) icon = mapped;
         }
         if (storeMeta.color) color = storeMeta.color;

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faThumbtack, faCheck } from '@fortawesome/free-solid-svg-icons';
 import { useMetadataStore } from '../../../stores/metadataStore';
-import { renderIcon } from '../../../utils/iconMapper';
+import { AppIcon } from '../../../components/ui/atoms/AppIcon';
 import { Input } from '../../../components/ui/molecules/Input';
 import { Button } from '../../../components/ui/atoms/Button';
 import { Modal } from '../../../components/ui/molecules/Modal';
@@ -162,7 +162,7 @@ function ProtocolItem({ protocol, isPinned, onToggle }: { protocol: Protocol, is
                     }}
                 >
                     <span className="flex items-center justify-center opacity-90 text-sm">
-                        {renderIcon(protocol.icon)}
+                        <AppIcon id={protocol.icon} />
                     </span>
                 </div>
 

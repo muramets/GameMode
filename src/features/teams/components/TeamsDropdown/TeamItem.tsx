@@ -1,7 +1,7 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronDown, faChevronRight, faCog, faPlus } from '@fortawesome/free-solid-svg-icons';
-import { getMappedIcon } from '../../../../utils/iconMapper';
+import { getIcon } from '../../../../config/iconRegistry';
 import type { Team, TeamRole, RoleMember } from '../../../../types/team';
 import { RoleItem } from './RoleItem';
 
@@ -42,7 +42,7 @@ export const TeamItem = ({
     onMemberClick,
     index
 }: TeamItemProps) => {
-    const iconDef = getMappedIcon(team.icon || 'users') || getMappedIcon('users');
+    const iconDef = getIcon(team.icon || 'users');
 
     return (
         <div>

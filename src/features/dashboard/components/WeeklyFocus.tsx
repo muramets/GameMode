@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { usePlanningStore } from '../../../stores/planningStore';
 import { useScoreContext } from '../../../contexts/ScoreContext';
-import { renderIcon } from '../../../utils/iconMapper';
+import { AppIcon } from '../../../components/ui/atoms/AppIcon';
 import { getWeeklyProgress, getProgressDots } from '../../../utils/weeklyProgressUtils';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCrown } from '@fortawesome/free-solid-svg-icons';
@@ -70,7 +70,7 @@ export function WeeklyFocus() {
                                             boxShadow: `0 0 10px color-mix(in srgb, ${protocol.color || '#ffffff'} 8%, transparent)`
                                         }}
                                     >
-                                        {renderIcon(protocol.icon)}
+                                        <AppIcon id={protocol.icon} />
                                     </div>
                                 </TooltipTrigger>
                                 <TooltipContent side="right" className="max-w-[200px]">

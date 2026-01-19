@@ -8,7 +8,7 @@ import {
     faExclamationTriangle
 } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '../../../../components/ui/atoms/Button';
-import { getMappedIcon } from '../../../../utils/iconMapper';
+import { getIcon } from '../../../../config/iconRegistry';
 
 // Google icon as SVG
 function GoogleIcon() {
@@ -59,8 +59,8 @@ export function InviteJoinCard({
     onNavigateLogin
 }: InviteJoinCardProps) {
 
-    const teamIconDef = inviteData?.teamIcon ? getMappedIcon(inviteData.teamIcon) : null;
-    const roleIconDef = inviteData?.roleIcon ? getMappedIcon(inviteData.roleIcon) : null;
+    const teamIconDef = inviteData?.teamIcon ? getIcon(inviteData.teamIcon) : null;
+    const roleIconDef = inviteData?.roleIcon ? getIcon(inviteData.roleIcon) : null;
 
     return (
         <div

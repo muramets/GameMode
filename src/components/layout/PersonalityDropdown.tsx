@@ -3,7 +3,7 @@ import { usePersonalityStore } from '../../stores/personalityStore';
 import { useAuth } from '../../contexts/AuthContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog, faPlus, faCheck, faPen, faEye } from '@fortawesome/free-solid-svg-icons';
-import { getMappedIcon } from '../../utils/iconMapper';
+import { getIcon } from '../../config/iconRegistry';
 import { PersonalitySettingsModal } from '../modals/PersonalitySettingsModal';
 
 import { useRoleStore } from '../../stores/team';
@@ -66,7 +66,7 @@ export function PersonalityDropdown() {
                     >
                         {/* Icon */}
                         {(() => {
-                            const iconDef = getMappedIcon(activeItem?.icon || 'user');
+                            const iconDef = getIcon(activeItem?.icon || 'user');
                             return iconDef ? (
                                 <FontAwesomeIcon icon={iconDef} style={{ fontSize: '1em' }} />
                             ) : (
@@ -151,7 +151,7 @@ export function PersonalityDropdown() {
                         {/* Personalities List */}
                         {personalities.map((p, index) => {
                             const isActive = !isDesignMode && p.id === activePersonalityId;
-                            const iconDef = getMappedIcon(p.icon || 'user');
+                            const iconDef = getIcon(p.icon || 'user');
 
                             return (
                                 <div

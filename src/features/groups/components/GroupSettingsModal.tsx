@@ -6,7 +6,7 @@ import { Button } from '../../../components/ui/atoms/Button';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useMetadataStore } from '../../../stores/metadataStore';
 import { usePersonalityStore } from '../../../stores/personalityStore';
-import { getMappedIcon, ICON_PRESETS } from '../../../utils/iconMapper';
+import { getIcon, ICON_REGISTRY } from '../../../config/iconRegistry';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
 import { PRESET_COLORS, GROUP_CONFIG } from '../../../constants/common';
@@ -131,12 +131,12 @@ export function GroupSettingsModal({ isOpen, onClose, groupName }: GroupSettings
                                 <div className="relative group/icon bg-sub-alt rounded-lg transition-colors duration-200 focus-within:bg-sub border border-transparent focus-within:border-white/5 cursor-pointer"
                                     onClick={() => setIsIconPickerOpen(true)}
                                 >
-                                    {getMappedIcon(icon) && (
+                                    {getIcon(icon) && (
                                         <div
                                             className="absolute inset-0 flex items-center justify-center pointer-events-none transition-colors duration-200"
                                             style={{ color: color }}
                                         >
-                                            <FontAwesomeIcon icon={getMappedIcon(icon)} className="text-sm" />
+                                            <FontAwesomeIcon icon={getIcon(icon)} className="text-sm" />
                                         </div>
                                     )}
                                     <Input
@@ -149,7 +149,7 @@ export function GroupSettingsModal({ isOpen, onClose, groupName }: GroupSettings
                                             // Let's just allow typing.
                                             setIcon(val);
                                         }}
-                                        className={`text-center text-lg p-0 h-[42px] relative z-10 ${getMappedIcon(icon) ? '!text-transparent !caret-text-primary' : ''} !bg-transparent focus:!bg-transparent !border-none outline-none cursor-pointer`}
+                                        className={`text-center text-lg p-0 h-[42px] relative z-10 ${getIcon(icon) ? '!text-transparent !caret-text-primary' : ''} !bg-transparent focus:!bg-transparent !border-none outline-none cursor-pointer`}
                                         onClick={(e) => {
                                             e.stopPropagation(); // Prevent trigger if we want to type? 
                                             // Actually user wants "click on Icon input" to open picker.
@@ -177,19 +177,19 @@ export function GroupSettingsModal({ isOpen, onClose, groupName }: GroupSettings
                                         </button>
                                     </div>
                                     <div className="grid grid-cols-5 gap-1.5 max-h-[160px] overflow-y-auto pr-1">
-                                        {ICON_PRESETS.map(preset => (
+                                        {ICON_REGISTRY.map(entry => (
                                             <button
-                                                key={preset}
+                                                key={entry.id}
                                                 type="button"
                                                 onClick={() => {
-                                                    setIcon(preset);
+                                                    setIcon(entry.id);
                                                     setIsIconPickerOpen(false);
                                                 }}
-                                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10 cursor-pointer ${icon === preset ? 'bg-white/20 text-text-primary ring-1 ring-white/30' : 'text-sub'}`}
-                                                style={{ color: icon === preset ? color : undefined }}
-                                                title={preset}
+                                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10 cursor-pointer ${icon === entry.id ? 'bg-white/20 text-text-primary ring-1 ring-white/30' : 'text-sub'}`}
+                                                style={{ color: icon === entry.id ? color : undefined }}
+                                                title={entry.id}
                                             >
-                                                <FontAwesomeIcon icon={getMappedIcon(preset)} className="text-sm" />
+                                                <FontAwesomeIcon icon={entry.icon} className="text-sm" />
                                             </button>
                                         ))}
                                     </div>

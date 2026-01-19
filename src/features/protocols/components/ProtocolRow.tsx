@@ -5,7 +5,7 @@ import type { Innerface } from '../../innerfaces/types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faMinus, faCog, faHistory } from '@fortawesome/free-solid-svg-icons';
 import { TruncatedTooltip } from '../../../components/ui/molecules/TruncatedTooltip';
-import { renderIcon } from '../../../utils/iconMapper';
+import { AppIcon } from '../../../components/ui/atoms/AppIcon';
 import { motion } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../../components/ui/atoms/Tooltip'; // Keep Tooltip import for other usages
 
@@ -131,7 +131,7 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
                             boxShadow: `0 0 15px color-mix(in srgb, ${protocol.color || '#ffffff'} 8%, transparent)`
                         }}
                     >
-                        {renderIcon(protocol.icon)}
+                        <AppIcon id={protocol.icon} />
                     </motion.div>
                     <div className="flex flex-col min-w-0 flex-grow mr-2 overflow-hidden">
                         <div className="flex items-center gap-2 max-w-full">
@@ -169,7 +169,7 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
                                         boxShadow: `0 0 10px color-mix(in srgb, ${innerface.color || '#ffffff'} 5%, transparent)`
                                     }}
                                 >
-                                    <div className="text-[0.7rem]"> {renderIcon(innerface.icon)} </div>
+                                    <div className="text-[0.7rem]"> <AppIcon id={innerface.icon} /> </div>
                                 </div>
                             );
 

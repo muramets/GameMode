@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBan } from '@fortawesome/free-solid-svg-icons';
 import { InnerfaceCard } from './InnerfaceCard';
 import { GROUP_CONFIG } from '../../../constants/common';
-import { getMappedIcon } from '../../../utils/iconMapper';
+import { getIcon } from '../../../config/iconRegistry';
 import { CATEGORY_CONFIG } from '../constants';
 import type { Innerface } from '../types';
 
@@ -42,7 +42,7 @@ export const InnerfacesDragOverlay = React.memo(({
 
         if (storeMeta) {
             if (storeMeta.icon) {
-                const mapped = getMappedIcon(storeMeta.icon);
+                const mapped = getIcon(storeMeta.icon);
                 if (mapped) icon = mapped;
             }
             if (storeMeta.color) color = storeMeta.color;

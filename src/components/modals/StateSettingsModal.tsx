@@ -8,7 +8,7 @@ import { useStateForm } from '../../features/dashboard/hooks/useStateForm';
 import { ColorPicker } from '../ui/molecules/ColorPicker';
 import { IconPicker } from '../ui/molecules/IconPicker';
 import { EntitySelector } from '../ui/organisms/EntitySelector';
-import { renderIcon } from '../../utils/iconMapper';
+import { AppIcon } from '../ui/atoms/AppIcon';
 
 interface StateSettingsModalProps {
     isOpen: boolean;
@@ -52,7 +52,7 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
         title: i.name,
         description: i.hover || '',
         group: i.group || 'ungrouped',
-        icon: renderIcon(i.icon),
+        icon: <AppIcon id={i.icon} />,
         color: i.color
     }));
 

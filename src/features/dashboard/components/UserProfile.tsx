@@ -1,5 +1,4 @@
 import { useNavigate } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Card } from '../../../components/ui/atoms/Card';
 import { useAuth } from '../../../contexts/AuthContext';
 import { usePersonalityStore } from '../../../stores/personalityStore';
@@ -7,9 +6,9 @@ import { useRoleStore } from '../../../stores/team';
 import { useScoreContext } from '../../../contexts/ScoreContext';
 import { getTierColor } from '../../../utils/colorUtils';
 import { calculateLevel, scoreToXP } from '../../../utils/xpUtils';
-import { getMappedIcon } from '../../../utils/iconMapper';
 import { format } from 'date-fns';
 import { WeeklyFocus } from './WeeklyFocus';
+import { Avatar } from '../../../components/ui/atoms/Avatar';
 
 export function UserProfile() {
     const { user } = useAuth();
@@ -156,22 +155,15 @@ export function UserProfile() {
                         )}
 
                         {/* Avatar Container with Pulse */}
-                        <div
-                            className="w-[66px] h-[66px] rounded-full bg-bg-primary flex items-center justify-center text-sub text-2xl overflow-hidden relative shadow-sm border border-white/5 z-10 transition-transform duration-300 group-hover/avatar:scale-105"
+                        <Avatar
+                            src={displayAvatar}
+                            alt={displayName}
+                            fallbackIcon={displayIcon}
+                            className="w-[66px] h-[66px] rounded-full bg-bg-primary text-sub text-2xl z-10 transition-transform duration-300 group-hover/avatar:scale-105 border border-white/5"
                             style={{
                                 animation: displayAvatar ? 'avatar-pulse 5s ease-in-out infinite' : 'none'
                             }}
-                        >
-                            {displayAvatar ? (
-                                <img
-                                    src={displayAvatar}
-                                    alt={displayName}
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : (
-                                <FontAwesomeIcon icon={getMappedIcon(displayIcon)} />
-                            )}
-                        </div>
+                        />
                     </div>
 
                     {/* Details */}

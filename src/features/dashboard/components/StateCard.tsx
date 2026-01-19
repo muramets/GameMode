@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog, faHistory, faArrowUp, faArrowDown } from '@fortawesome/free-solid-svg-icons';
 import { OverflowTooltip } from '../../../components/ui/atoms/OverflowTooltip';
 import type { StateData } from '../types';
-import { renderIcon } from '../../../utils/iconMapper';
+import { AppIcon } from '../../../components/ui/atoms/AppIcon';
 import { getTierColor } from '../../../utils/colorUtils';
 import { calculateLevel, scoreToXP } from '../../../utils/xpUtils';
 
@@ -88,7 +88,7 @@ export function StateCard({
                             boxShadow: `0 0 15px color-mix(in srgb, ${state.color || '#ffffff'} 8%, transparent)` // Subtle glow to separate from background
                         }}
                     >
-                        {renderIcon(state.icon || '')}
+                        <AppIcon id={state.icon || 'question'} />
                     </div>
 
                     {/* Name & Subtext Container */}

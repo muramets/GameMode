@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronDown, faChevronRight, faCog, faCheck } from '@fortawesome/free-solid-svg-icons';
-import { getMappedIcon } from '../../../../utils/iconMapper';
+import { getIcon } from '../../../../config/iconRegistry';
 import type { TeamRole, RoleMember } from '../../../../types/team';
 import { MemberItem } from './MemberItem';
 
@@ -30,7 +30,7 @@ export const RoleItem = ({
 }: RoleItemProps) => {
     const [isArrowHovered, setIsArrowHovered] = useState(false);
 
-    const roleIconDef = getMappedIcon(role.icon || 'user');
+    const roleIconDef = getIcon(role.icon || 'user');
     const hasMembers = members.length > 0;
 
     return (

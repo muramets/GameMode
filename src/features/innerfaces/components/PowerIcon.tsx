@@ -1,4 +1,4 @@
-import { renderIcon } from '../../../utils/iconMapper';
+import { AppIcon } from '../../../components/ui/atoms/AppIcon';
 import type { PowerCategory } from '../types';
 
 interface PowerIconProps {
@@ -43,7 +43,7 @@ export function PowerIcon({
                 className="relative z-10 transition-colors duration-300"
                 style={{ color: color || '#ffffff' }}
             >
-                {renderIcon(icon)}
+                <AppIcon id={icon} />
             </div>
         </div>
     );

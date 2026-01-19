@@ -32,7 +32,7 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
     const [description, setDescription] = useState('');
     const [hover, setHover] = useState('');
     const [group, setGroup] = useState('');
-    const [icon, setIcon] = useState('🔹');
+    const [icon, setIcon] = useState('check');
     const [action, setAction] = useState<'+' | '-'>('+');
     const [xp, setXp] = useState('1');
     const [targets, setTargets] = useState<(string | number)[]>([]);
@@ -64,7 +64,7 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
             setDescription('');
             setHover('');
             setGroup('');
-            setIcon('🔹');
+            setIcon('check');
             setAction('+');
             setXp('1');
             setTargets([]);

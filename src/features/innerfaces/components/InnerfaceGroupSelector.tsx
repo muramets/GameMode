@@ -4,7 +4,7 @@ import { faChevronDown, faTimes, faPlus } from '@fortawesome/free-solid-svg-icon
 import * as Popover from '@radix-ui/react-popover';
 import { GroupDropdown } from '../../groups/components/GroupDropdown';
 import { Input } from '../../../components/ui/molecules/Input';
-import { getMappedIcon } from '../../../utils/iconMapper';
+import { getIcon } from '../../../config/iconRegistry';
 import { PRESET_COLORS } from '../../../constants/common';
 import { IconPicker } from '../../../components/ui/molecules/IconPicker';
 // Note: Innerfaces use `renderIcon(getGroupIcon(g))` logic differently than protocols in the original modal?
@@ -69,7 +69,7 @@ export function InnerfaceGroupSelector({
         if (iconStr === 'CONFIG' && GROUP_CONFIG[g]) {
             return <FontAwesomeIcon icon={GROUP_CONFIG[g].icon} className="text-sm" style={{ color: colorStr }} />;
         }
-        return <FontAwesomeIcon icon={getMappedIcon(iconStr) || faPlus} className="text-sm" style={{ color: colorStr }} />;
+        return <FontAwesomeIcon icon={getIcon(iconStr)} className="text-sm" style={{ color: colorStr }} />;
     };
 
 
@@ -210,7 +210,7 @@ export function InnerfaceGroupSelector({
                                             triggerContent={
                                                 tempGroupIcon ? (
                                                     <div className="flex items-center justify-center w-full h-full text-text-primary">
-                                                        <FontAwesomeIcon icon={getMappedIcon(tempGroupIcon) || faPlus} className="text-sm" />
+                                                        <FontAwesomeIcon icon={getIcon(tempGroupIcon)} className="text-sm" />
                                                     </div>
                                                 ) : (
                                                     <div className="flex items-center justify-center w-full h-full text-text-primary">

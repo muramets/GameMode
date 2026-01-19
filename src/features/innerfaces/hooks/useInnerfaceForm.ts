@@ -38,7 +38,7 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
     const [group, setGroup] = useState('');
     const [initialScore, setInitialScore] = useState('0');
     const [color, setColor] = useState('var(--main-color)');
-    const [icon, setIcon] = useState('brain');
+    const [icon, setIcon] = useState('bullseye');
     const [hover, setHover] = useState('');
     const [protocolIds, setProtocolIds] = useState<string[]>([]);
     const [category, setCategory] = useState<PowerCategory>(null);
@@ -69,7 +69,7 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
                 setGroup(currentInnerface.group || '');
                 setInitialScore((currentInnerface.initialScore || 0).toString());
                 setColor(currentInnerface.color || 'var(--main-color)');
-                setIcon(currentInnerface.icon || 'brain');
+                setIcon(currentInnerface.icon || 'bullseye');
                 setHover(currentInnerface.hover || '');
 
                 // Bidirectional Protocol Sync Logic
@@ -87,7 +87,7 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
                 setGroup('');
                 setInitialScore('0');
                 setColor('var(--main-color)');
-                setIcon('brain');
+                setIcon('bullseye');
                 setHover('');
                 setProtocolIds([]);
                 setCategory(null);

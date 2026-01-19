@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { GROUP_CONFIG } from '../../../constants/common';
-import { renderIcon } from '../../../utils/iconMapper';
+import { AppIcon } from '../../../components/ui/atoms/AppIcon';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faFilter,
@@ -276,7 +276,7 @@ export function HistoryFilter({
                                     title={group.toLowerCase()}
                                     icon={
                                         meta?.icon ? (
-                                            <div style={{ color: color }}>{renderIcon(meta.icon)}</div>
+                                            <div style={{ color: color }}><AppIcon id={meta.icon} /></div>
                                         ) : (
                                             config ? <FontAwesomeIcon icon={config.icon} /> : <div className="w-1.5 h-1.5 rounded-full bg-sub/50" />
                                         )
@@ -311,7 +311,7 @@ export function HistoryFilter({
                                     label={p.title}
                                     isActive={isSelected}
                                     onClick={() => toggleProtocol(p.id.toString())}
-                                    icon={renderIcon(p.icon)}
+                                    icon={<AppIcon id={p.icon} />}
                                     showIndicator={true}
                                     showCheck={false}
                                     style={p.color ? { '--hover-color': p.color } as React.CSSProperties : undefined}
@@ -354,7 +354,7 @@ export function HistoryFilter({
                                     title={group.toLowerCase()}
                                     icon={
                                         meta?.icon ? (
-                                            <div style={{ color: color }}>{renderIcon(meta.icon)}</div>
+                                            <div style={{ color: color }}><AppIcon id={meta.icon} /></div>
                                         ) : (
                                             config ? <FontAwesomeIcon icon={config.icon} /> : <div className="w-1.5 h-1.5 rounded-full bg-sub/50" />
                                         )
@@ -389,7 +389,7 @@ export function HistoryFilter({
                                     label={i.name.split('.')[0]}
                                     isActive={isSelected}
                                     onClick={() => toggleInnerface(i.id.toString())}
-                                    icon={renderIcon(i.icon)}
+                                    icon={<AppIcon id={i.icon} />}
                                     showIndicator={true}
                                     showCheck={false}
                                 />
@@ -430,7 +430,7 @@ export function HistoryFilter({
                                         label={s.name}
                                         isActive={isSelected}
                                         onClick={() => toggleState(s.id)}
-                                        icon={renderIcon(s.icon || '')}
+                                        icon={<AppIcon id={s.icon || 'question'} />}
                                         showIndicator={false}
                                         showCheck={true}
                                         style={s.color ? { '--hover-color': s.color } as React.CSSProperties : undefined}

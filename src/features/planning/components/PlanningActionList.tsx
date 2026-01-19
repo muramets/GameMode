@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import type { Protocol } from '../../protocols/types';
-import { renderIcon } from '../../../utils/iconMapper';
+import { AppIcon } from '../../../components/ui/atoms/AppIcon';
 
 interface PlanningActionListProps {
     linkedProtocols: Protocol[];
@@ -116,7 +116,7 @@ export function PlanningActionList({
                                         className="relative w-full h-full rounded-lg flex items-center justify-center bg-black/30"
                                         style={{ color: isNeeded ? iconColor : 'var(--sub-color)' }}
                                     >
-                                        {renderIcon(p.icon)}
+                                        <AppIcon id={p.icon} />
                                     </div>
                                 </div>
                                 <div className="flex flex-col min-w-0">
