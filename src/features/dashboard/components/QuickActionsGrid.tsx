@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import type { Protocol } from '../../protocols/types';
@@ -16,6 +17,7 @@ import { SortableQuickActionCard } from './SortableQuickActionCard';
 import { QuickActionCard } from './QuickActionCard';
 import { useMetadataStore } from '../../../stores/metadataStore';
 import { useSortableList } from '../../../hooks/useSortableList';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../../components/ui/atoms/Tooltip';
 
 interface QuickActionsGridProps {
     actions: Protocol[];
@@ -24,6 +26,7 @@ interface QuickActionsGridProps {
     onActionClick?: (id: string | number, direction: '+' | '-') => void;
     onDeleteAction?: (id: string | number) => void;
     isDisabled?: boolean;
+    isModalOpen?: boolean;
 }
 
 export function QuickActionsGrid({
@@ -32,10 +35,12 @@ export function QuickActionsGrid({
     onAddAction,
     onActionClick,
     onDeleteAction,
-    isDisabled
+    isDisabled,
+    isModalOpen = false
 }: QuickActionsGridProps) {
     const { reorderQuickActions } = useMetadataStore();
     const navigate = useNavigate();
+    const [localOpen, setLocalOpen] = useState(false);
 
     const { sensors, activeId, handleDragStart, handleDragEnd } = useSortableList({
         items: actions,
@@ -46,16 +51,30 @@ export function QuickActionsGrid({
         <CollapsibleSection
             title="Quick Actions"
             trailing={
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onAddAction?.();
-                    }}
-                    title="Add protocol to quick actions"
-                    className="w-8 h-8 flex items-center justify-center rounded-lg text-sub hover:text-text-primary transition-colors duration-200"
-                >
-                    <FontAwesomeIcon icon={faPlus} className="text-sm" />
-                </button>
+                <TooltipProvider delayDuration={1000}>
+                    <Tooltip
+                        open={isModalOpen ? false : localOpen}
+                        onOpenChange={setLocalOpen}
+                    >
+                        <TooltipTrigger asChild>
+                            <button
+                                onClick={(e) => {
+                                    setLocalOpen(false);
+                                    e.stopPropagation();
+                                    onAddAction?.();
+                                }}
+                                className="w-8 h-8 flex items-center justify-center rounded-lg text-sub hover:text-text-primary transition-colors duration-200"
+                            >
+                                <FontAwesomeIcon icon={faPlus} className="text-sm" />
+                            </button>
+                        </TooltipTrigger>
+                        {!isModalOpen && (
+                            <TooltipContent side="top">
+                                <span className="font-mono text-xs">Add quick action</span>
+                            </TooltipContent>
+                        )}
+                    </Tooltip>
+                </TooltipProvider>
             }
         >
             <DndContext

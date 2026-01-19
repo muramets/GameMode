@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import type { StateData } from '../types';
 import { Plus } from 'lucide-react';
 import { CollapsibleSection } from '../../../components/ui/molecules/CollapsibleSection';
@@ -23,11 +24,13 @@ interface StatesGridProps {
     onEdit?: (id: string) => void;
     onHistory?: (id: string) => void;
     hasProtocols?: boolean;
+    isModalOpen?: boolean;
 }
 
-export function StatesGrid({ states, onAddState, onEdit, onHistory, hasProtocols = false }: StatesGridProps) {
+export function StatesGrid({ states, onAddState, onEdit, onHistory, hasProtocols = false, isModalOpen = false }: StatesGridProps) {
     const { reorderStates } = useMetadataStore();
     const navigate = useNavigate();
+    const [localOpen, setLocalOpen] = useState(false);
 
     const { sensors, activeId, handleDragStart, handleDragEnd } = useSortableList({
         items: states,
@@ -38,11 +41,15 @@ export function StatesGrid({ states, onAddState, onEdit, onHistory, hasProtocols
         <CollapsibleSection
             title="Dimensions"
             trailing={
-                <TooltipProvider delayDuration={300}>
-                    <Tooltip>
+                <TooltipProvider delayDuration={1000}>
+                    <Tooltip
+                        open={isModalOpen ? false : localOpen}
+                        onOpenChange={setLocalOpen}
+                    >
                         <TooltipTrigger asChild>
                             <button
                                 onClick={(e) => {
+                                    setLocalOpen(false);
                                     e.stopPropagation();
                                     onAddState?.();
                                 }}
@@ -51,9 +58,11 @@ export function StatesGrid({ states, onAddState, onEdit, onHistory, hasProtocols
                                 <Plus className="w-5 h-5" />
                             </button>
                         </TooltipTrigger>
-                        <TooltipContent side="top">
-                            <span className="font-mono text-xs">Add new dimension</span>
-                        </TooltipContent>
+                        {!isModalOpen && (
+                            <TooltipContent side="top">
+                                <span className="font-mono text-xs">Add new dimension</span>
+                            </TooltipContent>
+                        )}
                     </Tooltip>
                 </TooltipProvider>
             }

@@ -142,6 +142,7 @@ export function InnerfacesList() {
     const [selectedInnerfaceId, setSelectedInnerfaceId] = useState<string | number | null>(null);
     const [isGroupSettingsOpen, setIsGroupSettingsOpen] = useState(false);
     const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+    const [localOpen, setLocalOpen] = useState(false);
 
     const handleCreate = useCallback(() => {
         setIsModalOpen(true);
@@ -219,19 +220,27 @@ export function InnerfacesList() {
                 <div className="flex items-center gap-2 w-full md:w-auto">
                     {!isCoachMode && (
                         <div className="flex items-center gap-0">
-                            <TooltipProvider delayDuration={300}>
-                                <Tooltip>
+                            <TooltipProvider delayDuration={1000}>
+                                <Tooltip
+                                    open={isModalOpen ? false : localOpen}
+                                    onOpenChange={setLocalOpen}
+                                >
                                     <TooltipTrigger asChild>
                                         <button
-                                            onClick={handleCreate}
+                                            onClick={() => {
+                                                setLocalOpen(false);
+                                                handleCreate();
+                                            }}
                                             className="h-[46px] w-[36px] flex items-center justify-center rounded-lg text-sub hover:text-main transition-all cursor-pointer"
                                         >
                                             <FontAwesomeIcon icon={faPlus} className="text-xl" />
                                         </button>
                                     </TooltipTrigger>
-                                    <TooltipContent side="top">
-                                        <span className="font-mono text-xs">Add Innerface</span>
-                                    </TooltipContent>
+                                    {!isModalOpen && (
+                                        <TooltipContent side="top">
+                                            <span className="font-mono text-xs">Add power</span>
+                                        </TooltipContent>
+                                    )}
                                 </Tooltip>
                             </TooltipProvider>
 

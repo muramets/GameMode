@@ -156,6 +156,7 @@ export function ProtocolsList() {
                         protocolGroups={protocolGroups as string[]}
                         onToggleFilter={toggleFilter}
                         shouldShowSearch={shouldShowSearch}
+                        isModalOpen={isModalOpen}
                     />
                 </div>
 

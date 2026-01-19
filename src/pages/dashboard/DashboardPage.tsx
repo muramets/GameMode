@@ -70,6 +70,7 @@ export function Dashboard() {
                 onEdit={handleEditState}
                 onHistory={handleViewHistory}
                 hasProtocols={protocols.length > 0}
+                isModalOpen={isStateModalOpen}
             />
 
             <QuickActionsGrid
@@ -79,6 +80,7 @@ export function Dashboard() {
                 onActionClick={handleQuickActionClick}
                 onDeleteAction={handleUnpinAction}
                 isDisabled={activeContext?.type === 'role' || activeContext?.type === 'viewer'}
+                isModalOpen={isQuickActionModalOpen}
             />
 
             <AddQuickActionModal

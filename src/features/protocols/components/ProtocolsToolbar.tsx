@@ -1,5 +1,6 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faSearch } from '@fortawesome/free-solid-svg-icons';
+import { useState } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../../components/ui/atoms/Tooltip';
 import { Input } from '../../../components/ui/molecules/Input';
 import { ProtocolsFilterDropdown } from './ProtocolsFilterDropdown';
@@ -12,6 +13,7 @@ interface ProtocolsToolbarProps {
     protocolGroups: string[];
     onToggleFilter: (filter: string) => void;
     shouldShowSearch?: boolean;
+    isModalOpen?: boolean;
 }
 
 /**
@@ -34,24 +36,35 @@ export function ProtocolsToolbar({
     protocolGroups,
     onToggleFilter,
     shouldShowSearch = true,
+    isModalOpen = false,
 }: ProtocolsToolbarProps) {
+    const [localOpen, setLocalOpen] = useState(false);
+
     return (
         <div className="flex items-center gap-2 w-full md:w-auto">
             <div className="flex items-center gap-0">
                 {/* Кнопка "Add Protocol" с tooltip */}
-                <TooltipProvider delayDuration={300}>
-                    <Tooltip>
+                <TooltipProvider delayDuration={1000}>
+                    <Tooltip
+                        open={isModalOpen ? false : localOpen}
+                        onOpenChange={setLocalOpen}
+                    >
                         <TooltipTrigger asChild>
                             <button
-                                onClick={onAddProtocol}
+                                onClick={() => {
+                                    setLocalOpen(false);
+                                    onAddProtocol();
+                                }}
                                 className="h-[46px] w-[36px] flex items-center justify-center rounded-lg text-sub hover:text-main transition-all cursor-pointer"
                             >
                                 <FontAwesomeIcon icon={faPlus} className="text-xl" />
                             </button>
                         </TooltipTrigger>
-                        <TooltipContent side="top">
-                            <span className="font-mono text-xs">Add Action</span>
-                        </TooltipContent>
+                        {!isModalOpen && (
+                            <TooltipContent side="top">
+                                <span className="font-mono text-xs">Add Action</span>
+                            </TooltipContent>
+                        )}
                     </Tooltip>
                 </TooltipProvider>
 
