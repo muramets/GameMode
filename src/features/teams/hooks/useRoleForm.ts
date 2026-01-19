@@ -89,7 +89,7 @@ export function useRoleForm({ teamId, roleId, onClose, isOpen }: UseRoleFormProp
         setName(role.name);
         setDescription(role.description || '');
         setIcon(role.icon || 'user');
-        setColor(role.themeColor || '#e2b714');
+        setColor(role.iconColor || '#e2b714');
 
         // Check Invite
         if (role.activeInviteCode) {
@@ -222,7 +222,7 @@ export function useRoleForm({ teamId, roleId, onClose, isOpen }: UseRoleFormProp
                 name: name.trim(),
                 description: description.trim(),
                 icon,
-                themeColor: color,
+                iconColor: color,
                 templateData: template
             };
 
@@ -279,11 +279,11 @@ export function useRoleForm({ teamId, roleId, onClose, isOpen }: UseRoleFormProp
     const sourceContext = useMemo(() => {
         if (!activePersonalityId) return null;
         const p = personalities.find(p => p.id === activePersonalityId);
-        if (p) return { name: p.name, icon: p.icon, color: p.themeColor };
+        if (p) return { name: p.name, icon: p.icon, color: p.iconColor };
         if (activeContext?.type === 'role') {
             const allRoles = Object.values(roles).flat();
             const r = allRoles.find(r => r.id === activeContext.roleId);
-            return r ? { name: r.name, icon: r.icon, color: r.themeColor } : { name: 'Active Role', icon: 'user', color: 'var(--text-secondary)' };
+            return r ? { name: r.name, icon: r.icon, color: r.iconColor } : { name: 'Active Role', icon: 'user', color: 'var(--text-secondary)' };
         }
         return null;
     }, [activePersonalityId, personalities, activeContext, roles]);

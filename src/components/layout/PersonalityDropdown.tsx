@@ -19,7 +19,7 @@ export function PersonalityDropdown() {
     const [editingPersonalityId, setEditingPersonalityId] = useState<string | null>(null);
 
     // Determine Active Display Item
-    let activeItem: { name: string; icon?: string; themeColor?: string } | null | undefined = personalities.find(p => p.id === activePersonalityId);
+    let activeItem: { name: string; icon?: string; iconColor?: string } | null | undefined = personalities.find(p => p.id === activePersonalityId);
     let isDesignMode = false;
     let isViewerMode = false;
 
@@ -166,9 +166,9 @@ export function PersonalityDropdown() {
                                 >
                                     {/* Icon */}
                                     <div
-                                        className={`w-[1em] h-[1em] flex items-center justify-center shrink-0 transition-colors opacity-80 group-hover/item:opacity-100 group-hover/item:!text-[var(--bg-color)] ${!p.themeColor ? 'group-hover/item:text-inherit' : ''}`}
+                                        className={`w-[1em] h-[1em] flex items-center justify-center shrink-0 transition-colors opacity-80 group-hover/item:opacity-100 group-hover/item:!text-[var(--bg-color)] ${!p.iconColor ? 'group-hover/item:text-inherit' : ''}`}
                                         style={{
-                                            color: p.themeColor || 'inherit',
+                                            color: p.iconColor || 'inherit',
                                             marginLeft: '0.9em',
                                             marginRight: '0.7em'
                                         }}

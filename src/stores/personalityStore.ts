@@ -263,7 +263,7 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
                 id: defaultId,
                 name: 'Main',
                 description: 'My primary self',
-                themeColor: '#e2b714', // Serika gold/yellow
+                iconColor: '#e2b714', // Serika gold/yellow
                 createdAt: Date.now(),
                 lastActiveAt: Date.now()
             });

@@ -44,7 +44,7 @@ export function usePersonalityForm({ personalityId, onClose, isOpen }: UsePerson
                     setName(p.name);
                     setDescription(p.description || '');
                     setIcon(p.icon || 'user');
-                    setColor(p.themeColor || '#e2b714');
+                    setColor(p.iconColor || '#e2b714');
                     setAvatar(p.avatar || '');
                 }
             } else {
@@ -72,7 +72,7 @@ export function usePersonalityForm({ personalityId, onClose, isOpen }: UsePerson
             name,
             description,
             icon,
-            themeColor: color,
+            iconColor: color,
             avatar
         };
 

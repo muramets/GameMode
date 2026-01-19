@@ -70,10 +70,10 @@ export function useJoinInviteLogic() {
                 const data = {
                     teamName: info.team.name,
                     teamIcon: info.team.icon,
-                    teamColor: info.team.themeColor,
+                    teamColor: info.team.iconColor,
                     roleName: info.role.name,
                     roleIcon: info.role.icon,
-                    roleColor: info.role.themeColor,
+                    roleColor: info.role.iconColor,
                     roleDescription: info.role.description,
                     teamId: info.team.id
                 };

@@ -64,9 +64,9 @@ export const RoleItem = ({
                 >
                     {/* Role Icon */}
                     <div
-                        className={`w-[1em] h-[1em] flex items-center justify-center shrink-0 opacity-70 group-hover/role:opacity-100 ${role.themeColor ? 'group-hover/role:!text-inherit' : ''}`}
+                        className={`w-[1em] h-[1em] flex items-center justify-center shrink-0 opacity-70 group-hover/role:opacity-100 ${role.iconColor ? 'group-hover/role:!text-inherit' : ''}`}
                         style={{
-                            color: role.themeColor || 'inherit',
+                            color: role.iconColor || 'inherit',
                             marginRight: '0.7em'
                         }}
                     >

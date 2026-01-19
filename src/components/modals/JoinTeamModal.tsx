@@ -92,10 +92,10 @@ export function JoinTeamModal({ isOpen, onClose }: JoinTeamModalProps) {
             setPreviewData({
                 teamName: info.team.name,
                 teamIcon: info.team.icon,
-                teamColor: info.team.themeColor,
+                teamColor: info.team.iconColor,
                 roleName: info.role.name,
                 roleIcon: info.role.icon,
-                roleColor: info.role.themeColor
+                roleColor: info.role.iconColor
             });
         } catch {
             setError('Failed to validate invite code');

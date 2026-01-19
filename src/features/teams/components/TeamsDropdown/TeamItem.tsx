@@ -72,7 +72,7 @@ export const TeamItem = ({
                 <div
                     className="w-[1em] h-[1em] flex items-center justify-center shrink-0 transition-colors opacity-80 group-hover/item:opacity-100"
                     style={{
-                        color: team.themeColor || 'inherit',
+                        color: team.iconColor || 'inherit',
                         marginRight: '0.7em'
                     }}
                 >

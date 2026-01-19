@@ -23,7 +23,7 @@ export interface Team {
     name: string;
     description?: string;
     icon?: string;
-    themeColor?: string;
+    iconColor?: string;
     ownerId: string;          // uid of the creator/admin
     memberUids: string[];     // uids of all members (for queries)
     createdAt: number;
@@ -40,7 +40,7 @@ export interface TeamRole {
     name: string;
     description?: string;
     icon?: string;
-    themeColor?: string;
+    iconColor?: string;
     currentTheme?: string; // Active theme name (e.g. 'serika_dark')
     favThemes?: string[];  // Favorite theme names
     createdAt: number;

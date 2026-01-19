@@ -167,9 +167,12 @@ export const useInviteStore = create<InviteState>((set) => ({
                 name: role.name,
                 description: role.description,
                 icon: role.icon,
-                themeColor: role.themeColor,
+                iconColor: role.iconColor,
                 createdAt: Date.now(),
-                lastActiveAt: Date.now()
+                lastActiveAt: Date.now(),
+                // Store origin metadata directly on the personality
+                sourceTeamId: invite.teamId,
+                sourceRoleId: invite.roleId
             };
 
             const batch = writeBatch(db);

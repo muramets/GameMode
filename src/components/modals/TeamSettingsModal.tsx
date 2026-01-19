@@ -50,7 +50,7 @@ export function TeamSettingsModal({ isOpen, onClose, teamId }: TeamSettingsModal
             setName(team.name);
             setDescription(team.description || '');
             setIcon(team.icon || 'users');
-            setColor(team.themeColor || '#e2b714');
+            setColor(team.iconColor || '#e2b714');
         } else if (isOpen && !teamId) {
             // Create mode
             setName('');
@@ -71,7 +71,7 @@ export function TeamSettingsModal({ isOpen, onClose, teamId }: TeamSettingsModal
                 name: name.trim(),
                 description: description.trim() || undefined,
                 icon,
-                themeColor: color
+                iconColor: color
             };
 
             if (teamId) {
