@@ -280,7 +280,7 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
                 const data = userDoc.data();
                 if (data.teamMemberships && Object.keys(data.teamMemberships).length > 0) {
                     // Start fresh load to catch the new personality
-                    await loadPersonalities(uid);
+                    await get().loadPersonalities(uid);
                     const freshList = get().personalities;
                     if (freshList.length > 0) {
                         await switchPersonality(uid, freshList[0].id);
@@ -320,7 +320,7 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
             await batch.commit();
 
             // reload to get the new state
-            await loadPersonalities(uid);
+            await get().loadPersonalities(uid);
             await switchPersonality(uid, defaultId);
             return defaultId;
         }

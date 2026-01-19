@@ -53,7 +53,8 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
     const [category, setCategory] = useState<PowerCategory>(null);
 
     // UI/Flow State
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    // UI/Flow State
+    // const [isSubmitting, setIsSubmitting] = useState(false); // Optimistic close removes need for loading state
 
 
     // Group Dropdown State
@@ -111,7 +112,12 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
         if (e) e.preventDefault();
         if (!name.trim()) return;
 
-        setIsSubmitting(true);
+        // ✨ Instant close
+        onClose();
+
+        // No need for loading state since we closed
+        // setIsSubmitting(true); 
+
         try {
             const innerfaceData = {
                 name,
@@ -160,11 +166,11 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
                 await Promise.all(protocolUpdates);
             }
 
-            onClose();
         } catch (error) {
             console.error('Failed to save innerface:', error);
+            showToast('Failed to save power', 'error'); // Ensure user gets feedback
         } finally {
-            setIsSubmitting(false);
+            // setIsSubmitting(false);
         }
     };
 
@@ -217,7 +223,7 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
             category, setCategory
         },
         uiState: {
-            isSubmitting,
+            // isSubmitting,
 
             isGroupDropdownOpen, setIsGroupDropdownOpen,
             isCoachMode

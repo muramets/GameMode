@@ -25,9 +25,9 @@ const InputLabel = ({ label }: { label: string }) => (
 );
 
 export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolSettingsModalProps) {
+    // Custom hook to manage the form state and logic for creating/editing protocols
     const {
         formState,
-        uiState,
         availableGroups,
         innerfaces,
         groupsMetadata,
@@ -47,7 +47,7 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
         color, setColor
     } = formState;
 
-    const { isSubmitting } = uiState;
+    // const { isSubmitting } = uiState;
 
 
 
@@ -87,7 +87,6 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                     {protocolId ? (
                         <ConfirmButton
                             onConfirm={handleDelete}
-                            disabled={isSubmitting}
                         />
                     ) : <div />}
 
@@ -97,7 +96,6 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                             variant="neutral"
                             size="sm"
                             onClick={onClose}
-                            disabled={isSubmitting}
                             className="text-[10px] uppercase tracking-wider font-bold px-4 py-2"
                         >
                             Cancel
@@ -106,7 +104,6 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                             type="submit"
                             variant="primary"
                             size="sm"
-                            isLoading={isSubmitting}
                             className="font-bold px-6 py-2 rounded-lg text-[10px] uppercase tracking-wider shadow-[0_0_10px_rgba(226,183,20,0.2)]"
                         >
                             {protocolId ? 'Update' : 'Create'}

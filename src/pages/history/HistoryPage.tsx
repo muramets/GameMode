@@ -185,7 +185,7 @@ export default function HistoryPage() {
 
             // Effect filter (Client Side Only)
             if (effectFilter !== 'All effects') {
-                const isPositive = event.action === '+';
+                const isPositive = event.weight > 0;
                 if (effectFilter === 'Positive' && !isPositive) return false;
                 if (effectFilter === 'Negative' && isPositive) return false;
             }
@@ -202,14 +202,12 @@ export default function HistoryPage() {
                 // ... (Logic for states requires matching either protocol set OR innerface set)
                 // This is hard to fully server-side without Denormalization.
                 const relatedStates = states.filter(s => selectedStateIds.includes(s.id));
-                const validProtocolIds = relatedStates.flatMap(s => s.protocolIds || []).map(String);
                 const validInnerfaceIds = relatedStates.flatMap(s => s.innerfaceIds || []).map(String);
 
-                const matchesProtocol = validProtocolIds.includes(event.protocolId.toString());
                 const eventInnerfaces = Object.keys(event.changes || {});
                 const matchesInnerface = eventInnerfaces.some(id => validInnerfaceIds.includes(id));
 
-                if (!matchesProtocol && !matchesInnerface) return false;
+                if (!matchesInnerface) return false;
             }
 
             return true;

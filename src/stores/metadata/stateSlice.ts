@@ -3,6 +3,7 @@ import { db } from '../../config/firebase';
 import { collection, doc, addDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { useUIStore } from '../uiStore';
 import type { MetadataState, PathContext } from './types';
+import { useHistoryStore } from '../historyStore';
 
 // Helpers
 const showErrorToast = (message: string) => useUIStore.getState().showToast(message, 'error');
@@ -32,7 +33,18 @@ export const createStateSlice = (
             const context = get().context;
             guardAgainstViewerMode(context);
             const colRef = collection(db, `${getPathRoot(context)}/states`);
-            await addDoc(colRef, data);
+            const docRef = await addDoc(colRef, data);
+
+            // Log System Events for initial Innerfaces
+            if (data.innerfaceIds && data.innerfaceIds.length > 0 && context && context.type === 'personality') {
+                data.innerfaceIds.forEach(ifaceId => {
+                    const ifaceIdStr = ifaceId.toString();
+                    const iface = get().innerfaces.find(i => i.id.toString() === ifaceIdStr);
+                    const name = iface ? iface.name : 'Unknown Power';
+                    const { uid, pid } = context;
+                    useHistoryStore.getState().addSystemEvent(uid, pid, `Added Power "${name}" to Dimension "${data.name}"`, { stateId: docRef.id, innerfaceId: ifaceIdStr, type: 'linkState' });
+                });
+            }
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
             showErrorToast(message);
@@ -44,6 +56,38 @@ export const createStateSlice = (
             const context = get().context;
             guardAgainstViewerMode(context);
             const docRef = doc(db, `${getPathRoot(context)}/states/${id}`);
+
+            // Detect changes for History logging (System Events)
+            const currentState = get().states.find(s => s.id === id);
+            if (currentState && data.innerfaceIds && context && context.type === 'personality') {
+                const oldIds = new Set(currentState.innerfaceIds || []);
+                const newIds = new Set(data.innerfaceIds);
+
+                // Find added
+                data.innerfaceIds.forEach(ifaceId => {
+                    const ifaceIdStr = ifaceId.toString();
+                    if (!oldIds.has(ifaceIdStr) && !oldIds.has(Number(ifaceIdStr))) { // Handle mixed string/number types
+                        const iface = get().innerfaces.find(i => i.id.toString() === ifaceIdStr);
+                        const name = iface ? iface.name : 'Unknown Power';
+                        const { uid, pid } = context;
+                        useHistoryStore.getState().addSystemEvent(uid, pid, `Added Power "${name}" to Dimension "${currentState.name}"`, { stateId: id, innerfaceId: ifaceIdStr, type: 'linkState' });
+                    }
+                });
+
+                // Find removed
+                if (currentState.innerfaceIds) {
+                    currentState.innerfaceIds.forEach(ifaceId => {
+                        const ifaceIdStr = ifaceId.toString();
+                        if (!newIds.has(ifaceIdStr) && !newIds.has(Number(ifaceIdStr))) {
+                            const iface = get().innerfaces.find(i => i.id.toString() === ifaceIdStr);
+                            const name = iface ? iface.name : 'Unknown Power';
+                            const { uid, pid } = context;
+                            useHistoryStore.getState().addSystemEvent(uid, pid, `Removed Power "${name}" from Dimension "${currentState.name}"`, { stateId: id, innerfaceId: ifaceIdStr, type: 'unlinkState' });
+                        }
+                    });
+                }
+            }
+
             await updateDoc(docRef, data);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';

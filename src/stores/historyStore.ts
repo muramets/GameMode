@@ -9,7 +9,8 @@ import {
     orderBy,
     Timestamp,
     runTransaction,
-    where
+    where,
+    DocumentReference
 } from 'firebase/firestore';
 import { format } from 'date-fns';
 import type { HistoryRecord } from '../types/history';
@@ -59,7 +60,7 @@ export const useHistoryStore = create<HistoryState>((set) => ({
                 const personalityDoc = await transaction.get(personalityRef);
 
                 // READ: Innerfaces
-                const innerfaceUpdates: { ref: any, currentScore: number, weight: number }[] = [];
+                const innerfaceUpdates: { ref: DocumentReference, currentScore: number, weight: number }[] = [];
                 if (record.changes) {
                     for (const [innerfaceId, weight] of Object.entries(record.changes)) {
                         const innerfaceRef = doc(db, 'users', uid, 'personalities', pid, 'innerfaces', innerfaceId);

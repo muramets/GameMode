@@ -39,7 +39,6 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
     } = formState;
 
     const {
-        isSubmitting,
         isConfirmingDelete
     } = uiState;
 
@@ -75,7 +74,6 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
                             variant="danger"
                             size="sm"
                             onClick={handleDelete}
-                            disabled={isSubmitting}
                             leftIcon={<FontAwesomeIcon icon={isConfirmingDelete ? faExclamationTriangle : faTrash} />}
                             className="text-[10px] uppercase tracking-wider font-bold px-3 py-2 transition-all duration-200"
                         >
@@ -89,7 +87,6 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
                             variant="neutral"
                             size="sm"
                             onClick={onClose}
-                            disabled={isSubmitting}
                             className="text-[10px] uppercase tracking-wider font-bold px-4 py-2"
                         >
                             Cancel
@@ -98,7 +95,6 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
                             type="submit"
                             variant="primary"
                             size="sm"
-                            isLoading={isSubmitting}
                             className="font-bold px-6 py-2 rounded-lg text-[10px] uppercase tracking-wider shadow-[0_0_10px_rgba(202,71,84,0.2)]"
                         >
                             {stateId ? 'Update' : 'Create'}

@@ -39,8 +39,7 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
     const [color, setColor] = useState('#e2b714');
 
     // UI State
-
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    // const [isSubmitting, setIsSubmitting] = useState(false); // Removed for Optimistic Close pattern (modal closes instantly)
 
     // Initialize Form
     useEffect(() => {
@@ -76,11 +75,10 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
         e.preventDefault();
         if (!user || !activePersonalityId) return;
 
-        setIsSubmitting(true);
-        try {
-            // SSOT: Relationships are managed primarily in the Protocol document (targets array).
-            // No manual synchronization with Innerface documents is required here.
+        // ✨ Instant close
+        onClose();
 
+        try {
             const data = {
                 title,
                 description,
@@ -97,11 +95,11 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
             } else {
                 await addProtocol(data);
             }
-            onClose();
         } catch (error) {
             console.error('Failed to save protocol:', error);
+            showToast('Failed to save action', 'error');
         } finally {
-            setIsSubmitting(false);
+            // setIsSubmitting(false);
         }
     };
 
@@ -154,7 +152,7 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
             color, setColor
         },
         uiState: {
-            isSubmitting
+            // isSubmitting: false // Pattern: Optimistic Close (handled in handleSubmit)
         },
         // Data
         availableGroups,

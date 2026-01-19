@@ -25,7 +25,7 @@ export function useStateForm({ stateId, onClose, isOpen }: UseStateFormProps) {
     const [innerfaceIds, setInnerfaceIds] = useState<(string | number)[]>([]);
 
     // UI State
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    // const [isSubmitting, setIsSubmitting] = useState(false); // Removed for Optimistic Close pattern (modal closes instantly)
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
     // Load/Reset Effect
@@ -55,7 +55,9 @@ export function useStateForm({ stateId, onClose, isOpen }: UseStateFormProps) {
         if (e) e.preventDefault();
         if (!user || !activePersonalityId || !name.trim()) return;
 
-        setIsSubmitting(true);
+        // ✨ Instant close
+        onClose();
+
         try {
             const data = {
                 name,
@@ -70,11 +72,11 @@ export function useStateForm({ stateId, onClose, isOpen }: UseStateFormProps) {
             } else {
                 await addState(data);
             }
-            onClose();
         } catch (error) {
             console.error('Failed to save state:', error);
+            showToast('Failed to save dimension', 'error');
         } finally {
-            setIsSubmitting(false);
+            // setIsSubmitting(false);
         }
     };
 
@@ -134,7 +136,7 @@ export function useStateForm({ stateId, onClose, isOpen }: UseStateFormProps) {
             innerfaceIds
         },
         uiState: {
-            isSubmitting,
+            // isSubmitting: false, // Pattern: Optimistic Close (handled in handleSubmit)
             isConfirmingDelete
         },
         data: {

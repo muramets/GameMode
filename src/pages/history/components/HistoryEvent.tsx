@@ -1,6 +1,6 @@
 import { format, parseISO } from 'date-fns';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faClock, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faClock, faTrash, faGear } from '@fortawesome/free-solid-svg-icons';
 import { AppIcon } from '../../../components/ui/atoms/AppIcon';
 import type { HistoryRecord } from '../../../types/history';
 import type { Innerface } from '../../../features/innerfaces/types';
@@ -66,7 +66,11 @@ export function HistoryEvent({ event, innerfaces, protocolColor, onDelete, onFil
                     className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"
                     style={{ backgroundColor: effectiveColor }}
                 />
-                <AppIcon id={event.protocolIcon} />
+                {isSystem ? (
+                    <FontAwesomeIcon icon={faGear} />
+                ) : (
+                    <AppIcon id={event.protocolIcon} />
+                )}
             </div>
 
             {/* Main Content Area */}

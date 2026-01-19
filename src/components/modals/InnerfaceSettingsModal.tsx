@@ -44,8 +44,6 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
     } = formState;
 
     const {
-        isSubmitting,
-
         isCoachMode
     } = uiState;
 
@@ -77,7 +75,6 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                     {innerfaceId && !isCoachMode ? (
                         <ConfirmButton
                             onConfirm={handleDelete}
-                            disabled={isSubmitting}
                         />
                     ) : <div />}
 
@@ -87,7 +84,6 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                             variant="neutral"
                             size="sm"
                             onClick={onClose}
-                            disabled={isSubmitting}
                             className="text-[10px] uppercase tracking-wider font-bold px-4 py-2"
                         >
                             Cancel
@@ -96,7 +92,6 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                             type="submit"
                             variant="primary"
                             size="sm"
-                            isLoading={isSubmitting}
                             className="font-bold px-6 py-2 rounded-lg text-[10px] uppercase tracking-wider shadow-[0_0_10px_rgba(226,183,20,0.2)]"
                         >
                             {innerfaceId ? 'Update' : 'Create'}
