@@ -41,6 +41,8 @@ export interface TeamRole {
     description?: string;
     icon?: string;
     themeColor?: string;
+    currentTheme?: string; // Active theme name (e.g. 'serika_dark')
+    favThemes?: string[];  // Favorite theme names
     createdAt: number;
     activeInviteCode?: string; // Cache persistent invite link
     templateData: RoleTemplate;

@@ -6,6 +6,8 @@ export interface Personality {
     avatar?: string; // Emoji or URL
     icon?: string; // FontAwesome icon code (e.g. 'fa-user', 'user')
     themeColor?: string; // Hex code for accent
+    currentTheme?: string; // Name of the active theme (e.g. 'serika_dark')
+    favThemes?: string[]; // List of favorite theme names
     createdAt: number;
     stats?: PersonalityStats;
     lastActiveAt: number;

@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { PersonalityDropdown } from './PersonalityDropdown';
 import { TeamsDropdown } from '../../features/teams/components/TeamsDropdown';
 
-import { LogOut } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export function Header() {
@@ -53,7 +53,9 @@ export function Header() {
             <nav className="flex items-center justify-between w-full h-9 text-text-secondary text-base">
                 {/* Layout Note: gap-2 (8px) is standard, but gap-4 (16px) is used here to match user preference for wider spacing. */}
                 <div className="flex items-center gap-2">
-                    {/* Navigation Icons - Commented out for now, preserving grid for future use */}
+                    <Link to="/settings" className="text-text-secondary hover:text-text-primary transition-colors p-2">
+                        <Settings className="w-4 h-4" />
+                    </Link>
                 </div>
 
                 <div className="flex items-center gap-4 relative">

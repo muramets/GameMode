@@ -1,3 +1,4 @@
+import { useLocation } from 'react-router-dom';
 import { Header } from './Header';
 import { Navigation } from './Navigation';
 import { ViewerBanner } from './ViewerBanner';
@@ -12,7 +13,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <div id="app" className="content-grid transition-colors duration-300 font-mono">
                 <Header />
                 <main className="w-full h-full flex flex-col gap-4">
-                    <Navigation />
+                    {useLocation().pathname !== '/settings' && <Navigation />}
                     {children}
                 </main>
             </div>

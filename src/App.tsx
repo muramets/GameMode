@@ -10,9 +10,9 @@ import { StoreSync } from './stores/StoreSync';
 import { TooltipProvider } from './components/ui/atoms/Tooltip';
 import { GlobalLoader } from './components/ui/molecules/GlobalLoader';
 import { Toast } from './components/ui/molecules/Toast';
+import { ThemeController } from './components/logic/ThemeController';
 import { useUIStore } from './stores/uiStore';
-import { applyTheme } from './utils/themeManager';
-import { themes } from './styles/themes';
+import { initTheme } from './utils/themeManager';
 
 // Pages
 import Dashboard from './pages/dashboard/DashboardPage';
@@ -21,6 +21,7 @@ import InnerfacesPage from './pages/innerfaces/InnerfacesPage';
 import HistoryPage from './pages/history/HistoryPage';
 import JoinInvitePage from './pages/JoinInvitePage';
 import LoginPage from './pages/LoginPage';
+import { SettingsPage } from './pages/settings/SettingsPage';
 
 
 
@@ -50,6 +51,7 @@ function AppContent() {
     <TooltipProvider delayDuration={300}>
       <Router>
         <StoreSync />
+        <ThemeController />
         <Toast
           message={toast.message}
           isVisible={toast.isVisible}
@@ -100,6 +102,15 @@ function AppContent() {
               </PrivateRoute>
             )
           } />
+          <Route path="/settings" element={
+            (!initialized && user) ? <GlobalLoader /> : (
+              <PrivateRoute>
+                <Layout>
+                  <SettingsPage />
+                </Layout>
+              </PrivateRoute>
+            )
+          } />
           {/* Add more routes here */}
         </Routes>
       </Router>
@@ -109,8 +120,8 @@ function AppContent() {
 
 function App() {
   useEffect(() => {
-    // Initialize default theme (matches MonkeyType serika_dark)
-    applyTheme(themes.serika_dark);
+    // Initialize theme from localStorage (or default to serika_dark)
+    initTheme();
   }, []);
 
 

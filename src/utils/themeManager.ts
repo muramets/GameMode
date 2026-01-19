@@ -1,4 +1,5 @@
-// Theme Manager
+import { allThemes } from '../styles/allThemes';
+
 export type Theme = {
     name: string;
     bgColor: string;
@@ -15,32 +16,68 @@ export type Theme = {
     correctColor?: string;
 };
 
-function hexToRgb(hex: string): string | null {
-    const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-    hex = hex.replace(shorthandRegex, (_m, r, g, b) => {
-        return r + r + g + g + b + b;
-    });
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result
-        ? `${parseInt(result[1], 16)} ${parseInt(result[2], 16)} ${parseInt(result[3], 16)}`
-        : null;
+const STORAGE_KEY = 'theme';
+const DEFAULT_THEME = 'serika_dark';
+
+// Helper to convert hex to rgb
+export function hexToRgb(hex: string): string {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `${r} ${g} ${b}`;
 }
 
-// function adjustColor(hex: string, amount: number): string {
-//     return '#' + hex.replace(/^#/, '').replace(/../g, color => ('0' + Math.min(255, Math.max(0, parseInt(color, 16) + amount)).toString(16)).substr(-2));
-// }
+// Helper to convert hex to HSL for sorting (Match MonkeyType implementation)
+export function hexToHSL(hex: string): { h: number; s: number; l: number } {
+    let r = 0, g = 0, b = 0;
 
-// // Simple darken function for sub-alt generation if missing
-// function darken(hex: string, percent: number): string {
-//     // For now, a simple shim. In real app, might want a library like tinycolor2
-//     // But since we want "industry standard" without heavy deps, let's try a native helper or just accept we might need better calc later.
-//     // Actually, MonkeyType themes usually have subAlt. We will calculate it if missing.
-//     // A quick hack for darkening is subtracting from RGB.
+    if (hex.length === 4) {
+        r = parseInt("0x" + hex[1] + hex[1]);
+        g = parseInt("0x" + hex[2] + hex[2]);
+        b = parseInt("0x" + hex[3] + hex[3]);
+    } else if (hex.length === 5) { // Assuming #RGBA, but only RGB used for HSL
+        r = parseInt("0x" + hex[1] + hex[1]);
+        g = parseInt("0x" + hex[2] + hex[2]);
+        b = parseInt("0x" + hex[3] + hex[3]);
+    } else if (hex.length === 7) {
+        r = parseInt("0x" + hex[1] + hex[2]);
+        g = parseInt("0x" + hex[3] + hex[4]);
+        b = parseInt("0x" + hex[5] + hex[6]);
+    } else if (hex.length === 9) { // Assuming #RRGGBBAA, but only RGB used for HSL
+        r = parseInt("0x" + hex[1] + hex[2]);
+        g = parseInt("0x" + hex[3] + hex[4]);
+        b = parseInt("0x" + hex[5] + hex[6]);
+    }
 
-//     // Better strategy: Use the helper to convert to HSL if needed, but for now let's just use the given default logic:
-//     // If not provided, we will assume it's just a bit darker than BG. 
-//     return hex;
-// }
+    r /= 255;
+    g /= 255;
+    b /= 255;
+
+    const cmin = Math.min(r, g, b);
+    const cmax = Math.max(r, g, b);
+    const delta = cmax - cmin;
+
+    let h = 0;
+    let s = 0;
+    let l = 0;
+
+    if (delta === 0) h = 0;
+    else if (cmax === r) h = ((g - b) / delta) % 6;
+    else if (cmax === g) h = (b - r) / delta + 2;
+    else h = (r - g) / delta + 4;
+
+    h = Math.round(h * 60);
+    if (h < 0) h += 360;
+
+    l = (cmax + cmin) / 2;
+    s = delta === 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
+
+    // Convert to 0-100 range with 1 decimal precision as per MonkeyType
+    s = +(s * 100).toFixed(1);
+    l = +(l * 100).toFixed(1);
+
+    return { h, s, l };
+}
 
 export const applyTheme = (theme: Theme) => {
     const root = document.documentElement;
@@ -61,7 +98,7 @@ export const applyTheme = (theme: Theme) => {
 
     // 2. Set Derived/Optional Colors
     setVar('caret-color', theme.caretColor || theme.mainColor);
-    setVar('sub-alt-color', theme.subAltColor || theme.bgColor); // Ideally darken(theme.bgColor, 10)
+    setVar('sub-alt-color', theme.subAltColor || theme.bgColor);
 
     // Default error colors if not provided
     setVar('error-color', theme.errorColor || '#ca4754');
@@ -70,3 +107,54 @@ export const applyTheme = (theme: Theme) => {
     setVar('colorful-error-extra-color', theme.colorfulErrorExtraColor || '#7e2a33');
     setVar('correct-color', theme.correctColor || '#98c379');
 };
+
+export const setTheme = (themeName: string) => {
+    const theme = allThemes[themeName];
+    if (theme) {
+        applyTheme(theme);
+        localStorage.setItem(STORAGE_KEY, themeName);
+    } else {
+        console.warn(`Theme ${themeName} not found.`);
+    }
+};
+
+export const initTheme = () => {
+    const savedTheme = localStorage.getItem(STORAGE_KEY);
+    // Determine theme: Saved -> Default -> 'serika_dark' as generic fallback
+    const themeName = savedTheme || DEFAULT_THEME;
+    setTheme(themeName);
+    return themeName;
+};
+
+export const getCurrentTheme = (): string => {
+    return localStorage.getItem(STORAGE_KEY) || DEFAULT_THEME;
+};
+
+const FAV_STORAGE_KEY = 'favThemes';
+
+export const getFavorites = (): string[] => {
+    try {
+        const stored = localStorage.getItem(FAV_STORAGE_KEY);
+        return stored ? JSON.parse(stored) : [];
+    } catch {
+        return [];
+    }
+};
+
+export const toggleFavorite = (themeName: string): string[] => {
+    const favs = getFavorites();
+    const index = favs.indexOf(themeName);
+    let newFavs;
+    if (index === -1) {
+        newFavs = [...favs, themeName];
+    } else {
+        newFavs = favs.filter((t) => t !== themeName);
+    }
+    localStorage.setItem(FAV_STORAGE_KEY, JSON.stringify(newFavs));
+    return newFavs;
+};
+
+export const isThemeFavorite = (themeName: string): boolean => {
+    return getFavorites().includes(themeName);
+};
+
