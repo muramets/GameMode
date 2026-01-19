@@ -41,8 +41,14 @@ export function Avatar({
 }
 
 function AvatarInner({ src, alt, fallbackIcon, className, style }: any) {
+    const debugId = src?.slice(-5);
+
     // Determine if we should consider this loaded immediately
     const startLoaded = !!src && sessionLoadedCache.has(src);
+
+    if (src) {
+        console.log(`[Avatar ${debugId}] Mount. startLoaded: ${startLoaded}. Cache size: ${sessionLoadedCache.size}`);
+    }
 
     // If it's already in our session cache, we treat it as loaded instantly.
     // This allows the browser to do its network revalidation (304) in the background
@@ -55,6 +61,7 @@ function AvatarInner({ src, alt, fallbackIcon, className, style }: any) {
 
     const handleLoad = () => {
         if (src) {
+            console.log(`[Avatar ${debugId}] handleLoad triggered.`);
             sessionLoadedCache.add(src);
         }
         setIsLoaded(true);
@@ -64,12 +71,19 @@ function AvatarInner({ src, alt, fallbackIcon, className, style }: any) {
     useEffect(() => {
         if (!src) return;
 
+        console.log(`[Avatar ${debugId}] Effect run.`);
+
         // Native check just in case (for first loads that might be fast memory/disk cache)
         const img = new Image();
         img.src = src;
         if (img.complete) {
+            console.log(`[Avatar ${debugId}] img.complete is TRUE in effect.`);
             handleLoad();
         }
+
+        return () => {
+            console.log(`[Avatar ${debugId}] Unmount.`);
+        };
     }, [src]);
 
     const iconDef = typeof fallbackIcon === 'string' ? getIcon(fallbackIcon) : fallbackIcon;
