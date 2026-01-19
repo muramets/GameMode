@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Modal as UIModal } from '../ui/molecules/Modal';
 import { Input } from '../ui/molecules/Input';
 import { Button } from '../ui/atoms/Button';
@@ -59,6 +59,7 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
     } = uiState;
 
     const [copied, setCopied] = useState(false);
+    const wasGeneratingRef = useRef(false);
 
     const copyInvite = () => {
         if (inviteLink) {
@@ -67,6 +68,14 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
             setTimeout(() => setCopied(false), 2000);
         }
     };
+
+    // Auto-copy only when invite link is generated (not when loading existing one)
+    useEffect(() => {
+        if (inviteLink && wasGeneratingRef.current && !isGeneratingInvite) {
+            copyInvite();
+        }
+        wasGeneratingRef.current = isGeneratingInvite;
+    }, [inviteLink, isGeneratingInvite]);
 
 
 
@@ -171,96 +180,55 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
                     </div>
 
                     <div className="flex gap-4">
-                        <div className="w-[100px] flex flex-col gap-1.5 relative">
+                        <div className="flex-1 flex flex-col gap-1.5 relative">
                             <InputLabel label="Color" />
                             <ColorPicker
                                 color={color}
                                 onChange={setColor}
                             />
                         </div>
-                        <div className="w-[100px] flex flex-col gap-1.5 relative">
+                        <div className="flex-1 flex flex-col gap-1.5 relative">
                             <InputLabel label="Icon" />
                             <IconPicker
                                 icon={icon}
                                 onChange={setIcon}
                                 color={color}
+                                width="w-full"
                             />
                         </div>
                     </div>
                 </div>
 
-                {/* Invite Link Section (Only for existing roles and owners) */}
-                {roleId && isOwner && (
-                    <div className="flex flex-col gap-2 p-4 bg-sub-alt/30 rounded-xl border border-white/5">
-                        <div className="flex items-center justify-between">
-                            <InputLabel label="Invite Link" />
-                            {inviteLink && (
-                                <button
-                                    type="button"
-                                    onClick={copyInvite}
-                                    className="text-[10px] text-main hover:text-white transition-colors flex items-center gap-1.5"
-                                >
-                                    <FontAwesomeIcon icon={copied ? faCheck : faCopy} />
-                                    <span>{copied ? 'Copied' : 'Copy'}</span>
-                                </button>
-                            )}
-                        </div>
 
-                        {inviteLink ? (
-                            <div className="flex gap-2">
-                                <div className="flex-1 bg-black/40 rounded-lg px-3 py-2 text-xs font-mono text-sub truncate border border-white/5">
-                                    {inviteLink}
-                                </div>
-                            </div>
-                        ) : (
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                size="sm"
-                                onClick={handleGenerateInvite}
-                                isLoading={isGeneratingInvite}
-                                leftIcon={<FontAwesomeIcon icon={faLink} />}
-                                className="w-full justify-center"
-                            >
-                                Generate Invite Link
-                            </Button>
-                        )}
-                        <p className="text-[10px] text-sub/60 italic">
-                            Share this link to invite users directly to this role.
-                        </p>
-                    </div>
-                )}
 
                 {/* Template Configuration */}
                 <div className="flex flex-col gap-3 pt-2 border-t border-white/10">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-3">
                         <InputLabel label="Role Template" />
 
-                        {/* Sync from Personality Button */}
-                        <button
+                        {/* Source Info */}
+                        {sourceContext && (
+                            <div className="flex items-center gap-2 px-3 py-2 bg-sub-alt/30 rounded-lg">
+                                <div
+                                    className="w-1.5 h-1.5 rounded-full"
+                                    style={{ backgroundColor: sourceContext.color }}
+                                />
+                                <span className="text-[10px] uppercase font-bold tracking-wider text-sub">
+                                    Source: {sourceContext.name}
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Sync Button */}
+                        <Button
                             type="button"
+                            variant={isSynced ? "primary" : "secondary"}
+                            size="sm"
                             onClick={handlePersonalitySync}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${isSynced
-                                ? 'bg-main/10 border-main/30 text-main'
-                                : 'bg-sub-alt border-transparent text-sub hover:text-text-primary'
-                                }`}
+                            className="w-full justify-center"
                         >
-                            {sourceContext && (
-                                <div className="flex items-center gap-1.5 opacity-80">
-                                    <div
-                                        className="w-1.5 h-1.5 rounded-full"
-                                        style={{ backgroundColor: sourceContext.color }}
-                                    />
-                                    <span className="text-[9px] uppercase font-bold tracking-wider">
-                                        Source: {sourceContext.name}
-                                    </span>
-                                </div>
-                            )}
-                            <div className="w-px h-3 bg-white/10 mx-1" />
-                            <span className="text-[10px] font-bold">
-                                {isSynced ? 'Synced' : 'Sync Current State'}
-                            </span>
-                        </button>
+                            {isSynced ? 'Synced All' : 'Sync All'}
+                        </Button>
                     </div>
 
                     <Tabs.Root defaultValue="protocols" className="flex flex-col gap-4">
@@ -310,6 +278,49 @@ export function RoleSettingsModal({ isOpen, onClose, teamId, roleId }: RoleSetti
                         </Tabs.Content>
                     </Tabs.Root>
                 </div>
+
+                {/* Invite Link Section (Only for existing roles and owners) */}
+                {roleId && isOwner && (
+                    <div className="flex flex-col gap-3 pt-4 border-t border-white/10">
+                        <div className="flex items-center justify-between">
+                            <InputLabel label="Invite Link" />
+                            {inviteLink && (
+                                <button
+                                    type="button"
+                                    onClick={copyInvite}
+                                    className="text-[10px] text-main hover:text-white transition-colors flex items-center gap-1.5"
+                                >
+                                    <FontAwesomeIcon icon={copied ? faCheck : faCopy} />
+                                    <span>{copied ? 'Copied' : 'Copy'}</span>
+                                </button>
+                            )}
+                        </div>
+
+                        {inviteLink ? (
+                            <Input
+                                type="text"
+                                value={inviteLink}
+                                readOnly
+                                className="font-mono text-xs"
+                            />
+                        ) : (
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                onClick={handleGenerateInvite}
+                                isLoading={isGeneratingInvite}
+                                leftIcon={<FontAwesomeIcon icon={faLink} />}
+                                className="w-full justify-center"
+                            >
+                                Generate Invite Link
+                            </Button>
+                        )}
+                        <p className="text-sm text-sub font-mono">
+                            Share this link to invite users directly to this role.
+                        </p>
+                    </div>
+                )}
             </div>
         </UIModal>
     );

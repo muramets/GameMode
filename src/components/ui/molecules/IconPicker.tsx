@@ -33,7 +33,7 @@ export function IconPicker({
         <Popover.Root open={isOpen} onOpenChange={setIsOpen}>
             <Popover.Trigger asChild>
                 <div
-                    className={`relative group/icon bg-sub-alt rounded-lg ${height} ${width} transition-colors duration-200 focus-within:bg-sub border border-transparent focus-within:border-white/5 cursor-pointer flex items-center justify-center ${className}`}
+                    className={`relative group/icon ${isOpen ? 'bg-sub' : 'bg-sub-alt'} rounded-lg ${height} ${width} transition-colors duration-200 hover:bg-sub focus-within:bg-sub border border-transparent focus-within:border-white/5 cursor-pointer flex items-center justify-center ${className}`}
                     onClick={() => setIsOpen(true)}
                 >
                     {triggerContent ? triggerContent : (

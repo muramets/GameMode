@@ -35,10 +35,10 @@ export function ProtocolXpSelector({ xp, onChange }: ProtocolXpSelectorProps) {
                 </button>
                 <button
                     type="button"
-                    onClick={() => onChange('20')}
-                    className={`px-2 py-3 rounded-xl border text-[10px] font-mono uppercase tracking-wide transition-all ${xp === '20' ? 'bg-main border-main text-bg-primary font-bold shadow-[0_0_15px_rgba(var(--main-color-rgb),0.3)]' : 'bg-sub-alt border-transparent text-sub hover:text-text-primary hover:bg-sub'}`}
+                    onClick={() => onChange('10')}
+                    className={`px-2 py-3 rounded-xl border text-[10px] font-mono uppercase tracking-wide transition-all ${xp === '10' ? 'bg-main border-main text-bg-primary font-bold shadow-[0_0_15px_rgba(var(--main-color-rgb),0.3)]' : 'bg-sub-alt border-transparent text-sub hover:text-text-primary hover:bg-sub'}`}
                 >
-                    Hard: 20 XP
+                    Hard: 10 XP
                 </button>
             </div>
 
