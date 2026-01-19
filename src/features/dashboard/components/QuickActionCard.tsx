@@ -201,7 +201,7 @@ export function QuickActionCard({ action, onAction, onDelete, isDisabled }: { ac
                                         transition={{ duration: 0.2 }}
                                         className={`font-bold ${effectiveContentFeedbackType === 'plus' ? 'text-[#98c379]' : 'text-[#ca4754]'}`}
                                     >
-                                        {effectiveContentFeedbackType === 'plus' ? '+' : ''}{action.xp ?? Math.round(action.weight * 100)} XP
+                                        {effectiveContentFeedbackType === 'plus' ? '+' : ''}{Math.round(action.weight * 100)} XP
                                     </motion.span>
                                 ) : (
                                     <motion.span

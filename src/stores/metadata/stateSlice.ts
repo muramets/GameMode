@@ -1,6 +1,6 @@
 import type { StateData } from '../../features/dashboard/types';
 import { db } from '../../config/firebase';
-import { collection, doc, addDoc, updateDoc, deleteDoc, writeBatch, setDoc } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { useUIStore } from '../uiStore';
 import type { MetadataState, PathContext } from './types';
 
@@ -55,18 +55,13 @@ export const createStateSlice = (
         try {
             const context = get().context;
             guardAgainstViewerMode(context);
+            // Soft Delete: Set deletedAt
             const docRef = doc(db, `${getPathRoot(context)}/states/${id}`);
-            await deleteDoc(docRef);
+            await updateDoc(docRef, { deletedAt: new Date().toISOString() });
 
-            const states = get().states;
-            const updates = states
-                .filter(s => Array.isArray(s.stateIds) && s.stateIds.includes(id))
-                .map(s => {
-                    const newIds = (s.stateIds || []).filter(sId => sId !== id);
-                    return updateDoc(doc(db, `${getPathRoot(context)}/states/${s.id}`), { stateIds: newIds });
-                });
-
-            await Promise.all(updates);
+            // Note: We used to remove ID references from other States here.
+            // With Soft Deletes, we keep the references so hierarchy remains valid.
+            // The UI will filter out deleted states from the active State editing view.
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
             showErrorToast(message);
@@ -78,7 +73,8 @@ export const createStateSlice = (
             const context = get().context;
             guardAgainstViewerMode(context);
             const docRef = doc(db, `${getPathRoot(context)}/states/${state.id}`);
-            await setDoc(docRef, state);
+            // Restore by clearing deletedAt
+            await updateDoc(docRef, { deletedAt: null });
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
             showErrorToast(message);

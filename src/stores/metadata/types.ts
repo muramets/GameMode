@@ -21,7 +21,7 @@ export interface MetadataState {
     setContext: (context: PathContext | null) => void;
 
     // Innerfaces
-    addInnerface: (innerface: Omit<Innerface, 'id'>) => Promise<void>;
+    addInnerface: (innerface: Omit<Innerface, 'id'>) => Promise<string>;
     updateInnerface: (id: number | string, data: Partial<Innerface>) => Promise<void>;
     deleteInnerface: (id: number | string) => Promise<void>;
     restoreInnerface: (innerface: Innerface) => Promise<void>;
@@ -42,6 +42,12 @@ export interface MetadataState {
     updateGroupMetadata: (groupName: string, metadata: { icon?: string; color?: string }) => Promise<void>;
     renameGroup: (oldName: string, newName: string) => Promise<void>;
     deleteGroup: (groupName: string) => Promise<void>;
+    restoreGroup: (backup: {
+        name: string;
+        metadata: { icon?: string; color?: string };
+        innerfaceIds: string[];
+        protocolIds: string[];
+    }) => Promise<void>;
 
     // Quick Actions
     togglePinnedProtocol: (protocolId: string) => Promise<void>;

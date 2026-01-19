@@ -98,8 +98,8 @@ export const useHistoryStore = create<HistoryState>((set) => ({
                     };
 
                     // Calculate XP
-                    // Use XP if available, else derive from weight * 100 as fallback (consistent with UserProfile logic)
-                    const recordXp = record.xp ?? Math.round((record.weight || 0) * 100);
+                    // Derived from weight * 100
+                    const recordXp = Math.round((record.weight || 0) * 100);
 
                     // Daily Reset Logic
                     if (stats.lastDailyUpdate !== todayStr) {
@@ -143,7 +143,6 @@ export const useHistoryStore = create<HistoryState>((set) => ({
                 protocolName: message,
                 protocolIcon: 'gear',
                 timestamp: new Date().toISOString(),
-                action: '0',
                 weight: 0,
                 targets: [],
                 changes: {},
@@ -199,7 +198,7 @@ export const useHistoryStore = create<HistoryState>((set) => ({
                         const recordDate = new Date(record.timestamp);
                         const recordDateStr = format(recordDate, 'yyyy-MM-dd');
                         const recordMonthStr = format(recordDate, 'yyyy-MM');
-                        const recordXp = record.xp ?? Math.round((record.weight || 0) * 100);
+                        const recordXp = Math.round((record.weight || 0) * 100);
 
                         stats.totalCheckins = Math.max(0, stats.totalCheckins - 1);
                         stats.totalXp = Math.max(0, stats.totalXp - recordXp);

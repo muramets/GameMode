@@ -8,9 +8,9 @@ export interface StateData {
     yesterdayScore?: number;
     color?: string;
     innerfaceIds?: (number | string)[];
-    protocolIds?: (number | string)[];
     stateIds?: string[];
     order?: number;
+    deletedAt?: string;
 }
 
 export interface LevelInfo {

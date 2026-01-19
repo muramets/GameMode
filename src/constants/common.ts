@@ -41,3 +41,5 @@ export const PRESET_COLORS = [
     '#b4babe', // Gray Blue
     '#81bf91', // Pale Green
 ];
+
+export const DEFAULT_STATE_COLOR = '#7fb3d3'; // Blue 

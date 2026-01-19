@@ -12,6 +12,6 @@ export interface Innerface {
     versionTimestamp?: string; // ISO string for hard reset
     order?: number;
     group?: string;
+    deletedAt?: string;
     category?: PowerCategory; // NEW: Skills, Foundations, or uncategorized
-    protocolIds?: (number | string)[];
 }

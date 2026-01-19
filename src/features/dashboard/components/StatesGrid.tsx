@@ -34,8 +34,10 @@ export function StatesGrid({ states, onAddState, onEdit, onHistory, hasProtocols
     const [localOpen, setLocalOpen] = useState(false);
     const suppressTooltip = useTooltipSuppression(isModalOpen);
 
+    const visibleStates = states.filter(s => !s.deletedAt);
+
     const { sensors, activeId, handleDragStart, handleDragEnd } = useSortableList({
-        items: states,
+        items: visibleStates,
         onReorder: reorderStates
     });
 
@@ -80,7 +82,7 @@ export function StatesGrid({ states, onAddState, onEdit, onHistory, hasProtocols
                         <div className="cursor-grabbing opacity-90 scale-[1.02] shadow-2xl touch-none">
                             {/* Find the state object for the active ID */}
                             {(() => {
-                                const activeState = states.find(s => s.id === activeId);
+                                const activeState = visibleStates.find(s => s.id === activeId);
                                 if (!activeState) return null;
                                 return <StateCard state={activeState} {...activeState} />;
                             })()}
@@ -89,10 +91,10 @@ export function StatesGrid({ states, onAddState, onEdit, onHistory, hasProtocols
                 </DragOverlay>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     <SortableContext
-                        items={states.map(s => s.id)}
+                        items={visibleStates.map(s => s.id)}
                         strategy={rectSortingStrategy}
                     >
-                        {states.map((state) => (
+                        {visibleStates.map((state) => (
                             <SortableStateCard
                                 key={state.id}
                                 state={state}
@@ -103,7 +105,7 @@ export function StatesGrid({ states, onAddState, onEdit, onHistory, hasProtocols
                     </SortableContext>
 
                     {/* Empty State / Add Placeholder */}
-                    {states.length === 0 && (
+                    {visibleStates.length === 0 && (
                         !hasProtocols ? (
                             <button
                                 onClick={() => navigate('/actions')}

@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useMetadataStore } from '../../../stores/metadataStore';
 import { usePersonalityStore } from '../../../stores/personalityStore';
-import { useHistoryStore } from '../../../stores/historyStore';
 import { useUIStore } from '../../../stores/uiStore';
 
 
@@ -35,7 +34,6 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
     const [hover, setHover] = useState('');
     const [group, setGroup] = useState('');
     const [icon, setIcon] = useState('check');
-    const [action, setAction] = useState<'+' | '-'>('+');
     const [xp, setXp] = useState('1');
     const [targets, setTargets] = useState<(string | number)[]>([]);
     const [color, setColor] = useState('#e2b714');
@@ -54,8 +52,7 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
                 setHover(protocol.hover || '');
                 setGroup(protocol.group || '');
                 setIcon(protocol.icon);
-                setAction(protocol.action || '+');
-                const derivedXp = protocol.xp ?? Math.round(protocol.weight * 100);
+                const derivedXp = Math.round(protocol.weight * 100);
                 setXp(derivedXp.toString());
                 setTargets(protocol.targets);
                 setColor(protocol.color || '#e2b714');
@@ -67,7 +64,7 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
             setHover('');
             setGroup('');
             setIcon('check');
-            setAction('+');
+            setIcon('check');
             setXp('1');
             setTargets([]);
             setColor('#e2b714');
@@ -81,62 +78,8 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
 
         setIsSubmitting(true);
         try {
-            // --- System Event Logging & Bidirectional Sync ---
-            if (protocolId) {
-                const currentProtocol = protocols.find(p => p.id === protocolId);
-                if (currentProtocol) {
-                    const currentTargets = new Set((currentProtocol.targets || []).map(t => t.toString()));
-                    const newTargets = new Set(targets.map(t => t.toString()));
-
-                    const added = targets.filter(t => !currentTargets.has(t.toString()));
-                    const removed = Array.from(currentTargets).filter(t => !newTargets.has(t));
-
-                    // Log additions + Bidirectional Sync
-                    for (const tid of added) {
-                        const innerface = innerfaces.find(i => i.id.toString() === tid.toString());
-                        if (innerface) {
-                            try {
-                                await useHistoryStore.getState().addSystemEvent(
-                                    user.uid,
-                                    activePersonalityId,
-                                    `Linked: ${title} ↔ ${innerface.name.split('.')[0]}`
-                                );
-
-                                const currentProtocolIds = innerface.protocolIds || [];
-                                if (!currentProtocolIds.some(pid => pid.toString() === protocolId.toString())) {
-                                    const newProtocolIds = [...currentProtocolIds, protocolId.toString()];
-                                    await useMetadataStore.getState().updateInnerface(
-                                        innerface.id,
-                                        { protocolIds: newProtocolIds }
-                                    );
-                                }
-                            } catch (e) { console.error("Failed to sync/log system event", e); }
-                        }
-                    }
-
-                    // Log removals
-                    for (const tid of removed) {
-                        const innerface = innerfaces.find(i => i.id.toString() === tid);
-                        if (innerface) {
-                            try {
-                                await useHistoryStore.getState().addSystemEvent(
-                                    user.uid,
-                                    activePersonalityId,
-                                    `Unlinked: ${title} ↔ ${innerface.name.split('.')[0]}`
-                                );
-
-                                if (innerface.protocolIds?.some(pid => pid.toString() === protocolId.toString())) {
-                                    const newProtocolIds = innerface.protocolIds.filter(pid => pid.toString() !== protocolId.toString());
-                                    await useMetadataStore.getState().updateInnerface(
-                                        innerface.id,
-                                        { protocolIds: newProtocolIds }
-                                    );
-                                }
-                            } catch (e) { console.error("Failed to sync/log system event", e); }
-                        }
-                    }
-                }
-            }
+            // SSOT: Relationships are managed primarily in the Protocol document (targets array).
+            // No manual synchronization with Innerface documents is required here.
 
             const data = {
                 title,
@@ -144,8 +87,6 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
                 hover,
                 group,
                 icon,
-                action,
-                xp: Number(xp),
                 weight: Number(xp) / 100,
                 targets,
                 color
@@ -208,7 +149,6 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
             hover, setHover,
             group, setGroup,
             icon, setIcon,
-            action, setAction,
             xp, setXp,
             targets, setTargets,
             color, setColor

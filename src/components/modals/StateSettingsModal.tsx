@@ -47,14 +47,17 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
     const { handleSubmit, handleDelete, toggleInnerface } = handlers;
 
     // Prepare items for EntitySelector
-    const innerfaceItems = innerfaces.map(i => ({
-        id: i.id,
-        title: i.name,
-        description: i.hover || '',
-        group: i.group || 'ungrouped',
-        icon: <AppIcon id={i.icon} />,
-        color: i.color
-    }));
+    // Prepare items for EntitySelector
+    const innerfaceItems = innerfaces
+        .map(i => ({
+            id: i.id,
+            title: i.name,
+            description: i.hover || '',
+            group: i.group || 'ungrouped',
+            icon: <AppIcon id={i.icon} />,
+            color: i.color,
+            isDeleted: !!i.deletedAt
+        }));
 
     const innerfaceIdsSet = new Set(innerfaceIds.map(id => id.toString()));
 

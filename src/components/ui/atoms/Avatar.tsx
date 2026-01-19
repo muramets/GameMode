@@ -49,9 +49,6 @@ function AvatarInner({ src, alt, fallbackIcon = 'user', className, style }: Avat
     useEffect(() => {
         if (!src) return;
 
-        // Reset loaded state when src changes (though key usually handles this)
-        setIsLoaded(false);
-
         const img = new Image();
         img.src = src;
 

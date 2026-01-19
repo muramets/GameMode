@@ -153,7 +153,7 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
 
                 <motion.div layout className={`flex items-center justify-center pointer-events-none ${DEBUG_LAYOUT ? 'border border-yellow-500' : ''}`}>
                     <span className={`font-lexend text-xs font-bold tracking-wider transition-all duration-300 ${effectiveFeedbackType === 'plus' ? 'text-[#98c379] opacity-100 scale-125' : effectiveFeedbackType === 'minus' ? 'text-[#ca4754] opacity-100 scale-125' : effectiveHoverSide === 'right' ? 'text-[#98c379] opacity-100 scale-110' : effectiveHoverSide === 'left' ? 'text-[#ca4754] opacity-100 scale-110' : 'text-sub opacity-30 group-hover:text-text-primary group-hover:opacity-100'}`}>
-                        {protocol.xp ?? Math.round(protocol.weight * 100)} XP
+                        {Math.round(protocol.weight * 100)} XP
                     </span>
                 </motion.div>
 

@@ -13,9 +13,13 @@ export function useTooltipSuppression(isModalOpen: boolean) {
 
     useEffect(() => {
         if (wasModalOpen.current && !isModalOpen) {
-            setSuppressTooltip(true);
-            const timer = setTimeout(() => setSuppressTooltip(false), 500);
-            return () => clearTimeout(timer);
+            // Use setTimeout to avoid synchronous state update in effect warning
+            const timer = setTimeout(() => setSuppressTooltip(true), 0);
+            const clearTimer = setTimeout(() => setSuppressTooltip(false), 500);
+            return () => {
+                clearTimeout(timer);
+                clearTimeout(clearTimer);
+            };
         }
         wasModalOpen.current = isModalOpen;
     }, [isModalOpen]);

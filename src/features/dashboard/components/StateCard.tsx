@@ -45,13 +45,11 @@ export function StateCard({
 
     // Determine simplified dependency text
     const innerfaceCount = state.innerfaceIds?.length || 0;
-    const protocolCount = state.protocolIds?.length || 0;
     const stateCount = state.stateIds?.length || 0;
 
     let depText = 'No dependencies';
     const parts = [];
     if (innerfaceCount > 0) parts.push(`${innerfaceCount} Innerfaces`);
-    if (protocolCount > 0) parts.push(`${protocolCount} Protocols`);
     if (stateCount > 0) parts.push(`${stateCount} States`);
 
     if (parts.length > 0) depText = parts.join(', ');

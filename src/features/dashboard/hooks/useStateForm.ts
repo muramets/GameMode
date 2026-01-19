@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { DEFAULT_STATE_COLOR } from '../../../constants/common';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useMetadataStore } from '../../../stores/metadataStore';
 import { usePersonalityStore } from '../../../stores/personalityStore';
@@ -19,10 +20,9 @@ export function useStateForm({ stateId, onClose, isOpen }: UseStateFormProps) {
     // Form State
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [icon, setIcon] = useState('harmony');
-    const [color, setColor] = useState('#ca4754');
+    const [icon, setIcon] = useState('scale-balanced');
+    const [color, setColor] = useState(DEFAULT_STATE_COLOR);
     const [innerfaceIds, setInnerfaceIds] = useState<(string | number)[]>([]);
-    const [protocolIds, setProtocolIds] = useState<(string | number)[]>([]);
 
     // UI State
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,19 +35,18 @@ export function useStateForm({ stateId, onClose, isOpen }: UseStateFormProps) {
             if (state) {
                 setName(state.name);
                 setDescription(state.description || '');
-                setIcon(state.icon || 'harmony');
-                setColor(state.color || '#ca4754');
+                setIcon(state.icon || 'scale-balanced');
+                setColor(state.color || DEFAULT_STATE_COLOR);
                 setInnerfaceIds(state.innerfaceIds || []);
-                setProtocolIds(state.protocolIds || []);
             }
         } else if (isOpen) {
             // Reset for new
             setName('');
             setDescription('');
-            setIcon('harmony');
-            setColor('#ca4754');
+            setIcon('scale-balanced');
+            setColor(DEFAULT_STATE_COLOR);
             setInnerfaceIds([]);
-            setProtocolIds([]);
+
         }
         setIsConfirmingDelete(false);
     }, [isOpen, stateId, states]);
@@ -63,8 +62,7 @@ export function useStateForm({ stateId, onClose, isOpen }: UseStateFormProps) {
                 description,
                 icon,
                 color,
-                innerfaceIds,
-                protocolIds
+                innerfaceIds
             };
 
             if (stateId) {
@@ -125,16 +123,7 @@ export function useStateForm({ stateId, onClose, isOpen }: UseStateFormProps) {
         });
     };
 
-    const toggleProtocol = (id: string | number) => {
-        const idStr = id.toString();
-        setProtocolIds(prev => {
-            const exists = prev.some(prevId => prevId.toString() === idStr);
-            if (exists) {
-                return prev.filter(prevId => prevId.toString() !== idStr);
-            }
-            return [...prev, id];
-        });
-    };
+
 
     return {
         formState: {
@@ -142,8 +131,7 @@ export function useStateForm({ stateId, onClose, isOpen }: UseStateFormProps) {
             description, setDescription,
             icon, setIcon,
             color, setColor,
-            innerfaceIds,
-            protocolIds
+            innerfaceIds
         },
         uiState: {
             isSubmitting,
@@ -156,8 +144,7 @@ export function useStateForm({ stateId, onClose, isOpen }: UseStateFormProps) {
         handlers: {
             handleSubmit,
             handleDelete,
-            toggleInnerface,
-            toggleProtocol
+            toggleInnerface
         }
     };
 }

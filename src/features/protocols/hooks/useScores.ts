@@ -29,14 +29,9 @@ export function useScores() {
             return;
         }
 
-        // 1. Determine XP
-        // If protocol has explicit XP, use it. Otherwise derive from weight (Legacy support).
-        const rawXP = protocol.xp ?? Math.round(protocol.weight * 100);
-        const xp = direction === '+' ? rawXP : -rawXP;
-
-        // 2. Calculate Weight for Internal Score (0-10 scale) retention
-        // 1 XP = 0.01 Score
-        const weight = xp / 100;
+        // 1. Determine Weight for Internal Score (0-10 scale)
+        // If protocol has weight 0.1, and direction is '-', resulting weight is -0.1
+        const weight = direction === '+' ? protocol.weight : -protocol.weight;
 
         const changes: Record<string | number, number> = {};
         protocol.targets.forEach(targetId => {
@@ -50,10 +45,8 @@ export function useScores() {
             protocolIcon: protocol.icon,
             timestamp: new Date().toISOString(),
             weight,
-            xp,
             targets: protocol.targets,
-            changes,
-            action: direction
+            changes
         };
 
         await addCheckin(user.uid, activePersonalityId, newRecord);
@@ -168,18 +161,14 @@ export function useScores() {
         yesterday.setDate(yesterday.getDate() - 1);
 
         return states.map(state => {
-            // Filter out ghosts
+            // Filter out invalid child references to maintain data integrity
             const validInnerfaceIds = (state.innerfaceIds || []).filter(id =>
                 innerfaces.some(i => i.id.toString() === id.toString())
-            );
-            const validProtocolIds = (state.protocolIds || []).filter(id =>
-                protocols.some(p => p.id.toString() === id.toString())
             );
 
             const sanitizedState = {
                 ...state,
-                innerfaceIds: validInnerfaceIds,
-                protocolIds: validProtocolIds
+                innerfaceIds: validInnerfaceIds
             };
 
             return {
@@ -188,7 +177,7 @@ export function useScores() {
                 yesterdayScore: calculateStateScoreAtDate(state.id, yesterday)
             };
         });
-    }, [states, innerfaces, protocols, calculateStateScore, calculateStateScoreAtDate]);
+    }, [states, innerfaces, calculateStateScore, calculateStateScoreAtDate]);
 
     const deleteEvent = useCallback(async (id: string) => {
         if (!user || !activePersonalityId) return;

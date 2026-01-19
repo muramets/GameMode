@@ -230,14 +230,18 @@ export function InnerfaceGroupSelector({
                                 icon={
                                     <div onClick={(e) => e.stopPropagation()}>
                                         <IconPicker
-                                            icon={tempGroupIcon || 'brain'}
+                                            icon={tempGroupIcon}
+                                            color={tempGroupColor}
                                             onChange={(icon) => setTempGroupIcon(icon)}
                                             width="w-8"
                                             height="h-8"
                                             className="bg-main/10 border border-main/20 hover:bg-main hover:text-bg-primary transition-all pb-0.5"
                                             triggerContent={
                                                 tempGroupIcon ? (
-                                                    <div className="flex items-center justify-center w-full h-full text-text-primary">
+                                                    <div
+                                                        className="flex items-center justify-center w-full h-full"
+                                                        style={{ color: tempGroupColor || undefined }}
+                                                    >
                                                         <FontAwesomeIcon icon={getIcon(tempGroupIcon)} className="text-sm" />
                                                     </div>
                                                 ) : (

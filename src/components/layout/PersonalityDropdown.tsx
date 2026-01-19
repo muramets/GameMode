@@ -3,8 +3,8 @@ import { usePersonalityStore } from '../../stores/personalityStore';
 import { useAuth } from '../../contexts/AuthContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog, faPlus, faCheck, faPen, faEye } from '@fortawesome/free-solid-svg-icons';
-import { getIcon } from '../../config/iconRegistry';
 import { PersonalitySettingsModal } from '../modals/PersonalitySettingsModal';
+import { Avatar } from '../ui/atoms/Avatar';
 
 import { useRoleStore } from '../../stores/team';
 import type { TeamRole } from '../../types/team';
@@ -19,7 +19,7 @@ export function PersonalityDropdown() {
     const [editingPersonalityId, setEditingPersonalityId] = useState<string | null>(null);
 
     // Determine Active Display Item
-    let activeItem: { name: string; icon?: string; iconColor?: string } | null | undefined = personalities.find(p => p.id === activePersonalityId);
+    let activeItem: { name: string; icon?: string; iconColor?: string; avatar?: string } | null | undefined = personalities.find(p => p.id === activePersonalityId);
     let isDesignMode = false;
     let isViewerMode = false;
 
@@ -64,15 +64,16 @@ export function PersonalityDropdown() {
                             height: '1.4em'
                         }}
                     >
-                        {/* Icon */}
-                        {(() => {
-                            const iconDef = getIcon(activeItem?.icon || 'user');
-                            return iconDef ? (
-                                <FontAwesomeIcon icon={iconDef} style={{ fontSize: '1em' }} />
-                            ) : (
-                                <span style={{ fontSize: '1em' }}>{activeItem?.icon || '👤'}</span>
-                            );
-                        })()}
+                        {/* Avatar / Icon */}
+                        <Avatar
+                            src={activeItem?.avatar}
+                            fallbackIcon={activeItem?.icon || 'user'}
+                            className="w-full h-full rounded-full"
+                            style={{
+                                color: activeItem?.iconColor || 'inherit',
+                                fontSize: '0.9em'
+                            }}
+                        />
                     </div>
 
                     <span className="mt-[0.1em] transition-colors duration-150 group-hover:text-[var(--text-color)] max-[850px]:hidden" style={{ fontSize: '0.75em' }}>
@@ -151,7 +152,6 @@ export function PersonalityDropdown() {
                         {/* Personalities List */}
                         {personalities.map((p, index) => {
                             const isActive = !isDesignMode && p.id === activePersonalityId;
-                            const iconDef = getIcon(p.icon || 'user');
 
                             return (
                                 <div
@@ -164,20 +164,23 @@ export function PersonalityDropdown() {
                                     `}
                                     style={{ padding: '0.5em 0' }}
                                 >
-                                    {/* Icon */}
+                                    {/* Avatar / Icon */}
                                     <div
-                                        className={`w-[1em] h-[1em] flex items-center justify-center shrink-0 transition-colors opacity-80 group-hover/item:opacity-100 group-hover/item:!text-[var(--bg-color)] ${!p.iconColor ? 'group-hover/item:text-inherit' : ''}`}
+                                        className={`w-[1em] h-[1em] flex items-center justify-center shrink-0 transition-colors opacity-80 group-hover/item:opacity-100 group-hover/item:!text-[var(--bg-color)]`}
                                         style={{
                                             color: p.iconColor || 'inherit',
                                             marginLeft: '0.9em',
                                             marginRight: '0.7em'
                                         }}
                                     >
-                                        {iconDef ? (
-                                            <FontAwesomeIcon icon={iconDef} className="text-[1em]" />
-                                        ) : (
-                                            <span className="text-[1em] leading-none">{p.icon || '👤'}</span>
-                                        )}
+                                        <Avatar
+                                            src={p.avatar}
+                                            fallbackIcon={p.icon || 'user'}
+                                            className="w-full h-full rounded-full"
+                                            style={{
+                                                fontSize: '0.8em'
+                                            }}
+                                        />
                                     </div>
 
                                     {/* Name */}

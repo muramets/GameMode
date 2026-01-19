@@ -16,7 +16,7 @@ interface HistoryEventProps {
 }
 
 export function HistoryEvent({ event, innerfaces, protocolColor, onDelete, onFilterInnerface }: HistoryEventProps) {
-    const isPositive = event.action === '+';
+    const isPositive = event.weight > 0;
     const isSystem = event.type === 'system';
 
     // System events use neutral gray
@@ -123,6 +123,7 @@ export function HistoryEvent({ event, innerfaces, protocolColor, onDelete, onFil
                                             <span className="text-[10px] font-mono font-bold text-text-primary uppercase tracking-tight opacity-70 group-hover/iface:opacity-100 transition-opacity">
                                                 {iface ? iface.name.split('.')[0] : innerfaceId}
                                                 {isHistorical && <span className="ml-2 opacity-50 text-[7px] font-black tracking-widest uppercase bg-white/5 px-1 rounded-sm">Archived</span>}
+                                                {!isHistorical && iface?.deletedAt && <span className="ml-2 opacity-50 text-[7px] font-black tracking-widest uppercase bg-error/10 text-error px-1 rounded-sm">Deleted</span>}
                                             </span>
                                             <div className="h-3 w-px bg-white/5" />
                                             <span className={`text-[10px] font-mono font-black ${change > 0 ? 'text-correct' : 'text-error'}`}>
@@ -133,8 +134,10 @@ export function HistoryEvent({ event, innerfaces, protocolColor, onDelete, onFil
                                     <TooltipContent>
                                         <span className="font-mono text-xs">
                                             {isHistorical
-                                                ? `Archived: This entry belonged to a previous "Starting Point" and does not affect your current score.`
-                                                : `Filter by ${iface?.name || innerfaceId}`}
+                                                ? `Archived: This entry belonged to a previous "Starting Point".`
+                                                : iface?.deletedAt
+                                                    ? `This power has been deleted, but its history contributes to your score.`
+                                                    : `Filter by ${iface?.name || innerfaceId}`}
                                         </span>
                                     </TooltipContent>
                                 </Tooltip>

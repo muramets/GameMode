@@ -103,7 +103,8 @@ const CategorySection = React.memo(({
 });
 
 export function InnerfacesList() {
-    const { innerfaces, isLoading } = useScoreContext();
+    const { innerfaces: allInnerfaces, isLoading } = useScoreContext();
+    const innerfaces = useMemo(() => allInnerfaces.filter(i => !i.deletedAt), [allInnerfaces]);
     const { activeContext } = usePersonalityStore();
     const { reorderGroups, reorderCategories, moveInnerface, groupsMetadata, innerfaceGroupOrder, categoryOrder } = useMetadataStore();
     const { isGroupCollapsed, toggleGroup } = useCollapsedGroups('innerfaces');

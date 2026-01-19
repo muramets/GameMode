@@ -1,6 +1,6 @@
 import type { Innerface } from '../../features/innerfaces/types';
 import { db } from '../../config/firebase';
-import { collection, doc, addDoc, updateDoc, deleteDoc, writeBatch, setDoc } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, writeBatch, setDoc } from 'firebase/firestore';
 import { useUIStore } from '../uiStore';
 import type { MetadataState, PathContext } from './types';
 
@@ -33,10 +33,12 @@ export const createInnerfaceSlice = (
             const context = get().context;
             guardAgainstViewerMode(context);
             const colRef = collection(db, `${getPathRoot(context)}/innerfaces`);
-            await addDoc(colRef, innerface);
+            const docRef = await addDoc(colRef, innerface);
+            return docRef.id;
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
             showErrorToast(message);
+            throw err; // Re-throw to prevent caller from proceeding with undefined ID
         }
     },
 
@@ -65,20 +67,14 @@ export const createInnerfaceSlice = (
         try {
             const context = get().context;
             guardAgainstViewerMode(context);
-            // 1. Delete the primitive
+            // 1. Soft Delete: Set deletedAt
             const docRef = doc(db, `${getPathRoot(context)}/innerfaces/${id}`);
-            await deleteDoc(docRef);
+            await updateDoc(docRef, { deletedAt: new Date().toISOString() });
 
-            // 2. Scan all states for references to this ID to prevent "Ghost IDs"
-            const states = get().states;
-            const updates = states
-                .filter(s => Array.isArray(s.innerfaceIds) && s.innerfaceIds.some(iId => iId.toString() === id.toString()))
-                .map(s => {
-                    const newIds = (s.innerfaceIds || []).filter(iId => iId.toString() !== id.toString());
-                    return updateDoc(doc(db, `${getPathRoot(context)}/states/${s.id}`), { innerfaceIds: newIds });
-                });
+            // Note: We used to remove ID references from States here.
+            // With Soft Deletes, we keep the references so history remains valid.
+            // The UI will filter out deleted innerfaces from the active State editing view.
 
-            await Promise.all(updates);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
             showErrorToast(message);
@@ -90,7 +86,12 @@ export const createInnerfaceSlice = (
             const context = get().context;
             guardAgainstViewerMode(context);
             const docRef = doc(db, `${getPathRoot(context)}/innerfaces/${innerface.id}`);
-            await setDoc(docRef, innerface);
+
+            // Restore by clearing deletedAt
+            // Note: We use update instead of set to preserve any other changes if consistent with soft delete model
+            // But since restoreInnerface in types.ts took the whole object, existing logic might re-set the whole object.
+            // For soft delete restore, we just need to clear the flag.
+            await updateDoc(docRef, { deletedAt: null });
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
             showErrorToast(message);

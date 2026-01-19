@@ -156,4 +156,65 @@ export const createGroupSlice = (
             showErrorToast(message);
         }
     },
+
+    restoreGroup: async (backup: {
+        name: string;
+        metadata: { icon?: string; color?: string };
+        innerfaceIds: string[];
+        protocolIds: string[];
+    }) => {
+        try {
+            const context = get().context;
+            guardAgainstViewerMode(context);
+            const batch = writeBatch(db);
+            const pathRoot = getPathRoot(context);
+
+            const { name, metadata, innerfaceIds, protocolIds } = backup;
+
+            // 1. Restore Metadata
+            if (metadata) {
+                const docRef = doc(db, `${pathRoot}/groups/${name}`);
+                batch.set(docRef, metadata);
+            }
+
+            // 2. Restore Innerfaces
+            innerfaceIds.forEach(id => {
+                const docRef = doc(db, `${pathRoot}/innerfaces/${id}`);
+                batch.update(docRef, { group: name });
+            });
+
+            // 3. Restore Protocols
+            protocolIds.forEach(id => {
+                const docRef = doc(db, `${pathRoot}/protocols/${id}`);
+                batch.update(docRef, { group: name });
+            });
+
+            // 4. Restore Sort Orders (Optimistic append)
+            // We append to the end if not present, simple restore strategy
+
+            // Protocol Group Order
+            const currentGroupOrder = get().groupOrder;
+            if (!currentGroupOrder.includes(name)) {
+                const newOrder = [...currentGroupOrder, name];
+                const orderRef = doc(db, `${pathRoot}/settings/groups`);
+                batch.set(orderRef, { order: newOrder }, { merge: true });
+                set({ groupOrder: newOrder });
+            }
+
+            // Innerface Group Order
+            const currentInnerfaceGroupOrder = get().innerfaceGroupOrder;
+            if (!currentInnerfaceGroupOrder.includes(name)) {
+                const newOrder = [...currentInnerfaceGroupOrder, name];
+                const orderRef = doc(db, `${pathRoot}/settings/app`);
+                batch.set(orderRef, { innerfaceGroupOrder: newOrder }, { merge: true });
+                set({ innerfaceGroupOrder: newOrder });
+            }
+
+            await batch.commit();
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            console.error("Failed to restore group:", err);
+            showErrorToast(message);
+        }
+    }
 });

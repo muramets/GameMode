@@ -1,6 +1,6 @@
 import type { Protocol } from '../../features/protocols/types';
 import { db } from '../../config/firebase';
-import { collection, doc, addDoc, updateDoc, deleteDoc, writeBatch, setDoc } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, writeBatch, setDoc } from 'firebase/firestore';
 import { useUIStore } from '../uiStore';
 import type { MetadataState, PathContext } from './types';
 
@@ -56,17 +56,23 @@ export const createProtocolSlice = (
             const context = get().context;
             guardAgainstViewerMode(context);
             const docRef = doc(db, `${getPathRoot(context)}/protocols/${id}`);
-            await deleteDoc(docRef);
 
-            const states = get().states;
-            const updates = states
-                .filter(s => Array.isArray(s.protocolIds) && s.protocolIds.some(pId => pId.toString() === id.toString()))
-                .map(s => {
-                    const newIds = (s.protocolIds || []).filter(pId => pId.toString() !== id.toString());
-                    return updateDoc(doc(db, `${getPathRoot(context)}/states/${s.id}`), { protocolIds: newIds });
-                });
+            const batch = writeBatch(db);
 
-            await Promise.all(updates);
+            // 1. Soft Delete: Set deletedAt
+            batch.update(docRef, { deletedAt: new Date().toISOString() });
+
+            // 2. Remove from Pinned Protocols (Quick Actions)
+            // Even with soft delete, we want to remove it from the active UI
+            const pinnedProtocolIds = get().pinnedProtocolIds;
+            if (pinnedProtocolIds.includes(id.toString())) {
+                const newPinnedIds = pinnedProtocolIds.filter(pid => pid !== id.toString());
+                const settingsRef = doc(db, `${getPathRoot(context)}/settings/app`);
+                batch.set(settingsRef, { pinnedProtocolIds: newPinnedIds }, { merge: true });
+                set({ pinnedProtocolIds: newPinnedIds }); // Optimistic update
+            }
+
+            await batch.commit();
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
             showErrorToast(message);
@@ -78,7 +84,12 @@ export const createProtocolSlice = (
             const context = get().context;
             guardAgainstViewerMode(context);
             const docRef = doc(db, `${getPathRoot(context)}/protocols/${protocol.id}`);
-            await setDoc(docRef, protocol);
+
+            // Restore by clearing deletedAt
+            // Note: We use update instead of set to preserve any other changes if consistent with soft delete model
+            // But since restoreProtocol in types.ts took the whole object, existing logic might re-set the whole object.
+            // For soft delete restore, we just need to clear the flag.
+            await updateDoc(docRef, { deletedAt: null });
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
             showErrorToast(message);

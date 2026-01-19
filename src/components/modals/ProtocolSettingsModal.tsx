@@ -64,14 +64,16 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
         }
     };
 
-    const entitySelectItems = innerfaces.map(i => ({
-        id: i.id.toString(),
-        title: i.name,
-        description: i.hover || i.name,
-        group: i.group,
-        icon: <AppIcon id={i.icon} />, // Returns JSX
-        color: i.color
-    }));
+    const entitySelectItems = innerfaces
+        .map(i => ({
+            id: i.id.toString(),
+            title: i.name,
+            description: i.hover || i.name,
+            group: i.group,
+            icon: <AppIcon id={i.icon} />,
+            color: i.color,
+            isDeleted: !!i.deletedAt
+        }));
 
 
     return (

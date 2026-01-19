@@ -33,6 +33,14 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
         innerfaces.find(i => i.id.toString() === innerfaceId?.toString()),
         [innerfaces, innerfaceId]);
 
+    // Bidirectional Protocol Sync Logic (Now SSOT from protocols)
+    const initialProtocolIds = useMemo(() => {
+        if (!innerfaceId) return [];
+        return protocols
+            .filter(p => p.targets?.some(t => t.toString() === innerfaceId.toString()))
+            .map(p => p.id.toString());
+    }, [protocols, innerfaceId]);
+
     // Form State
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
@@ -48,8 +56,7 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
     const [isSubmitting, setIsSubmitting] = useState(false);
 
 
-    // Group Dropdown State (Extracted to keep Modal clean, or could be kept in Modal?)
-    // Keeping basic state here might be useful if we want to reset it on close
+    // Group Dropdown State
     const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
 
     // Available Groups Calculation
@@ -72,14 +79,7 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
                 setColor(currentInnerface.color || 'var(--main-color)');
                 setIcon(currentInnerface.icon || 'bullseye');
                 setHover(currentInnerface.hover || '');
-
-                // Bidirectional Protocol Sync Logic
-                const fromInnerface = (currentInnerface.protocolIds || []).map(String);
-                const fromProtocols = protocols
-                    .filter(p => p.targets?.some(t => t.toString() === currentInnerface.id.toString()))
-                    .map(p => p.id.toString());
-
-                setProtocolIds(Array.from(new Set([...fromInnerface, ...fromProtocols])));
+                setProtocolIds(initialProtocolIds);
                 setCategory(currentInnerface.category || null);
             } else {
                 // Reset
@@ -96,7 +96,7 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
 
             setIsGroupDropdownOpen(false);
         }
-    }, [isOpen, currentInnerface, protocols]);
+    }, [isOpen, currentInnerface, initialProtocolIds]);
 
     const toggleProtocol = (pId: string | number) => {
         const idStr = pId.toString();
@@ -121,36 +121,45 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
                 color,
                 icon,
                 hover,
-                protocolIds: protocolIds.map(id => id.toString()),
+                // protocolIds REMOVED - we don't save this to innerface anymore
                 category
             };
 
-            if (innerfaceId && currentInnerface) {
-                // Update Existing
-                await updateInnerface(innerfaceId, innerfaceData);
+            let targetId: string | number = innerfaceId || '';
 
-                // Sync Protocols
+            if (innerfaceId && currentInnerface) {
+                // Update existing Innerface
+                await updateInnerface(innerfaceId, innerfaceData);
+            } else {
+                // Create new Innerface and capture the generated ID
+                targetId = await addInnerface(innerfaceData);
+            }
+
+            // Sync Protocols (SSOT: Protocol targets are the source of truth)
+            // Ensure bidirectional consistency by updating Protocol documents
+            if (targetId) {
                 const finalProtocolIds = new Set(protocolIds.map(String));
                 const protocolUpdates = protocols.map(async (p) => {
                     const isSelected = finalProtocolIds.has(p.id.toString());
                     const currentTargets = (p.targets || []).map(String);
-                    const isLinked = currentTargets.includes(innerfaceId.toString());
+                    const isLinked = currentTargets.includes(targetId.toString());
 
+                    // Add linkage if selected but not yet linked
                     if (isSelected && !isLinked) {
                         await updateProtocol(p.id, {
-                            targets: [...(p.targets || []), innerfaceId]
+                            targets: [...(p.targets || []), targetId]
                         });
-                    } else if (!isSelected && isLinked) {
+                    }
+                    // Remove linkage if deselected but currently linked
+                    else if (!isSelected && isLinked) {
                         await updateProtocol(p.id, {
-                            targets: (p.targets || []).filter(t => t.toString() !== innerfaceId.toString())
+                            targets: (p.targets || []).filter(t => t.toString() !== targetId.toString())
                         });
                     }
                 });
                 await Promise.all(protocolUpdates);
-            } else {
-                // Create New
-                await addInnerface(innerfaceData);
             }
+
             onClose();
         } catch (error) {
             console.error('Failed to save innerface:', error);

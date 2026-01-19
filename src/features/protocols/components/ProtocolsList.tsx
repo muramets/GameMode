@@ -61,6 +61,9 @@ export function ProtocolsList() {
     }, [innerfaces]);
 
     // 2. Use filtering hook (handles search + filters)
+    // Memoize the filtered protocols list to prevent infinite re-renders
+    const activeProtocols = useMemo(() => protocols.filter(p => !p.deletedAt), [protocols]);
+
     const {
         searchQuery,
         setSearchQuery,
@@ -68,7 +71,7 @@ export function ProtocolsList() {
         toggleFilter,
         removeFilter,
         filteredProtocols,
-    } = useProtocolsFiltering(protocols, innerfaceMap);
+    } = useProtocolsFiltering(activeProtocols, innerfaceMap);
 
     // 3. Use grouping hook (handles grouping + sorting)
     const { groupedProtocols, protocolGroups } = useProtocolsGrouping(

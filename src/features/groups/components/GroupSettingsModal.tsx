@@ -34,14 +34,29 @@ const InputLabel = ({ label }: { label: string }) => (
 export function GroupSettingsModal({ isOpen, onClose, groupName }: GroupSettingsModalProps) {
     const { user } = useAuth();
     const { activePersonalityId } = usePersonalityStore();
-    const { updateGroupMetadata, renameGroup, deleteGroup, groupsMetadata } = useMetadataStore();
+    const { updateGroupMetadata, renameGroup, deleteGroup, restoreGroup, groupsMetadata, protocols, innerfaces } = useMetadataStore();
     const { showToast } = useUIStore();
 
     const handleDelete = async () => {
+        // Collect backup data
+        const backup = {
+            name: groupName,
+            metadata: groupsMetadata[groupName],
+            innerfaceIds: innerfaces.filter(i => i.group === groupName).map(i => i.id.toString()),
+            protocolIds: protocols.filter(p => p.group === groupName).map(p => p.id.toString())
+        };
+
         onClose();
         try {
             await deleteGroup(groupName);
-            showToast('Group deleted', 'success');
+            showToast(
+                'Group deleted',
+                'success',
+                'Undo',
+                async () => {
+                    await restoreGroup(backup);
+                }
+            );
         } catch (error) {
             console.error('Failed to delete group:', error);
             showToast('Failed to delete group', 'error');

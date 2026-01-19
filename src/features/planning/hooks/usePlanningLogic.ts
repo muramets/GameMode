@@ -62,22 +62,16 @@ export function usePlanningLogic({ innerface, isOpen, onClose }: UsePlanningLogi
                     setActionCounts({});
                 }
             } else {
-                // Reset to defaults
                 setIsCustomizing(false);
                 setActionCounts({});
-                const defaultBalance: Record<string, number> = {};
-                (innerface.protocolIds || []).forEach(pid => {
-                    defaultBalance[pid] = 1.0;
-                });
-                setBalance(defaultBalance);
+                setBalance({});
             }
         }
-    }, [isOpen, innerface.id, innerface.protocolIds, goals, currentScore]);
+    }, [isOpen, innerface.id, goals, currentScore]);
 
     const linkedProtocols = protocols.filter(p => {
-        const fromInnerface = (innerface.protocolIds || []).map(String).includes(p.id.toString());
         const fromProtocol = (p.targets || []).map(String).includes(innerface.id.toString());
-        return fromInnerface || fromProtocol;
+        return fromProtocol;
     });
 
     const pointsNeeded = Math.max(0, targetScore - currentScore);
