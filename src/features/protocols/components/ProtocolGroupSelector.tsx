@@ -69,7 +69,7 @@ export function ProtocolGroupSelector({
                 isOpen={isGroupDropdownOpen}
                 onOpenChange={setIsGroupDropdownOpen}
                 width="w-full"
-                maxHeight="max-h-56"
+                maxHeight="max-h-80"
                 trigger={(isOpen) => (
                     <div className="relative w-full" onClick={(e) => {
                         e.stopPropagation();

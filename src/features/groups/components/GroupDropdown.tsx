@@ -64,7 +64,7 @@ export function GroupDropdown({
                 {trigger(isOpen)}
             </div>
 
-            <div className={`absolute ${placement} mt-3 ${width} bg-sub-alt rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-300 z-50 px-1 py-2 transform border border-white/5 divide-y divide-white/5 overflow-hidden ${isOpen ? 'opacity-100 visible translate-y-0 text-sm' : 'opacity-0 invisible -translate-y-2 text-sm'}`}>
+            <div className={`absolute ${placement} mt-3 ${width} bg-sub-alt rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-300 z-[100] px-1 py-2 transform border border-white/5 divide-y divide-white/5 overflow-hidden ${isOpen ? 'opacity-100 visible translate-y-0 text-sm' : 'opacity-0 invisible -translate-y-2 text-sm'}`}>
                 <div className={`${maxHeight} overflow-y-auto custom-scrollbar`}>
                     {children}
                 </div>
