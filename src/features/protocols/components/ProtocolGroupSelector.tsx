@@ -313,12 +313,6 @@ export function ProtocolGroupSelector({
                     </Popover.Root>
                 </div>
             </GroupDropdown>
-            {isGroupDropdownOpen && (
-                <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setIsGroupDropdownOpen(false)}
-                />
-            )}
         </div>
     );
 }

@@ -1,10 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import type { ReactNode } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faCheck
 } from '@fortawesome/free-solid-svg-icons';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '../../../components/ui/atoms/Tooltip';
+import * as Popover from '@radix-ui/react-popover';
 
 interface GroupDropdownProps {
     trigger: (isOpen: boolean) => ReactNode;
@@ -22,54 +23,31 @@ export function GroupDropdown({
     children,
     className = "",
     width = "w-72",
-    isOpen: controlledIsOpen,
+    isOpen,
     onOpenChange,
-    placement = "top-full right-0 origin-top-right",
     maxHeight = "max-h-[60vh]"
 }: GroupDropdownProps) {
-    const [internalIsOpen, setInternalIsOpen] = useState(false);
-    const containerRef = useRef<HTMLDivElement>(null);
-
-    const isControlled = controlledIsOpen !== undefined;
-    const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
-
-    // Handle outside clicks for non-controlled mode
-    useEffect(() => {
-        if (isControlled) return;
-
-        const handleClickOutside = (event: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-                setInternalIsOpen(false);
-                onOpenChange?.(false);
-            }
-        };
-
-        if (isOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [isOpen, isControlled, onOpenChange]);
-
-    const toggleOpen = () => {
-        const next = !isOpen;
-        if (!isControlled) setInternalIsOpen(next);
-        onOpenChange?.(next);
-    };
-
     return (
-        <div className={`relative ${className}`} ref={containerRef}>
-            <div onClick={toggleOpen}>
-                {trigger(isOpen)}
-            </div>
-
-            <div className={`absolute ${placement} mt-3 ${width} bg-sub-alt rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-300 z-[100] px-1 py-2 transform border border-white/5 divide-y divide-white/5 overflow-hidden ${isOpen ? 'opacity-100 visible translate-y-0 text-sm' : 'opacity-0 invisible -translate-y-2 text-sm'}`}>
-                <div className={`${maxHeight} overflow-y-auto custom-scrollbar`}>
-                    {children}
+        <Popover.Root open={isOpen} onOpenChange={onOpenChange}>
+            <Popover.Trigger asChild>
+                <div className={className}>
+                    {trigger(!!isOpen)}
                 </div>
-            </div>
-        </div>
+            </Popover.Trigger>
+
+            <Popover.Portal>
+                <Popover.Content
+                    side="bottom"
+                    align="end"
+                    sideOffset={12}
+                    className={`z-[100] ${width} bg-sub-alt rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all px-1 py-2 border border-white/5 divide-y divide-white/5 overflow-hidden animate-in fade-in zoom-in-95 duration-200`}
+                >
+                    <div className={`${maxHeight} overflow-y-auto custom-scrollbar`}>
+                        {children}
+                    </div>
+                </Popover.Content>
+            </Popover.Portal>
+        </Popover.Root>
     );
 }
 
