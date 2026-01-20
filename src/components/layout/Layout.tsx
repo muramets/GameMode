@@ -17,7 +17,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Header />
                 <main className="w-full h-full flex flex-col gap-4">
                     {useLocation().pathname !== '/settings' && <Navigation />}
-                    {children}
+                    <div className="relative w-full flex-1" style={{ isolation: 'isolate' }}>
+                        {children}
+                    </div>
                 </main>
             </div>
         </>

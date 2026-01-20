@@ -46,98 +46,116 @@ export default function LoginPage() {
         }
     };
 
+
     return (
-        <div
-            className="relative min-h-screen flex items-center justify-center font-mono cursor-default select-none"
-            style={{ backgroundColor: 'var(--bg-color)' }}
-        >
-            {/* Content */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.5, ease: 'easeOut' }}
-                className="relative z-10 text-center px-24 py-20 flex flex-col items-center rounded-3xl min-w-[500px] hover:shadow-2xl transition-shadow duration-300"
-                style={{
-                    backgroundColor: 'var(--sub-alt-color)',
-                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-                }}
+        <>
+            <style>{`
+                @media (max-width: 525px) {
+                    .login-container {
+                        background-color: var(--sub-alt-color) !important;
+                        min-width: 100vw !important;
+                    }
+                    .login-panel {
+                        box-shadow: none !important;
+                        background-color: transparent !important;
+                        min-width: 0 !important;
+                        width: 100% !important;
+                        padding: 2rem !important;
+                    }
+                }
+            `}</style>
+            <div
+                className="login-container relative min-h-screen flex items-center justify-center font-mono cursor-default select-none"
+                style={{ backgroundColor: 'var(--bg-color)' }}
             >
-                {/* Title with monkeytry above (Header style - Lexend Deca) */}
+                {/* Content */}
                 <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.4, delay: 0.1 }}
-                    className="mb-6 relative"
-                >
-                    {/* monkeytry - positioned above and left-aligned */}
-                    <div
-                        className="absolute left-[4px] text-[12px] leading-[0.325em] whitespace-nowrap font-normal top-[-4px]"
-                        style={{
-                            fontFamily: '"Lexend Deca", sans-serif',
-                            color: 'var(--sub-color)',
-                        }}
-                    >
-                        monkey try
-                    </div>
-                    {/* monkeylearn - main title */}
-                    <span
-                        className="text-5xl block"
-                        style={{
-                            fontFamily: '"Lexend Deca", sans-serif',
-                            fontWeight: 400,
-                            color: 'var(--text-color)',
-                        }}
-                    >
-                        monkeylearn
-                    </span>
-                </motion.div>
-
-                {/* Tagline */}
-                <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.4, delay: 0.2 }}
-                    className="text-base mb-12 lowercase"
-                    style={{ color: 'var(--sub-color)' }}
-                >
-                    level up your life
-                </motion.p>
-
-                {/* Sign in button (using Button atom) */}
-                <motion.div
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: 0.3 }}
-                    className="w-full max-w-[320px]"
+                    whileHover={{ scale: 1.02 }}
+                    transition={{ duration: 0.5, ease: 'easeOut' }}
+                    className="login-panel relative z-10 text-center px-24 py-20 flex flex-col items-center rounded-3xl min-w-[500px] hover:shadow-2xl transition-shadow duration-300"
+                    style={{
+                        backgroundColor: 'var(--sub-alt-color)',
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+                    }}
                 >
-                    <Button
-                        variant="primary"
-                        size="lg"
-                        onClick={handleSignIn}
-                        isLoading={isSigningIn || loading}
-                        leftIcon={!isSigningIn && !loading ? <GoogleIcon /> : undefined}
-                        className="w-full lowercase h-12 text-base"
+                    {/* Title with monkeytry above (Header style - Lexend Deca) */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.4, delay: 0.1 }}
+                        className="mb-6 relative"
                     >
-                        {isSigningIn || loading ? 'signing in...' : 'continue with google'}
-                    </Button>
-                </motion.div>
-
-                {/* Error message */}
-                <AnimatePresence>
-                    {error && (
-                        <motion.p
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="mt-6 text-sm lowercase"
-                            style={{ color: 'var(--error-color)' }}
+                        {/* monkeytry - positioned above and left-aligned */}
+                        <div
+                            className="absolute left-[4px] text-[12px] leading-[0.325em] whitespace-nowrap font-normal top-[-4px]"
+                            style={{
+                                fontFamily: '"Lexend Deca", sans-serif',
+                                color: 'var(--sub-color)',
+                            }}
                         >
-                            {error}
-                        </motion.p>
-                    )}
-                </AnimatePresence>
-            </motion.div>
-        </div>
+                            monkey try
+                        </div>
+                        {/* monkeylearn - main title */}
+                        <span
+                            className="text-5xl block"
+                            style={{
+                                fontFamily: '"Lexend Deca", sans-serif',
+                                fontWeight: 400,
+                                color: 'var(--text-color)',
+                            }}
+                        >
+                            monkeylearn
+                        </span>
+                    </motion.div>
+
+                    {/* Tagline */}
+                    <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.4, delay: 0.2 }}
+                        className="text-base mb-12 lowercase"
+                        style={{ color: 'var(--sub-color)' }}
+                    >
+                        level up your life
+                    </motion.p>
+
+                    {/* Sign in button (using Button atom) */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: 0.3 }}
+                        className="w-full max-w-[320px]"
+                    >
+                        <Button
+                            variant="primary"
+                            size="lg"
+                            onClick={handleSignIn}
+                            isLoading={isSigningIn || loading}
+                            leftIcon={!isSigningIn && !loading ? <GoogleIcon /> : undefined}
+                            className="w-full lowercase h-12 text-base"
+                        >
+                            {isSigningIn || loading ? 'signing in...' : 'continue with google'}
+                        </Button>
+                    </motion.div>
+
+                    {/* Error message */}
+                    <AnimatePresence>
+                        {error && (
+                            <motion.p
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="mt-6 text-sm lowercase"
+                                style={{ color: 'var(--error-color)' }}
+                            >
+                                {error}
+                            </motion.p>
+                        )}
+                    </AnimatePresence>
+                </motion.div>
+            </div>
+        </>
     );
 }

@@ -7,8 +7,6 @@ import {
     startAfter,
     where,
     getDocs,
-    doc,
-    deleteDoc,
     QueryDocumentSnapshot,
     type DocumentData,
     type QueryConstraint
@@ -16,6 +14,7 @@ import {
 import { db } from '../../../config/firebase';
 import { useAuth } from '../../../contexts/AuthContext';
 import { usePersonalityStore } from '../../../stores/personalityStore';
+import { useHistoryStore } from '../../../stores/historyStore';
 import type { HistoryRecord } from '../../../types/history';
 
 const PAGE_SIZE = 50;
@@ -197,11 +196,14 @@ export function useHistoryFeed(filters: HistoryFilters = {}) {
     const deleteEvent = useCallback(async (id: string) => {
         if (!user || !activePersonalityId) return;
         try {
-            const docRef = doc(db, 'users', user.uid, 'personalities', activePersonalityId, 'history', id);
-            await deleteDoc(docRef);
+            // Use store action to ensure stats and scores are updated correctly
+            await useHistoryStore.getState().deleteCheckin(user.uid, activePersonalityId, id);
+
+            // Update local state to reflect removal immediately
             setHistory(prev => prev.filter(e => e.id !== id));
         } catch (err) {
             console.error("Delete error:", err);
+            // Optionally fetch fresh data if delete failed/store state is complex
         }
     }, [user, activePersonalityId]);
 

@@ -5,8 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { Protocol } from '../../protocols/types';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, TooltipPortal } from '../../../components/ui/atoms/Tooltip';
 import { AppIcon } from '../../../components/ui/atoms/AppIcon';
+import { useTouchDevice } from '../../../hooks/useTouchDevice';
 
 export function QuickActionCard({ action, onAction, onDelete, isDisabled, isDragging }: { action: Protocol; onAction?: (direction: '+' | '-') => void; onDelete?: () => void; isDisabled?: boolean; isDragging?: boolean }) {
+    const isTouchDevice = useTouchDevice();
     const [hoverSide, setHoverSide] = useState<'left' | 'right' | null>(null);
     const [feedbackType, setFeedbackType] = useState<'plus' | 'minus' | null>(null);
     const [contentFeedbackType, setContentFeedbackType] = useState<'plus' | 'minus' | null>(null);
@@ -78,15 +80,15 @@ export function QuickActionCard({ action, onAction, onDelete, isDisabled, isDrag
                     <div
                         className={`absolute inset-0 ${!isDragging ? 'transition-opacity duration-300' : ''}`}
                         style={{
-                            background: `radial-gradient(circle at 100% 50%, rgba(152, 195, 121, 0.4), transparent 70%)`,
-                            opacity: effectiveHoverSide === 'right' ? 1 : 0
+                            background: `radial-gradient(circle at 100% 50%, rgba(152, 195, 121, 0.15), transparent 70%)`,
+                            opacity: effectiveHoverSide === 'right' || (isTouchDevice && !isDisabled && !isDragging) ? 1 : 0
                         }}
                     />
                     <div
                         className={`absolute inset-0 ${!isDragging ? 'transition-opacity duration-300' : ''}`}
                         style={{
-                            background: `radial-gradient(circle at 0% 50%, rgba(202,71,84,0.25), transparent 70%)`,
-                            opacity: effectiveHoverSide === 'left' ? 1 : 0
+                            background: `radial-gradient(circle at 0% 50%, rgba(202,71,84,0.15), transparent 70%)`,
+                            opacity: effectiveHoverSide === 'left' || (isTouchDevice && !isDisabled && !isDragging) ? 1 : 0
                         }}
                     />
 
@@ -96,7 +98,7 @@ export function QuickActionCard({ action, onAction, onDelete, isDisabled, isDrag
                         <button
                             className={`flex-1 flex items-center justify-start pl-5 text-sub focus:outline-none ${!isDragging ? 'transition-colors duration-150' : ''}`}
                             style={{
-                                color: effectiveFeedbackType === 'minus' ? '#ca4754' : effectiveHoverSide === 'left' ? '#ca4754' : undefined,
+                                color: effectiveFeedbackType === 'minus' ? '#ca4754' : (effectiveHoverSide === 'left' || (isTouchDevice && !isDisabled && !isDragging)) ? '#ca4754' : undefined,
                             }}
                             onMouseEnter={() => setHoverSide('left')}
                             onMouseLeave={() => setHoverSide(null)}
@@ -116,7 +118,7 @@ export function QuickActionCard({ action, onAction, onDelete, isDisabled, isDrag
                         <button
                             className={`flex-1 flex items-center justify-end pr-5 text-sub focus:outline-none ${!isDragging ? 'transition-colors duration-150' : ''}`}
                             style={{
-                                color: effectiveFeedbackType === 'plus' ? '#98c379' : effectiveHoverSide === 'right' ? '#98c379' : undefined, // Explicit green on hover
+                                color: effectiveFeedbackType === 'plus' ? '#98c379' : (effectiveHoverSide === 'right' || (isTouchDevice && !isDisabled && !isDragging)) ? '#98c379' : undefined,
                             }}
                             onMouseEnter={() => setHoverSide('right')}
                             onMouseLeave={() => setHoverSide(null)}

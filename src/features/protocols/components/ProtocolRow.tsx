@@ -7,7 +7,8 @@ import { faPlus, faMinus, faCog, faHistory } from '@fortawesome/free-solid-svg-i
 import { TruncatedTooltip } from '../../../components/ui/molecules/TruncatedTooltip';
 import { AppIcon } from '../../../components/ui/atoms/AppIcon';
 import { motion } from 'framer-motion';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../../../components/ui/atoms/Tooltip'; // Keep Tooltip import for other usages
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../../components/ui/atoms/Tooltip';
+import { useTouchDevice } from '../../../hooks/useTouchDevice';
 
 // Set to true to visualize layout containers during development/debugging
 const DEBUG_LAYOUT = false;
@@ -24,6 +25,7 @@ interface ProtocolRowProps {
 
 export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerfaces, onLevelUp, onLevelDown, onEdit, isDisabled, isReadOnly }: ProtocolRowProps) {
     const navigate = useNavigate();
+    const isTouchDevice = useTouchDevice();
     const [hoverSide, setHoverSide] = useState<'left' | 'right' | null>(null);
     const [feedbackType, setFeedbackType] = useState<'plus' | 'minus' | null>(null);
     const [shake, setShake] = useState<'left' | 'right' | null>(null);
@@ -76,12 +78,19 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
     };
 
     const handleMouseEnter = () => {
-        // Allow hover state even in ReadOnly (so we can access Settings), but NOT if Disabled (Dragging)
-        // AND only if the device supports hover (prevents sticky hover on mobile scroll)
-        if (!isDisabled && window.matchMedia('(hover: hover)').matches) {
+        // On touch devices, always show hover state (settings icon visible)
+        // On desktop, only show on hover
+        if (!isDisabled && (isTouchDevice || window.matchMedia('(hover: hover)').matches)) {
             setIsHovered(true);
         }
     };
+
+    // Set initial hover state for touch devices
+    React.useEffect(() => {
+        if (isTouchDevice && !isDisabled) {
+            setIsHovered(true);
+        }
+    }, [isTouchDevice, isDisabled]);
 
     const handleClick = () => {
         if (isDisabled || isReadOnly) return;
@@ -113,8 +122,8 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
                 .animate-tilt-right { animation: tilt-right 0.3s ease-in-out; }
             `}</style>
 
-            <div className={`absolute inset-0 bg-[radial-gradient(circle_at_100%_50%,_rgba(152,195,121,0.15),_transparent_60%)] transition-opacity duration-300 pointer-events-none z-0 ${effectiveHoverSide === 'right' || effectiveFeedbackType === 'plus' ? 'opacity-100' : 'opacity-0'}`} />
-            <div className={`absolute inset-0 bg-[radial-gradient(circle_at_0%_50%,_rgba(202,71,84,0.15),_transparent_60%)] transition-opacity duration-300 pointer-events-none z-0 ${effectiveHoverSide === 'left' || effectiveFeedbackType === 'minus' ? 'opacity-100' : 'opacity-0'}`} />
+            <div className={`absolute inset-0 bg-[radial-gradient(circle_at_100%_50%,_rgba(152,195,121,0.15),_transparent_60%)] transition-opacity duration-300 pointer-events-none z-0 ${effectiveHoverSide === 'right' || effectiveFeedbackType === 'plus' || (isTouchDevice && !isDisabled && !isReadOnly) ? 'opacity-100' : 'opacity-0'}`} />
+            <div className={`absolute inset-0 bg-[radial-gradient(circle_at_0%_50%,_rgba(202,71,84,0.15),_transparent_60%)] transition-opacity duration-300 pointer-events-none z-0 ${effectiveHoverSide === 'left' || effectiveFeedbackType === 'minus' || (isTouchDevice && !isDisabled && !isReadOnly) ? 'opacity-100' : 'opacity-0'}`} />
 
             {!isDisabled && (
                 <>
@@ -129,7 +138,7 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
                 <motion.div layout className={`flex items-center gap-3 min-w-0 pointer-events-none ${DEBUG_LAYOUT ? 'border border-blue-500' : ''}`}>
                     <motion.div layout
                         className="flex items-center justify-center w-10 h-10 rounded-lg text-xl shrink-0"
-                        animate={{ marginLeft: isHovered ? 16 : 0 }}
+                        animate={{ marginLeft: (isHovered || (isTouchDevice && !isDisabled && !isReadOnly)) ? 16 : 0 }}
                         transition={{ duration: 0.3, ease: "easeOut" }}
                         style={{
                             backgroundColor: `color-mix(in srgb, ${protocol.color || '#ffffff'} 20%, transparent)`,
@@ -158,7 +167,7 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
                 </motion.div>
 
                 <motion.div layout className={`flex items-center justify-center pointer-events-none ${DEBUG_LAYOUT ? 'border border-yellow-500' : ''}`}>
-                    <span className={`font-lexend text-xs font-bold tracking-wider transition-all duration-300 ${effectiveFeedbackType === 'plus' ? 'text-[#98c379] opacity-100 scale-125' : effectiveFeedbackType === 'minus' ? 'text-[#ca4754] opacity-100 scale-125' : effectiveHoverSide === 'right' ? 'text-[#98c379] opacity-100 scale-110' : effectiveHoverSide === 'left' ? 'text-[#ca4754] opacity-100 scale-110' : 'text-sub opacity-30 [@media(hover:hover)]:group-hover:text-text-primary [@media(hover:hover)]:group-hover:opacity-100'}`}>
+                    <span className={`font-lexend text-xs font-bold tracking-wider transition-all duration-300 ${effectiveFeedbackType === 'plus' ? 'text-[#98c379] opacity-100 scale-125' : effectiveFeedbackType === 'minus' ? 'text-[#ca4754] opacity-100 scale-125' : effectiveHoverSide === 'right' ? 'text-[#98c379] opacity-100 scale-110' : effectiveHoverSide === 'left' ? 'text-[#ca4754] opacity-100 scale-110' : (isTouchDevice && !isDisabled && !isReadOnly) ? 'text-text-primary opacity-100' : 'text-sub opacity-30 [@media(hover:hover)]:group-hover:text-text-primary [@media(hover:hover)]:group-hover:opacity-100'}`}>
                         {Math.round(protocol.weight * 100)} XP
                     </span>
                 </motion.div>
@@ -202,10 +211,10 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
                         layout
                         className="flex flex-col items-center gap-1 pointer-events-auto overflow-hidden shrink-0"
                         style={{
-                            opacity: isHovered ? 1 : 0,
-                            width: isHovered ? 32 : 0,
-                            marginRight: isHovered ? 8 : 0,
-                            pointerEvents: isHovered ? 'auto' : 'none'
+                            opacity: (isHovered || (isTouchDevice && !isDisabled && !isReadOnly)) ? 1 : 0,
+                            width: (isHovered || (isTouchDevice && !isDisabled && !isReadOnly)) ? 32 : 0,
+                            marginRight: (isHovered || (isTouchDevice && !isDisabled && !isReadOnly)) ? 8 : 0,
+                            pointerEvents: (isHovered || (isTouchDevice && !isDisabled)) ? 'auto' : 'none'
                         }}
                     >
                         <button onClick={(e) => { e.stopPropagation(); navigate(`/history?protocolId=${protocol.id}`); }}
@@ -221,10 +230,10 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
             </motion.div>
 
             <div className="absolute inset-y-0 left-0 w-8 flex items-center justify-center pointer-events-none z-20">
-                <FontAwesomeIcon icon={faMinus} className={`transition-all duration-300 ${effectiveFeedbackType === 'minus' ? 'opacity-100 text-[#ca4754] scale-150' : effectiveHoverSide === 'left' ? 'opacity-100 -translate-x-0 text-[#ca4754]' : 'opacity-0 -translate-x-4'}`} />
+                <FontAwesomeIcon icon={faMinus} className={`transition-all duration-300 ${effectiveFeedbackType === 'minus' ? 'opacity-100 text-[#ca4754] scale-150' : (effectiveHoverSide === 'left' || (isTouchDevice && !isDisabled && !isReadOnly)) ? 'opacity-100 -translate-x-0 text-[#ca4754]' : 'opacity-0 -translate-x-4'}`} />
             </div>
             <div className="absolute inset-y-0 right-0 w-8 flex items-center justify-center pointer-events-none z-20">
-                <FontAwesomeIcon icon={faPlus} className={`transition-all duration-300 ${effectiveFeedbackType === 'plus' ? 'opacity-100 text-[#98c379] scale-150' : effectiveHoverSide === 'right' ? 'opacity-100 translate-x-0 text-[#98c379]' : 'opacity-0 translate-x-4'}`} />
+                <FontAwesomeIcon icon={faPlus} className={`transition-all duration-300 ${effectiveFeedbackType === 'plus' ? 'opacity-100 text-[#98c379] scale-150' : (effectiveHoverSide === 'right' || (isTouchDevice && !isDisabled && !isReadOnly)) ? 'opacity-100 translate-x-0 text-[#98c379]' : 'opacity-0 translate-x-4'}`} />
             </div>
         </motion.div>
     );

@@ -4,13 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 const MIN_SWIPE_DISTANCE = 50;
 const MAX_VERTICAL_DISTANCE = 50; // Ignore if scrolled vertically too much during swipe
 
-// Define page order for navigation
-// 0: Dashboard (/)
-// 1: Actions (/actions)
-// 2: Powers (/powers)
-// 3: History (/history) - User said exclude history, but navigation should be logical.
-// User request: Dashboard <-> Actions <-> Powers.
-const PAGE_ORDER = ['/', '/actions', '/powers'];
+import { PAGE_ORDER } from '../constants/navigation';
 
 export const useSwipeNavigation = () => {
     const navigate = useNavigate();

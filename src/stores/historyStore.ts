@@ -182,6 +182,7 @@ export const useHistoryStore = create<HistoryState>((set) => ({
         try {
             console.log("Deleting check-in", { uid, pid, id });
             await runTransaction(db, async (transaction) => {
+                // 1. ALL READS FIRST
                 const historyRef = doc(db, 'users', uid, 'personalities', pid, 'history', id);
                 const historyDoc = await transaction.get(historyRef);
 
@@ -191,29 +192,47 @@ export const useHistoryStore = create<HistoryState>((set) => ({
 
                 const record = historyDoc.data() as HistoryRecord;
 
-                // 1. Revert Innerface Scores
+                // Read Innerfaces to revert
+                const innerfaceReads: { ref: DocumentReference, currentScore: number }[] = [];
                 if (record.changes) {
-                    for (const [innerfaceId, weight] of Object.entries(record.changes)) {
+                    for (const innerfaceId of Object.keys(record.changes)) {
                         const innerfaceRef = doc(db, 'users', uid, 'personalities', pid, 'innerfaces', innerfaceId);
                         const innerfaceDoc = await transaction.get(innerfaceRef);
-
                         if (innerfaceDoc.exists()) {
-                            const currentScore = innerfaceDoc.data().currentScore || innerfaceDoc.data().initialScore || 0;
-                            // Subtract the weight to revert
-                            const rawNewScore = currentScore - Number(weight);
-                            const newScore = Math.max(0, Number(rawNewScore.toFixed(4)));
-
-                            transaction.update(innerfaceRef, {
-                                currentScore: newScore
+                            const data = innerfaceDoc.data();
+                            innerfaceReads.push({
+                                ref: innerfaceRef,
+                                currentScore: data.currentScore ?? data.initialScore ?? 0
                             });
                         }
                     }
                 }
 
-                // 2. Update Personality Stats (Efficient Revert)
+                // Read Personality for Stats
                 const personalityRef = doc(db, 'users', uid, 'personalities', pid);
                 const personalityDoc = await transaction.get(personalityRef);
 
+                // 2. ALL WRITES AFTER
+
+                // Revert Innerface Scores
+                if (record.changes) {
+                    // Optimization: Map for O(1) lookup
+                    const scoreMap = new Map<string, number>();
+                    innerfaceReads.forEach(r => scoreMap.set(r.ref.id, r.currentScore));
+
+                    for (const [innerfaceId, weight] of Object.entries(record.changes)) {
+                        const innerfaceRef = doc(db, 'users', uid, 'personalities', pid, 'innerfaces', innerfaceId); // Re-create ref to match key
+                        const currentScore = scoreMap.get(innerfaceId);
+
+                        if (currentScore !== undefined) {
+                            const rawNewScore = currentScore - Number(weight);
+                            const newScore = Math.max(0, Number(rawNewScore.toFixed(4)));
+                            transaction.update(innerfaceRef, { currentScore: newScore });
+                        }
+                    }
+                }
+
+                // Update Personality Stats
                 if (personalityDoc.exists()) {
                     const pData = personalityDoc.data() as Personality;
                     if (pData.stats) {
@@ -226,7 +245,6 @@ export const useHistoryStore = create<HistoryState>((set) => ({
                         stats.totalCheckins = Math.max(0, stats.totalCheckins - 1);
                         stats.totalXp = Math.max(0, stats.totalXp - recordXp);
 
-                        // Only decrement daily/monthly if the deleted event belongs to the current active period
                         if (stats.lastDailyUpdate === recordDateStr) {
                             stats.dailyCheckins = Math.max(0, stats.dailyCheckins - 1);
                             stats.dailyXp = Math.max(0, stats.dailyXp - recordXp);
@@ -241,7 +259,7 @@ export const useHistoryStore = create<HistoryState>((set) => ({
                     }
                 }
 
-                // 3. Delete History Record
+                // Delete History Record
                 transaction.delete(historyRef);
             });
         } catch (err: unknown) {
