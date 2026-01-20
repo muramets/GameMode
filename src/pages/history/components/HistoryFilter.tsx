@@ -121,7 +121,7 @@ export function HistoryFilter({
 
     const getInnerfaceLabel = (ids: string[]) => {
         if (ids.length === 0) return 'All powers';
-        if (ids.length === 1) return innerfaces.find(i => i.id.toString() === ids[0])?.name.split('.')[0] || ids[0];
+        if (ids.length === 1) return innerfaces.find(i => i.id.toString() === ids[0])?.name || ids[0];
         return `${ids.length} selected`;
     };
 
@@ -312,10 +312,11 @@ export function HistoryFilter({
                                     label={p.title}
                                     isActive={isSelected}
                                     onClick={() => toggleProtocol(p.id.toString())}
-                                    icon={<AppIcon id={p.icon} />}
+                                    icon={<div style={{ color: p.color }}><AppIcon id={p.icon} /></div>}
                                     showIndicator={true}
                                     showCheck={false}
                                     style={p.color ? { '--hover-color': p.color } as React.CSSProperties : undefined}
+                                    description={p.hover || p.description}
                                 />
                             );
                         })}
@@ -387,12 +388,14 @@ export function HistoryFilter({
                             return (
                                 <FilterDropdown.Item
                                     key={i.id}
-                                    label={i.name.split('.')[0]}
+                                    label={i.name}
                                     isActive={isSelected}
                                     onClick={() => toggleInnerface(i.id.toString())}
-                                    icon={<AppIcon id={i.icon} />}
+                                    icon={<div style={{ color: i.color }}><AppIcon id={i.icon} /></div>}
                                     showIndicator={true}
                                     showCheck={false}
+                                    style={i.color ? { '--hover-color': i.color } as React.CSSProperties : undefined}
+                                    description={i.hover || i.description}
                                 />
                             );
                         })}
@@ -431,10 +434,11 @@ export function HistoryFilter({
                                         label={s.name}
                                         isActive={isSelected}
                                         onClick={() => toggleState(s.id)}
-                                        icon={<AppIcon id={s.icon || 'question'} />}
+                                        icon={<div style={{ color: s.color }}><AppIcon id={s.icon || 'question'} /></div>}
                                         showIndicator={false}
                                         showCheck={true}
                                         style={s.color ? { '--hover-color': s.color } as React.CSSProperties : undefined}
+                                        description={s.description || s.subtext}
                                     />
                                 );
                             })}

@@ -74,13 +74,13 @@ export function InnerfaceCard({ innerface, onEdit, forceHover }: InnerfaceCardPr
                     <div className="flex flex-col min-w-0 pt-0.5 flex-1 pr-2">
                         <TruncatedTooltip
                             as="h3"
-                            text={innerface.name.split('.')[0]}
+                            text={innerface.name}
                             className="font-lexend font-medium text-sm leading-tight text-text-primary truncate w-full"
                         />
-                        {innerface.name.split('.')[1] && (
+                        {innerface.description && (
                             <TruncatedTooltip
                                 as="p"
-                                text={innerface.name.split('.')[1].trim()}
+                                text={innerface.description}
                                 className={`text-[10px] text-sub font-mono uppercase tracking-wider opacity-60 truncate mt-0.5 transition-all duration-300 w-full ${forceHover ? 'opacity-100 text-text-primary' : 'group-hover:opacity-100 group-hover:text-text-primary'}`}
                             />
                         )}

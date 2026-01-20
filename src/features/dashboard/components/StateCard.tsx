@@ -156,7 +156,7 @@ export function StateCard({
             {/* Progress Bar Section */}
             <div className="relative z-10 my-4 flex flex-col gap-1.5">
                 <div className="text-[0.75rem] text-sub font-mono ml-1 opacity-70 transition-all duration-300 group-hover:text-text-primary group-hover:opacity-100">
-                    {currentLevelXP}% to next level
+                    Level progress: {currentLevelXP}%
                 </div>
                 <div className="w-full h-[6px] bg-bg-primary/50 rounded-full overflow-hidden">
                     <div

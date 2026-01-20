@@ -355,7 +355,7 @@ export default function HistoryPage() {
                     })),
                     ...selectedInnerfaceIds.map(id => ({
                         id: `innerface-${id}`,
-                        label: innerfaces.find(i => i.id.toString() === id)?.name.split('.')[0] || id,
+                        label: innerfaces.find(i => i.id.toString() === id)?.name || id,
                         icon: undefined,
                         onRemove: () => setSelectedInnerfaceIds(selectedInnerfaceIds.filter((iid: string) => iid !== id))
                     })),

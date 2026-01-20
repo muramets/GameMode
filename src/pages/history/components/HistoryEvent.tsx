@@ -147,7 +147,7 @@ export function HistoryEvent({ event, innerfaces, protocolColor, onDelete, onFil
                                                 style={{ backgroundColor: iface?.color || 'gray', boxShadow: `0 0 10px ${iface?.color || 'gray'}40` }}
                                             />
                                             <span className="text-[10px] font-mono font-bold text-text-primary uppercase tracking-tight opacity-70 group-hover/iface:opacity-100 transition-opacity">
-                                                {iface ? iface.name.split('.')[0] : innerfaceId}
+                                                {iface ? iface.name : innerfaceId}
                                                 {isHistorical && <span className="ml-2 opacity-50 text-[7px] font-black tracking-widest uppercase bg-white/5 px-1 rounded-sm">Archived</span>}
                                                 {!isHistorical && iface?.deletedAt && <span className="ml-2 opacity-50 text-[7px] font-black tracking-widest uppercase bg-error/10 text-error px-1 rounded-sm">Deleted</span>}
                                             </span>
