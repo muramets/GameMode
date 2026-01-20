@@ -1,7 +1,9 @@
 import { format, parseISO } from 'date-fns';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faClock, faTrash, faGear } from '@fortawesome/free-solid-svg-icons';
+import { faClock, faTrash, faGear, faTrashArrowUp } from '@fortawesome/free-solid-svg-icons';
 import { AppIcon } from '../../../components/ui/atoms/AppIcon';
+import { PowerIcon } from '../../../features/innerfaces/components/PowerIcon';
+import { ConfirmButton } from '../../../components/ui/molecules/ConfirmButton';
 import type { HistoryRecord } from '../../../types/history';
 import type { Innerface } from '../../../features/innerfaces/types';
 
@@ -52,26 +54,46 @@ export function HistoryEvent({ event, innerfaces, protocolColor, onDelete, onFil
                 }}
             />
 
-            {/* Icon Wrapper - Mimics ProtocolRow style */}
-            <div
-                className="relative w-14 h-14 flex items-center justify-center rounded-2xl text-2xl shrink-0 transition-all duration-500 z-10 group-hover:scale-105"
-                style={{
-                    backgroundColor: `color-mix(in srgb, ${effectiveColor} 20%, transparent)`, // 20% opacity like ProtocolRow's icon background
-                    color: effectiveColor,
-                    boxShadow: `0 0 20px color-mix(in srgb, ${effectiveColor} 8%, transparent)`
-                }}
-            >
-                {/* Glow layer on hover */}
+            {/* Icon Wrapper - Conditionally Render Protocol Style or Innerface Style */}
+            {event.type === 'manual_adjustment' && event.targets && event.targets.length > 0 ? (
+                // Use PowerIcon for consistency with Innerface tokens (correct Shape + Color)
+                (() => {
+                    const targetId = event.targets![0]; // Non-null assertion safe due to check
+                    const targetInnerface = innerfaces.find(i => i.id == targetId);
+                    return (
+                        <div className="relative z-10 group-hover:scale-105 transition-transform duration-500">
+                            <PowerIcon
+                                icon={event.protocolIcon}
+                                color={targetInnerface?.color || effectiveColor} // Prefer innerface color for identity
+                                category={targetInnerface?.category} // Crucial: This drives the Shape
+                                size="w-14 h-14"
+                                glowSize="20px"
+                            />
+                        </div>
+                    );
+                })()
+            ) : (
+                // Default Protocol/System Icon Style
                 <div
-                    className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"
-                    style={{ backgroundColor: effectiveColor }}
-                />
-                {isSystem ? (
-                    <FontAwesomeIcon icon={faGear} />
-                ) : (
-                    <AppIcon id={event.protocolIcon} />
-                )}
-            </div>
+                    className="relative w-14 h-14 flex items-center justify-center rounded-2xl text-2xl shrink-0 transition-all duration-500 z-10 group-hover:scale-105"
+                    style={{
+                        backgroundColor: `color-mix(in srgb, ${effectiveColor} 20%, transparent)`, // 20% opacity like ProtocolRow's icon background
+                        color: effectiveColor,
+                        boxShadow: `0 0 20px color-mix(in srgb, ${effectiveColor} 8%, transparent)`
+                    }}
+                >
+                    {/* Glow layer on hover */}
+                    <div
+                        className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"
+                        style={{ backgroundColor: effectiveColor }}
+                    />
+                    {isSystem ? (
+                        <FontAwesomeIcon icon={faGear} />
+                    ) : (
+                        <AppIcon id={event.protocolIcon} />
+                    )}
+                </div>
+            )}
 
             {/* Main Content Area */}
             <div className="relative flex-1 flex flex-col lg:flex-row lg:items-center justify-between min-w-0 z-10 gap-4">
@@ -89,7 +111,7 @@ export function HistoryEvent({ event, innerfaces, protocolColor, onDelete, onFil
                         <span className="opacity-20">•</span>
                         <span>
                             {event.type === 'protocol' ? 'check-in' :
-                                event.type === 'quick_action' ? 'manual adjustment' :
+                                event.type === 'manual_adjustment' ? 'manual adjustment' :
                                     'system event'}
                         </span>
 
@@ -152,13 +174,27 @@ export function HistoryEvent({ event, innerfaces, protocolColor, onDelete, onFil
             </div>
 
             {/* Delete/Undo Action */}
-            <button
-                onClick={() => onDelete(event.id)}
-                className="relative ml-2 w-11 h-11 flex items-center justify-center rounded-xl bg-sub-alt/50 hover:bg-error/20 text-sub hover:text-error transition-all duration-300 shrink-0 shadow-lg hover:rotate-6 active:scale-90 opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 z-20"
-                title="Revert this event"
-            >
-                <FontAwesomeIcon icon={faTrash} className="text-sm" />
-            </button>
+            <TooltipProvider>
+                <Tooltip delayDuration={300}>
+                    <TooltipTrigger asChild>
+                        <span className="relative ml-2 rounded-xl opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 z-20 transition-all duration-300">
+                            <ConfirmButton
+                                onConfirm={() => onDelete(event.id)}
+                                defaultText=""
+                                confirmText=""
+                                defaultIcon={<FontAwesomeIcon icon={faTrash} className="text-sm" />}
+                                confirmIcon={<FontAwesomeIcon icon={faTrashArrowUp} className="text-sm" />}
+                                variant="history"
+                                size="history-icon"
+                                className="rounded-xl"
+                            />
+                        </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p className="font-lexend text-xs">Revert this event</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
         </div>
     );
 }

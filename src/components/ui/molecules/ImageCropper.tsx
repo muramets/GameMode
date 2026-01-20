@@ -62,6 +62,8 @@ export function ImageCropper({ imageSrc, onCrop }: ImageCropperProps) {
         onCrop(base64);
     }, [zoom, x, y, onCrop, OUTPUT_SIZE, VIEWPORT_SIZE]);
 
+    const lastDistRef = useRef<number | null>(null);
+
     // Listen for external save trigger from modal footer
     useEffect(() => {
         const handleExternalSave = () => handleSave();
@@ -124,8 +126,8 @@ export function ImageCropper({ imageSrc, onCrop }: ImageCropperProps) {
                 // We need to store previous distance to calculate delta
                 // But since we can't easily store state in this closure without ref,
                 // let's rely on a ref for previous distance
-                if ((container as any).lastDist) {
-                    const delta = dist - (container as any).lastDist;
+                if (lastDistRef.current) {
+                    const delta = dist - lastDistRef.current;
                     // Sensitivity factor
                     const zoomDelta = delta * 0.01;
 
@@ -135,12 +137,12 @@ export function ImageCropper({ imageSrc, onCrop }: ImageCropperProps) {
                     });
                 }
 
-                (container as any).lastDist = dist;
+                lastDistRef.current = dist;
             }
         };
 
         const handleTouchEnd = () => {
-            (container as any).lastDist = null;
+            lastDistRef.current = null;
         };
 
         container.addEventListener('wheel', handleWheel, { passive: false });
@@ -154,7 +156,7 @@ export function ImageCropper({ imageSrc, onCrop }: ImageCropperProps) {
             container.removeEventListener('touchmove', handleTouchMove);
             container.removeEventListener('touchend', handleTouchEnd);
         };
-    }, []);
+    }, [x, y]);
 
     return (
         <div className="flex flex-col items-center gap-6 w-full">

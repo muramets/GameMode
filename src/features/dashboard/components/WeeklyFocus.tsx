@@ -46,7 +46,7 @@ export function WeeklyFocus() {
 
                     // Find last check-in note for this protocol
                     const lastRecord = history.find(r =>
-                        (r.type === 'protocol' || r.type === 'quick_action') &&
+                        (r.type === 'protocol' || r.type === 'manual_adjustment') &&
                         String(r.protocolId) === String(protocol.id) &&
                         r.details?.note
                     );

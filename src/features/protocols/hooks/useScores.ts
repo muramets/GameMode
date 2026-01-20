@@ -44,7 +44,7 @@ export function useScores() {
             protocolName: protocol.title,
             protocolIcon: protocol.icon,
             timestamp: new Date().toISOString(),
-            weight,
+            weight: Number(weight.toFixed(4)),
             targets: protocol.targets,
             changes
         };

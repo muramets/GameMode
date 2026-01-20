@@ -3,6 +3,7 @@ import { useMetadataStore } from '../../../stores/metadataStore';
 import { usePersonalityStore } from '../../../stores/personalityStore';
 import { useUIStore } from '../../../stores/uiStore';
 import { getGroupConfig } from '../../../constants/common';
+import { useHistoryStore } from '../../../stores/historyStore';
 import type { PowerCategory } from '../types';
 
 interface UseInnerfaceFormProps {
@@ -12,6 +13,7 @@ interface UseInnerfaceFormProps {
 }
 
 export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceFormProps) {
+    const { addCheckin } = useHistoryStore();
     const {
         innerfaces,
         protocols,
@@ -22,7 +24,8 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
         restoreInnerface,
         updateProtocol,
         updateGroupMetadata,
-        deleteGroup
+        deleteGroup,
+        context
     } = useMetadataStore();
 
     const { activeContext } = usePersonalityStore();
@@ -132,6 +135,43 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
             };
 
             let targetId: string | number = innerfaceId || '';
+
+            // History Event Logic for Manual Score Adjustments
+            if (innerfaceId && currentInnerface) {
+                const oldScore = currentInnerface.initialScore || 0;
+                const newScore = innerfaceData.initialScore;
+                const delta = newScore - oldScore;
+
+                if (delta !== 0 && context && (context.type === 'personality' || context.type === 'viewer')) {
+                    const uid = context.type === 'personality' ? context.uid : context.targetUid;
+                    const pid = context.type === 'personality' ? context.pid : context.personalityId;
+
+                    // Fire and forget history event (don't await to block UI or other updates)
+                    addCheckin(uid, pid, {
+                        type: 'manual_adjustment', // Maps to 'Manual' filter
+                        protocolId: 'MANUAL_ADJUST',
+                        protocolName: 'Manual Score Adjustment',
+                        protocolIcon: icon,
+                        timestamp: new Date().toISOString(),
+                        weight: delta,
+                        targets: [innerfaceId],
+                        changes: {
+                            [innerfaceId]: delta
+                        }
+                    }, false).catch((err: unknown) => console.error("Failed to log manual adjustment:", err));
+                }
+
+                // Update currentScore to reflect the Base Level change
+                // Since currentScore is persistent, we must shift it by the same delta
+                // Calculate delta and round to avoid floating point artifacts (e.g. -0.100000000005)
+                const rawDelta = innerfaceData.initialScore - (currentInnerface.initialScore || 0);
+                const roundedDelta = Number(rawDelta.toFixed(4));
+                if (roundedDelta !== 0) {
+                    const currentVal = currentInnerface.currentScore ?? currentInnerface.initialScore ?? 0;
+                    const newCurrentScore = Math.max(0, currentVal + roundedDelta);
+                    Object.assign(innerfaceData, { currentScore: newCurrentScore });
+                }
+            }
 
             if (innerfaceId && currentInnerface) {
                 // Update existing Innerface

@@ -103,12 +103,24 @@ export default function HistoryPage() {
             protocolIdsToFilter = selectedProtocolIds;
         }
 
+        // 3. Innerfaces (Explicit + Derived from State)
+        const stateDerivedInnerfaceIds = states
+            .filter(s => selectedStateIds.includes(s.id))
+            .flatMap(s => s.innerfaceIds || [])
+            .map(String);
+
+        const combinedInnerfaceIds = Array.from(new Set([
+            ...selectedInnerfaceIds,
+            ...stateDerivedInnerfaceIds
+        ]));
+
         return {
             protocolIds: protocolIdsToFilter,
+            innerfaceIds: combinedInnerfaceIds.length > 0 ? combinedInnerfaceIds : undefined,
             type: typeFilter,
             timeRange
         };
-    }, [timeFilter, typeFilter, selectedProtocolIds]);
+    }, [timeFilter, typeFilter, selectedProtocolIds, selectedInnerfaceIds, selectedStateIds, states]);
 
     // Pass filters to hook (Triggers Server-Side Fetch)
     const { history, isLoading, isLoadingMore, hasMore, loadMore, deleteEvent } = useHistoryFeed(serverFilters);
@@ -179,7 +191,7 @@ export default function HistoryPage() {
             // Re-applying Type filter client-side just in case
             if (typeFilter !== 'All types') {
                 if (typeFilter === 'Actions' && event.type !== 'protocol') return false;
-                if (typeFilter === 'Manual' && event.type !== 'quick_action') return false;
+                if (typeFilter === 'Manual' && event.type !== 'manual_adjustment') return false;
                 if (typeFilter === 'System' && event.type !== 'system') return false;
             }
 
@@ -263,7 +275,7 @@ export default function HistoryPage() {
                     <h1 className="text-2xl font-lexend text-text-primary">history</h1>
                     <p className="text-text-secondary font-mono text-sm mt-1">
                         {history.length} events loaded
-                        {hasMore && <span className="opacity-50"> (scroll for more)</span>}
+                        {hasMore && !isLoading && <span className="opacity-50"> (scroll for more)</span>}
                     </p>
                 </div>
 

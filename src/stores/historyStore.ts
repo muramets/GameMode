@@ -34,7 +34,7 @@ interface HistoryState {
     error: string | null;
 
     // Actions
-    addCheckin: (uid: string, pid: string, record: Omit<HistoryRecord, 'id'>) => Promise<void>;
+    addCheckin: (uid: string, pid: string, record: Omit<HistoryRecord, 'id'>, applyToScore?: boolean) => Promise<void>;
     addSystemEvent: (uid: string, pid: string, message: string, details?: Record<string, unknown>) => Promise<void>;
     deleteCheckin: (uid: string, pid: string, id: string) => Promise<void>;
     subscribeToHistory: (uid: string, pid: string) => () => void;
@@ -48,20 +48,24 @@ export const useHistoryStore = create<HistoryState>((set) => ({
 
     clearHistory: () => set({ history: [], isLoading: false, error: null }),
 
-    addCheckin: async (uid, pid, record) => {
+    addCheckin: async (uid, pid, record, applyToScore = true) => {
         try {
-            console.log("Adding check-in", { uid, pid, protocol: record.protocolName });
+            console.log("Adding check-in", { uid, pid, protocol: record.protocolName, applyToScore });
             await runTransaction(db, async (transaction) => {
                 // 1. Prepare Reads (Refs & Data)
                 const historyRef = doc(collection(db, 'users', uid, 'personalities', pid, 'history'));
                 const personalityRef = doc(db, 'users', uid, 'personalities', pid);
 
                 // READ: Personality
-                const personalityDoc = await transaction.get(personalityRef);
+                // We only need personality doc if updating stats
+                let personalityDoc;
+                if (applyToScore) {
+                    personalityDoc = await transaction.get(personalityRef);
+                }
 
                 // READ: Innerfaces
                 const innerfaceUpdates: { ref: DocumentReference, currentScore: number, weight: number }[] = [];
-                if (record.changes) {
+                if (applyToScore && record.changes) {
                     for (const [innerfaceId, weight] of Object.entries(record.changes)) {
                         const innerfaceRef = doc(db, 'users', uid, 'personalities', pid, 'innerfaces', innerfaceId);
                         const innerfaceDoc = await transaction.get(innerfaceRef);
@@ -88,57 +92,60 @@ export const useHistoryStore = create<HistoryState>((set) => ({
 
                 console.debug("Transaction: Record created", { protocol: record.protocolName });
 
-                // WRITE: Innerface Updates
-                for (const update of innerfaceUpdates) {
-                    const newScore = Math.max(0, update.currentScore + update.weight);
-                    transaction.update(update.ref, { currentScore: newScore });
-                }
-
-                // WRITE: Personality Stats
-                if (personalityDoc.exists()) {
-                    const pData = personalityDoc.data() as Personality;
-                    const todayStr = format(new Date(), 'yyyy-MM-dd');
-                    const monthStr = format(new Date(), 'yyyy-MM');
-
-                    // Initialize or Get existing stats
-                    const stats = pData.stats || {
-                        totalCheckins: 0,
-                        totalXp: 0,
-                        lastDailyUpdate: todayStr,
-                        dailyCheckins: 0,
-                        dailyXp: 0,
-                        lastMonthlyUpdate: monthStr,
-                        monthlyCheckins: 0,
-                        monthlyXp: 0
-                    };
-
-                    // Calculate XP
-                    // Derived from weight * 100
-                    const recordXp = Math.round((record.weight || 0) * 100);
-
-                    // Daily Reset Logic
-                    if (stats.lastDailyUpdate !== todayStr) {
-                        stats.dailyCheckins = 0;
-                        stats.dailyXp = 0;
-                        stats.lastDailyUpdate = todayStr;
+                if (applyToScore) {
+                    // WRITE: Innerface Updates
+                    for (const update of innerfaceUpdates) {
+                        const rawNewScore = update.currentScore + update.weight;
+                        const newScore = Math.max(0, Number(rawNewScore.toFixed(4)));
+                        transaction.update(update.ref, { currentScore: newScore });
                     }
 
-                    // Monthly Reset Logic
-                    if (stats.lastMonthlyUpdate !== monthStr) {
-                        stats.monthlyCheckins = 0;
-                        stats.monthlyXp = 0;
-                        stats.lastMonthlyUpdate = monthStr;
+                    // WRITE: Personality Stats
+                    if (personalityDoc && personalityDoc.exists()) {
+                        const pData = personalityDoc.data() as Personality;
+                        const todayStr = format(new Date(), 'yyyy-MM-dd');
+                        const monthStr = format(new Date(), 'yyyy-MM');
+
+                        // Initialize or Get existing stats
+                        const stats = pData.stats || {
+                            totalCheckins: 0,
+                            totalXp: 0,
+                            lastDailyUpdate: todayStr,
+                            dailyCheckins: 0,
+                            dailyXp: 0,
+                            lastMonthlyUpdate: monthStr,
+                            monthlyCheckins: 0,
+                            monthlyXp: 0
+                        };
+
+                        // Calculate XP
+                        // Derived from weight * 100
+                        const recordXp = Math.round((record.weight || 0) * 100);
+
+                        // Daily Reset Logic
+                        if (stats.lastDailyUpdate !== todayStr) {
+                            stats.dailyCheckins = 0;
+                            stats.dailyXp = 0;
+                            stats.lastDailyUpdate = todayStr;
+                        }
+
+                        // Monthly Reset Logic
+                        if (stats.lastMonthlyUpdate !== monthStr) {
+                            stats.monthlyCheckins = 0;
+                            stats.monthlyXp = 0;
+                            stats.lastMonthlyUpdate = monthStr;
+                        }
+
+                        // Increment
+                        stats.totalCheckins += 1;
+                        stats.totalXp += recordXp;
+                        stats.dailyCheckins += 1;
+                        stats.dailyXp += recordXp;
+                        stats.monthlyCheckins += 1;
+                        stats.monthlyXp += recordXp;
+
+                        transaction.update(personalityRef, { stats });
                     }
-
-                    // Increment
-                    stats.totalCheckins += 1;
-                    stats.totalXp += recordXp;
-                    stats.dailyCheckins += 1;
-                    stats.dailyXp += recordXp;
-                    stats.monthlyCheckins += 1;
-                    stats.monthlyXp += recordXp;
-
-                    transaction.update(personalityRef, { stats });
                 }
             });
         } catch (err: unknown) {
@@ -193,7 +200,8 @@ export const useHistoryStore = create<HistoryState>((set) => ({
                         if (innerfaceDoc.exists()) {
                             const currentScore = innerfaceDoc.data().currentScore || innerfaceDoc.data().initialScore || 0;
                             // Subtract the weight to revert
-                            const newScore = Math.max(0, currentScore - Number(weight));
+                            const rawNewScore = currentScore - Number(weight);
+                            const newScore = Math.max(0, Number(rawNewScore.toFixed(4)));
 
                             transaction.update(innerfaceRef, {
                                 currentScore: newScore

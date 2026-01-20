@@ -1,6 +1,6 @@
 export interface HistoryRecord {
     id: string; // Firestore document ID
-    type: 'protocol' | 'quick_action' | 'system';
+    type: 'protocol' | 'manual_adjustment' | 'system';
     protocolId: string | number;
     protocolName: string;
     protocolIcon: string;

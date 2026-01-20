@@ -69,9 +69,16 @@ export function useHistoryFeed(filters: HistoryFilters = {}) {
                     // Map UI types to DB types
                     let dbType = '';
                     if (filters.type === 'Actions') dbType = 'protocol';
-                    if (filters.type === 'Manual') dbType = 'quick_action';
+                    if (filters.type === 'Manual') dbType = 'manual_adjustment';
                     if (filters.type === 'System') dbType = 'system';
                     if (dbType) constraints.push(where('type', '==', dbType));
+                }
+
+                // 3. Innerface Filter (Server-Side optimization)
+                if (filters.innerfaceIds && filters.innerfaceIds.length > 0 && (!filters.protocolIds || filters.protocolIds.length === 0)) {
+                    if (filters.innerfaceIds.length <= 10) {
+                        constraints.push(where('targets', 'array-contains-any', filters.innerfaceIds));
+                    }
                 }
 
                 // 3. Time Filter
@@ -133,9 +140,21 @@ export function useHistoryFeed(filters: HistoryFilters = {}) {
             if (filters.type && filters.type !== 'All types') {
                 let dbType = '';
                 if (filters.type === 'Actions') dbType = 'protocol';
-                if (filters.type === 'Manual') dbType = 'quick_action';
+                if (filters.type === 'Manual') dbType = 'manual_adjustment';
                 if (filters.type === 'System') dbType = 'system';
                 if (dbType) constraints.push(where('type', '==', dbType));
+            }
+
+            // 3. Innerface Filter (Server-Side optimization)
+            // Use 'targets' array which contains innerface IDs.
+            // CONSTRAINT: Cannot use 'in' (for protocols) and 'array-contains-any' (for innerfaces) together.
+            // Priority: If Protocol filter exists, rely on Client-Side filtering for Innerfaces.
+            // If Protocol filter is empty, use Server-Side Innerface filter.
+            if (filters.innerfaceIds && filters.innerfaceIds.length > 0 && (!filters.protocolIds || filters.protocolIds.length === 0)) {
+                // array-contains-any allows up to 10 values
+                if (filters.innerfaceIds.length <= 10) {
+                    constraints.push(where('targets', 'array-contains-any', filters.innerfaceIds));
+                }
             }
             if (filters.timeRange) {
                 constraints.push(where('timestamp', '>=', filters.timeRange.start.toISOString()));

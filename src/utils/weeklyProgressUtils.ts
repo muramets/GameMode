@@ -112,7 +112,7 @@ export function getWeeklyProgress(
             // Count completions in CURRENT WEEK
             let completed = 0;
             history.forEach(r => {
-                if ((r.type === 'protocol' || r.type === 'quick_action') && String(r.protocolId) === protocolId) {
+                if ((r.type === 'protocol' || r.type === 'manual_adjustment') && String(r.protocolId) === protocolId) {
                     try {
                         if (isWithinInterval(parseISO(r.timestamp), weekRange)) {
                             completed++;
@@ -147,7 +147,7 @@ export function getWeeklyProgress(
             // Count completions in THE PERIOD WINDOW
             let completed = 0;
             history.forEach(r => {
-                if ((r.type === 'protocol' || r.type === 'quick_action') && String(r.protocolId) === protocolId) {
+                if ((r.type === 'protocol' || r.type === 'manual_adjustment') && String(r.protocolId) === protocolId) {
                     try {
                         if (isWithinInterval(parseISO(r.timestamp), mainItem.range)) {
                             completed++;
