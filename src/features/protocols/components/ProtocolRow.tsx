@@ -145,7 +145,7 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
                             <TruncatedTooltip
                                 as="p"
                                 text={protocol.description}
-                                className="text-[10px] text-text-secondary truncate font-mono opacity-60 group-hover:opacity-100 transition-opacity block"
+                                className="text-[10px] text-sub font-mono opacity-60 group-hover:opacity-100 group-hover:text-text-primary transition-all duration-300 truncate block"
                             />
                         )}
                     </div>

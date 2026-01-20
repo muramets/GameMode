@@ -37,7 +37,7 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
     };
 
     return (
-        <Card className={`group relative overflow-hidden p-4 flex flex-col justify-between min-h-[120px] transition-all duration-300 border border-transparent text-left select-none cursor-grab active:cursor-grabbing ${forceHover ? '-translate-y-[2px] shadow-lg' : 'hover:-translate-y-[2px] hover:shadow-lg'}`}>
+        <Card className={`group relative overflow-hidden p-4 flex flex-col justify-between min-h-[105px] transition-all duration-300 border border-transparent text-left select-none cursor-grab active:cursor-grabbing ${forceHover ? '-translate-y-[2px] shadow-lg' : 'hover:-translate-y-[2px] hover:shadow-lg'}`}>
             {/* 1. Dynamic Gradient from Tier Color */}
             <div
                 className={`absolute -right-10 -bottom-10 w-48 h-48 blur-[60px] transition-opacity duration-500 opacity-[0.10] ${forceHover ? 'opacity-[0.20]' : 'group-hover:opacity-[0.20]'}`}
@@ -85,32 +85,16 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
             </div>
 
             {/* Middle: Actions & Level Display */}
-            <div className="relative z-10 mt-auto mb-3 flex items-end justify-between w-full">
+            <div className="relative z-10 mt-auto mb-2 flex items-end justify-between w-full">
                 {/* Left: Actions */}
-                <div className="flex flex-col gap-0">
-                    {/* History - only on hover */}
-                    <button
-                        onClick={handleHistory}
-                        className={`w-10 h-7 flex items-center justify-start text-sub hover:text-main transition-all duration-200 opacity-0 ${forceHover ? 'opacity-100' : 'group-hover:opacity-100'}`}
-                        title="View History"
-                    >
-                        <FontAwesomeIcon icon={faHistory} className="text-xs" />
-                    </button>
-                    {/* Settings - only on hover */}
-                    <button
-                        onClick={handleEdit}
-                        className={`w-10 h-7 flex items-center justify-start text-sub hover:text-main transition-all duration-200 opacity-0 ${forceHover ? 'opacity-100' : 'group-hover:opacity-100'}`}
-                        title="Settings"
-                    >
-                        <FontAwesomeIcon icon={faCog} className="text-xs" />
-                    </button>
+                <div className="flex flex-row gap-0 items-center ml-1">
                     {/* Target - always visible when goal set, otherwise on hover */}
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
                             onPlanning?.();
                         }}
-                        className={`w-10 h-7 flex items-center justify-start transition-all duration-200 
+                        className={`w-7 h-7 flex items-center justify-start transition-all duration-200 
                             ${hasGoal
                                 ? 'opacity-100 text-main hover:text-white'
                                 : `opacity-0 text-sub hover:text-main ${forceHover ? 'opacity-100' : 'group-hover:opacity-100'}`
@@ -118,6 +102,22 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
                         title={hasGoal ? "View Goal" : "Set Goal"}
                     >
                         <FontAwesomeIcon icon={faBullseye} className="text-xs" />
+                    </button>
+                    {/* History - only on hover */}
+                    <button
+                        onClick={handleHistory}
+                        className={`w-7 h-7 flex items-center justify-start text-sub hover:text-main transition-all duration-200 opacity-0 ${forceHover ? 'opacity-100' : 'group-hover:opacity-100'}`}
+                        title="View History"
+                    >
+                        <FontAwesomeIcon icon={faHistory} className="text-xs" />
+                    </button>
+                    {/* Settings - only on hover */}
+                    <button
+                        onClick={handleEdit}
+                        className={`w-7 h-7 flex items-center justify-start text-sub hover:text-main transition-all duration-200 opacity-0 ${forceHover ? 'opacity-100' : 'group-hover:opacity-100'}`}
+                        title="Settings"
+                    >
+                        <FontAwesomeIcon icon={faCog} className="text-xs" />
                     </button>
                 </div>
 
@@ -135,7 +135,7 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
                             </span>
                         </div>
                         <div
-                            className="text-[2.5rem] font-medium font-mono leading-none tracking-tight transition-colors duration-300"
+                            className="text-[2.2rem] font-medium font-mono leading-none tracking-tight transition-colors duration-300"
                             style={{ color: tierColor }}
                         >
                             {level}
@@ -145,8 +145,11 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
             </div>
 
             {/* Bottom: Progress Bar (XP to next level) */}
-            <div className="relative z-10 w-full flex flex-col gap-1">
-                <div className="h-[4px] bg-bg-primary/50 w-full rounded-full overflow-hidden">
+            <div className="relative z-10 w-full flex flex-col gap-0.5">
+                <div className={`text-[9px] font-mono text-sub ml-1 opacity-50 transition-all duration-300 ${forceHover ? 'opacity-100 text-text-primary' : 'group-hover:opacity-100 group-hover:text-text-primary'}`}>
+                    {100 - currentLevelXP} XP to next level
+                </div>
+                <div className="h-[4px] bg-bg-primary/50 w-full rounded-full overflow-hidden my-0.5">
                     <div
                         className="h-full transition-all duration-300 ease-out rounded-full"
                         style={{
@@ -156,7 +159,7 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
                     />
                 </div>
                 {/* XP Detail (Visible on hover or always small) */}
-                <div className={`flex justify-between items-center text-[9px] font-mono text-sub opacity-50 transition-all duration-200 ${forceHover ? 'opacity-100 text-text-primary' : 'group-hover:opacity-100 group-hover:text-text-primary'}`}>
+                <div className={`flex justify-between items-center text-[9px] font-mono text-sub ml-1 opacity-50 transition-all duration-200 ${forceHover ? 'opacity-100 text-text-primary' : 'group-hover:opacity-100 group-hover:text-text-primary'}`}>
                     <span>{currentLevelXP} / 100 XP</span>
                     <span>{totalXP} Total</span>
                 </div>

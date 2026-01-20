@@ -80,10 +80,31 @@ export function IconPicker({
         };
     }, [tabsContainer, searchQuery, activeCategory]); // Re-run when these change to ensure accuracy
 
+    // Scroll active tab into view
+    useEffect(() => {
+        if (!tabsContainer || !activeCategory) return;
+
+        const activeTab = tabsContainer.querySelector(`[data-category="${activeCategory}"]`);
+        if (activeTab) {
+            activeTab.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest',
+                inline: 'center'
+            });
+        }
+    }, [tabsContainer, activeCategory]);
+
     const handleSelect = (iconId: string) => {
         onChange(iconId);
         setIsOpen(false);
         setSearchQuery('');
+    };
+
+    const handleNextCategory = () => {
+        const currentIndex = ICON_CATEGORIES.findIndex(cat => cat.id === activeCategory);
+        if (currentIndex < ICON_CATEGORIES.length - 1) {
+            setActiveCategory(ICON_CATEGORIES[currentIndex + 1].id);
+        }
     };
 
     const handleOpenChange = (open: boolean) => {
@@ -181,6 +202,7 @@ export function IconPicker({
                                     <button
                                         key={cat.id}
                                         type="button"
+                                        data-category={cat.id}
                                         onClick={() => setActiveCategory(cat.id)}
                                         className={`px-2.5 py-1 text-[10px] font-medium rounded-md whitespace-nowrap transition-all cursor-pointer ${activeCategory === cat.id
                                             ? 'bg-white/10 text-text-primary'
@@ -193,12 +215,19 @@ export function IconPicker({
                             </div>
                             {/* Scroll Arrow Indicator */}
                             {showScrollArrow && (
-                                <div className="absolute right-0 top-0 bottom-0 w-8 flex items-center justify-end pointer-events-none bg-gradient-to-l from-sub-alt/95 via-sub-alt/80 to-transparent">
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleNextCategory();
+                                    }}
+                                    className="absolute right-0 top-0 bottom-0 w-8 flex items-center justify-end group/arrow cursor-pointer bg-gradient-to-l from-sub-alt/95 via-sub-alt/80 to-transparent hover:from-sub-alt border-none outline-none"
+                                >
                                     <FontAwesomeIcon
                                         icon={faChevronRight}
-                                        className="text-[10px] text-sub animate-pulse mr-1"
+                                        className="text-[10px] text-sub group-hover/arrow:text-text-primary group-hover/arrow:translate-x-0.5 transition-all animate-pulse mr-1"
                                     />
-                                </div>
+                                </button>
                             )}
                         </div>
                     )}
