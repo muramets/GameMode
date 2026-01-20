@@ -8,6 +8,7 @@ import { TruncatedTooltip } from '../../../components/ui/molecules/TruncatedTool
 import { AppIcon } from '../../../components/ui/atoms/AppIcon';
 import { motion } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../../components/ui/atoms/Tooltip';
+import { useTouchDevice } from '../../../hooks/useTouchDevice';
 
 // Set to true to visualize layout containers during development/debugging
 const DEBUG_LAYOUT = false;
@@ -24,6 +25,7 @@ interface ProtocolRowProps {
 
 export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerfaces, onLevelUp, onLevelDown, onEdit, isDisabled, isReadOnly }: ProtocolRowProps) {
     const navigate = useNavigate();
+    const isTouchDevice = useTouchDevice();
     const [hoverSide, setHoverSide] = useState<'left' | 'right' | null>(null);
     const [feedbackType, setFeedbackType] = useState<'plus' | 'minus' | null>(null);
     const [shake, setShake] = useState<'left' | 'right' | null>(null);
@@ -129,7 +131,7 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
                 <motion.div layout className={`flex items-center gap-3 min-w-0 pointer-events-none ${DEBUG_LAYOUT ? 'border border-blue-500' : ''}`}>
                     <motion.div layout
                         className="flex items-center justify-center w-10 h-10 rounded-lg text-xl shrink-0"
-                        animate={{ marginLeft: isHovered ? 16 : 0 }}
+                        animate={{ marginLeft: (isHovered || (isTouchDevice && !isDisabled && !isReadOnly)) ? 16 : 0 }}
                         transition={{ duration: 0.3, ease: "easeOut" }}
                         style={{
                             backgroundColor: `color-mix(in srgb, ${protocol.color || '#ffffff'} 20%, transparent)`,
@@ -221,10 +223,10 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
             </motion.div>
 
             <div className="absolute inset-y-0 left-0 w-8 flex items-center justify-center pointer-events-none z-20">
-                <FontAwesomeIcon icon={faMinus} className={`transition-all duration-300 ${effectiveFeedbackType === 'minus' ? 'opacity-100 text-[#ca4754] scale-150' : effectiveHoverSide === 'left' ? 'opacity-100 -translate-x-0 text-[#ca4754]' : 'opacity-0 -translate-x-4'}`} />
+                <FontAwesomeIcon icon={faMinus} className={`transition-all duration-300 ${effectiveFeedbackType === 'minus' ? 'opacity-100 text-[#ca4754] scale-150' : (effectiveHoverSide === 'left' || (isTouchDevice && !isDisabled && !isReadOnly)) ? 'opacity-100 -translate-x-0 text-[#ca4754]' : 'opacity-0 -translate-x-4'}`} />
             </div>
             <div className="absolute inset-y-0 right-0 w-8 flex items-center justify-center pointer-events-none z-20">
-                <FontAwesomeIcon icon={faPlus} className={`transition-all duration-300 ${effectiveFeedbackType === 'plus' ? 'opacity-100 text-[#98c379] scale-150' : effectiveHoverSide === 'right' ? 'opacity-100 translate-x-0 text-[#98c379]' : 'opacity-0 translate-x-4'}`} />
+                <FontAwesomeIcon icon={faPlus} className={`transition-all duration-300 ${effectiveFeedbackType === 'plus' ? 'opacity-100 text-[#98c379] scale-150' : (effectiveHoverSide === 'right' || (isTouchDevice && !isDisabled && !isReadOnly)) ? 'opacity-100 translate-x-0 text-[#98c379]' : 'opacity-0 translate-x-4'}`} />
             </div>
         </motion.div>
     );
