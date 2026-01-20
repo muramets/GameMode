@@ -85,10 +85,24 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
     };
 
 
-    const handleClick = () => {
+    const handleClick = (e: React.MouseEvent) => {
         if (isDisabled || isReadOnly) return;
-        if (hoverSide === 'left') handleAction('-');
-        else if (hoverSide === 'right') handleAction('+');
+
+        // Calculate click position relative to the row
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const width = rect.width;
+        const deadZone = 60; // Use same deadzone as mouse move
+
+        // Check zones
+        if (x < deadZone) {
+            handleAction('-');
+        } else if (x > width - deadZone) {
+            handleAction('+');
+        } else if (isTouchDevice) {
+            // Middle tap on touch device: toggle hover state (settings/history)
+            setIsHovered(!isHovered);
+        }
     };
 
     return (

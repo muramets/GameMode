@@ -8,6 +8,7 @@ import { getTierColor } from '../../../utils/colorUtils';
 import { calculateLevel, scoreToXP } from '../../../utils/xpUtils';
 import { PowerIcon } from './PowerIcon';
 import { TruncatedTooltip } from '../../../components/ui/molecules/TruncatedTooltip';
+import { useTouchDevice } from '../../../hooks/useTouchDevice';
 
 interface InnerfaceCardProps {
     innerface: Innerface;
@@ -20,8 +21,17 @@ interface InnerfaceCardProps {
 export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGoal }: InnerfaceCardProps) {
     const navigate = useNavigate();
 
-    // Show hover state if forceHover is true
-    const shouldShowHover = forceHover;
+    const [isTapped, setIsTapped] = React.useState(false);
+    const isTouchDevice = useTouchDevice();
+
+    // Show hover state if forceHover is true or tapped on mobile
+    const shouldShowHover = forceHover || isTapped;
+
+    const handleCardClick = () => {
+        if (isTouchDevice) {
+            setIsTapped(!isTapped);
+        }
+    };
 
     // XP Calculation
     const currentScore = innerface.currentScore || innerface.initialScore || 0;
@@ -40,7 +50,10 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
     };
 
     return (
-        <Card className={`group relative overflow-hidden p-4 flex flex-col justify-between min-h-[105px] transition-all duration-300 border border-transparent text-left select-none cursor-grab active:cursor-grabbing ${shouldShowHover ? '-translate-y-[2px] shadow-lg' : '[@media(hover:hover)]:hover:-translate-y-[2px] [@media(hover:hover)]:hover:shadow-lg'}`}>
+        <Card
+            onClick={handleCardClick}
+            className={`group relative overflow-hidden p-4 flex flex-col justify-between min-h-[105px] transition-all duration-300 border border-transparent text-left select-none cursor-grab active:cursor-grabbing ${shouldShowHover ? '-translate-y-[2px] shadow-lg' : '[@media(hover:hover)]:hover:-translate-y-[2px] [@media(hover:hover)]:hover:shadow-lg'}`}
+        >
             {/* 1. Dynamic Gradient from Tier Color */}
             <div
                 className={`absolute -right-10 -bottom-10 w-48 h-48 blur-[60px] transition-opacity duration-500 opacity-[0.10] ${shouldShowHover ? 'opacity-[0.20]' : '[@media(hover:hover)]:group-hover:opacity-[0.20]'}`}
