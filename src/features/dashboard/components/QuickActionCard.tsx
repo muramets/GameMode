@@ -76,19 +76,18 @@ export function QuickActionCard({ action, onAction, onDelete, isDisabled, isDrag
                         .animate-tilt-right { animation: tilt-right 0.3s ease-in-out; }
                     `}</style>
 
-                    {/* 1. Dynamic Background Gradients */}
                     <div
                         className={`absolute inset-0 ${!isDragging ? 'transition-opacity duration-300' : ''}`}
                         style={{
                             background: `radial-gradient(circle at 100% 50%, rgba(152, 195, 121, 0.15), transparent 70%)`,
-                            opacity: effectiveHoverSide === 'right' || (isTouchDevice && !isDisabled && !isDragging) ? 1 : 0
+                            opacity: effectiveHoverSide === 'right' ? 1 : 0
                         }}
                     />
                     <div
                         className={`absolute inset-0 ${!isDragging ? 'transition-opacity duration-300' : ''}`}
                         style={{
                             background: `radial-gradient(circle at 0% 50%, rgba(202,71,84,0.15), transparent 70%)`,
-                            opacity: effectiveHoverSide === 'left' || (isTouchDevice && !isDisabled && !isDragging) ? 1 : 0
+                            opacity: effectiveHoverSide === 'left' ? 1 : 0
                         }}
                     />
 

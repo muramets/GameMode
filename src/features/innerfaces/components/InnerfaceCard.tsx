@@ -8,7 +8,6 @@ import { getTierColor } from '../../../utils/colorUtils';
 import { calculateLevel, scoreToXP } from '../../../utils/xpUtils';
 import { PowerIcon } from './PowerIcon';
 import { TruncatedTooltip } from '../../../components/ui/molecules/TruncatedTooltip';
-import { useTouchDevice } from '../../../hooks/useTouchDevice';
 
 interface InnerfaceCardProps {
     innerface: Innerface;
@@ -20,10 +19,9 @@ interface InnerfaceCardProps {
 
 export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGoal }: InnerfaceCardProps) {
     const navigate = useNavigate();
-    const isTouchDevice = useTouchDevice();
 
-    // Show hover state if forceHover is true OR on touch devices
-    const shouldShowHover = forceHover || isTouchDevice;
+    // Show hover state if forceHover is true
+    const shouldShowHover = forceHover;
 
     // XP Calculation
     const currentScore = innerface.currentScore || innerface.initialScore || 0;
