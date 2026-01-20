@@ -69,10 +69,100 @@ export function ImageCropper({ imageSrc, onCrop }: ImageCropperProps) {
         return () => document.removeEventListener('cropper-save', handleExternalSave);
     }, [handleSave]);
 
+    // Handle pinch/wheel zoom
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const handleWheel = (e: WheelEvent) => {
+            e.preventDefault();
+
+            if (e.ctrlKey) {
+                // Pinch -> Zoom
+                // For trackpads, deltaY usually represents pinch
+                const delta = -e.deltaY * 0.01;
+
+                setZoom(prev => {
+                    const newZoom = prev + delta;
+                    return Math.min(Math.max(0.1, newZoom), 3);
+                });
+            } else {
+                // No Ctrl -> Pan (Two-finger scroll on trackpad or regular wheel scroll)
+                // We subtract delta to match natural scrolling behavior (content follows fingers)
+                // depending on OS settings, this usually aligns with "scroll to move view".
+                // But for "moving the image", we effectively want to translate it.
+                // Standard scroll logic: scrollTop += deltaY.
+                // Moving image logic: y -= deltaY (to match scroll behavior).
+
+                const currentX = x.get();
+                const currentY = y.get();
+
+                x.set(currentX - e.deltaX);
+                y.set(currentY - e.deltaY);
+            }
+        };
+
+        const handleTouchStart = (e: TouchEvent) => {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+            }
+        };
+
+        const handleTouchMove = (e: TouchEvent) => {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+
+                // Calculate distance between two fingers
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+
+                const dist = Math.hypot(
+                    touch1.clientX - touch2.clientX,
+                    touch1.clientY - touch2.clientY
+                );
+
+                // We need to store previous distance to calculate delta
+                // But since we can't easily store state in this closure without ref,
+                // let's rely on a ref for previous distance
+                if ((container as any).lastDist) {
+                    const delta = dist - (container as any).lastDist;
+                    // Sensitivity factor
+                    const zoomDelta = delta * 0.01;
+
+                    setZoom(prev => {
+                        const newZoom = prev + zoomDelta;
+                        return Math.min(Math.max(0.1, newZoom), 3);
+                    });
+                }
+
+                (container as any).lastDist = dist;
+            }
+        };
+
+        const handleTouchEnd = () => {
+            (container as any).lastDist = null;
+        };
+
+        container.addEventListener('wheel', handleWheel, { passive: false });
+        container.addEventListener('touchstart', handleTouchStart, { passive: false });
+        container.addEventListener('touchmove', handleTouchMove, { passive: false });
+        container.addEventListener('touchend', handleTouchEnd);
+
+        return () => {
+            container.removeEventListener('wheel', handleWheel);
+            container.removeEventListener('touchstart', handleTouchStart);
+            container.removeEventListener('touchmove', handleTouchMove);
+            container.removeEventListener('touchend', handleTouchEnd);
+        };
+    }, []);
+
     return (
         <div className="flex flex-col items-center gap-6 w-full">
             {/* Cropper Area with dark background */}
-            <div className="relative w-full aspect-square max-w-[320px] bg-bg-primary rounded-xl overflow-hidden mx-auto">
+            <div
+                ref={containerRef}
+                className="relative w-full aspect-square max-w-[320px] bg-bg-primary rounded-xl overflow-hidden mx-auto"
+            >
                 {/* Image Layer */}
                 <div className="absolute inset-0 flex items-center justify-center">
                     <motion.img
@@ -93,7 +183,6 @@ export function ImageCropper({ imageSrc, onCrop }: ImageCropperProps) {
 
                 {/* Dark Overlay with Circular Cutout using CSS mask */}
                 <div
-                    ref={containerRef}
                     className="absolute inset-0 pointer-events-none"
                     style={{
                         background: 'rgba(0, 0, 0, 0.7)',

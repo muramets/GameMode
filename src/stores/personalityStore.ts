@@ -9,6 +9,7 @@ import {
     updateDoc,
     query,
     orderBy,
+    onSnapshot,
 } from 'firebase/firestore';
 import type { Personality } from '../types/personality';
 import { GROUP_CONFIG, DEFAULT_GROUPS_ORDER } from '../constants/common';
@@ -27,6 +28,7 @@ interface PersonalityState {
     error: string | null;
 
     // Actions
+    subscribeToPersonalities: (uid: string) => () => void;
     loadPersonalities: (uid: string) => Promise<void>;
     addPersonality: (uid: string, name: string, data?: Partial<Personality>) => Promise<string>;
     updatePersonality: (uid: string, personalityId: string, data: Partial<Personality>) => Promise<void>;
@@ -81,6 +83,40 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
             const message = err instanceof Error ? err.message : 'Unknown error';
             set({ error: message, isLoading: false });
         }
+    },
+
+    subscribeToPersonalities: (uid) => {
+        console.debug("Subscribing to personalities", { uid });
+        set({ isLoading: true });
+        const colRef = collection(db, 'users', uid, 'personalities');
+        const q = query(colRef, orderBy('lastActiveAt', 'desc'));
+
+        const unsubscribe = onSnapshot(q, (snap) => {
+            const personalities = snap.docs.map(d => ({ ...d.data(), id: d.id } as Personality));
+
+            // If the currently active personality was deleted, handle it
+            const currentActiveId = get().activePersonalityId;
+            const currentContext = get().activeContext;
+
+            // Only switch if we are in a personality context and that personality is gone
+            if (
+                currentContext?.type === 'personality' &&
+                currentActiveId &&
+                personalities.length > 0 &&
+                !personalities.some(p => p.id === currentActiveId)
+            ) {
+                // Switch to the first available one
+                console.warn("Active personality removed remotely, switching to fallback", personalities[0].id);
+                get().switchPersonality(uid, personalities[0].id);
+            }
+
+            set({ personalities, isLoading: false });
+        }, (err) => {
+            console.error("Personalities subscription error", err);
+            set({ error: err.message, isLoading: false });
+        });
+
+        return unsubscribe;
     },
 
     updatePersonality: async (uid, personalityId, data) => {

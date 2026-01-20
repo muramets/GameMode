@@ -22,7 +22,8 @@ export function StoreSync() {
     const subscribeToRoles = useRoleStore(state => state.subscribeToRoles);
 
     const ensureDefaultPersonality = usePersonalityStore(state => state.ensureDefaultPersonality);
-    const loadPersonalities = usePersonalityStore(state => state.loadPersonalities);
+    const subscribeToPersonalities = usePersonalityStore(state => state.subscribeToPersonalities);
+    const personalities = usePersonalityStore(state => state.personalities);
     const activeContext = usePersonalityStore(state => state.activeContext);
 
     const isInviteRoute = location.pathname.startsWith('/invite/');
@@ -30,23 +31,36 @@ export function StoreSync() {
     // 1. Initialize Personalities & Teams
     useEffect(() => {
         if (user) {
-            // On invite routes, DON'T create default personality - JoinInvitePage will create the role personality
-            // But DO load personalities to complete loading state
-            if (!isInviteRoute) {
-                ensureDefaultPersonality(user.uid);
-            } else {
-                // Just load personalities list without creating defaults
-                loadPersonalities(user.uid);
-            }
+            // Subscribe to personalities (Real-time)
+            const unsubPersonalities = subscribeToPersonalities(user.uid);
 
             // Always start listening to teams (needed for loading to complete)
             const unsubTeams = subscribeToTeams(user.uid);
-            return () => unsubTeams();
+
+            return () => {
+                unsubPersonalities();
+                unsubTeams();
+            };
         } else {
             // Clear personality store on logout/no-user to prevent stale data
             usePersonalityStore.getState().reset();
         }
-    }, [user, ensureDefaultPersonality, loadPersonalities, subscribeToTeams, isInviteRoute]);
+    }, [user, subscribeToPersonalities, subscribeToTeams]);
+
+    // 1.5 React to empty personalities (e.g. manual deletion)
+    useEffect(() => {
+        if (user && !isInviteRoute && personalities.length === 0) {
+            // If personalities list becomes empty via sync, ensure default exists
+            // We use a small timeout to avoid conflict with initial load
+            const timer = setTimeout(() => {
+                // Double check specific conditions to avoid endless loop if creation fails
+                if (usePersonalityStore.getState().personalities.length === 0 && !usePersonalityStore.getState().isLoading) {
+                    ensureDefaultPersonality(user.uid);
+                }
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [user, personalities.length, isInviteRoute, ensureDefaultPersonality]);
 
     // 2. Sync Data when Context is Active
     // We use JSON.stringify(activeContext) to prevent cycles if the object reference changes but content is same
