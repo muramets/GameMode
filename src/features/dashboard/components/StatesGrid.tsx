@@ -29,7 +29,7 @@ interface StatesGridProps {
 }
 
 export function StatesGrid({ states, onAddState, onEdit, onHistory, hasProtocols = false, isModalOpen = false }: StatesGridProps) {
-    const { reorderStates } = useMetadataStore();
+    const { reorderStates, isDimensionsCollapsed, setDimensionsCollapsed } = useMetadataStore();
     const navigate = useNavigate();
     const [localOpen, setLocalOpen] = useState(false);
     const suppressTooltip = useTooltipSuppression(isModalOpen);
@@ -44,6 +44,8 @@ export function StatesGrid({ states, onAddState, onEdit, onHistory, hasProtocols
     return (
         <CollapsibleSection
             title="Dimensions"
+            isOpen={!isDimensionsCollapsed}
+            onToggle={() => setDimensionsCollapsed(!isDimensionsCollapsed)}
             trailing={
                 <TooltipProvider delayDuration={1000}>
                     <Tooltip

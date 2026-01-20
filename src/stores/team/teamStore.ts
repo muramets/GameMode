@@ -166,12 +166,19 @@ export const useTeamStore = create<TeamState>((set, get) => ({
             ownedDocs = snap.docs;
             // Only update after member query has initialized to avoid partial state
             if (memberInitialized) updateTeams();
+        }, err => {
+            console.error('[TeamStore] Owned query error:', err);
+            if (memberInitialized) updateTeams();
         });
 
         const unsubMember = onSnapshot(memberQuery, snap => {
             memberDocs = snap.docs;
             updateTeams();
             memberInitialized = true;
+        }, err => {
+            console.error('[TeamStore] Member query error:', err);
+            memberInitialized = true;
+            updateTeams();
         });
 
         // Also load memberships from user doc (one-time)

@@ -162,4 +162,17 @@ export const createStateSlice = (
             showErrorToast(message);
         }
     },
+
+    setDimensionsCollapsed: async (collapsed: boolean) => {
+        try {
+            const context = get().context;
+            guardAgainstViewerMode(context);
+            const docRef = doc(db, `${getPathRoot(context)}/settings/app`);
+            await updateDoc(docRef, { isDimensionsCollapsed: collapsed });
+        } catch (err: unknown) {
+            console.error("Failed to update dimensions collapse state:", err);
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            showErrorToast(message);
+        }
+    },
 });

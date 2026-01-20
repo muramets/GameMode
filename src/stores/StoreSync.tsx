@@ -47,20 +47,30 @@ export function StoreSync() {
         }
     }, [user, subscribeToPersonalities, subscribeToTeams]);
 
-    // 1.5 React to empty personalities (e.g. manual deletion)
+    // 1.5 React to empty personalities (initial creation) OR missing activeContext
     useEffect(() => {
-        if (user && !isInviteRoute && personalities.length === 0) {
-            // If personalities list becomes empty via sync, ensure default exists
-            // We use a small timeout to avoid conflict with initial load
-            const timer = setTimeout(() => {
-                // Double check specific conditions to avoid endless loop if creation fails
-                if (usePersonalityStore.getState().personalities.length === 0 && !usePersonalityStore.getState().isLoading) {
-                    ensureDefaultPersonality(user.uid);
-                }
-            }, 500);
-            return () => clearTimeout(timer);
+        if (user && !isInviteRoute) {
+            const currentPersonalities = personalities;
+            const currentActiveContext = activeContext;
+            const isPersonalityLoading = usePersonalityStore.getState().isLoading;
+
+            // Trigger initialization if no personalities OR no active context picked yet
+            if ((currentPersonalities.length === 0 || !currentActiveContext) && !isPersonalityLoading) {
+                console.debug("StoreSync: Triggering ensureDefaultPersonality", {
+                    persCount: currentPersonalities.length,
+                    hasActiveContext: !!currentActiveContext
+                });
+                const timer = setTimeout(() => {
+                    // Re-check inside timer to be sure
+                    const latestState = usePersonalityStore.getState();
+                    if ((latestState.personalities.length === 0 || !latestState.activeContext) && !latestState.isLoading) {
+                        ensureDefaultPersonality(user.uid);
+                    }
+                }, 1000); // 1s buffer for initial load/sync
+                return () => clearTimeout(timer);
+            }
         }
-    }, [user, personalities.length, isInviteRoute, ensureDefaultPersonality]);
+    }, [user, personalities.length, activeContext, isInviteRoute, ensureDefaultPersonality]);
 
     // 2. Sync Data when Context is Active
     // We use JSON.stringify(activeContext) to prevent cycles if the object reference changes but content is same

@@ -11,6 +11,7 @@ export interface MetadataState {
     groupsMetadata: Record<string, { icon: string; color?: string }>;
     groupOrder: string[]; // List of protocol group names
     innerfaceGroupOrder: string[]; // List of innerface group names
+    isDimensionsCollapsed: boolean;
     categoryOrder: string[]; // List of category names ('skill', 'foundation', 'uncategorized')
     isLoading: boolean;
     loadedCount: number;
@@ -61,6 +62,7 @@ export interface MetadataState {
 
     // State Ordering
     reorderStates: (orderedIds: string[]) => Promise<void>;
+    setDimensionsCollapsed: (collapsed: boolean) => Promise<void>;
 
     // Innerface Ordering
     reorderInnerfaces: (orderedIds: string[]) => Promise<void>;

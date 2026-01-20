@@ -35,6 +35,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     groupsMetadata: {},
     groupOrder: [],
     innerfaceGroupOrder: [],
+    isDimensionsCollapsed: false,
     categoryOrder: [],
     isLoading: true,
     loadedCount: 0,
@@ -62,6 +63,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             groupOrder: [],
             innerfaceGroupOrder: [],
             categoryOrder: [],
+            isDimensionsCollapsed: false,
             pinnedProtocolIds: [],
             isLoading: true,
             loadedCount: 0
@@ -79,7 +81,15 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         const handleSnapshotError = (err: Error, source: string) => {
             console.error(`[MetadataStore] Error loading ${source}:`, err);
             set({ error: err.message });
-            markLoaded();
+
+            // Critical fix: Ensure we mark as many sections as this listener was responsible for
+            if (source === 'settings/app') {
+                markLoaded();
+                markLoaded();
+                markLoaded();
+            } else {
+                markLoaded();
+            }
         };
 
         const unsubIfaces = onSnapshot(
@@ -177,12 +187,14 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
                     set({
                         innerfaceGroupOrder: data.innerfaceGroupOrder || [],
                         categoryOrder: data.categoryOrder || [],
+                        isDimensionsCollapsed: data.isDimensionsCollapsed ?? false,
                         pinnedProtocolIds: data.pinnedProtocolIds || []
                     });
                 } else {
                     set({
                         innerfaceGroupOrder: [],
                         categoryOrder: [],
+                        isDimensionsCollapsed: false,
                         pinnedProtocolIds: []
                     });
                 }

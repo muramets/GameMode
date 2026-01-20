@@ -28,6 +28,21 @@ export function ScoreProvider({ children }: { children: React.ReactNode }) {
 
     const isLoading = scoreData.isLoading || teamsLoading || personalitiesLoading || isRoleMetadataMissing;
 
+    // Debugging logs for production hang
+    useEffect(() => {
+        if (isLoading) {
+            console.debug("ScoreProvider: Waiting for data...", {
+                history: scoreData.isLoading,
+                teams: teamsLoading,
+                personalities: personalitiesLoading,
+                roleMetadata: isRoleMetadataMissing,
+                activeContext: activeContext?.type
+            });
+        } else {
+            console.debug("ScoreProvider: All data loaded!");
+        }
+    }, [isLoading, scoreData.isLoading, teamsLoading, personalitiesLoading, isRoleMetadataMissing, activeContext]);
+
     // Track previous loading state to detect transitions
     const wasLoadingRef = useRef(isLoading);
 
