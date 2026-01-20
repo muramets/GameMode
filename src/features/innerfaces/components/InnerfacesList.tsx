@@ -90,7 +90,7 @@ const CategorySection = React.memo(({
                                 ref={setActivatorNodeRef}
                                 {...listeners}
                                 {...attributes}
-                                className="opacity-0 group-hover/category:opacity-50 hover:!opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-2 touch-none"
+                                className="opacity-0 group-hover/category:opacity-50 hover:!opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-2"
                             >
                                 <FontAwesomeIcon icon={faGripVertical} className="text-sm text-sub" />
                             </div>

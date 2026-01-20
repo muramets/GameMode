@@ -2,8 +2,11 @@ import { useLocation } from 'react-router-dom';
 import { Header } from './Header';
 import { Navigation } from './Navigation';
 import { ViewerBanner } from './ViewerBanner';
+import { useSwipeNavigation } from '../../hooks/useSwipeNavigation';
 
 export function Layout({ children }: { children: React.ReactNode }) {
+    useSwipeNavigation();
+
     // Structure mimics MonkeyType #app.content-grid
     // Using the ported #app and .content-grid rules from index.css
     // REMOVED explicit pt-8 pb-8 because #app in index.css already sets padding-top/bottom: 2rem

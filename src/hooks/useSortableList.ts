@@ -2,7 +2,8 @@ import { useState, useCallback } from 'react';
 import {
     useSensor,
     useSensors,
-    PointerSensor,
+    MouseSensor, // Changed from PointerSensor for better control
+    TouchSensor, // Added TouchSensor for mobile support
     KeyboardSensor,
     type DragEndEvent,
     type DragStartEvent,
@@ -23,7 +24,8 @@ export const useSortableList = <T extends { id: string | number }>({
     const [activeId, setActiveId] = useState<string | null>(null);
 
     const sensors = useSensors(
-        useSensor(PointerSensor, DND_SENSORS_CONFIG.pointer),
+        useSensor(MouseSensor, DND_SENSORS_CONFIG.mouse),
+        useSensor(TouchSensor, DND_SENSORS_CONFIG.touch),
         useSensor(KeyboardSensor, DND_SENSORS_CONFIG.keyboard)
     );
 

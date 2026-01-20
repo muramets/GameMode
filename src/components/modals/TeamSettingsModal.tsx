@@ -69,7 +69,7 @@ export function TeamSettingsModal({ isOpen, onClose, teamId }: TeamSettingsModal
         try {
             const data = {
                 name: name.trim(),
-                description: description.trim() || undefined,
+                description: description.trim(),
                 icon,
                 iconColor: color
             };

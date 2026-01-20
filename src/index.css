@@ -4,6 +4,12 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .touch-callout-none {
+    -webkit-touch-callout: none;
+  }
+}
+
 html {
   font-size: 16px !important;
 }

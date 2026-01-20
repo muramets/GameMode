@@ -33,7 +33,7 @@ export function SortableQuickActionCard({ action, onClick, onDelete, isDisabled 
             style={style}
             {...attributes}
             {...listeners}
-            className="touch-none h-full" // Ensure full height for grid alignment
+            className="h-full touch-callout-none" // Ensure full height for grid alignment
         >
             <QuickActionCard
                 action={action}

@@ -2,7 +2,8 @@ import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import {
     useSensor,
     useSensors,
-    PointerSensor,
+    MouseSensor,
+    TouchSensor,
     KeyboardSensor,
     type DragStartEvent,
     type DragOverEvent,
@@ -54,7 +55,8 @@ export const useInnerfaceDnD = ({
     }, [innerfaces, categoryOrder, groupOrder]);
 
     const sensors = useSensors(
-        useSensor(PointerSensor, DND_SENSORS_CONFIG.pointer),
+        useSensor(MouseSensor, DND_SENSORS_CONFIG.mouse),
+        useSensor(TouchSensor, DND_SENSORS_CONFIG.touch),
         useSensor(KeyboardSensor, DND_SENSORS_CONFIG.keyboard)
     );
 

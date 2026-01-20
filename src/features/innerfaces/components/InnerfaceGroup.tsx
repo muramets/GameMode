@@ -154,7 +154,7 @@ export const InnerfaceGroup = React.memo(({
                                 ref={setActivatorNodeRef}
                                 {...listeners}
                                 {...attributes}
-                                className="cursor-grab active:cursor-grabbing text-sub hover:text-text-primary active:text-text-primary px-1 -ml-2 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                                className="cursor-grab active:cursor-grabbing text-sub hover:text-text-primary active:text-text-primary px-1 -ml-2 opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-all duration-200"
                                 title="Drag to reorder group"
                                 onPointerDown={(e) => {
                                     e.stopPropagation();
@@ -167,7 +167,7 @@ export const InnerfaceGroup = React.memo(({
                         trailing={
                             groupName !== 'ungrouped' && (
                                 <button
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-sub hover:text-text-primary p-2 ml-2"
+                                    className="opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity duration-200 text-sub hover:text-text-primary p-2 ml-2"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onGroupEdit(groupName);

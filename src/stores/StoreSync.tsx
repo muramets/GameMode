@@ -70,7 +70,7 @@ export function StoreSync() {
                 return () => clearTimeout(timer);
             }
         }
-    }, [user, personalities.length, activeContext, isInviteRoute, ensureDefaultPersonality]);
+    }, [user, personalities, activeContext, isInviteRoute, ensureDefaultPersonality]);
 
     // 2. Sync Data when Context is Active
     // We use JSON.stringify(activeContext) to prevent cycles if the object reference changes but content is same

@@ -38,6 +38,7 @@ export const DraggableProtocolItem = React.memo(({
                         transition: isDragging ? 'none' : style.transition,
                         willChange: 'transform' // Hardware acceleration hint
                     }}
+                    className="touch-callout-none"
                     {...listeners}
                     {...attributes}
                     // Handle mouse leave to clear the "just dropped" state

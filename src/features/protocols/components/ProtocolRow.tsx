@@ -57,6 +57,10 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
 
     const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
         if (isDisabled || isReadOnly || feedbackType || !rowRef.current) return;
+
+        // Block mouse move interactions on touch devices
+        if (!window.matchMedia('(hover: hover)').matches) return;
+
         const rect = rowRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const center = rect.width / 2;
@@ -73,7 +77,10 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
 
     const handleMouseEnter = () => {
         // Allow hover state even in ReadOnly (so we can access Settings), but NOT if Disabled (Dragging)
-        if (!isDisabled) setIsHovered(true);
+        // AND only if the device supports hover (prevents sticky hover on mobile scroll)
+        if (!isDisabled && window.matchMedia('(hover: hover)').matches) {
+            setIsHovered(true);
+        }
     };
 
     const handleClick = () => {
@@ -92,12 +99,11 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
             onClick={handleClick}
             className={`group relative min-h-[72px] bg-sub-alt border border-transparent rounded-xl overflow-hidden select-none 
                 ${isDisabled ? 'cursor-grabbing opacity-90' : isReadOnly ? 'cursor-default' : 'cursor-pointer'} 
+                ${!isDisabled ? 'transition-all duration-200 [@media(hover:hover)]:hover:scale-[1.002] [@media(hover:hover)]:hover:bg-[var(--sub-alt-color)]' : ''}
                 ${effectiveShake === 'left' ? 'animate-tilt-left' : effectiveShake === 'right' ? 'animate-tilt-right' : ''}
                 ${DEBUG_LAYOUT ? 'border-dashed border-red-500' : ''}`}
-            whileHover={!isDisabled ? { scale: 1.002, backgroundColor: 'var(--sub-alt-color)' } : {}}
             transition={{
-                layout: { duration: 0.3, type: "spring", stiffness: 400, damping: 40 },
-                scale: { duration: 0.2 }
+                layout: { duration: 0.3, type: "spring", stiffness: 400, damping: 40 }
             }}
         >
             <style>{`
@@ -145,14 +151,14 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
                             <TruncatedTooltip
                                 as="p"
                                 text={protocol.description}
-                                className="text-[10px] text-sub font-mono opacity-60 group-hover:opacity-100 group-hover:text-text-primary transition-all duration-300 truncate block"
+                                className="text-[10px] text-sub font-mono opacity-60 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-hover:text-text-primary transition-all duration-300 truncate block"
                             />
                         )}
                     </div>
                 </motion.div>
 
                 <motion.div layout className={`flex items-center justify-center pointer-events-none ${DEBUG_LAYOUT ? 'border border-yellow-500' : ''}`}>
-                    <span className={`font-lexend text-xs font-bold tracking-wider transition-all duration-300 ${effectiveFeedbackType === 'plus' ? 'text-[#98c379] opacity-100 scale-125' : effectiveFeedbackType === 'minus' ? 'text-[#ca4754] opacity-100 scale-125' : effectiveHoverSide === 'right' ? 'text-[#98c379] opacity-100 scale-110' : effectiveHoverSide === 'left' ? 'text-[#ca4754] opacity-100 scale-110' : 'text-sub opacity-30 group-hover:text-text-primary group-hover:opacity-100'}`}>
+                    <span className={`font-lexend text-xs font-bold tracking-wider transition-all duration-300 ${effectiveFeedbackType === 'plus' ? 'text-[#98c379] opacity-100 scale-125' : effectiveFeedbackType === 'minus' ? 'text-[#ca4754] opacity-100 scale-125' : effectiveHoverSide === 'right' ? 'text-[#98c379] opacity-100 scale-110' : effectiveHoverSide === 'left' ? 'text-[#ca4754] opacity-100 scale-110' : 'text-sub opacity-30 [@media(hover:hover)]:group-hover:text-text-primary [@media(hover:hover)]:group-hover:opacity-100'}`}>
                         {Math.round(protocol.weight * 100)} XP
                     </span>
                 </motion.div>

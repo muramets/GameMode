@@ -2,7 +2,8 @@ import { useState, useCallback } from 'react';
 import {
     useSensor,
     useSensors,
-    PointerSensor,
+    MouseSensor,
+    TouchSensor,
     KeyboardSensor,
     type DragStartEvent,
     type DragEndEvent,
@@ -36,7 +37,8 @@ export const useProtocolDnD = ({
 
 
     const sensors = useSensors(
-        useSensor(PointerSensor, DND_SENSORS_CONFIG.pointer),
+        useSensor(MouseSensor, DND_SENSORS_CONFIG.mouse),
+        useSensor(TouchSensor, DND_SENSORS_CONFIG.touch),
         useSensor(KeyboardSensor, DND_SENSORS_CONFIG.keyboard)
     );
 

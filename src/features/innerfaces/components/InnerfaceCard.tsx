@@ -37,10 +37,10 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
     };
 
     return (
-        <Card className={`group relative overflow-hidden p-4 flex flex-col justify-between min-h-[105px] transition-all duration-300 border border-transparent text-left select-none cursor-grab active:cursor-grabbing ${forceHover ? '-translate-y-[2px] shadow-lg' : 'hover:-translate-y-[2px] hover:shadow-lg'}`}>
+        <Card className={`group relative overflow-hidden p-4 flex flex-col justify-between min-h-[105px] transition-all duration-300 border border-transparent text-left select-none cursor-grab active:cursor-grabbing ${forceHover ? '-translate-y-[2px] shadow-lg' : '[@media(hover:hover)]:hover:-translate-y-[2px] [@media(hover:hover)]:hover:shadow-lg'}`}>
             {/* 1. Dynamic Gradient from Tier Color */}
             <div
-                className={`absolute -right-10 -bottom-10 w-48 h-48 blur-[60px] transition-opacity duration-500 opacity-[0.10] ${forceHover ? 'opacity-[0.20]' : 'group-hover:opacity-[0.20]'}`}
+                className={`absolute -right-10 -bottom-10 w-48 h-48 blur-[60px] transition-opacity duration-500 opacity-[0.10] ${forceHover ? 'opacity-[0.20]' : '[@media(hover:hover)]:group-hover:opacity-[0.20]'}`}
                 style={{
                     background: `radial-gradient(circle, ${tierColor} 0%, transparent 70%)`
                 }}
@@ -48,7 +48,7 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
 
             {/* Focused Glow */}
             <div
-                className={`absolute inset-x-0 top-0 h-24 opacity-0 transition-all duration-500 ease-out pointer-events-none ${forceHover ? 'opacity-[0.05]' : 'group-hover:opacity-[0.05]'}`}
+                className={`absolute inset-x-0 top-0 h-24 opacity-0 transition-all duration-500 ease-out pointer-events-none ${forceHover ? 'opacity-[0.05]' : '[@media(hover:hover)]:group-hover:opacity-[0.05]'}`}
                 style={{
                     background: `linear-gradient(to bottom, ${tierColor}, transparent)`
                 }}
@@ -63,7 +63,7 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
                         color={innerface.color}
                         category={innerface.category}
                         size="w-10 h-10"
-                        className={`transition-all duration-300 ${forceHover ? 'scale-105' : 'group-hover:scale-105'}`}
+                        className={`transition-all duration-300 ${forceHover ? 'scale-105' : '[@media(hover:hover)]:group-hover:scale-105'}`}
                     />
 
                     {/* Title */}
@@ -77,7 +77,7 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
                             <TruncatedTooltip
                                 as="p"
                                 text={innerface.description}
-                                className={`text-[10px] text-sub font-mono uppercase tracking-wider opacity-60 truncate mt-0.5 transition-all duration-300 w-full ${forceHover ? 'opacity-100 text-text-primary' : 'group-hover:opacity-100 group-hover:text-text-primary'}`}
+                                className={`text-[10px] text-sub font-mono uppercase tracking-wider opacity-60 truncate mt-0.5 transition-all duration-300 w-full ${forceHover ? 'opacity-100 text-text-primary' : '[@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-hover:text-text-primary'}`}
                             />
                         )}
                     </div>
@@ -97,7 +97,7 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
                         className={`w-7 h-7 flex items-center justify-start transition-all duration-200 
                             ${hasGoal
                                 ? 'opacity-100 text-main hover:text-white'
-                                : `opacity-0 text-sub hover:text-main ${forceHover ? 'opacity-100' : 'group-hover:opacity-100'}`
+                                : `opacity-0 text-sub hover:text-main ${forceHover ? 'opacity-100' : '[@media(hover:hover)]:group-hover:opacity-100'}`
                             }`}
                         title={hasGoal ? "View Goal" : "Set Goal"}
                     >
@@ -106,7 +106,7 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
                     {/* History - only on hover */}
                     <button
                         onClick={handleHistory}
-                        className={`w-7 h-7 flex items-center justify-start text-sub hover:text-main transition-all duration-200 opacity-0 ${forceHover ? 'opacity-100' : 'group-hover:opacity-100'}`}
+                        className={`w-7 h-7 flex items-center justify-start text-sub hover:text-main transition-all duration-200 opacity-0 ${forceHover ? 'opacity-100' : '[@media(hover:hover)]:group-hover:opacity-100'}`}
                         title="View History"
                     >
                         <FontAwesomeIcon icon={faHistory} className="text-xs" />
@@ -114,7 +114,7 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
                     {/* Settings - only on hover */}
                     <button
                         onClick={handleEdit}
-                        className={`w-7 h-7 flex items-center justify-start text-sub hover:text-main transition-all duration-200 opacity-0 ${forceHover ? 'opacity-100' : 'group-hover:opacity-100'}`}
+                        className={`w-7 h-7 flex items-center justify-start text-sub hover:text-main transition-all duration-200 opacity-0 ${forceHover ? 'opacity-100' : '[@media(hover:hover)]:group-hover:opacity-100'}`}
                         title="Settings"
                     >
                         <FontAwesomeIcon icon={faCog} className="text-xs" />
@@ -130,7 +130,7 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
                                     <FontAwesomeIcon icon={currentScore > innerface.initialScore ? faArrowUp : faArrowDown} />
                                 </span>
                             )}
-                            <span className={`text-[9px] font-mono text-sub uppercase tracking-widest opacity-40 mb-1 transition-all duration-300 block ${forceHover ? 'text-text-primary opacity-100' : 'group-hover:text-text-primary group-hover:opacity-100'}`}>
+                            <span className={`text-[9px] font-mono text-sub uppercase tracking-widest opacity-40 mb-1 transition-all duration-300 block ${forceHover ? 'text-text-primary opacity-100' : '[@media(hover:hover)]:group-hover:text-text-primary [@media(hover:hover)]:group-hover:opacity-100'}`}>
                                 Lvl
                             </span>
                         </div>
@@ -146,7 +146,7 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
 
             {/* Bottom: Progress Bar (XP to next level) */}
             <div className="relative z-10 w-full flex flex-col gap-0.5">
-                <div className={`text-[9px] font-mono text-sub ml-1 opacity-50 transition-all duration-300 ${forceHover ? 'opacity-100 text-text-primary' : 'group-hover:opacity-100 group-hover:text-text-primary'}`}>
+                <div className={`text-[9px] font-mono text-sub ml-1 opacity-50 transition-all duration-300 ${forceHover ? 'opacity-100 text-text-primary' : '[@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-hover:text-text-primary'}`}>
                     {100 - currentLevelXP} XP to next level
                 </div>
                 <div className="h-[4px] bg-bg-primary/50 w-full rounded-full overflow-hidden my-0.5">
@@ -159,7 +159,7 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
                     />
                 </div>
                 {/* XP Detail (Visible on hover or always small) */}
-                <div className={`flex justify-between items-center text-[9px] font-mono text-sub ml-1 opacity-50 transition-all duration-200 ${forceHover ? 'opacity-100 text-text-primary' : 'group-hover:opacity-100 group-hover:text-text-primary'}`}>
+                <div className={`flex justify-between items-center text-[9px] font-mono text-sub ml-1 opacity-50 transition-all duration-200 ${forceHover ? 'opacity-100 text-text-primary' : '[@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-hover:text-text-primary'}`}>
                     <span>{currentLevelXP} / 100 XP</span>
                     <span>{totalXP} Total</span>
                 </div>

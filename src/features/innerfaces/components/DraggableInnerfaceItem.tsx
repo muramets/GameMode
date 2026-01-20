@@ -27,8 +27,7 @@ export const DraggableInnerfaceItem = React.memo(({
                     }}
                     {...listeners}
                     {...attributes}
-                    className="relative cursor-grab active:cursor-grabbing touch-none"
-                // touch-none prevents scrolling while dragging on touch devices
+                    className="relative cursor-grab active:cursor-grabbing touch-callout-none"
                 >
                     <InnerfaceCard
                         innerface={innerface}

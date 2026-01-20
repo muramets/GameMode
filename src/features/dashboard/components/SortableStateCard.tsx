@@ -32,7 +32,7 @@ export function SortableStateCard({ state, onEdit, onHistory }: SortableStateCar
             style={style}
             {...attributes}
             {...listeners}
-            className="touch-none" // prevent scrolling while dragging on touch devices
+            className="touch-callout-none"
         >
             <StateCard
                 state={state}

@@ -33,8 +33,7 @@ export function SortableItem({ id, children, disabled }: SortableItemProps) {
         opacity: isDragging ? 0.5 : 1,
         // Ensure dragged item is above others
         zIndex: isDragging ? 50 : undefined,
-        position: 'relative' as const,
-        touchAction: 'none' // Important for touch devices
+        position: 'relative' as const
     };
 
     return (
