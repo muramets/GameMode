@@ -70,7 +70,7 @@ export function PersonalityDropdown() {
                             fallbackIcon={activeItem?.icon || 'user'}
                             className="w-full h-full rounded-full"
                             style={{
-                                color: activeItem?.iconColor || 'inherit',
+                                color: activeItem?.avatar ? 'transparent' : 'var(--sub-color)',
                                 fontSize: '0.9em'
                             }}
                         />
@@ -166,19 +166,20 @@ export function PersonalityDropdown() {
                                 >
                                     {/* Avatar / Icon */}
                                     <div
-                                        className={`w-[1em] h-[1em] flex items-center justify-center shrink-0 transition-colors opacity-80 group-hover/item:opacity-100 group-hover/item:!text-[var(--bg-color)]`}
+                                        className={`w-[1em] h-[1em] flex items-center justify-center shrink-0 transition-colors opacity-80 group-hover/item:opacity-100 text-[var(--text-color)] group-hover/item:text-[var(--hover-color)]`}
                                         style={{
-                                            color: p.iconColor || 'inherit',
                                             marginLeft: '0.9em',
-                                            marginRight: '0.7em'
-                                        }}
+                                            marginRight: '0.7em',
+                                            '--hover-color': p.iconColor || 'inherit'
+                                        } as React.CSSProperties}
                                     >
                                         <Avatar
                                             src={p.avatar}
                                             fallbackIcon={p.icon || 'user'}
-                                            className="w-full h-full rounded-full"
+                                            className="w-full h-full rounded-full text-inherit"
                                             style={{
-                                                fontSize: '0.8em'
+                                                fontSize: '0.8em',
+                                                color: 'inherit'
                                             }}
                                         />
                                     </div>

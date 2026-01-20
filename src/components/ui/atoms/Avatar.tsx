@@ -87,14 +87,14 @@ function AvatarInner({ src, alt, fallbackIcon = 'user', className, style }: Avat
 
     return (
         <div
-            className={`relative flex items-center justify-center overflow-hidden bg-bg-primary/50 ${className}`}
+            className={`relative flex items-center justify-center overflow-hidden ${className}`}
             style={style}
         >
             {/* 
               Layer 1: Fallback Icon (Z-0)
               Always rendered underneath. It acts as the background until the image paints.
             */}
-            <div className="absolute inset-0 flex items-center justify-center text-sub/30 z-0">
+            <div className={`absolute inset-0 flex items-center justify-center z-0 ${className?.includes('text-') ? '' : 'text-sub'}`}>
                 <FontAwesomeIcon icon={iconDef} />
             </div>
 
