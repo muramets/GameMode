@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "monkeylearn-4e739"
+    "default": "monkeylearn-4e739",
+    "prod": "monkeylearn-4e739",
+    "dev": "monkeylearn-dev"
   }
 }
