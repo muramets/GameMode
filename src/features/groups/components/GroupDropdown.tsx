@@ -40,7 +40,8 @@ export function GroupDropdown({
                     side="bottom"
                     align="end"
                     sideOffset={12}
-                    className={`z-[100] ${width} bg-sub-alt rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all px-1 py-2 border border-white/5 divide-y divide-white/5 overflow-hidden animate-in fade-in zoom-in-95 duration-200`}
+                    style={{ width: width === 'w-full' ? 'var(--radix-popover-trigger-width)' : undefined }}
+                    className={`z-[100] ${width === 'w-full' ? '' : width} bg-sub-alt rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all px-1 py-2 border border-white/5 divide-y divide-white/5 overflow-hidden animate-in fade-in zoom-in-95 duration-200`}
                 >
                     <div className={`${maxHeight} overflow-y-auto custom-scrollbar`}>
                         {children}
