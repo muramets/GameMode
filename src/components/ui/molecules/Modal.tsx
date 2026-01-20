@@ -43,7 +43,7 @@ export function Modal({ isOpen, onClose, title, children, footer, onSubmit, clas
                 onClick={onClose}
             />
             <div
-                className={`relative bg-bg-primary/95 border border-white/5 rounded-2xl shadow-xl w-full max-w-md overflow-hidden ${className}`}
+                className={`relative bg-bg-primary border border-white/5 rounded-2xl shadow-xl w-full max-w-md overflow-hidden ${className}`}
                 style={{ isolation: 'isolate', transform: 'translateZ(0)' }}
             >
                 <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">

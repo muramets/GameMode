@@ -41,65 +41,99 @@ export const createGroupSlice = (
     renameGroup: async (oldName: string, newName: string) => {
         try {
             const context = get().context;
+            console.debug('[GroupSlice] renameGroup called', { oldName, newName });
+
             guardAgainstViewerMode(context);
             const trimmedNewName = newName.trim();
             if (!trimmedNewName || trimmedNewName === oldName) return;
 
+            // --- 1. Optimistic Update Start ---
+            get().setHasPendingWrites(true);
+
+            const state = get();
+
+            // Prepare new state values
+            const nextInnerfaces = state.innerfaces.map(i =>
+                i.group === oldName ? { ...i, group: trimmedNewName } : i
+            );
+
+            const nextProtocols = state.protocols.map(p =>
+                p.group === oldName ? { ...p, group: trimmedNewName } : p
+            );
+
+            const nextGroupsMetadata = { ...state.groupsMetadata };
+            if (nextGroupsMetadata[oldName]) {
+                nextGroupsMetadata[trimmedNewName] = nextGroupsMetadata[oldName];
+                delete nextGroupsMetadata[oldName];
+            }
+
+            const nextGroupOrder = state.groupOrder.map(g => g === oldName ? trimmedNewName : g);
+            const nextInnerfaceGroupOrder = state.innerfaceGroupOrder.map(g => g === oldName ? trimmedNewName : g);
+
+            // Apply to local store IMMEDIATELY
+            set({
+                innerfaces: nextInnerfaces,
+                protocols: nextProtocols,
+                groupsMetadata: nextGroupsMetadata,
+                groupOrder: nextGroupOrder,
+                innerfaceGroupOrder: nextInnerfaceGroupOrder
+            });
+
+            // --- 2. Persistence (Batch Write) ---
             const batch = writeBatch(db);
 
-            // 1. Update Innerfaces
-            const innerfaces = get().innerfaces;
-            innerfaces.forEach(i => {
+            // Update Innerfaces
+            let innerfacesUpdated = 0;
+            state.innerfaces.forEach(i => {
                 if (i.group === oldName) {
                     const docRef = doc(db, `${getPathRoot(context)}/innerfaces/${i.id}`);
                     batch.update(docRef, { group: trimmedNewName });
+                    innerfacesUpdated++;
                 }
             });
 
-            // 2. Update Protocols
-            const protocols = get().protocols;
-            protocols.forEach(p => {
+            // Update Protocols
+            let protocolsUpdated = 0;
+            state.protocols.forEach(p => {
                 if (p.group === oldName) {
                     const docRef = doc(db, `${getPathRoot(context)}/protocols/${p.id}`);
                     batch.update(docRef, { group: trimmedNewName });
+                    protocolsUpdated++;
                 }
             });
 
-            // 3. Move Group Metadata (if exists)
-            const groupsMetadata = get().groupsMetadata;
-            if (groupsMetadata[oldName]) {
+            // Move Group Metadata
+            if (state.groupsMetadata[oldName]) {
                 const oldMetaRef = doc(db, `${getPathRoot(context)}/groups/${oldName}`);
                 const newMetaRef = doc(db, `${getPathRoot(context)}/groups/${trimmedNewName}`);
-
-                batch.set(newMetaRef, groupsMetadata[oldName]);
+                batch.set(newMetaRef, state.groupsMetadata[oldName]);
                 batch.delete(oldMetaRef);
             }
 
-            // 4. Update Sort Orders
-            // Protocol Group Order
-            const groupOrder = get().groupOrder;
-            if (groupOrder.includes(oldName)) {
-                const newOrder = groupOrder.map(g => g === oldName ? trimmedNewName : g);
+            // Update Sort Orders
+            if (state.groupOrder.includes(oldName)) {
                 const orderRef = doc(db, `${getPathRoot(context)}/settings/groups`);
-                batch.set(orderRef, { order: newOrder }, { merge: true });
-                set({ groupOrder: newOrder }); // Optimistic
+                batch.set(orderRef, { order: nextGroupOrder }, { merge: true });
             }
 
-            // Innerface Group Order
-            const innerfaceGroupOrder = get().innerfaceGroupOrder;
-            if (innerfaceGroupOrder.includes(oldName)) {
-                const newOrder = innerfaceGroupOrder.map(g => g === oldName ? trimmedNewName : g);
+            if (state.innerfaceGroupOrder.includes(oldName)) {
                 const orderRef = doc(db, `${getPathRoot(context)}/settings/app`);
-                batch.set(orderRef, { innerfaceGroupOrder: newOrder }, { merge: true });
-                set({ innerfaceGroupOrder: newOrder }); // Optimistic
+                batch.set(orderRef, { innerfaceGroupOrder: nextInnerfaceGroupOrder }, { merge: true });
             }
 
             await batch.commit();
+            console.debug(`[GroupSlice] renameGroup committed (Updated: ${innerfacesUpdated} innerfaces, ${protocolsUpdated} protocols)`);
 
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
             console.error("Failed to rename group:", err);
             showErrorToast(message);
+            // Revert state logic could go here, but complex. Rely on next snapshot.
+        } finally {
+            // Release lock after small delay to allow server ack
+            setTimeout(() => {
+                get().setHasPendingWrites(false);
+            }, 500);
         }
     },
 

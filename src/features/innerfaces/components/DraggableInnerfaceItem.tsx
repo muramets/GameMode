@@ -5,10 +5,14 @@ import type { Innerface } from '../types';
 
 export const DraggableInnerfaceItem = React.memo(({
     innerface,
-    onEdit
+    onEdit,
+    onPlanning,
+    hasGoal
 }: {
     innerface: Innerface;
     onEdit: (id: string | number) => void;
+    onPlanning?: () => void;
+    hasGoal?: boolean;
 }) => {
     return (
         <SortableItem key={innerface.id} id={String(innerface.id)}>
@@ -29,6 +33,8 @@ export const DraggableInnerfaceItem = React.memo(({
                     <InnerfaceCard
                         innerface={innerface}
                         onEdit={() => onEdit(innerface.id)}
+                        onPlanning={onPlanning}
+                        hasGoal={hasGoal}
                     />
                 </div>
             )}

@@ -15,6 +15,8 @@ export interface MetadataState {
     isLoading: boolean;
     loadedCount: number;
     error: string | null;
+    hasPendingWrites: boolean;
+    setHasPendingWrites: (hasPending: boolean) => void;
 
     // Context State
     context: PathContext | null;

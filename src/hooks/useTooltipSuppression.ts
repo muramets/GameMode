@@ -9,20 +9,29 @@ import { useState, useEffect, useRef } from 'react';
  */
 export function useTooltipSuppression(isModalOpen: boolean) {
     const [suppressTooltip, setSuppressTooltip] = useState(false);
-    const wasModalOpen = useRef(isModalOpen);
+    // Track previous state to detect "just closed" transition
+    const prevOpenRef = useRef(isModalOpen);
 
     useEffect(() => {
-        if (wasModalOpen.current && !isModalOpen) {
-            // Use setTimeout to avoid synchronous state update in effect warning
-            const timer = setTimeout(() => setSuppressTooltip(true), 0);
-            const clearTimer = setTimeout(() => setSuppressTooltip(false), 500);
-            return () => {
-                clearTimeout(timer);
-                clearTimeout(clearTimer);
-            };
+        // If we transitioned from Open -> Closed
+        if (prevOpenRef.current && !isModalOpen) {
+            setSuppressTooltip(true);
+            const timer = setTimeout(() => {
+                setSuppressTooltip(false);
+            }, 500);
+            return () => clearTimeout(timer);
         }
-        wasModalOpen.current = isModalOpen;
+
+        // Update ref for next render
+        prevOpenRef.current = isModalOpen;
     }, [isModalOpen]);
 
-    return suppressTooltip;
+    // We suppress if:
+    // 1. Explicitly suppressed (during the timeout window)
+    // 2. Modal is currently open
+    // 3. We JUST closed it (prev was true, current is false) - this covers the render gap before effect fires
+    // eslint-disable-next-line react-hooks/refs
+    const justClosed = prevOpenRef.current && !isModalOpen;
+
+    return suppressTooltip || isModalOpen || justClosed;
 }

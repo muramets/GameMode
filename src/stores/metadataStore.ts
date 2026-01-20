@@ -39,6 +39,8 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     isLoading: true,
     loadedCount: 0,
     error: null,
+    hasPendingWrites: false, // Initial state
+    setHasPendingWrites: (hasPending) => set({ hasPendingWrites: hasPending }),
     context: null,
     setContext: (context) => set({ context }),
 
@@ -83,7 +85,12 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         const unsubIfaces = onSnapshot(
             collection(db, `${pathRoot}/innerfaces`),
             (snap) => {
+                if (get().hasPendingWrites) {
+                    console.debug('[MetadataStore] Skipping innerfaces snapshot due to pending writes');
+                    return;
+                }
                 const innerfaces = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Innerface));
+                innerfaces.sort((a, b) => (a.order || 0) - (b.order || 0));
                 set({ innerfaces });
                 markLoaded();
             },
@@ -93,6 +100,10 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         const unsubProtocols = onSnapshot(
             collection(db, `${pathRoot}/protocols`),
             (snap) => {
+                if (get().hasPendingWrites) {
+                    console.debug('[MetadataStore] Skipping protocols snapshot due to pending writes');
+                    return;
+                }
                 const protocols = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Protocol));
                 set({ protocols });
                 markLoaded();
@@ -103,6 +114,10 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         const unsubStates = onSnapshot(
             collection(db, `${pathRoot}/states`),
             (snap) => {
+                if (get().hasPendingWrites) {
+                    console.debug('[MetadataStore] Skipping states snapshot due to pending writes');
+                    return;
+                }
                 const states = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as StateData));
                 states.sort((a, b) => {
                     const orderA = a.order ?? 9999;
@@ -118,6 +133,10 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         const unsubGroups = onSnapshot(
             collection(db, `${pathRoot}/groups`),
             (snap) => {
+                if (get().hasPendingWrites) {
+                    console.debug('[MetadataStore] Skipping groups snapshot due to pending writes');
+                    return;
+                }
                 const groupsMetadata: Record<string, { icon: string; color?: string }> = {};
                 snap.docs.forEach(doc => {
                     groupsMetadata[doc.id] = doc.data() as { icon: string; color?: string };
@@ -131,6 +150,10 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         const unsubGroupSettings = onSnapshot(
             doc(db, `${pathRoot}/settings/groups`),
             (snap) => {
+                if (get().hasPendingWrites) {
+                    console.debug('[MetadataStore] Skipping group settings snapshot due to pending writes');
+                    return;
+                }
                 if (snap.exists()) {
                     const data = snap.data();
                     set({ groupOrder: data.order || [] });
@@ -145,6 +168,10 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         const unsubAppSettings = onSnapshot(
             doc(db, `${pathRoot}/settings/app`),
             (snap) => {
+                if (get().hasPendingWrites) {
+                    console.debug('[MetadataStore] Skipping app settings snapshot due to pending writes');
+                    return;
+                }
                 if (snap.exists()) {
                     const data = snap.data();
                     set({

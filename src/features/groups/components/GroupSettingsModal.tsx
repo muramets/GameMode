@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import type { User } from 'firebase/auth';
 import { Modal } from '../../../components/ui/molecules/Modal';
 import { Input } from '../../../components/ui/molecules/Input';
 import { Button } from '../../../components/ui/atoms/Button';
@@ -14,10 +13,7 @@ import { ColorPicker } from '../../../components/ui/molecules/ColorPicker';
 import { IconPicker } from '../../../components/ui/molecules/IconPicker';
 import { ConfirmButton } from '../../../components/ui/molecules/ConfirmButton';
 
-interface GroupMetadata {
-    icon: string;
-    color?: string;
-}
+
 
 interface GroupSettingsModalProps {
     isOpen: boolean;
@@ -36,6 +32,27 @@ export function GroupSettingsModal({ isOpen, onClose, groupName }: GroupSettings
     const { activePersonalityId } = usePersonalityStore();
     const { updateGroupMetadata, renameGroup, deleteGroup, restoreGroup, groupsMetadata, protocols, innerfaces } = useMetadataStore();
     const { showToast } = useUIStore();
+
+    // --- LIFTED STATE ---
+    // Capture initial values for comparison
+    const [initialValues] = useState(() => {
+        const metadata = groupsMetadata[groupName];
+        const config = getGroupConfig(groupName);
+        return {
+            name: groupName,
+            icon: metadata?.icon || config?.icon || 'brain',
+            color: metadata?.color || config?.color || '#e2b714'
+        };
+    });
+
+    const [name, setName] = useState(initialValues.name);
+    const [icon, setIcon] = useState(initialValues.icon);
+    const [color, setColor] = useState(initialValues.color);
+
+    const hasChanges =
+        name.trim() !== initialValues.name ||
+        icon !== initialValues.icon ||
+        color !== initialValues.color;
 
     const handleDelete = async () => {
         // Collect backup data
@@ -60,6 +77,35 @@ export function GroupSettingsModal({ isOpen, onClose, groupName }: GroupSettings
         } catch (error) {
             console.error('Failed to delete group:', error);
             showToast('Failed to delete group', 'error');
+        }
+    };
+
+    const handleSave = async (e: FormEvent) => {
+        e.preventDefault();
+        if (!user || !activePersonalityId) return;
+
+        // Optimistic Close: Close immediately to prevent UI lag
+        onClose();
+
+        try {
+            // 1. Rename if changed
+            if (name.trim() !== groupName && name.trim() !== '') {
+                await renameGroup(groupName, name.trim());
+            }
+
+            // 2. Update Metadata
+            // If we renamed, the group name has changed, so we use the new name
+            const targetName = name.trim() !== '' ? name.trim() : groupName;
+
+            // Only update metadata if it actually changed
+            if (icon !== initialValues.icon || color !== initialValues.color || targetName !== groupName) {
+                await updateGroupMetadata(targetName, {
+                    icon,
+                    color
+                });
+            }
+        } catch (error) {
+            console.error("Failed to save group settings:", error);
         }
     };
 
@@ -91,7 +137,8 @@ export function GroupSettingsModal({ isOpen, onClose, groupName }: GroupSettings
                             form={formId}
                             variant="primary"
                             size="sm"
-                            className="font-bold px-6 py-2 rounded-lg text-[10px] uppercase tracking-wider shadow-[0_0_10px_rgba(var(--main-color-rgb),0.2)]"
+                            disabled={!hasChanges}
+                            className={`font-bold px-6 py-2 rounded-lg text-[10px] uppercase tracking-wider shadow-[0_0_10px_rgba(var(--main-color-rgb),0.2)] ${!hasChanges ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             Save Changes
                         </Button>
@@ -102,13 +149,13 @@ export function GroupSettingsModal({ isOpen, onClose, groupName }: GroupSettings
             {isOpen && (
                 <GroupSettingsForm
                     formId={formId}
-                    groupName={groupName}
-                    onClose={onClose}
-                    updateGroupMetadata={updateGroupMetadata}
-                    renameGroup={renameGroup}
-                    groupsMetadata={groupsMetadata}
-                    user={user}
-                    activePersonalityId={activePersonalityId}
+                    name={name}
+                    setName={setName}
+                    icon={icon}
+                    setIcon={setIcon}
+                    color={color}
+                    setColor={setColor}
+                    handleSave={handleSave}
                 />
             )}
         </Modal>
@@ -117,59 +164,25 @@ export function GroupSettingsModal({ isOpen, onClose, groupName }: GroupSettings
 
 interface GroupSettingsFormProps {
     formId: string;
-    groupName: string;
-    onClose: () => void;
-    updateGroupMetadata: (groupName: string, data: Partial<GroupMetadata>) => Promise<void>;
-    renameGroup: (oldName: string, newName: string) => Promise<void>;
-    groupsMetadata: Record<string, GroupMetadata>;
-    user: User | null;
-    activePersonalityId: string | null;
+    name: string;
+    setName: (name: string) => void;
+    icon: string;
+    setIcon: (icon: string) => void;
+    color: string;
+    setColor: (color: string) => void;
+    handleSave: (e: FormEvent) => void;
 }
 
 function GroupSettingsForm({
     formId,
-    groupName,
-    onClose,
-    updateGroupMetadata,
-    renameGroup,
-    groupsMetadata,
-    user,
-    activePersonalityId,
+    name,
+    setName,
+    icon,
+    setIcon,
+    color,
+    setColor,
+    handleSave,
 }: GroupSettingsFormProps) {
-    const [name, setName] = useState(groupName);
-
-    // Initialize complex state derived from metadata/config
-    const [icon, setIcon] = useState(() => {
-        const metadata = groupsMetadata[groupName];
-        const config = getGroupConfig(groupName);
-        return metadata?.icon || config?.icon || 'brain';
-    });
-
-    const [color, setColor] = useState(() => {
-        const metadata = groupsMetadata[groupName];
-        const config = getGroupConfig(groupName);
-        return metadata?.color || config?.color || '#e2b714';
-    });
-
-    const handleSave = async (e: FormEvent) => {
-        e.preventDefault();
-        if (!user || !activePersonalityId) return;
-
-        // 1. Rename if changed
-        if (name.trim() !== groupName && name.trim() !== '') {
-            await renameGroup(groupName, name.trim());
-        }
-
-        // 2. Update Metadata
-        const targetName = name.trim() !== '' ? name.trim() : groupName;
-        await updateGroupMetadata(targetName, {
-            icon,
-            color
-        });
-
-        onClose();
-    };
-
     return (
         <form id={formId} onSubmit={handleSave} className="contents">
             <div className="flex flex-col gap-5 max-h-[60vh] overflow-y-auto custom-scrollbar px-1">

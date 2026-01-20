@@ -98,12 +98,17 @@ export const createInnerfaceSlice = (
         }
     },
 
+    /**
+     * moveInnerface:
+     * Moves an innerface to a different group and updates the order of all affected items.
+     * Uses Batch Writes to ensure atomicity (all updates succeed or fail together).
+     */
     moveInnerface: async (id: string, newGroup: string, orderedIds: string[]) => {
         try {
             const context = get().context;
             guardAgainstViewerMode(context);
 
-            // Optimistic update
+            // 1. Optimistic Update (Immediate UI Feedback)
             const currentInnerfaces = get().innerfaces;
             const ifaceMap = new Map(currentInnerfaces.map(i => [i.id.toString(), i]));
 
@@ -112,6 +117,7 @@ export const createInnerfaceSlice = (
                 targetItem.group = newGroup;
             }
 
+            // Reconstruct the full list with new order
             const reorderedInnerfaces = orderedIds
                 .map((oid, index) => {
                     const iface = ifaceMap.get(oid);
@@ -125,10 +131,12 @@ export const createInnerfaceSlice = (
 
             set({ innerfaces: [...reorderedInnerfaces, ...missingInnerfaces] });
 
+            // 2. Batch Write to Firebase (Atomicity)
             const batch = writeBatch(db);
             orderedIds.forEach((oid, index) => {
                 const docRef = doc(db, `${getPathRoot(context)}/innerfaces/${oid}`);
                 if (oid === id) {
+                    // Update group depending on movement
                     batch.update(docRef, { order: index, group: newGroup });
                 } else {
                     batch.update(docRef, { order: index });
@@ -143,10 +151,17 @@ export const createInnerfaceSlice = (
         }
     },
 
+    /**
+     * reorderInnerfaces:
+     * Updates the order of innerfaces within their current groups.
+     * Uses Batch Writes for atomicity.
+     */
     reorderInnerfaces: async (orderedIds: string[]) => {
         try {
             const context = get().context;
             guardAgainstViewerMode(context);
+
+            // 1. Optimistic Update
             const currentInnerfaces = get().innerfaces;
             const ifaceMap = new Map(currentInnerfaces.map(i => [i.id.toString(), i]));
 
@@ -163,17 +178,20 @@ export const createInnerfaceSlice = (
 
             set({ innerfaces: [...reorderedInnerfaces, ...missingInnerfaces] });
 
+            // 2. Batch Write
             const batch = writeBatch(db);
             orderedIds.forEach((id, index) => {
                 const docRef = doc(db, `${getPathRoot(context)}/innerfaces/${id}`);
                 batch.update(docRef, { order: index });
             });
+            // Also update missing ones to be at the end
             missingInnerfaces.forEach(i => {
                 const docRef = doc(db, `${getPathRoot(context)}/innerfaces/${i.id.toString()}`);
                 batch.update(docRef, { order: i.order });
             });
 
             await batch.commit();
+            console.debug('[MetadataStore] reorderInnerfaces success');
         } catch (err: unknown) {
             console.error("Failed to reorder innerfaces:", err);
             const message = err instanceof Error ? err.message : 'Unknown error';
@@ -181,27 +199,53 @@ export const createInnerfaceSlice = (
         }
     },
 
+    /**
+     * reorderInnerfaceGroups:
+     * Persists the custom order of groups within a category or globally.
+     */
     reorderInnerfaceGroups: async (orderedGroups: string[]) => {
         try {
             const context = get().context;
+            console.debug('[MetadataStore] reorderInnerfaceGroups', { orderedGroups });
+
             guardAgainstViewerMode(context);
+
+            // Optimistic Update
             set({ innerfaceGroupOrder: orderedGroups });
+
+            // Persist to 'settings/app' document
             const docRef = doc(db, `${getPathRoot(context)}/settings/app`);
             await setDoc(docRef, { innerfaceGroupOrder: orderedGroups }, { merge: true });
+
+            console.debug('[MetadataStore] Group Reorder success');
         } catch (err: unknown) {
+            console.error('[MetadataStore] reorderInnerfaceGroups failed:', err);
             const message = err instanceof Error ? err.message : 'Unknown error';
             showErrorToast(message);
         }
     },
 
+    /**
+     * reorderCategories:
+     * Persists the custom order of high-level Categories (Skill, Foundation, etc).
+     */
     reorderCategories: async (orderedCategories: string[]) => {
         try {
             const context = get().context;
+            console.debug('[MetadataStore] reorderCategories', { orderedCategories });
+
             guardAgainstViewerMode(context);
+
+            // Optimistic Update
             set({ categoryOrder: orderedCategories });
+
+            // Persist to 'settings/app'
             const docRef = doc(db, `${getPathRoot(context)}/settings/app`);
             await setDoc(docRef, { categoryOrder: orderedCategories }, { merge: true });
+
+            console.debug('[MetadataStore] Category Reorder success');
         } catch (err: unknown) {
+            console.error('[MetadataStore] reorderCategories failed:', err);
             const message = err instanceof Error ? err.message : 'Unknown error';
             showErrorToast(message);
         }

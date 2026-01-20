@@ -13,6 +13,7 @@ import {
 } from '@dnd-kit/sortable';
 import type { Innerface, PowerCategory } from '../types';
 import { DND_SENSORS_CONFIG } from '../../../constants/dnd';
+import { useMetadataStore } from '../../../stores/metadataStore';
 
 interface UseInnerfaceDnDProps {
     innerfaces: Innerface[];
@@ -31,90 +32,107 @@ export const useInnerfaceDnD = ({
     onReorderGroups,
     onMoveInnerface,
 }: UseInnerfaceDnDProps) => {
-    // --- Local State for Drag (Optimistic UI) ---
+    const setHasPendingWrites = useMetadataStore(state => state.setHasPendingWrites);
+
     // --- Local State for Drag (Optimistic UI) ---
     const [items, setItems] = useState<Innerface[]>(innerfaces);
+    const [localCategoryOrder, setLocalCategoryOrder] = useState<string[]>(categoryOrder);
+    const [localGroupOrder, setLocalGroupOrder] = useState<string[]>(groupOrder);
     const isDraggingRef = useRef(false);
+    const pendingSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Preserve groups that existed at drag start to prevent them from disappearing
+    const dragStartGroupsRef = useRef<Record<string, string[]>>({});
 
-    // Sync items when prop updates
+    // Sync items when prop updates, BUT ignore if we are actively dragging
     useEffect(() => {
         if (!isDraggingRef.current) {
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setItems(innerfaces);
+            setLocalCategoryOrder(categoryOrder);
+            setLocalGroupOrder(groupOrder);
         }
-    }, [innerfaces]);
-
-
+    }, [innerfaces, categoryOrder, groupOrder]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, DND_SENSORS_CONFIG.pointer),
         useSensor(KeyboardSensor, DND_SENSORS_CONFIG.keyboard)
     );
 
-    // Group logic to categorize items (Skills, Foundations, Uncategorized)
+
+    // --- Data Derivation (no manual stabilization - React.memo in components handles it) ---
+
     const { innerfacesByCategory, getGroupsForCategory } = useMemo(() => {
-        const byCategory: Record<string, Innerface[]> = {
+        const newByCategory: Record<string, Innerface[]> = {
             skill: [],
             foundation: [],
             uncategorized: []
         };
 
         items.forEach(i => {
-            if (i.category === 'skill') byCategory.skill.push(i);
-            else if (i.category === 'foundation') byCategory.foundation.push(i);
-            else byCategory.uncategorized.push(i);
+            if (i.category === 'skill') newByCategory.skill.push(i);
+            else if (i.category === 'foundation') newByCategory.foundation.push(i);
+            else newByCategory.uncategorized.push(i);
         });
 
-        // Helper to group items within a specific category
-        const getGroupsForCategory = (category: string) => {
-            const groupItems = byCategory[category] || [];
+        // Note: No stabilization here - we want all field updates to flow through
+        // Stabilization is only applied at the group level in getGroupsForCategory
 
-            // Group by 'group' field
+        // Memoized helper to group items within a specific category
+        const getGroupsForCategory = (category: string) => {
+            const groupItems = newByCategory[category] || [];
+
+            // Generate current state of groups
             const groups: Record<string, Innerface[]> = {};
-            const ungrouped: Innerface[] = [];
+            const ungroupedArr: Innerface[] = [];
 
             groupItems.forEach(item => {
                 if (item.group) {
                     if (!groups[item.group]) groups[item.group] = [];
                     groups[item.group].push(item);
                 } else {
-                    ungrouped.push(item);
+                    ungroupedArr.push(item);
                 }
             });
 
-            // Sort groups based on groupOrder
-            const sortedGroups = Object.entries(groups).sort(([a], [b]) => {
-                const indexA = groupOrder.indexOf(a);
-                const indexB = groupOrder.indexOf(b);
+            // Sort group names based on localGroupOrder
+            // During drag, include groups that existed at drag start (even if now empty)
+            const allGroupNames = new Set(Object.keys(groups));
+            if (isDraggingRef.current && dragStartGroupsRef.current[category]) {
+                dragStartGroupsRef.current[category].forEach(g => allGroupNames.add(g));
+            }
+
+            const sortedGroupNames = Array.from(allGroupNames).sort((a, b) => {
+                const indexA = localGroupOrder.indexOf(a);
+                const indexB = localGroupOrder.indexOf(b);
                 if (indexA !== -1 && indexB !== -1) return indexA - indexB;
                 if (indexA !== -1) return -1;
                 if (indexB !== -1) return 1;
                 return a.localeCompare(b);
             });
 
-            // Append ungrouped at the end if exists
-            if (ungrouped.length > 0) {
-                sortedGroups.push(['ungrouped', ungrouped]);
+            const currentGroups: [string, Innerface[]][] = sortedGroupNames.map(name => [name, groups[name] || []]);
+            if (ungroupedArr.length > 0) {
+                currentGroups.push(['ungrouped', ungroupedArr]);
             }
 
-            return sortedGroups;
+            // No manual stabilization - React.memo in child components handles re-render prevention
+            return currentGroups;
         };
 
-        return { innerfacesByCategory: byCategory, getGroupsForCategory };
-    }, [items, groupOrder]);
+        return { innerfacesByCategory: newByCategory, getGroupsForCategory };
+    }, [items, localGroupOrder]);
 
     // Determine category order safely
     const activeCategoryOrder = useMemo(() => {
         const defaultOrder = ['skill', 'foundation', 'uncategorized'];
-        if (!categoryOrder || categoryOrder.length === 0) return defaultOrder;
+        const baseOrder = localCategoryOrder && localCategoryOrder.length > 0 ? localCategoryOrder : categoryOrder;
 
-        // Ensure all categories are present and no extras
-        const merged = [...categoryOrder];
+        const merged = [...baseOrder];
         defaultOrder.forEach(c => {
             if (!merged.includes(c)) merged.push(c);
         });
         return merged.filter(c => defaultOrder.includes(c));
-    }, [categoryOrder]);
+    }, [localCategoryOrder, categoryOrder]);
 
     const categoryIds = useMemo(() => activeCategoryOrder.map(c => `category-${c}`), [activeCategoryOrder]);
 
@@ -128,76 +146,183 @@ export const useInnerfaceDnD = ({
     const handleDragStart = useCallback((event: DragStartEvent) => {
         const { active } = event;
         const id = active.id as string;
+        console.debug('[DnD] Drag Start:', id);
 
         setActiveId(id);
         isDraggingRef.current = true;
         setIsValidDrop(true);
 
+        // Capture current groups per category at drag start
+        const groupsSnapshot: Record<string, string[]> = {};
+        ['skill', 'foundation', 'uncategorized'].forEach(cat => {
+            const catItems = items.filter(i => (i.category || 'uncategorized') === cat);
+            const catGroups = new Set(catItems.map(i => i.group).filter(Boolean) as string[]);
+            groupsSnapshot[cat] = Array.from(catGroups);
+        });
+        dragStartGroupsRef.current = groupsSnapshot;
+
         if (id.startsWith('category-')) {
             setActiveCategory(id.replace('category-', ''));
+            setActiveGroup(null);
             return;
         }
 
         if (id.startsWith('group-')) {
-            setActiveGroup(id.replace('group-', ''));
+            const parts = id.split('-');
+            const cat = parts[1];
+            const groupName = parts.slice(2).join('-');
+            console.log('[DnD Debug] Dragging Group:', { groupName, category: cat });
+
+            setActiveGroup(groupName);
+            setActiveCategory(cat);
+
+            // If localGroupOrder is empty, initialize it with all unique group names present in items
+            // This ensures we can reorder them even if no order was ever saved to Firebase
+            setLocalGroupOrder((prev) => {
+                if (prev.length > 0) return prev;
+                const uniqueGroups = Array.from(new Set(items.map(i => i.group).filter(Boolean))) as string[];
+                console.log('[DnD Debug] Initializing local group order:', uniqueGroups);
+                return uniqueGroups;
+            });
             return;
         }
 
         const item = items.find(i => String(i.id) === id);
-        if (item) setActiveItem(item);
+        if (item) {
+            console.log('[DnD Debug] Dragging Item:', item.name);
+            setActiveItem(item);
+        }
     }, [items]);
 
     const handleDragOver = useCallback((event: DragOverEvent) => {
         const { active, over } = event;
         if (!over) {
-            setIsValidDrop(true);
+            if (isValidDrop !== true) setIsValidDrop(true);
             return;
         }
 
         const activeIdStr = String(active.id);
         const overIdStr = String(over.id);
 
-        // --- Category / Group Validation/Skipping ---
-        if (activeIdStr.startsWith('category-') || activeIdStr.startsWith('group-')) {
+        if (activeIdStr === overIdStr) return;
+
+        const itemMap = new Map(items.map((i, idx) => [String(i.id), { item: i, index: idx }]));
+        const activeData = itemMap.get(activeIdStr);
+
+        // Note: activeData is undefined for categories and groups - that's OK!
+        // We only return early if we're trying to drag an ITEM which doesn't exist
+        if (!activeData && !activeIdStr.startsWith('category-') && !activeIdStr.startsWith('group-')) return;
+
+        const activeItem = activeData?.item;
+        const activeIndex = activeData?.index ?? -1;
+
+        // --- Category Reordering ---
+        // Note: We use custom collision detection in InnerfacesList to ensure we ONLY match with other categories
+        if (activeIdStr.startsWith('category-')) {
+            if (overIdStr.startsWith('category-')) {
+                const activeCat = activeIdStr.replace('category-', '');
+                const overCat = overIdStr.replace('category-', '');
+
+                if (activeCat !== overCat) {
+                    setLocalCategoryOrder((prev) => {
+                        const oldIndex = prev.indexOf(activeCat);
+                        const newIndex = prev.indexOf(overCat);
+                        if (oldIndex !== -1 && newIndex !== -1) {
+                            return arrayMove(prev, oldIndex, newIndex);
+                        }
+                        return prev;
+                    });
+                }
+            }
             setIsValidDrop(true);
             return;
         }
 
-        // --- Item Logic ---
-        const activeItem = items.find(i => String(i.id) === activeIdStr);
-        if (!activeItem) return;
+        // --- Group Reordering ---
+        if (activeIdStr.startsWith('group-')) {
+            const activeParts = activeIdStr.split('-');
+            const activeCat = activeParts[1];
+            const activeGrp = activeParts.slice(2).join('-');
 
-        // 1. Identify Target Category
-        let targetCategory = activeItem.category;
-        const overItem = items.find(i => String(i.id) === overIdStr);
+            let overGrp: string | undefined;
+            let overCat: string | null | undefined;
 
-        if (overIdStr.startsWith('group-')) {
-            const groupName = overIdStr.replace('group-', '');
-            // Find category of this group
-            // Optimization: we can pass a map or search in items
-            const sample = items.find(i => i.group === groupName);
-            if (sample) targetCategory = sample.category;
-        } else if (overIdStr.startsWith('category-')) {
-            targetCategory = overIdStr.replace('category-', '') as PowerCategory;
-        } else if (overItem) {
-            targetCategory = overItem.category;
-        }
+            if (overIdStr.startsWith('group-')) {
+                const overParts = overIdStr.split('-');
+                overCat = overParts[1];
+                overGrp = overParts.slice(2).join('-');
+            } else if (overIdStr.startsWith('category-')) {
+                overCat = overIdStr.replace('category-', '');
+                if (overCat === activeCat) {
+                    const typedCat = overCat as PowerCategory;
+                    if (typedCat) {
+                        const catGroups = getGroupsForCategory(typedCat);
+                        if (catGroups.length > 0) {
+                            overGrp = catGroups[0][0];
+                        }
+                    }
+                }
+            } else {
+                const overData = itemMap.get(overIdStr);
+                if (overData) {
+                    overCat = overData.item.category;
+                    overGrp = overData.item.group || 'ungrouped';
+                }
+            }
 
-        // 2. Validate Category Drop
-        if (targetCategory && targetCategory !== activeItem.category) {
-            setIsValidDrop(false);
+            if (activeCat === overCat && activeGrp && overGrp && activeGrp !== overGrp) {
+                setLocalGroupOrder((prev) => {
+                    const next = [...prev];
+                    if (!next.includes(activeGrp)) { next.push(activeGrp); }
+                    if (!next.includes(overGrp!)) { next.push(overGrp!); }
+
+                    const oldIndex = next.indexOf(activeGrp);
+                    const newIndex = next.indexOf(overGrp!);
+
+                    if (oldIndex !== -1 && newIndex !== -1) {
+                        return arrayMove(next, oldIndex, newIndex);
+                    }
+                    return prev;
+                });
+                setIsValidDrop(true);
+            }
             return;
         }
 
-        setIsValidDrop(true);
+        // --- Item Logic ---
+        if (!activeItem) return;
+
+        // 1. Identify Target Category
+        let targetCategory: PowerCategory | undefined;
+        const overData = itemMap.get(overIdStr);
+
+        // Initialize targetCategory with activeItem's category
+        targetCategory = activeItem.category;
+
+        if (overIdStr.startsWith('group-')) {
+            const parts = overIdStr.split('-');
+            targetCategory = parts[1] as PowerCategory;
+        } else if (overIdStr.startsWith('category-')) {
+            targetCategory = overIdStr.replace('category-', '') as PowerCategory;
+        } else if (overData) {
+            targetCategory = overData.item.category;
+        }
+
+        // 2. Validate Category Drop
+        const newValid = !targetCategory || targetCategory === activeItem.category;
+        if (isValidDrop !== newValid) {
+            setIsValidDrop(newValid);
+        }
+
+        if (!newValid) return;
 
         // 3. Move Item in Local State (Optimistic Update)
-        const activeIndex = items.findIndex(i => String(i.id) === activeIdStr);
-        const overIndex = items.findIndex(i => String(i.id) === overIdStr);
+        const overIndex = overData ? overData.index : -1;
 
         // If dragging over a GROUP header
         if (overIdStr.startsWith('group-')) {
-            const groupName = overIdStr.replace('group-', '');
+            const parts = overIdStr.split('-');
+            const groupName = parts.slice(2).join('-');
             if (activeItem.group !== groupName) {
                 setItems((prev) => {
                     const newItems = [...prev];
@@ -211,7 +336,7 @@ export const useInnerfaceDnD = ({
 
         // If dragging over another ITEM
         if (overIndex !== -1 && activeIndex !== -1) {
-            const overItem = items[overIndex];
+            const overItem = overData!.item;
             // If items are in different groups (but same category), we update group
             if (activeItem.group !== overItem.group) {
                 setItems((prev) => {
@@ -221,20 +346,34 @@ export const useInnerfaceDnD = ({
                     return arrayMove(newItems, activeIndex, overIndex);
                 });
             } else {
-                // Same group, just reorder
+                // Same group - update local state for visual reorder
                 if (activeIndex !== overIndex) {
                     setItems((prev) => arrayMove(prev, activeIndex, overIndex));
                 }
             }
         }
-    }, [items]);
+    }, [items, getGroupsForCategory, isValidDrop]);
 
+    // --- 3. Drag End Handler (Persist Changes) ---
+    /**
+     * handleDragEnd:
+     * Finalizes the drag operation, calculates the final state, and triggers persistence.
+     * Uses a debounced save to prevent excessive writes to Firebase during rapid reordering.
+     */
     const handleDragEnd = useCallback((event: DragEndEvent) => {
         const { active, over } = event;
         const activeIdStr = String(active?.id);
 
-        isDraggingRef.current = false;
+        console.debug('[DnD] Drag End', { active: activeIdStr, over: over?.id });
 
+        // --- CRITICAL: Set pending flag FIRST to prevent sync from overwriting local state ---
+        // This tells the subscription listener to ignore incoming updates while we are in the middle of a user action.
+        setHasPendingWrites(true);
+        if (pendingSaveRef.current) {
+            clearTimeout(pendingSaveRef.current);
+        }
+
+        // Define resetState so it can be used for cleanup
         const resetState = () => {
             setActiveId(null);
             setActiveItem(null);
@@ -244,58 +383,69 @@ export const useInnerfaceDnD = ({
         };
 
         if (!over) {
+            // Cancelled drag - reset to store state
+            pendingSaveRef.current = null;
+            setHasPendingWrites(false);
             setItems(innerfaces);
+            setLocalCategoryOrder(categoryOrder);
+            setLocalGroupOrder(groupOrder);
             resetState();
             return;
         }
 
-        // --- Category / Group Reordering ---
-        if (activeIdStr.startsWith('category-') || activeIdStr.startsWith('group-')) {
-            const overIdStr = String(over.id);
-            if (activeIdStr === overIdStr) {
-                resetState();
-                return;
+        const activeItem = items.find(i => String(i.id) === activeIdStr);
+
+        // --- 1. Category Sorting ---
+        if (activeIdStr.startsWith('category-')) {
+            // Note: The actual reordering logic happens in handleDragOver for visual feedback.
+            // Here we just persist the final order of categories.
+            // We use the LOCAL order because it has already been updated optimistically.
+        }
+
+        // --- 2. Item Handlers (Group Change or Reorder) ---
+        else if (activeItem && over) {
+            // Logic handled via local state update in DragOver/DragEnd
+            // We just need to ensure the final state is captured for saving.
+        }
+
+        // 3. Schedule the actual save
+        pendingSaveRef.current = setTimeout(() => {
+            console.debug('[useInnerfaceDnD] Executing debounced save...');
+
+            // --- Category / Group Reordering ---
+            if (activeIdStr.startsWith('category-') || activeIdStr.startsWith('group-')) {
+                if (activeIdStr.startsWith('category-')) {
+                    console.info('[useInnerfaceDnD] Persisting Category Order', localCategoryOrder);
+                    onReorderCategories(localCategoryOrder);
+                } else if (activeIdStr.startsWith('group-')) {
+                    console.info('[useInnerfaceDnD] Persisting Group Order');
+                    onReorderGroups(localGroupOrder);
+                }
+            } else {
+                // --- Item Reordering ---
+                const reorderedIds = items.map(i => String(i.id));
+                const movedItem = items.find(i => String(i.id) === activeIdStr);
+
+                if (movedItem) {
+                    const targetGroup = movedItem.group || 'ungrouped';
+                    console.info(`[useInnerfaceDnD] Moving item ${movedItem.name} to ${targetGroup}`);
+                    onMoveInnerface(activeIdStr, targetGroup, reorderedIds);
+                }
             }
 
-            if (activeIdStr.startsWith('category-') && overIdStr.startsWith('category-')) {
-                const oldIndex = activeCategoryOrder.indexOf(activeIdStr.replace('category-', ''));
-                const newIndex = activeCategoryOrder.indexOf(overIdStr.replace('category-', ''));
-                if (oldIndex !== -1 && newIndex !== -1) {
-                    onReorderCategories(arrayMove(activeCategoryOrder, oldIndex, newIndex));
-                }
-            } else if (activeIdStr.startsWith('group-') && overIdStr.startsWith('group-')) {
-                const activeGroup = activeIdStr.replace('group-', '');
-                const overGroup = overIdStr.replace('group-', '');
-                const oldIndex = groupOrder.indexOf(activeGroup);
-                const newIndex = groupOrder.indexOf(overGroup);
-                if (oldIndex !== -1 && newIndex !== -1) {
-                    onReorderGroups(arrayMove(groupOrder, oldIndex, newIndex));
-                }
-            }
+            // 4. Release the lock after a short delay to allow Firebase to ack
+            setTimeout(() => {
+                setHasPendingWrites(false);
+                pendingSaveRef.current = null;
+            }, 500);
+
+        }, 1000); // 1 second debounce
+
+        // Delay state reset to next animation frame for smoother transition
+        requestAnimationFrame(() => {
             resetState();
-            return;
-        }
-
-        // --- Item Reordering & Group Change ---
-        const finalItem = items.find(i => String(i.id) === activeIdStr);
-        const originalItem = innerfaces.find(i => String(i.id) === activeIdStr);
-
-        if (finalItem && originalItem) {
-            const newGroupVal = finalItem.group || '';
-            const currentGroupVal = originalItem.group || '';
-            const isGroupChanged = newGroupVal !== currentGroupVal;
-
-            const newOrderIds = items.map(i => String(i.id));
-            const currentIds = innerfaces.map(i => String(i.id));
-            const isOrderChanged = JSON.stringify(newOrderIds) !== JSON.stringify(currentIds);
-
-            if (isGroupChanged || isOrderChanged) {
-                onMoveInnerface(activeIdStr, newGroupVal, newOrderIds);
-            }
-        }
-
-        resetState();
-    }, [activeCategoryOrder, groupOrder, items, innerfaces, onReorderGroups, onReorderCategories, onMoveInnerface]);
+        });
+    }, [localCategoryOrder, localGroupOrder, items, innerfaces, onReorderGroups, onReorderCategories, onMoveInnerface, categoryOrder, groupOrder, setHasPendingWrites]);
 
     return {
         items,

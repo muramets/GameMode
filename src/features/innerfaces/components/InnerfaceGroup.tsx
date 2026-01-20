@@ -2,27 +2,52 @@ import React, { useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog, faGripVertical } from '@fortawesome/free-solid-svg-icons';
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
+import { useDndMonitor, type DragOverEvent } from '@dnd-kit/core';
 import { SortableItem } from '../../../components/ui/molecules/SortableItem';
 import { CollapsibleSection } from '../../../components/ui/molecules/CollapsibleSection';
 import { DraggableInnerfaceItem } from './DraggableInnerfaceItem';
 import { getGroupConfig } from '../../../constants/common';
 import { getIcon } from '../../../config/iconRegistry';
 import type { Innerface } from '../types';
+import type { PlanningGoal } from '../../planning/types';
+
+const EmptyGroupDropZone = React.memo(({ isDragOver, groupName }: { isDragOver: boolean; groupName: string }) => {
+    return (
+        <div
+            className={`transition-all duration-300 ease-in-out rounded-xl flex items-center justify-center overflow-hidden ${isDragOver
+                ? 'h-[100px] bg-main/5 border-2 border-dashed border-main/30 my-2'
+                : 'h-[0px] border-0 border-transparent margin-0'
+                }`}
+        >
+            {isDragOver && (
+                <span className="text-main/70 text-sm font-mono animate-pulse">
+                    Drop into {groupName}
+                </span>
+            )}
+        </div>
+    );
+});
 
 export const InnerfaceGroup = React.memo(({
     groupName,
+    category,
     innerfaces,
     onEdit,
     onGroupEdit,
+    onPlanning,
+    goals,
     groupsMetadata,
     isCollapsed,
     onToggleCollapse,
     hideHeader
 }: {
     groupName: string;
+    category: string;
     innerfaces: Innerface[];
     onEdit: (id: string | number) => void;
     onGroupEdit: (groupName: string) => void;
+    onPlanning: (innerface: Innerface) => void;
+    goals: Record<string, PlanningGoal>;
     groupsMetadata: Record<string, { icon: string; color?: string }>;
     isCollapsed: boolean;
     onToggleCollapse: () => void;
@@ -42,20 +67,64 @@ export const InnerfaceGroup = React.memo(({
         if (storeMeta.color) color = storeMeta.color;
     }
 
-    // Memoize the items list creation
     const itemIds = useMemo(() => innerfaces.map(i => String(i.id)), [innerfaces]);
+
+    // Monitor drag events to trigger expand animation when hovering over the group header
+    const [isDragOver, setIsDragOver] = React.useState(false);
+
+    // --- PREMIUM EMPTY DROP LOGIC ---
+    // Problem: Empty groups have 0 height (no items), making them impossible to drop into using standard collision.
+    // Solution: We "monitor" the drag operation globally.
+    // 1. If an item is being dragged...
+    // 2. AND it is hovering over THIS group's Header (which is a SortableItem)...
+    // 3. We set `isDragOver` to true.
+    // 4. This triggers the `EmptyGroupDropZone` to expand (animate height from 0 to 100px).
+    // Result: The user feels like the group "opens up" to accept the item.
+    useDndMonitor({
+        onDragOver(event: DragOverEvent) {
+            const { active, over } = event;
+            if (!over) {
+                if (isDragOver) setIsDragOver(false);
+                return;
+            }
+
+            // Check if dragging an Item (not group/category) AND hovering over THIS group
+            const isItemDrag = !active.id.toString().startsWith('category-') && !active.id.toString().startsWith('group-');
+            const isOverThisGroup = over.id === `group-${category}-${groupName}`;
+
+            if (isItemDrag && isOverThisGroup) {
+                if (!isDragOver) setIsDragOver(true);
+            } else {
+                if (isDragOver) setIsDragOver(false);
+            }
+        },
+        onDragEnd() {
+            setIsDragOver(false);
+        }
+    });
+
+    // Collapsed state logic
+    // We already receive isCollapsed from props which is managed by parent (InnerfacesList)
 
     const content = (
         <SortableContext items={itemIds} strategy={rectSortingStrategy}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {innerfaces.map((innerface) => (
-                    <DraggableInnerfaceItem
-                        key={innerface.id}
-                        innerface={innerface}
-                        onEdit={onEdit}
-                    />
-                ))}
-            </div>
+            {innerfaces.length === 0 ? (
+                <EmptyGroupDropZone isDragOver={isDragOver} groupName={groupName} />
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {innerfaces.map((innerface) => (
+                        <DraggableInnerfaceItem
+                            key={innerface.id}
+                            innerface={innerface}
+                            onEdit={onEdit}
+                            onPlanning={() => onPlanning(innerface)}
+                            hasGoal={Boolean(goals[innerface.id])}
+                        />
+                    ))}
+                    {/* Add invisible drop zone at end of list to catch drops in grid gaps if needed, 
+                        or just let the container handle it via useInnerfaceDnD logic */}
+                </div>
+            )}
         </SortableContext>
     );
 
@@ -64,7 +133,7 @@ export const InnerfaceGroup = React.memo(({
     }
 
     return (
-        <SortableItem key={`group-${groupName}`} id={`group-${groupName}`}>
+        <SortableItem key={`group-${category}-${groupName}`} id={`group-${category}-${groupName}`}>
             {({ setNodeRef, setActivatorNodeRef, listeners, attributes, style, isDragging }) => (
                 <div
                     ref={setNodeRef}
@@ -72,9 +141,9 @@ export const InnerfaceGroup = React.memo(({
                         ...style,
                         opacity: isDragging ? 0 : 1,
                         transition: isDragging ? 'none' : style.transition,
-                        willChange: 'transform' // Hardware acceleration hint
+                        willChange: 'transform'
                     }}
-                    className="mb-8"
+                    className={`mb-8 ${isDragging ? 'dragging-item-placeholder' : ''}`}
                 >
                     <CollapsibleSection
                         key={groupName}
@@ -118,7 +187,7 @@ export const InnerfaceGroup = React.memo(({
                                 </span>
                             </div>
                         }
-                        className={`animate-in fade-in slide-in-from-bottom-2 duration-500`}
+                        className={``}
                     >
                         {!isDragging && content}
                     </CollapsibleSection>
@@ -126,4 +195,37 @@ export const InnerfaceGroup = React.memo(({
             )}
         </SortableItem>
     );
+}, (prev, next) => {
+    // 1. Basic props check
+    if (prev.groupName !== next.groupName) return false;
+    if (prev.category !== next.category) return false;
+    if (prev.isCollapsed !== next.isCollapsed) return false;
+    if (prev.hideHeader !== next.hideHeader) return false;
+
+    // 2. Metadata check
+    const prevMeta = prev.groupsMetadata[prev.groupName];
+    const nextMeta = next.groupsMetadata[next.groupName];
+    if (prevMeta?.icon !== nextMeta?.icon) return false;
+    if (prevMeta?.color !== nextMeta?.color) return false;
+
+    // 3. Innerfaces & Goals Deep Check
+    if (prev.innerfaces.length !== next.innerfaces.length) return false;
+
+    for (let i = 0; i < prev.innerfaces.length; i++) {
+        const p = prev.innerfaces[i];
+        const n = next.innerfaces[i];
+
+        // Entity changed or moved
+        if (p.id !== n.id) return false;
+        if (p.name !== n.name) return false;
+        if (p.icon !== n.icon) return false;
+        if (p.currentScore !== n.currentScore) return false;
+
+        // Goal status changed for this item
+        const pHasGoal = Boolean(prev.goals[p.id]);
+        const nHasGoal = Boolean(next.goals[n.id]);
+        if (pHasGoal !== nHasGoal) return false;
+    }
+
+    return true;
 });

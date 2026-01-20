@@ -55,7 +55,11 @@ export function ProtocolsToolbar({
                 <TooltipProvider delayDuration={1000}>
                     <Tooltip
                         open={isModalOpen || suppressTooltip ? false : localOpen}
-                        onOpenChange={setLocalOpen}
+                        onOpenChange={(val) => {
+                            // Don't allow opening if suppressed
+                            if (val && suppressTooltip) return;
+                            setLocalOpen(val);
+                        }}
                     >
                         <TooltipTrigger asChild>
                             <button

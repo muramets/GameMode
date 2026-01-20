@@ -4,25 +4,21 @@ import { Card } from '../../../components/ui/atoms/Card';
 import type { Innerface } from '../types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog, faHistory, faArrowUp, faArrowDown, faBullseye } from '@fortawesome/free-solid-svg-icons';
-import { PlanningModal } from '../../planning/components/PlanningModal';
 import { getTierColor } from '../../../utils/colorUtils';
 import { calculateLevel, scoreToXP } from '../../../utils/xpUtils';
-import { usePlanningStore } from '../../../stores/planningStore';
 import { PowerIcon } from './PowerIcon';
-
 import { TruncatedTooltip } from '../../../components/ui/molecules/TruncatedTooltip';
 
 interface InnerfaceCardProps {
     innerface: Innerface;
     onEdit?: () => void;
+    onPlanning?: () => void;
     forceHover?: boolean;
+    hasGoal?: boolean;
 }
 
-export function InnerfaceCard({ innerface, onEdit, forceHover }: InnerfaceCardProps) {
+export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGoal }: InnerfaceCardProps) {
     const navigate = useNavigate();
-    const [isPlanningOpen, setIsPlanningOpen] = React.useState(false);
-    const goals = usePlanningStore(state => state.goals);
-    const hasGoal = Boolean(goals[innerface.id]);
 
     // XP Calculation
     const currentScore = innerface.currentScore || innerface.initialScore || 0;
@@ -112,7 +108,7 @@ export function InnerfaceCard({ innerface, onEdit, forceHover }: InnerfaceCardPr
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
-                            setIsPlanningOpen(true);
+                            onPlanning?.();
                         }}
                         className={`w-10 h-7 flex items-center justify-start transition-all duration-200 
                             ${hasGoal
@@ -166,11 +162,6 @@ export function InnerfaceCard({ innerface, onEdit, forceHover }: InnerfaceCardPr
                 </div>
             </div>
 
-            <PlanningModal
-                innerface={innerface}
-                isOpen={isPlanningOpen}
-                onClose={() => setIsPlanningOpen(false)}
-            />
         </Card>
     );
 }

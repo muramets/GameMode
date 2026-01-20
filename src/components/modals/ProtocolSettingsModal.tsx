@@ -112,7 +112,7 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                 </>
             }
         >
-            <div className="flex flex-col gap-5 max-h-[60vh] overflow-y-auto custom-scrollbar px-1">
+            <div className="flex flex-col gap-5 max-h-[60vh] overflow-y-auto custom-scrollbar overscroll-contain px-1">
                 <div className="flex flex-col gap-1.5">
                     <InputLabel label="Title" />
                     <Input

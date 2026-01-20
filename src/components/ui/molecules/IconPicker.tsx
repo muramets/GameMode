@@ -204,7 +204,7 @@ export function IconPicker({
                     )}
 
                     {/* Icon Grid */}
-                    <TooltipProvider delayDuration={300}>
+                    <TooltipProvider delayDuration={500} skipDelayDuration={0}>
                         <div className="grid grid-cols-7 gap-1.5 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
                             {displayedIcons.length > 0 ? (
                                 displayedIcons.map((entry) => (
@@ -215,7 +215,7 @@ export function IconPicker({
                                                 onClick={() => handleSelect(entry.id)}
                                                 className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer ${icon === entry.id
                                                     ? 'text-text-primary scale-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]'
-                                                    : 'text-sub hover:bg-white/10 hover:text-text-primary'
+                                                    : 'text-sub hover:text-text-primary'
                                                     }`}
                                                 style={{ color: icon === entry.id ? color : undefined }}
                                             >

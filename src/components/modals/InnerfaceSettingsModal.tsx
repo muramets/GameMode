@@ -101,7 +101,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
             }
         >
             <div
-                className="flex flex-col gap-5 max-h-[60vh] overflow-y-auto custom-scrollbar px-1"
+                className="flex flex-col gap-5 max-h-[60vh] overflow-y-auto custom-scrollbar overscroll-contain px-1"
                 style={{ transform: 'translateZ(0)', willChange: 'transform' }}
             >
                 <div className="flex flex-col gap-1.5">

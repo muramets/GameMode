@@ -40,6 +40,7 @@ export function SortableQuickActionCard({ action, onClick, onDelete, isDisabled 
                 onAction={(direction) => onClick(action.id, direction)}
                 onDelete={() => onDelete(action.id)}
                 isDisabled={isDisabled}
+                isDragging={isDragging}
             />
         </div>
     );

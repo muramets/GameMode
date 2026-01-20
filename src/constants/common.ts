@@ -5,7 +5,7 @@ export const GROUP_CONFIG: Record<string, { icon: string; color: string }> = {
     Rest: { icon: 'umbrella-beach', color: '#7fb3d3' },
     Substances: { icon: 'smoking', color: '#ca4754' },
     Ungrouped: { icon: 'circle', color: '#d1d0c5' },
-    Business: { icon: 'list-check', color: '#c678dd' },
+    Business: { icon: 'list-check', color: '#e06c75' },
 };
 
 export const DEFAULT_GROUPS_ORDER = [

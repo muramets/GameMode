@@ -97,6 +97,7 @@ export function QuickActionsGrid({
                                         action={activeAction}
                                         onAction={() => null} // No-op during drag
                                         onDelete={() => null} // No-op during drag
+                                        isDragging={true}
                                     />
                                 );
                             })()}
