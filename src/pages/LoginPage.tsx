@@ -66,7 +66,6 @@ export default function LoginPage() {
             `}</style>
             <div
                 className="login-container relative min-h-screen flex items-center justify-center font-mono cursor-default select-none"
-                style={{ backgroundColor: 'var(--bg-color)' }}
             >
                 {/* Content */}
                 <motion.div

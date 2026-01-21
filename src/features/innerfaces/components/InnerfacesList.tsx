@@ -103,10 +103,10 @@ const CategorySection = React.memo(({
                     {/* Disable pointer events on content if ANY category is dragging (to allow drop on header) */}
                     {!isDragging && (
                         <div
-                            className={`overflow-hidden ${isAnyCategoryDragging ? 'pointer-events-none' : ''
+                            className={`overflow-hidden transition-all duration-300 ease-in-out ${isAnyCategoryDragging ? 'pointer-events-none' : ''
                                 } ${!isCollapsed
-                                    ? 'opacity-100 transition-all duration-300 ease-in-out max-h-[5000px]'
-                                    : 'opacity-0 max-h-0 transition-all duration-300 ease-in-out'
+                                    ? 'max-h-[5000px]'
+                                    : 'opacity-0 max-h-0'
                                 }`}
                         >
                             <div className="py-1">

@@ -57,6 +57,8 @@ function App() {
     <QueryProvider>
       <AuthProvider>
         <ScoreProvider>
+          {/* Explicit Background Layer to fix compositing tint issues */}
+          <div className="fixed inset-0 bg-bg-primary -z-50" />
           <AppContent />
         </ScoreProvider>
       </AuthProvider>
