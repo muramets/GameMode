@@ -52,7 +52,7 @@ export function UserStats() {
     };
 
     return (
-        <div className="flex gap-8 mt-2 md:mt-0">
+        <div className="flex gap-8 md:mt-0">
             <div
                 onClick={() => handleNavigateToHistory('Today')}
                 className="flex flex-col items-center gap-2 p-2 rounded-lg cursor-pointer transition-all duration-200 hover:-translate-y-[2px] hover:bg-[rgba(255,255,255,0.02)] group"

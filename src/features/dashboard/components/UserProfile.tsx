@@ -63,7 +63,7 @@ export function UserProfile() {
     const nextTierColor = getTierColor(nextTierFirstLevel);
 
     return (
-        <Card className="group flex flex-col md:flex-row items-center justify-between gap-8 p-6 mb-8 bg-sub-alt rounded-lg shadow-sm border-none hover:scale-[1.02] hover:shadow-xl transition-all duration-300 overflow-hidden">
+        <Card className="group flex flex-col md:flex-row items-center justify-between gap-0 md:gap-8 p-6 mb-8 bg-sub-alt rounded-lg shadow-sm border-none hover:scale-[1.02] hover:shadow-xl transition-all duration-300 overflow-hidden">
             {/* Desktop: Group User Info + Separator closely */}
             <div className="flex md:flex-row items-center gap-6 w-full md:w-auto">
                 {/* User Info Section */}
@@ -182,8 +182,10 @@ export function UserProfile() {
             </div>
 
 
-            {/* Mobile Separator (Horizontal) */}
-            <div className="w-full h-[6px] bg-text-primary opacity-5 rounded-full my-6 md:hidden shrink-0"></div>
+            {/* Weekly Focus Widget (Mobile) - appears after separator */}
+            <div className="flex md:hidden flex-col items-center justify-center w-full my-8">
+                <WeeklyFocus />
+            </div>
 
             {/* Stats Section */}
             <UserStats />

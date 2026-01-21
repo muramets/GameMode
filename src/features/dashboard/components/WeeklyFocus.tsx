@@ -266,14 +266,14 @@ export function WeeklyFocus() {
     );
 
     return (
-        <div className="flex flex-col items-center gap-1.5 animate-fade-in cursor-default select-none min-h-[160px] justify-center">
+        <div className="flex flex-col items-center gap-0.5 animate-fade-in cursor-default select-none min-h-fit md:min-h-[160px] justify-center">
             <span className="text-[10px] font-mono text-sub uppercase tracking-widest opacity-60 text-center w-full">
                 Weekly Focus
             </span>
 
             {/* Single Grid Container for entire calendar */}
             <div
-                className="grid gap-x-2 gap-y-0.5 w-full max-w-[240px] transition-all duration-300 items-center justify-center"
+                className="grid gap-x-2 gap-y-0.5 w-full max-w-[320px] transition-all duration-300 items-center justify-center"
                 style={{
                     gridTemplateColumns: '24px 1fr 52px',
                     gridTemplateRows: 'auto'
