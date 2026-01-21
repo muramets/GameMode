@@ -47,14 +47,19 @@ html {
   --text-secondary: rgb(var(--sub-color-rgb) / 1);
 }
 
-html,
+html {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 body,
 #root {
   width: 100%;
   margin: 0;
   padding: 0;
-  background-color: var(--bg-primary);
-  /* Fix iOS safe area white bars */
+  background-color: transparent;
+  /* Transparent to show GPU-accelerated fixed layer */
 }
 
 body {

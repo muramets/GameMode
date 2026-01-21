@@ -106,6 +106,12 @@ export const applyTheme = (theme: Theme) => {
     setVar('colorful-error-color', theme.colorfulErrorColor || '#ca4754');
     setVar('colorful-error-extra-color', theme.colorfulErrorExtraColor || '#7e2a33');
     setVar('correct-color', theme.correctColor || '#98c379');
+
+    // 3. Update Meta Theme Color for Mobile Browsers
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+        metaThemeColor.setAttribute('content', theme.bgColor);
+    }
 };
 
 export const setTheme = (themeName: string) => {
