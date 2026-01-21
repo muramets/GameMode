@@ -58,7 +58,15 @@ function App() {
       <AuthProvider>
         <ScoreProvider>
           {/* Explicit Background Layer to fix compositing tint issues */}
-          <div className="fixed inset-0 bg-bg-primary -z-50" />
+          <div
+            className="fixed inset-0 bg-bg-primary -z-50"
+            style={{
+              transform: 'translate3d(0, 0, 0)',
+              backfaceVisibility: 'hidden',
+              perspective: '1000px',
+              willChange: 'transform'
+            }}
+          />
           <AppContent />
         </ScoreProvider>
       </AuthProvider>

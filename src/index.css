@@ -53,12 +53,15 @@ body,
   width: 100%;
   margin: 0;
   padding: 0;
+  background-color: var(--bg-primary);
+  /* Fix iOS safe area white bars */
 }
 
 body {
   color: var(--text-primary);
   font-family: "Roboto Mono", monospace;
   overflow-y: scroll;
+  /* Prevent bounce effect on non-scrollable pages if needed, usually overflow-y: auto helps */
 }
 
 /* Ensure Lexend Deca is available as a utility */
