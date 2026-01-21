@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { Innerface } from '../../innerfaces/types';
 import { useAuth } from '../../../contexts/AuthContext';
 import { usePersonalityStore } from '../../../stores/personalityStore';
@@ -37,10 +37,10 @@ export function usePlanningLogic({ innerface, isOpen, onClose }: UsePlanningLogi
     const progressBarRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
 
-    const linkedProtocols = protocols.filter(p => {
+    const linkedProtocols = useMemo(() => protocols.filter(p => {
         const fromProtocol = (p.targets || []).map(String).includes(innerface.id.toString());
         return fromProtocol;
-    });
+    }), [protocols, innerface.id]);
 
     // Reset loop when opening
     useEffect(() => {
@@ -77,7 +77,7 @@ export function usePlanningLogic({ innerface, isOpen, onClose }: UsePlanningLogi
                 setBalance({});
             }
         }
-    }, [isOpen, innerface.id, goals, currentScore]); // linkedProtocols is dynamic but derived from contexts, acceptable to track or omit if stable. Ideally omit to avoid loops if protocols change often, but correct React way is include. Logic above uses it only on mount/open.
+    }, [isOpen, innerface.id, goals, currentScore, linkedProtocols]); // linkedProtocols is dynamic but derived from contexts, acceptable to track or omit if stable. Ideally omit to avoid loops if protocols change often, but correct React way is include. Logic above uses it only on mount/open.
 
     const pointsNeeded = Math.max(0, targetScore - currentScore);
 

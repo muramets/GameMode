@@ -208,7 +208,7 @@ function WeeklyFocusRow({
                                     <span className="text-sub">
                                         {day.checkInCount} check-in{day.checkInCount > 1 ? 's' : ''}
                                     </span>
-                                    {hasMultipleGoals && (
+                                    {day.linkedGoals.length > 0 && (
                                         <div className="pt-2 border-t border-white/10">
                                             <p className="text-[9px] text-sub uppercase tracking-wider mb-1">
                                                 Contributing to:

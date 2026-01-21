@@ -110,6 +110,7 @@ function AvatarInner({ src, alt, fallbackIcon = 'user', className, style }: Avat
                     onLoad={handleLoad}
                     className={`w-full h-full object-cover z-10 transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'
                         }`}
+                    style={{ borderRadius: 'inherit' }}
                 />
             )}
         </div>

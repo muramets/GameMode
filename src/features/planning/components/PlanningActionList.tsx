@@ -175,7 +175,6 @@ function PlanningActionItem({
 
 export function PlanningActionList({
     linkedProtocols,
-    isCustomizing,
     actionCounts,
     setActionCounts,
     setIsCustomizing,

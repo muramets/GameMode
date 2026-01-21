@@ -376,7 +376,7 @@ export const useInnerfaceDnD = ({
                 }
             }
         }
-    }, [items, getGroupsForCategory, isValidDrop]);
+    }, [items, getGroupsForCategory, isValidDrop, activeCategoryOrder]);
 
     // --- 3. Drag End Handler (Persist Changes) ---
     /**
@@ -473,7 +473,7 @@ export const useInnerfaceDnD = ({
         requestAnimationFrame(() => {
             resetState();
         });
-    }, [localCategoryOrder, localGroupOrder, items, innerfaces, onReorderGroups, onReorderCategories, onMoveInnerface, categoryOrder, groupOrder, setHasPendingWrites]);
+    }, [items, innerfaces, onReorderGroups, onReorderCategories, onMoveInnerface, categoryOrder, groupOrder, setHasPendingWrites]);
 
     return {
         items,
