@@ -195,17 +195,32 @@ export function useHistoryFeed(filters: HistoryFilters = {}) {
 
     const deleteEvent = useCallback(async (id: string) => {
         if (!user || !activePersonalityId) return;
-        try {
-            // Use store action to ensure stats and scores are updated correctly
-            await useHistoryStore.getState().deleteCheckin(user.uid, activePersonalityId, id);
 
-            // Update local state to reflect removal immediately
-            setHistory(prev => prev.filter(e => e.id !== id));
+        // Store the item for potential rollback
+        const deletedItem = history.find(e => e.id === id);
+        if (!deletedItem) return;
+
+        // 1. OPTIMISTIC UPDATE: Remove immediately from UI
+        setHistory(prev => prev.filter(e => e.id !== id));
+
+        // 2. BACKGROUND SYNC: Update server
+        try {
+            await useHistoryStore.getState().deleteCheckin(user.uid, activePersonalityId, id);
         } catch (err) {
             console.error("Delete error:", err);
-            // Optionally fetch fresh data if delete failed/store state is complex
+
+            // 3. ERROR RECOVERY: Restore item on failure
+            setHistory(prev => {
+                // Re-insert at original position (sorted by timestamp desc)
+                const newHistory = [...prev, deletedItem];
+                return newHistory.sort((a, b) =>
+                    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+                );
+            });
+
+            // TODO: Show error toast notification to user
         }
-    }, [user, activePersonalityId]);
+    }, [user, activePersonalityId, history]);
 
     return {
         history,

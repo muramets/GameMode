@@ -74,10 +74,14 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
             console.debug("Loading personalities started", { uid });
             set({ isLoading: true });
             const colRef = collection(db, 'users', uid, 'personalities');
-            const q = query(colRef, orderBy('lastActiveAt', 'desc'));
+            // Changed data sorting to be alphabetical by name to prevent list jumping
+            const q = query(colRef, orderBy('name', 'asc'));
             const snap = await getDocs(q);
 
-            const personalities = snap.docs.map(d => ({ ...d.data(), id: d.id } as Personality));
+            const personalities = snap.docs
+                .map(d => ({ ...d.data(), id: d.id } as Personality))
+                .sort((a, b) => a.name.localeCompare(b.name));
+
             set({ personalities, isLoading: false });
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
@@ -89,10 +93,13 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
         console.debug("Subscribing to personalities", { uid });
         set({ isLoading: true });
         const colRef = collection(db, 'users', uid, 'personalities');
-        const q = query(colRef, orderBy('lastActiveAt', 'desc'));
+        // Changed data sorting to be alphabetical by name to prevent list jumping
+        const q = query(colRef, orderBy('name', 'asc'));
 
         const unsubscribe = onSnapshot(q, (snap) => {
-            const personalities = snap.docs.map(d => ({ ...d.data(), id: d.id } as Personality));
+            const personalities = snap.docs
+                .map(d => ({ ...d.data(), id: d.id } as Personality))
+                .sort((a, b) => a.name.localeCompare(b.name));
 
             // If the currently active personality was deleted, handle it
             const currentActiveId = get().activePersonalityId;
@@ -170,9 +177,9 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
 
             console.log("Created new personality with default groups", { uid, name, id });
 
-            set(state => ({
-                personalities: [newPersonality, ...state.personalities]
-            }));
+            // Note: We do NOT need to manually update state here because subscribeToPersonalities
+            // is active and will pick up the new document from Firestore automatically.
+            // Manually adding it here causes a race condition leading to duplicate keys.
 
             return id;
         } catch (err: unknown) {
@@ -369,8 +376,10 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
             await switchPersonality(uid, storedId);
             return storedId;
         } else {
-            // Default to most recently active (first in list due to sort)
-            const mostRecent = currentList[0];
+            // Default to most recently active (need to manually sort now since list is alphabetical)
+            const sortedByRecent = [...currentList].sort((a, b) => b.lastActiveAt - a.lastActiveAt);
+            const mostRecent = sortedByRecent[0];
+
             await switchPersonality(uid, mostRecent.id);
             return mostRecent.id;
         }

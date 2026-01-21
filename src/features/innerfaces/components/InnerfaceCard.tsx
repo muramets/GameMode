@@ -27,6 +27,11 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
     // Show hover state if forceHover is true or tapped on mobile
     const shouldShowHover = forceHover || isTapped;
 
+    /**
+     * Touch Handling Logic
+     * Explicitly handles the "Tap to Reveal" behavior on touch devices.
+     * Toggling `isTapped` reveals the edit/history buttons that are normally hover-only.
+     */
     const handleCardClick = () => {
         if (isTouchDevice) {
             setIsTapped(!isTapped);
@@ -36,9 +41,18 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
     // XP Calculation
     const currentScore = innerface.currentScore || innerface.initialScore || 0;
     const totalXP = scoreToXP(currentScore);
+
+    // Business Logic: Level Calculation
+    // Uses the central utility to derive level, remaining XP, and progress % from total XP.
+    // This drives the visual progress bar and tier coloring.
     const { level, currentLevelXP, progress } = calculateLevel(totalXP);
     const tierColor = getTierColor(level);
 
+    /**
+     * Action Handlers
+     * preventPropagation ensures that clicking an action button doesn't 
+     * trigger the card's main click handler (which might toggle "tapped" state).
+     */
     const handleHistory = (e: React.MouseEvent) => {
         e.stopPropagation();
         navigate('/history', { state: { filterInnerfaceId: String(innerface.id) } });
@@ -47,6 +61,11 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
     const handleEdit = (e: React.MouseEvent) => {
         e.stopPropagation();
         onEdit?.();
+    };
+
+    const handlePlan = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onPlanning?.();
     };
 
     return (
@@ -106,10 +125,7 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
                 <div className="flex flex-row gap-0 items-center ml-1">
                     {/* Target - always visible when goal set, otherwise on hover */}
                     <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onPlanning?.();
-                        }}
+                        onClick={handlePlan}
                         className={`w-7 h-7 flex items-center justify-start transition-all duration-200 
                             ${hasGoal
                                 ? 'opacity-100 text-main hover:text-white'

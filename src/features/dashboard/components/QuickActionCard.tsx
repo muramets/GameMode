@@ -30,11 +30,19 @@ export function QuickActionCard({ action, onAction, onDelete, isDisabled, isDrag
     }, [action.title]);
 
     // Derived states to avoid sticking/double-renders (matching ProtocolRow pattern)
+    // If disabled or dragging, we suppress all hover and feedback effects
     const effectiveHoverSide = (isDisabled || isDragging) ? null : hoverSide;
     const effectiveFeedbackType = (isDisabled || isDragging) ? null : feedbackType;
     const effectiveContentFeedbackType = (isDisabled || isDragging) ? null : contentFeedbackType;
     const effectiveShake = (isDisabled || isDragging) ? null : shake;
 
+    /**
+     * Business Logic: Action Handling
+     * Manages visual feedback hierarchy:
+     * 1. Shake (300ms) - Immediate physical feedback
+     * 2. Color/Scale Feedback (500ms) - Visual confirmation of action type
+     * 3. Content Feedback (800ms) - Shows XP gain instead of description
+     */
     const handleAction = (direction: '+' | '-') => {
         if (isDisabled) return;
         // Trigger shake
@@ -50,6 +58,45 @@ export function QuickActionCard({ action, onAction, onDelete, isDisabled, isDrag
         setTimeout(() => setContentFeedbackType(null), 800);
 
         onAction?.(direction);
+    };
+
+    /**
+     * TOUCH EVENT HANDLERS
+     * Separate handlers for touch interactions to prevent ghost clicks and ensure clean tap targets.
+     */
+    const handleTouchAction = (e: React.MouseEvent | React.TouchEvent, direction: '+' | '-') => {
+        // Prevent default browser behavior (zoom, scroll) when interacting with buttons
+        e.stopPropagation();
+        handleAction(direction);
+    };
+
+    /**
+     * Delete Handler
+     * Explicitly prevents propagation to avoid triggering card actions
+     */
+    const handleDelete = (e: React.MouseEvent | React.TouchEvent) => {
+        e.stopPropagation();
+        onDelete?.();
+    };
+
+    // Determine colors based on action state
+    // Use correct green/red for feedback, otherwise use hover side colors, or fallback to default
+    const getButtonColor = (side: 'left' | 'right') => {
+        const isPlus = side === 'right';
+        const feedbackMatch = isPlus ? effectiveFeedbackType === 'plus' : effectiveFeedbackType === 'minus';
+        const failColor = '#ca4754';
+        const successColor = '#98c379';
+
+        if (feedbackMatch) return isPlus ? successColor : failColor;
+
+        // Touch device fallback: colored icons if not disabled
+        if (isTouchDevice && !isDisabled && !isDragging) {
+            return isPlus ? successColor : failColor;
+        }
+
+        if (effectiveHoverSide === side) return isPlus ? successColor : failColor;
+
+        return undefined;
     };
 
     return (
@@ -74,6 +121,13 @@ export function QuickActionCard({ action, onAction, onDelete, isDisabled, isDrag
                         }
                         .animate-tilt-left { animation: tilt-left 0.3s ease-in-out; }
                         .animate-tilt-right { animation: tilt-right 0.3s ease-in-out; }
+                        
+                        /* Pulse Animation for Touch Devices */
+                        @keyframes pulse-soft {
+                            0%, 100% { opacity: 0.8; transform: scale(1); }
+                            50% { opacity: 1; transform: scale(1.1); }
+                        }
+                        .animate-pulse-soft { animation: pulse-soft 2s infinite ease-in-out; }
                     `}</style>
 
                     <div
@@ -93,43 +147,40 @@ export function QuickActionCard({ action, onAction, onDelete, isDisabled, isDrag
 
                     {/* 2. Interaction Layer: Buttons (Underneath Visuals) */}
                     <div className="absolute inset-0 flex z-10">
-                        {/* Left Button (Decrease) */}
+                        {/* Left Button (Decrease) - Minus */}
                         <button
                             className={`flex-1 flex items-center justify-start pl-5 text-sub focus:outline-none ${!isDragging ? 'transition-colors duration-150' : ''}`}
                             style={{
-                                color: effectiveFeedbackType === 'minus' ? '#ca4754' : (effectiveHoverSide === 'left' || (isTouchDevice && !isDisabled && !isDragging)) ? '#ca4754' : undefined,
+                                color: getButtonColor('left'),
                             }}
-                            onMouseEnter={() => setHoverSide('left')}
-                            onMouseLeave={() => setHoverSide(null)}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleAction('-');
-                            }}
+                            onMouseEnter={() => !isTouchDevice && setHoverSide('left')}
+                            onMouseLeave={() => !isTouchDevice && setHoverSide(null)}
+                            onClick={(e) => handleTouchAction(e, '-')}
                         >
-                            <div className={`${!isDragging ? 'transition-all duration-300' : ''} transform ${effectiveFeedbackType === 'minus' ? 'scale-150' : ''}`}>
+                            <div className={`${!isDragging ? 'transition-all duration-300' : ''} transform ${effectiveFeedbackType === 'minus' ? 'scale-150' : ''} ${isTouchDevice && !isDisabled && !isDragging ? 'animate-pulse-soft' : ''}`}>
                                 <FontAwesomeIcon
                                     icon={faMinus}
                                     className={`text-sm ${!isDragging ? 'transition-all duration-300' : ''} ${effectiveFeedbackType === 'minus' ? 'text-[#ca4754]' : ''}`}
+                                    // Remove mouse events from icon to prevent double firing, let button handle it
+                                    pointerEvents="none"
                                 />
                             </div>
                         </button>
-                        {/* Right Button (Increase/Primary) */}
+                        {/* Right Button (Increase/Primary) - Plus */}
                         <button
                             className={`flex-1 flex items-center justify-end pr-5 text-sub focus:outline-none ${!isDragging ? 'transition-colors duration-150' : ''}`}
                             style={{
-                                color: effectiveFeedbackType === 'plus' ? '#98c379' : (effectiveHoverSide === 'right' || (isTouchDevice && !isDisabled && !isDragging)) ? '#98c379' : undefined,
+                                color: getButtonColor('right'),
                             }}
-                            onMouseEnter={() => setHoverSide('right')}
-                            onMouseLeave={() => setHoverSide(null)}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleAction('+');
-                            }}
+                            onMouseEnter={() => !isTouchDevice && setHoverSide('right')}
+                            onMouseLeave={() => !isTouchDevice && setHoverSide(null)}
+                            onClick={(e) => handleTouchAction(e, '+')}
                         >
-                            <div className={`${!isDragging ? 'transition-all duration-300' : ''} transform ${effectiveFeedbackType === 'plus' ? 'scale-150' : ''}`}>
+                            <div className={`${!isDragging ? 'transition-all duration-300' : ''} transform ${effectiveFeedbackType === 'plus' ? 'scale-150' : ''} ${isTouchDevice && !isDisabled && !isDragging ? 'animate-pulse-soft' : ''}`}>
                                 <FontAwesomeIcon
                                     icon={faPlus}
                                     className={`text-sm ${!isDragging ? 'transition-all duration-300' : ''} ${effectiveFeedbackType === 'plus' ? 'text-[#98c379]' : ''}`}
+                                    pointerEvents="none"
                                 />
                             </div>
                         </button>
@@ -154,15 +205,9 @@ export function QuickActionCard({ action, onAction, onDelete, isDisabled, isDrag
                                 layout={!isDragging}
                                 initial={false}
                                 animate={{
-                                    backgroundColor: effectiveHoverSide === 'right' ? 'color-mix(in srgb, var(--correct-color) 20%, transparent)' :
-                                        effectiveHoverSide === 'left' ? 'color-mix(in srgb, var(--error-color) 20%, transparent)' :
-                                            `color-mix(in srgb, ${action.color || '#ffffff'} 20%, transparent)`,
-                                    boxShadow: effectiveHoverSide === 'right' ? '0 0 10px color-mix(in srgb, var(--correct-color) 20%, transparent)' :
-                                        effectiveHoverSide === 'left' ? '0 0 10px color-mix(in srgb, var(--error-color) 20%, transparent)' :
-                                            `0 0 10px color-mix(in srgb, ${action.color || '#ffffff'} 8%, transparent)`,
-                                    color: effectiveHoverSide === 'right' ? 'var(--correct-color)' :
-                                        effectiveHoverSide === 'left' ? 'var(--error-color)' :
-                                            action.color || 'var(--text-primary)'
+                                    backgroundColor: `color-mix(in srgb, ${action.color || '#ffffff'} 20%, transparent)`,
+                                    boxShadow: `0 0 10px color-mix(in srgb, ${action.color || '#ffffff'} 8%, transparent)`,
+                                    color: action.color || 'var(--text-primary)'
                                 }}
                                 transition={{
                                     type: "spring",
@@ -179,8 +224,7 @@ export function QuickActionCard({ action, onAction, onDelete, isDisabled, isDrag
                             <motion.span
                                 layout={!isDragging}
                                 ref={titleRef}
-                                className={`truncate text-center origin-left ${!isDragging ? 'transition-colors duration-300' : ''} ${effectiveFeedbackType === 'plus' || effectiveHoverSide === 'right' ? 'text-correct' : effectiveFeedbackType === 'minus' || effectiveHoverSide === 'left' ? 'text-error' : ''
-                                    }`}
+                                className={`truncate text-center origin-left ${!isDragging ? 'transition-colors duration-300' : ''}`}
                             >
                                 {action.title}
                             </motion.span>
@@ -264,10 +308,7 @@ export function QuickActionCard({ action, onAction, onDelete, isDisabled, isDrag
                         <div className="absolute top-0 right-0 w-8 h-8 z-50 flex items-start justify-end p-1 group/delete pointer-events-auto">
                             <button
                                 className={`w-5 h-5 flex items-center justify-center rounded text-sub/50 hover:text-red-500 hover:bg-bg-primary/80 transition-all opacity-0 ${isDisabled ? 'group-hover:opacity-100' : 'group-hover/delete:opacity-100'}`}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onDelete();
-                                }}
+                                onClick={handleDelete}
                                 title="Unpin"
                             >
                                 <FontAwesomeIcon icon={faTimes} size="xs" />

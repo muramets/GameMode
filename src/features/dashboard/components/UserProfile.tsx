@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom';
 import { Card } from '../../../components/ui/atoms/Card';
 import { useAuth } from '../../../contexts/AuthContext';
 import { usePersonalityStore } from '../../../stores/personalityStore';
@@ -6,13 +5,13 @@ import { useRoleStore } from '../../../stores/team';
 import { useScoreContext } from '../../../contexts/ScoreContext';
 import { getTierColor } from '../../../utils/colorUtils';
 import { calculateLevel, scoreToXP } from '../../../utils/xpUtils';
-import { format } from 'date-fns';
 import { WeeklyFocus } from './WeeklyFocus';
 import { Avatar } from '../../../components/ui/atoms/Avatar';
+import { UserStats } from './UserStats';
 
 export function UserProfile() {
     const { user } = useAuth();
-    const navigate = useNavigate();
+    // navigate removed if not used elsewhere (it was used in handleNavigateToHistory)
     const { personalities, activePersonalityId, activeContext } = usePersonalityStore();
     const { roles } = useRoleStore();
     const { innerfaces } = useScoreContext();
@@ -21,8 +20,6 @@ export function UserProfile() {
     let displayName = "Unknown";
     let displayAvatar: string | undefined;
     let displayIcon: string = 'user';
-
-    let activePersonality;
 
     if (activeContext?.type === 'role') {
         const teamRoles = roles[activeContext.teamId] || [];
@@ -33,7 +30,7 @@ export function UserProfile() {
         displayName = activeContext.displayName || "Participant";
         displayIcon = 'user'; // Or maybe 'eye' but 'user' is safer for general profile look
     } else {
-        activePersonality = personalities.find(p => p.id === activePersonalityId);
+        const activePersonality = personalities.find(p => p.id === activePersonalityId);
         displayName = activePersonality?.name || user?.displayName || user?.email?.split('@')[0] || "Unknown Player";
         displayAvatar = activePersonality?.avatar;
         displayIcon = activePersonality?.icon || 'user';
@@ -52,42 +49,6 @@ export function UserProfile() {
     const totalXP = scoreToXP(averageScore);
     const { level, currentLevelXP, progress } = calculateLevel(totalXP);
     const tierColor = getTierColor(level);
-
-    // 2. Check-ins today/month from Personality Stats (Efficient Read)
-    const stats = { checkinsToday: 0, xpToday: 0, checkinsMonth: 0, xpMonth: 0 };
-
-    // We only have stats for Personalities, not Roles (yet)
-    if (activeContext?.type !== 'role' && activePersonality?.stats) {
-        const todayStr = format(new Date(), 'yyyy-MM-dd');
-        const monthStr = format(new Date(), 'yyyy-MM');
-
-        if (activePersonality.stats.lastDailyUpdate === todayStr) {
-            stats.checkinsToday = activePersonality.stats.dailyCheckins;
-            stats.xpToday = activePersonality.stats.dailyXp;
-        }
-
-        if (activePersonality.stats.lastMonthlyUpdate === monthStr) {
-            stats.checkinsMonth = activePersonality.stats.monthlyCheckins;
-            stats.xpMonth = activePersonality.stats.monthlyXp;
-        }
-    }
-
-    const handleNavigateToHistory = (timeFilter?: string) => {
-        navigate('/history', { state: { filterTime: timeFilter } });
-    };
-
-    const renderXP = (xp: number, isTotal = false) => {
-        if (xp === 0) return <span className="text-xs text-sub font-mono">0 XP</span>;
-        const isPositive = xp > 0;
-        return (
-            <span
-                className="text-xs font-mono"
-                style={{ color: isPositive ? 'var(--correct-color)' : 'var(--error-color)' }}
-            >
-                {isPositive ? '+' : ''}{xp} XP{isTotal ? ' total' : ''}
-            </span>
-        );
-    };
 
     // Calculate next TIER color (not just next level) for a visible motivational gradient
     // Tier boundaries: 1-3 (Red), 4-6 (Gold), 7-9 (Green), 10-19 (Purple), 20+ (Blue)
@@ -225,37 +186,7 @@ export function UserProfile() {
             <div className="w-full h-[6px] bg-text-primary opacity-5 rounded-full my-6 md:hidden shrink-0"></div>
 
             {/* Stats Section */}
-            <div className="flex gap-8 mt-2 md:mt-0">
-                <div
-                    onClick={() => handleNavigateToHistory('Today')}
-                    className="flex flex-col items-center gap-2 p-2 rounded-lg cursor-pointer transition-all duration-200 hover:-translate-y-[2px] hover:bg-[rgba(255,255,255,0.02)] group"
-                >
-                    <span className="text-xs text-sub bg-bg-primary px-2 py-1 rounded border border-[rgba(255,255,255,0.03)] group-hover:bg-main group-hover:text-bg-primary group-hover:border-main transition-all duration-300">
-                        Check-ins today
-                    </span>
-                    <div className="flex flex-col items-center gap-1">
-                        <span className="text-[1.5rem] font-medium font-mono text-text-primary leading-none">
-                            {stats.checkinsToday}
-                        </span>
-                        {renderXP(stats.xpToday)}
-                    </div>
-                </div>
-
-                <div
-                    onClick={() => handleNavigateToHistory('This month')}
-                    className="flex flex-col items-center gap-2 p-2 rounded-lg cursor-pointer transition-all duration-200 hover:-translate-y-[2px] hover:bg-[rgba(255,255,255,0.02)] group"
-                >
-                    <span className="text-xs text-sub bg-bg-primary px-2 py-1 rounded border border-[rgba(255,255,255,0.03)] group-hover:bg-main group-hover:text-bg-primary group-hover:border-main transition-all duration-300">
-                        Check-ins this month
-                    </span>
-                    <div className="flex flex-col items-center gap-1">
-                        <span className="text-[1.5rem] font-medium font-mono text-text-primary leading-none">
-                            {stats.checkinsMonth}
-                        </span>
-                        {renderXP(stats.xpMonth, true)}
-                    </div>
-                </div>
-            </div>
+            <UserStats />
         </Card >
     );
 }
