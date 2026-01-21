@@ -6,7 +6,7 @@ import { usePlanningStore } from '../../../stores/planningStore';
 import { useScoreContext } from '../../../contexts/ScoreContext';
 import { calculateLevel, scoreToXP } from '../../../utils/xpUtils';
 import { getInterpolatedColor, getLevelGradient } from '../../../utils/colorUtils';
-import type { PlanningPeriod } from '../types';
+
 
 interface UsePlanningLogicProps {
     innerface: Innerface;
@@ -17,7 +17,7 @@ interface UsePlanningLogicProps {
 export function usePlanningLogic({ innerface, isOpen, onClose }: UsePlanningLogicProps) {
     const { user } = useAuth();
     const { activePersonalityId, activeContext } = usePersonalityStore();
-    const { goals, setGoal } = usePlanningStore();
+    const { goals, setGoal, deleteGoal } = usePlanningStore();
     const { protocols } = useScoreContext();
 
     const currentScore = innerface.currentScore || innerface.initialScore || 0;
@@ -28,7 +28,6 @@ export function usePlanningLogic({ innerface, isOpen, onClose }: UsePlanningLogi
 
     // Local State
     const [targetScore, setTargetScore] = useState<number>(currentScore);
-    const [period, setPeriod] = useState<PlanningPeriod>('week');
     const [balance, setBalance] = useState<Record<string, number>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isCustomizing, setIsCustomizing] = useState(false);
@@ -38,17 +37,21 @@ export function usePlanningLogic({ innerface, isOpen, onClose }: UsePlanningLogi
     const progressBarRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
 
+    const linkedProtocols = protocols.filter(p => {
+        const fromProtocol = (p.targets || []).map(String).includes(innerface.id.toString());
+        return fromProtocol;
+    });
+
     // Reset loop when opening
     useEffect(() => {
         if (isOpen) {
             // "Always open at +1"
-            const defaultTarget = Math.floor(currentScore) + 1;
+            const defaultTarget = Math.round(currentScore + 1);
             setTargetScore(defaultTarget);
 
             // Check if there is a saved goal
             const existing = goals[innerface.id];
             if (existing) {
-                setPeriod(existing.period);
                 setBalance(existing.balance || {});
                 if (existing.targetScore) {
                     setTargetScore(existing.targetScore);
@@ -58,82 +61,56 @@ export function usePlanningLogic({ innerface, isOpen, onClose }: UsePlanningLogi
                     setIsCustomizing(true);
                     setActionCounts(existing.actionCounts);
                 } else {
+                    // Fallback for legacy plans without counts
                     setIsCustomizing(false);
                     setActionCounts({});
                 }
             } else {
+                // NEW: Default to Medium Pace (3/week) for linked protocols
+                const defaults: Record<string, number> = {};
+                linkedProtocols.forEach(p => {
+                    defaults[p.id] = 3; // Medium pace constant
+                });
+
                 setIsCustomizing(false);
-                setActionCounts({});
+                setActionCounts(defaults);
                 setBalance({});
             }
         }
-    }, [isOpen, innerface.id, goals, currentScore]);
-
-    const linkedProtocols = protocols.filter(p => {
-        const fromProtocol = (p.targets || []).map(String).includes(innerface.id.toString());
-        return fromProtocol;
-    });
+    }, [isOpen, innerface.id, goals, currentScore]); // linkedProtocols is dynamic but derived from contexts, acceptable to track or omit if stable. Ideally omit to avoid loops if protocols change often, but correct React way is include. Logic above uses it only on mount/open.
 
     const pointsNeeded = Math.max(0, targetScore - currentScore);
-
-    // Smart algorithm: find optimal combination closest to goal
-    const getSmartCounts = useCallback(() => {
-        const xpNeeded = Math.round(pointsNeeded * 100);
-        if (xpNeeded <= 0) return {};
-
-        const sorted = [...linkedProtocols].sort((a, b) =>
-            ((b.weight || 0.1) * 100) - ((a.weight || 0.1) * 100)
-        );
-        const counts: Record<string, number> = {};
-        sorted.forEach(p => counts[p.id] = 0);
-
-        // Simple greedy: start with highest XP, then fill with smaller ones
-        let remaining = xpNeeded;
-        for (const p of sorted) {
-            const xp = Math.round((p.weight || 0.1) * 100);
-            if (remaining > 0 && xp <= remaining) {
-                // Use this action only if it doesn't overshoot alone
-                const useCount = Math.floor(remaining / xp);
-                counts[p.id] = Math.min(useCount, 999);
-                remaining -= counts[p.id] * xp;
-            }
-        }
-
-        // Check total
-        let total = sorted.reduce((sum, p) => sum + counts[p.id] * Math.round((p.weight || 0.1) * 100), 0);
-
-        // If we haven't met the goal, add the smallest action that gets us there
-        if (total < xpNeeded) {
-            // Sort by XP ascending to find smallest
-            const ascending = [...sorted].reverse();
-            for (const p of ascending) {
-                const xp = Math.round((p.weight || 0.1) * 100);
-                while (total < xpNeeded && counts[p.id] < 999) {
-                    counts[p.id]++;
-                    total += xp;
-                }
-                if (total >= xpNeeded) break;
-            }
-        }
-
-        return counts;
-    }, [pointsNeeded, linkedProtocols]);
 
     const handleSave = async () => {
         if (!user || !activePersonalityId) return;
         setIsSubmitting(true);
         try {
-            // Determine which counts to save: custom or smart
-            const countsToSave = isCustomizing ? actionCounts : getSmartCounts();
             const uid = activeContext?.type === 'personality' && activeContext.uid ? activeContext.uid : user.uid;
 
             await setGoal(uid, activePersonalityId, {
                 innerfaceId: innerface.id,
                 targetScore,
-                period,
                 balance,
-                actionCounts: countsToSave
+                actionCounts // Always save what is in state
             });
+            onClose();
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // Check if there is an existing plan to allow deletion
+    const hasExistingPlan = !!goals[innerface.id];
+
+    const handleDelete = async () => {
+        if (!user || !activePersonalityId) return;
+        setIsSubmitting(true);
+        try {
+            const uid = activeContext?.type === 'personality' && activeContext.uid ? activeContext.uid : user.uid;
+
+            await deleteGoal(uid, activePersonalityId, innerface.id);
             onClose();
         } catch (error) {
             console.error(error);
@@ -205,8 +182,6 @@ export function usePlanningLogic({ innerface, isOpen, onClose }: UsePlanningLogi
         currentScore,
         targetScore,
         setTargetScore,
-        period,
-        setPeriod,
         isSubmitting,
         isCustomizing,
         setIsCustomizing,
@@ -216,10 +191,11 @@ export function usePlanningLogic({ innerface, isOpen, onClose }: UsePlanningLogi
         // Protocol Data
         linkedProtocols,
         pointsNeeded,
-        getSmartCounts,
 
         // Handlers
         handleSave,
+        handleDelete,
+        hasExistingPlan,
         handleMouseDown,
         progressBarRef,
 

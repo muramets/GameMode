@@ -1,48 +1,268 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import type { Protocol } from '../../protocols/types';
+import type { SmartPlannerPace } from '../types';
 import { AppIcon } from '../../../components/ui/atoms/AppIcon';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck } from '@fortawesome/free-solid-svg-icons';
+import { PACE_CONFIGS, getWeeklySchedule, calculateWeeksToGoal, formatWeeksToGoal } from '../utils/paceCalculator';
+import { getInterpolatedColor } from '../../../utils/colorUtils';
 
 interface PlanningActionListProps {
     linkedProtocols: Protocol[];
     isCustomizing: boolean;
     actionCounts: Record<string, number>;
-    smartCounts: Record<string, number>;
     setActionCounts: React.Dispatch<React.SetStateAction<Record<string, number>>>;
     setIsCustomizing: (value: boolean) => void;
     pointsNeeded: number;
+}
+
+const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+interface PlanningActionItemProps {
+    protocol: Protocol;
+    isDeactivated: boolean;
+    currentPace: SmartPlannerPace;
+    actionCounts: Record<string, number>;
+    customSchedules: Record<string, boolean[]>;
+    handleProtocolToggle: (id: string) => void;
+    handlePaceChange: (id: string, pace: SmartPlannerPace) => void;
+    handleDayToggle: (id: string, index: number) => void;
+}
+
+function PlanningActionItem({
+    protocol,
+    isDeactivated,
+    currentPace,
+    actionCounts,
+    customSchedules,
+    handleProtocolToggle,
+    handlePaceChange,
+    handleDayToggle
+}: PlanningActionItemProps) {
+    const [hoveredDayIndex, setHoveredDayIndex] = useState<number | null>(null);
+    const protocolId = String(protocol.id);
+    const xp = Math.round((protocol.weight || 0.1) * 100);
+    const checksPerWeek = actionCounts[protocolId] || PACE_CONFIGS[currentPace].checksPerWeek;
+    const weeklyXP = checksPerWeek * xp;
+
+    // Use custom schedule if exists, otherwise use pace-based schedule
+    const isCustomSchedule = !!customSchedules[protocolId];
+    const schedule = customSchedules[protocolId] || getWeeklySchedule(checksPerWeek);
+    const iconColor = protocol.color || 'var(--main-color)';
+
+    return (
+        <div
+            key={protocol.id}
+            className={`flex flex-col gap-2.5 p-3 rounded-xl bg-sub-alt ${isDeactivated
+                ? ''
+                : 'group transition-all duration-300 hover:scale-[1.02] hover:shadow-lg'
+                }`}
+        >
+            {/* Header: Icon, Title, XP */}
+            <div className="flex items-center gap-3">
+                <button
+                    type="button"
+                    onClick={() => handleProtocolToggle(protocolId)}
+                    className={`relative w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center cursor-pointer hover:scale-105 transition-all duration-300 ${isDeactivated ? 'grayscale hover:grayscale-0' : ''}`}
+                    style={{
+                        backgroundColor: `color-mix(in srgb, ${iconColor} 20%, transparent)`,
+                        color: iconColor,
+                        boxShadow: `0 0 15px color-mix(in srgb, ${iconColor} 8%, transparent)`
+                    }}
+                >
+                    <AppIcon id={protocol.icon} />
+                </button>
+                <div className={`flex flex-col flex-1 min-w-0 transition-all duration-300 ${isDeactivated ? 'grayscale opacity-50' : ''}`}>
+                    <span className="text-xs font-medium truncate text-text-primary">
+                        {protocol.title}
+                    </span>
+                    <span className="text-[9px] text-sub">
+                        +{xp} XP each
+                    </span>
+                </div>
+                <div className={`text-right transition-all duration-300 ${isDeactivated ? 'grayscale opacity-50' : ''}`}>
+                    <div className="text-xs font-mono font-bold text-main">
+                        +{weeklyXP}
+                    </div>
+                    <div className="text-[9px] text-sub">
+                        XP/week
+                    </div>
+                </div>
+            </div>
+
+            <div className={`${isDeactivated ? 'pointer-events-none grayscale opacity-50 transition-all duration-300' : ''}`}>
+                {/* Pace Selector - clickable even in custom mode */}
+                <div className="flex gap-1.5 mb-2.5">
+                    {(['slow', 'medium', 'fast'] as SmartPlannerPace[]).map(pace => {
+                        const config = PACE_CONFIGS[pace];
+                        const isActive = currentPace === pace && !isCustomSchedule;
+
+                        return (
+                            <button
+                                key={pace}
+                                type="button"
+                                onClick={() => handlePaceChange(protocolId, pace)}
+                                className={`
+                                    flex-1 px-2 py-1.5 rounded-lg text-[9px] font-mono uppercase tracking-wide
+                                    transition-all duration-200
+                                    ${isCustomSchedule
+                                        ? 'bg-sub-alt/30 text-sub opacity-60 hover:opacity-80 hover:text-text-primary'
+                                        : isActive
+                                            ? 'bg-main text-bg-primary font-bold'
+                                            : 'bg-sub-alt/50 text-sub hover:bg-sub-alt hover:text-text-primary'
+                                    }
+                                `}
+                            >
+                                <div>{config.label}</div>
+                                <div className="text-[8px] opacity-70">{config.checksPerWeek}/w</div>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Micro-Calendar */}
+                <div className="flex flex-col gap-0.5">
+                    {/* Day Labels */}
+                    <div className="grid grid-cols-7 gap-[1.5px]">
+                        {DAY_LABELS.map((day, i) => (
+                            <span
+                                key={i}
+                                className={`text-[8px] font-mono text-center transition-colors duration-200 ${hoveredDayIndex === i ? 'text-main font-bold opacity-100' : 'text-sub opacity-50'}`}
+                            >
+                                {day}
+                            </span>
+                        ))}
+                    </div>
+                    {/* Check Marks */}
+                    <div className="grid grid-cols-7 gap-[1.5px]">
+                        {schedule.map((hasCheck, i) => (
+                            <button
+                                key={i}
+                                type="button"
+                                onMouseEnter={() => setHoveredDayIndex(i)}
+                                onMouseLeave={() => setHoveredDayIndex(null)}
+                                onClick={() => handleDayToggle(protocolId, i)}
+                                className={`
+                                    w-full aspect-square flex items-center justify-center
+                                    transition-all duration-200 cursor-pointer
+                                    group/check
+                                    ${hasCheck
+                                        ? 'opacity-100'
+                                        : 'opacity-20 hover:opacity-60'
+                                    }
+                                `}
+                                style={{
+                                    color: hasCheck ? (isCustomSchedule ? 'var(--main-color)' : PACE_CONFIGS[currentPace].color) : 'var(--text-sub)'
+                                }}
+                            >
+                                <FontAwesomeIcon
+                                    icon={faCheck}
+                                    className="text-[10px] transition-all duration-200 group-hover/check:scale-[1.3] group-hover/check:text-text-primary"
+                                />
+                            </button>
+                        ))}
+                    </div>
+                    {isCustomSchedule && (
+                        <div className="text-[8px] text-sub/70 text-center mt-0.5">
+                            Custom schedule
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
 }
 
 export function PlanningActionList({
     linkedProtocols,
     isCustomizing,
     actionCounts,
-    smartCounts,
     setActionCounts,
     setIsCustomizing,
     pointsNeeded
 }: PlanningActionListProps) {
 
-    // Derived state for the summary header
-    const { currentXP, xpNeeded, isGoalMet } = useMemo(() => {
-        const xpNeeded = Math.round(pointsNeeded * 100);
-        const displayCounts = isCustomizing ? actionCounts : smartCounts;
+    // Track pace for each protocol (default: medium)
+    const [protocolPaces, setProtocolPaces] = useState<Record<string, SmartPlannerPace>>(() => {
+        const initial: Record<string, SmartPlannerPace> = {};
+        linkedProtocols.forEach(p => {
+            initial[String(p.id)] = 'medium';
+        });
+        return initial;
+    });
 
-        const currentXP = linkedProtocols.reduce((sum, p) => {
-            const count = displayCounts[p.id] || 0;
-            const xp = Math.round((p.weight || 0.1) * 100);
-            return sum + (count * xp);
+    // Track custom schedules (when user manually clicks days)
+    const [customSchedules, setCustomSchedules] = useState<Record<string, boolean[]>>({});
+
+    // Track deactivated protocols (excluded from goal)
+    const [deactivatedProtocols, setDeactivatedProtocols] = useState<Set<string>>(new Set());
+
+    // Calculate total weekly XP from all protocols
+    const totalWeeklyXP = useMemo(() => {
+        return linkedProtocols.reduce((sum, protocol) => {
+            const protocolId = String(protocol.id);
+            // Optimization: Skip calculation if protocol is deactivated
+            if (deactivatedProtocols.has(protocolId)) return sum;
+
+            const xp = Math.round((protocol.weight || 0.1) * 100);
+
+            // Use actionCounts directly
+            const checksPerWeek = actionCounts[protocolId] || 0;
+
+            return sum + (checksPerWeek * xp);
         }, 0);
+    }, [linkedProtocols, actionCounts, deactivatedProtocols]);
 
-        return {
-            currentXP,
-            xpNeeded,
-            isGoalMet: currentXP >= xpNeeded
-        };
-    }, [linkedProtocols, pointsNeeded, isCustomizing, actionCounts, smartCounts]);
+    // Calculate weeks needed based on totalWeeklyXP
+    const weeksNeeded = useMemo(() => {
+        const xpNeeded = Math.round(pointsNeeded * 100);
+        return calculateWeeksToGoal(xpNeeded, totalWeeklyXP);
+    }, [pointsNeeded, totalWeeklyXP]);
 
-    // Prevent drag propagation on range inputs
-    const stopPropagation = (e: React.PointerEvent | React.MouseEvent) => {
-        e.stopPropagation();
+    // Handle protocol deactivation toggle
+    const handleProtocolToggle = (protocolId: string) => {
+        setDeactivatedProtocols(prev => {
+            const next = new Set(prev);
+            if (next.has(protocolId)) {
+                next.delete(protocolId);
+            } else {
+                next.add(protocolId);
+            }
+            return next;
+        });
+        setIsCustomizing(true);
+    };
+
+    // Handle pace change for a protocol
+    const handlePaceChange = (protocolId: string, pace: SmartPlannerPace) => {
+        setProtocolPaces(prev => ({ ...prev, [protocolId]: pace }));
+        setActionCounts(prev => ({
+            ...prev,
+            [protocolId]: PACE_CONFIGS[pace].checksPerWeek
+        }));
+        // Clear custom schedule when using pace selector
+        setCustomSchedules(prev => {
+            const next = { ...prev };
+            delete next[protocolId];
+            return next;
+        });
+        setIsCustomizing(true);
+    };
+
+    // Handle manual day toggle
+    const handleDayToggle = (protocolId: string, dayIndex: number) => {
+        // Use effective counts for initial schedule if starting interaction
+        const currentCount = actionCounts[protocolId] || 0;
+        const currentSchedule = customSchedules[protocolId] || getWeeklySchedule(currentCount);
+        const newSchedule = [...currentSchedule];
+        newSchedule[dayIndex] = !newSchedule[dayIndex];
+
+        setCustomSchedules(prev => ({ ...prev, [protocolId]: newSchedule }));
+
+        // Update action count based on number of checked days
+        const newCount = newSchedule.filter(Boolean).length;
+        setActionCounts(prev => ({ ...prev, [protocolId]: newCount }));
+        setIsCustomizing(true);
     };
 
     if (linkedProtocols.length === 0) {
@@ -55,105 +275,66 @@ export function PlanningActionList({
         );
     }
 
-    // Sort logic
+    // Sort by XP (highest first)
     const sortedProtocols = [...linkedProtocols].sort((a, b) =>
         ((b.weight || 0.1) * 100) - ((a.weight || 0.1) * 100)
     );
 
+
+
     return (
         <>
-            <div className="mb-3 p-3 rounded-xl bg-sub-alt/30">
-                <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-sub font-mono uppercase tracking-wider">
-                        {isCustomizing ? 'Your Plan' : 'Smart Plan'}
+            {/* Summary Header */}
+            {/* Protocol List */}
+            <div className="flex flex-col gap-3 max-h-[400px] overflow-y-auto custom-scrollbar p-1 mb-4">
+                {sortedProtocols.map(protocol => (
+                    <PlanningActionItem
+                        key={protocol.id}
+                        protocol={protocol}
+                        isDeactivated={deactivatedProtocols.has(String(protocol.id))}
+                        currentPace={protocolPaces[String(protocol.id)] || 'medium'}
+                        actionCounts={actionCounts}
+                        customSchedules={customSchedules}
+                        handleProtocolToggle={handleProtocolToggle}
+                        handlePaceChange={handlePaceChange}
+                        handleDayToggle={handleDayToggle}
+                    />
+                ))}
+            </div >
+
+            {/* Compact Footer Summary */}
+            <div className="bg-sub-alt/40 rounded-xl p-3 flex items-center justify-between backdrop-blur-sm">
+                <div className="flex flex-col gap-0.5">
+                    <div className="text-[10px] text-sub font-mono uppercase tracking-wider mb-0.5">
+                        Weekly Pace
+                    </div>
+                    <div className="flex items-baseline gap-1.5">
+                        <span className="text-sm font-mono font-bold text-main">
+                            {totalWeeklyXP} XP
+                        </span>
+                    </div>
+                </div>
+
+                <div className="text-right">
+                    <span className="text-[10px] text-sub font-mono uppercase tracking-wider block mb-0.5">
+                        Time to Goal
                     </span>
-                    <span className={`text-sm font-mono font-bold ${isGoalMet ? 'text-green-400' : 'text-main'}`}>
-                        {currentXP}/{xpNeeded} XP {isGoalMet ? '✓' : ''}
+                    <span
+                        className={`text-sm font-mono font-bold ${totalWeeklyXP > 0
+                            ? weeksNeeded < 5
+                                ? 'text-correct'
+                                : weeksNeeded < 13
+                                    ? 'text-main'
+                                    : weeksNeeded < 22
+                                        ? '' // Orange (handled by style)
+                                        : 'text-error'
+                            : 'text-sub'
+                            }`}
+                        style={totalWeeklyXP > 0 && weeksNeeded >= 13 && weeksNeeded < 22 ? { color: getInterpolatedColor(4.25) } : undefined}
+                    >
+                        {totalWeeklyXP > 0 ? formatWeeksToGoal(weeksNeeded) : '—'}
                     </span>
                 </div>
-            </div>
-
-            {/* Action List */}
-            <div className="flex flex-col gap-1.5 max-h-[180px] overflow-y-auto custom-scrollbar pr-1">
-                {sortedProtocols.map(p => {
-                    const xp = Math.round((p.weight || 0.1) * 100);
-                    const count = (isCustomizing ? actionCounts[p.id] : smartCounts[p.id]) || 0;
-                    const isNeeded = count > 0;
-                    const iconColor = p.color || 'var(--main-color)';
-
-                    // Handler that auto-switches to custom mode
-                    const handleCountChange = (delta: number) => {
-                        if (!isCustomizing) {
-                            // First click: initialize from smart and switch to custom
-                            setActionCounts({ ...smartCounts });
-                            setIsCustomizing(true);
-                        }
-                        setActionCounts(prev => ({
-                            ...prev,
-                            [p.id]: Math.max(0, Math.min(10, (prev[p.id] ?? smartCounts[p.id] ?? 0) + delta))
-                        }));
-                    };
-
-                    return (
-                        <div
-                            key={p.id}
-                            className={`group flex items-center justify-between p-2.5 rounded-xl transition-all duration-300
-                            ${isNeeded
-                                    ? 'bg-sub-alt/30 hover:bg-sub-alt/40 hover:-translate-y-0.5 hover:shadow-lg'
-                                    : 'bg-sub-alt/10 opacity-60 hover:opacity-80'
-                                }`}
-                        >
-                            {/* Left: Icon and info */}
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                                <div className="relative w-8 h-8 flex-shrink-0 rounded-lg overflow-hidden">
-                                    {isNeeded && (
-                                        <div
-                                            className="absolute inset-0 blur-sm opacity-40"
-                                            style={{ backgroundColor: iconColor }}
-                                        />
-                                    )}
-                                    <div
-                                        className="relative w-full h-full rounded-lg flex items-center justify-center bg-black/30"
-                                        style={{ color: isNeeded ? iconColor : 'var(--sub-color)' }}
-                                    >
-                                        <AppIcon id={p.icon} />
-                                    </div>
-                                </div>
-                                <div className="flex flex-col min-w-0">
-                                    <span className={`text-xs font-medium truncate ${isNeeded ? 'text-text-primary' : 'text-sub'}`}>
-                                        {p.title}
-                                    </span>
-                                    <span className="text-[9px] text-sub">
-                                        +{xp} XP each
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Right: Always show controls */}
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                                <button
-                                    type="button"
-                                    onClick={() => handleCountChange(-1)}
-                                    onMouseDown={stopPropagation}
-                                    className="w-6 h-6 rounded flex items-center justify-center text-sub hover:text-text-primary hover:bg-sub-alt/50 text-xs"
-                                >
-                                    −
-                                </button>
-                                <span className={`w-6 text-center text-sm font-mono font-medium ${count > 0 ? 'text-main' : 'text-sub'}`}>
-                                    {count}
-                                </span>
-                                <button
-                                    type="button"
-                                    onClick={() => handleCountChange(1)}
-                                    onMouseDown={stopPropagation}
-                                    className="w-6 h-6 rounded flex items-center justify-center text-sub hover:text-text-primary hover:bg-sub-alt/50 text-xs"
-                                >
-                                    +
-                                </button>
-                            </div>
-                        </div>
-                    );
-                })}
             </div>
         </>
     );

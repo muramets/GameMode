@@ -13,6 +13,7 @@ import { useTooltipSuppression } from '../../../hooks/useTooltipSuppression';
 import {
     DndContext,
     closestCorners,
+    closestCenter,
     pointerWithin,
     DragOverlay,
     type DragStartEvent,
@@ -277,12 +278,13 @@ export function InnerfacesList() {
     } = dnd;
 
     // --- COLLISION STRATEGY (Business Logic) ---
-    // We use a dual-strategy approach to ensure premium feel and robustness:
+    // We use a multi-strategy approach to ensure premium feel and robustness:
     // 1. Categories: Use 'closestCorners' but filtered to ONLY other categories. 
     //    This prevents categories from "jumping" into groups or items.
-    // 2. Items: Use 'pointerWithin' (cursor position) to detect interactions.
+    // 2. Groups: Use 'closestCenter' filtered to same-category groups.
+    //    This makes reordering more predictable and intuitive.
+    // 3. Items: Use 'pointerWithin' (cursor position) to detect interactions.
     //    This is CRITICAL for "Empty Group" drops, where the group header is a small target.
-    //    If we used bounding boxes, the large dragged item would obscure the header.
     //    If we used bounding boxes, the large dragged item would obscure the header.
     const collisionDetectionStrategy: CollisionDetection = useCallback(
         (args) => {
@@ -299,7 +301,31 @@ export function InnerfacesList() {
                 });
             }
 
-            // 2. Item Drag: Cursor Priority Mode
+            // 2. Group Drag: Same-Category Center-Based Mode
+            // This makes group reordering more predictable:
+            // - Only detect collisions with groups in the same category
+            // - Use center-based detection (more intuitive than corners)
+            if (active.id.toString().startsWith('group-')) {
+                const activeIdStr = active.id.toString();
+                const activeParts = activeIdStr.split('-');
+                const activeCategory = activeParts[1]; // Extract category from 'group-{category}-{name}'
+
+                // Filter to only groups in the same category
+                const sameCategoryGroups = droppableContainers.filter((container) => {
+                    const containerId = container.id.toString();
+                    if (!containerId.startsWith('group-')) return false;
+                    const containerParts = containerId.split('-');
+                    const containerCategory = containerParts[1];
+                    return containerCategory === activeCategory;
+                });
+
+                return closestCenter({
+                    ...args,
+                    droppableContainers: sameCategoryGroups
+                });
+            }
+
+            // 3. Item Drag: Cursor Priority Mode
             // Prioritize what's directly under the mouse cursor. 
             // This ensures we can drop into an empty group by hovering its header,
             // even if the dragged card visually covers multiple other elements.
@@ -308,7 +334,7 @@ export function InnerfacesList() {
                 return pointerCollisions;
             }
 
-            // 3. Fallback: Standard Distance Mode
+            // 4. Fallback: Standard Distance Mode
             // If cursor is in empty space (rare), fall back to closest droppable.
             return closestCorners(args);
         },

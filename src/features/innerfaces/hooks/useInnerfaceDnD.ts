@@ -44,6 +44,24 @@ export const useInnerfaceDnD = ({
     // Preserve groups that existed at drag start to prevent them from disappearing
     const dragStartGroupsRef = useRef<Record<string, string[]>>({});
 
+    // CRITICAL: Refs to track current state values for debounced save (avoid stale closures)
+    const localCategoryOrderRef = useRef(localCategoryOrder);
+    const localGroupOrderRef = useRef(localGroupOrder);
+    const itemsRef = useRef(items);
+
+    // Keep refs in sync with state
+    useEffect(() => {
+        localCategoryOrderRef.current = localCategoryOrder;
+    }, [localCategoryOrder]);
+
+    useEffect(() => {
+        localGroupOrderRef.current = localGroupOrder;
+    }, [localGroupOrder]);
+
+    useEffect(() => {
+        itemsRef.current = items;
+    }, [items]);
+
     // Sync items when prop updates, BUT ignore if we are actively dragging
     useEffect(() => {
         if (!isDraggingRef.current) {
@@ -227,12 +245,16 @@ export const useInnerfaceDnD = ({
 
                 if (activeCat !== overCat) {
                     setLocalCategoryOrder((prev) => {
-                        const oldIndex = prev.indexOf(activeCat);
-                        const newIndex = prev.indexOf(overCat);
+                        // CRITICAL FIX: Initialize with activeCategoryOrder if empty
+                        // This ensures we have valid indices for arrayMove on first drag
+                        const workingOrder = prev.length > 0 ? prev : activeCategoryOrder;
+
+                        const oldIndex = workingOrder.indexOf(activeCat);
+                        const newIndex = workingOrder.indexOf(overCat);
                         if (oldIndex !== -1 && newIndex !== -1) {
-                            return arrayMove(prev, oldIndex, newIndex);
+                            return arrayMove(workingOrder, oldIndex, newIndex);
                         }
-                        return prev;
+                        return workingOrder;
                     });
                 }
             }
@@ -415,18 +437,22 @@ export const useInnerfaceDnD = ({
             console.debug('[useInnerfaceDnD] Executing debounced save...');
 
             // --- Category / Group Reordering ---
+            // CRITICAL FIX: Use refs to get current state values (avoid stale closures)
             if (activeIdStr.startsWith('category-') || activeIdStr.startsWith('group-')) {
                 if (activeIdStr.startsWith('category-')) {
-                    console.info('[useInnerfaceDnD] Persisting Category Order', localCategoryOrder);
-                    onReorderCategories(localCategoryOrder);
+                    const currentOrder = localCategoryOrderRef.current;
+                    console.info('[useInnerfaceDnD] Persisting Category Order', currentOrder);
+                    onReorderCategories(currentOrder);
                 } else if (activeIdStr.startsWith('group-')) {
-                    console.info('[useInnerfaceDnD] Persisting Group Order');
-                    onReorderGroups(localGroupOrder);
+                    const currentOrder = localGroupOrderRef.current;
+                    console.info('[useInnerfaceDnD] Persisting Group Order', currentOrder);
+                    onReorderGroups(currentOrder);
                 }
             } else {
                 // --- Item Reordering ---
-                const reorderedIds = items.map(i => String(i.id));
-                const movedItem = items.find(i => String(i.id) === activeIdStr);
+                const currentItems = itemsRef.current;
+                const reorderedIds = currentItems.map(i => String(i.id));
+                const movedItem = currentItems.find(i => String(i.id) === activeIdStr);
 
                 if (movedItem) {
                     const targetGroup = movedItem.group || 'ungrouped';

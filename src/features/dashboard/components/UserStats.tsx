@@ -57,7 +57,7 @@ export function UserStats() {
                 onClick={() => handleNavigateToHistory('Today')}
                 className="flex flex-col items-center gap-2 p-2 rounded-lg cursor-pointer transition-all duration-200 hover:-translate-y-[2px] hover:bg-[rgba(255,255,255,0.02)] group"
             >
-                <span className="text-xs text-sub bg-bg-primary px-2 py-1 rounded border border-[rgba(255,255,255,0.03)] group-hover:bg-main group-hover:text-bg-primary group-hover:border-main transition-all duration-300">
+                <span className="text-[10px] font-mono text-sub uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity duration-300">
                     Check-ins today
                 </span>
                 <div className="flex flex-col items-center gap-1">
@@ -72,7 +72,7 @@ export function UserStats() {
                 onClick={() => handleNavigateToHistory('This month')}
                 className="flex flex-col items-center gap-2 p-2 rounded-lg cursor-pointer transition-all duration-200 hover:-translate-y-[2px] hover:bg-[rgba(255,255,255,0.02)] group"
             >
-                <span className="text-xs text-sub bg-bg-primary px-2 py-1 rounded border border-[rgba(255,255,255,0.03)] group-hover:bg-main group-hover:text-bg-primary group-hover:border-main transition-all duration-300">
+                <span className="text-[10px] font-mono text-sub uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity duration-300">
                     Check-ins this month
                 </span>
                 <div className="flex flex-col items-center gap-1">

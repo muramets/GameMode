@@ -1,13 +1,7 @@
-import {
-    startOfWeek, endOfWeek,
-    startOfMonth, endOfMonth,
-    startOfQuarter, endOfQuarter,
-    startOfYear, endOfYear,
-    isWithinInterval, parseISO
-} from 'date-fns';
-import type { Interval } from 'date-fns';
-import type { PlanningGoal } from '../features/planning/types';
+import { startOfWeek, endOfWeek, isWithinInterval, parseISO } from 'date-fns';
 import type { Protocol } from '../features/protocols/types';
+import type { PlanningGoal } from '../features/planning/types';
+import type { Innerface } from '../features/innerfaces/types';
 
 export interface WeeklyActionProgress {
     protocolId: string;
@@ -20,15 +14,18 @@ export interface WeeklyActionProgress {
     periodLabel?: string;    // "Month", "Quarter" etc.
     isCapped: boolean;       // True if we limited the view to 7/7 but user plans more
     realTarget: number;      // The actual math.ceil target if we didn't cap
+    linkedGoals: Array<{ title: string; count: number }>; // Contributing goals
 }
 
-interface HistoryRecord {
-    type: string;
-    protocolId?: string | number;
-    timestamp: string;
-    delta?: number;
-    details?: Record<string, unknown>;
+export interface DailyCheckInData {
+    dayIndex: number;        // 0 = Monday, 6 = Sunday
+    hasCheckIn: boolean;     // Whether any check-in occurred
+    checkInCount: number;    // Number of check-ins on this day
+    goalCount: number;       // Number of unique goals this check-in contributes to
+    linkedGoals: Array<{ title: string }>; // Specific goals this protocol contributes to
 }
+
+import type { HistoryRecord } from '../types/history';
 
 /**
  * Calculate progress for actions.
@@ -38,27 +35,19 @@ interface HistoryRecord {
 export function getWeeklyProgress(
     goals: Record<string, PlanningGoal>,
     history: HistoryRecord[],
-    protocols: Protocol[]
+    protocols: Protocol[],
+    innerfaces: Innerface[]
 ): WeeklyActionProgress[] {
     const now = new Date();
 
-    // Define windows
+    // Define current week window
     const weekRange = { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) };
-    const monthRange = { start: startOfMonth(now), end: endOfMonth(now) };
-    const quarterRange = { start: startOfQuarter(now), end: endOfQuarter(now) };
-    const yearRange = { start: startOfYear(now), end: endOfYear(now) };
 
-    const ranges: Record<string, Interval> = { week: weekRange, month: monthRange, quarter: quarterRange, year: yearRange };
-    const weeksMap: Record<string, number> = { week: 1, month: 4, quarter: 13, year: 52 };
-
-    // 1. Map protocols to their aggregated goals
-    // We need to know if a protocol is "Low Frequency" or "High Frequency".
-    // If a protocol is used in multiple goals, we sum their weekly integrity.
-    // If sum >= 1/week, it becomes a Weekly Goal.
-
+    // 1. Map protocols to their weekly targets
+    // actionCounts now stores per-week values directly
     interface ProtocolPlan {
         totalWeeklyRate: number; // Sum of items/week
-        items: { count: number, period: string, range: Interval }[];
+        contributingGoals: Array<{ id: string; count: number }>;
     }
 
     const planMap: Record<string, ProtocolPlan> = {};
@@ -66,19 +55,17 @@ export function getWeeklyProgress(
     Object.values(goals).forEach(goal => {
         if (!goal.actionCounts) return;
 
-        const periodWeeks = weeksMap[goal.period];
-        const range = ranges[goal.period];
-
-        Object.entries(goal.actionCounts).forEach(([pid, totalCount]) => {
-            if (!planMap[pid]) planMap[pid] = { totalWeeklyRate: 0, items: [] };
-
-            const weeklyRate = totalCount / periodWeeks;
-            planMap[pid].totalWeeklyRate += weeklyRate;
-            planMap[pid].items.push({
-                count: totalCount,
-                period: goal.period,
-                range: range
-            });
+        Object.entries(goal.actionCounts).forEach(([pid, weeklyCount]) => {
+            if (!planMap[pid]) planMap[pid] = { totalWeeklyRate: 0, contributingGoals: [] };
+            // actionCounts is already per-week, so just add it
+            planMap[pid].totalWeeklyRate += weeklyCount;
+            // Record contribution
+            if (weeklyCount > 0) {
+                planMap[pid].contributingGoals.push({
+                    id: String(goal.innerfaceId),
+                    count: weeklyCount
+                });
+            }
         });
     });
 
@@ -91,19 +78,20 @@ export function getWeeklyProgress(
 
         // Decision: Is this High or Low frequency?
         // Cutoff: If rate is < 0.9 (allow some float wiggling), treat as Low Frequency
-        // Note: If multiple goals exist, we default to Weekly if ANY combination pushes it over 1/week.
         const isHighFreq = plan.totalWeeklyRate >= 0.8;
+
+        // Resolve Goal Names
+        const linkedGoals = plan.contributingGoals.map(cg => {
+            const innerface = innerfaces.find(i => String(i.id) === cg.id);
+            return {
+                title: innerface?.name || 'Unknown Goal',
+                count: cg.count
+            };
+        });
 
         if (isHighFreq) {
             // --- WEEKLY MODE ---
-            // Sum up all weekly contributions
-            let totalWeeklyTarget = 0;
-            plan.items.forEach(item => {
-                const periodWeeks = weeksMap[item.period] || 1;
-                totalWeeklyTarget += item.count / periodWeeks;
-            });
-
-            const rawTarget = Math.ceil(totalWeeklyTarget);
+            const rawTarget = Math.ceil(plan.totalWeeklyRate);
 
             // Apply Soft Cap (Premium Logic)
             const isCapped = rawTarget > 7;
@@ -129,27 +117,21 @@ export function getWeeklyProgress(
                 bonus: Math.max(0, completed - displayTarget),
                 isLowFrequency: false,
                 isCapped,
-                realTarget: rawTarget
+                realTarget: rawTarget,
+                linkedGoals
             });
 
         } else {
             // --- LOW FREQUENCY MODE ---
-            // It's less than once a week. Likely 1/Month or 1/Year.
-            // We use the aggregation of the periods.
-            // Assumption: Usually single goal per protocol for low freq.
-            // If mixed (e.g. 1/Month + 1/Year), we just take the "dominant" one or sum them? 
-            // Simpler: Just count total planned actions in the dominant period window.
+            // Less than once a week
+            const displayTarget = Math.ceil(plan.totalWeeklyRate);
 
-            // Find dominant item (highest count)
-            const mainItem = plan.items.sort((a, b) => b.count - a.count)[0];
-            const displayTarget = mainItem.count;
-
-            // Count completions in THE PERIOD WINDOW
+            // For low frequency, we count in current week
             let completed = 0;
             history.forEach(r => {
                 if ((r.type === 'protocol' || r.type === 'manual_adjustment') && String(r.protocolId) === protocolId) {
                     try {
-                        if (isWithinInterval(parseISO(r.timestamp), mainItem.range)) {
+                        if (isWithinInterval(parseISO(r.timestamp), weekRange)) {
                             completed++;
                         }
                     } catch { /* ignore */ }
@@ -163,16 +145,14 @@ export function getWeeklyProgress(
                 completed,
                 bonus: Math.max(0, completed - displayTarget),
                 isLowFrequency: true,
-                periodLabel: mainItem.period,
+                periodLabel: 'week',
                 isCapped: false,
-                realTarget: displayTarget
+                realTarget: displayTarget,
+                linkedGoals
             });
         }
     });
 
-    // Sort:
-    // 1. Highest Planned Count first (Prioritize high volume goals as requested)
-    // 2. Then by Remaining Count (Incomplete first)
     // Sort:
     // 1. Highest Planned Count first (Prioritize high volume goals as requested)
     // 2. Then by Remaining Count (Incomplete first)
@@ -217,4 +197,74 @@ export function getProgressDots(
     }
 
     return dots;
+}
+
+/**
+ * Calculate daily check-ins for a specific protocol across the week
+ * Returns array of 7 days (Monday to Sunday) with check-in data
+ * 
+ * @param protocolId - The protocol to track
+ * @param history - All history records
+ * @param goals - All planning goals (to determine how many goals this protocol serves)
+ * @param innerfaces - All innerfaces (to resolve goal titles)
+ * @returns Array of 7 DailyCheckInData objects, one per day of the week
+ */
+export function getDailyCheckIns(
+    protocolId: string,
+    history: HistoryRecord[],
+    goals: Record<string, PlanningGoal>,
+    innerfaces: Innerface[]
+): DailyCheckInData[] {
+    const now = new Date();
+    const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday
+
+    // Initialize 7 days (Mon-Sun)
+    const dailyData: DailyCheckInData[] = Array.from({ length: 7 }, (_, i) => ({
+        dayIndex: i,
+        hasCheckIn: false,
+        checkInCount: 0,
+        goalCount: 0,
+        linkedGoals: []
+    }));
+
+    // Collect goals this protocol contributes to
+    const linkedGoals: Array<{ title: string }> = [];
+    Object.values(goals).forEach(goal => {
+        if (goal.actionCounts && goal.actionCounts[protocolId]) {
+            const innerface = innerfaces.find(i => String(i.id) === String(goal.innerfaceId));
+            if (innerface) {
+                linkedGoals.push({ title: innerface.name });
+            }
+        }
+    });
+    const goalCount = linkedGoals.length;
+
+    // Process history records for this protocol
+    history.forEach(record => {
+        if ((record.type === 'protocol' || record.type === 'manual_adjustment') &&
+            String(record.protocolId) === protocolId) {
+            try {
+                const recordDate = parseISO(record.timestamp);
+                const weekRange = {
+                    start: weekStart,
+                    end: endOfWeek(weekStart, { weekStartsOn: 1 })
+                };
+
+                if (isWithinInterval(recordDate, weekRange)) {
+                    // Calculate day index (0 = Monday, 6 = Sunday)
+                    const dayOfWeek = recordDate.getDay();
+                    const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+                    dailyData[dayIndex].hasCheckIn = true;
+                    dailyData[dayIndex].checkInCount++;
+                    dailyData[dayIndex].goalCount = goalCount;
+                    dailyData[dayIndex].linkedGoals = linkedGoals;
+                }
+            } catch {
+                // Ignore invalid timestamps
+            }
+        }
+    });
+
+    return dailyData;
 }

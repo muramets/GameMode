@@ -64,9 +64,27 @@ export const useHistoryStore = create<HistoryState>((set) => ({
                     personalityDoc = await transaction.get(personalityRef);
                 }
 
-                // READ: Innerfaces - REMOVED to reduce contention
-                // We now use atomic increments, so we don't need to read the current score.
-                // This makes the interaction much faster and less prone to "failed-precondition" errors.
+                // READ: Innerfaces
+                // We must read the doc to correctly initialize currentScore from initialScore if it's missing.
+                // Blind atomic increments caused a bug where the first check-in would start from 0, ignoring the base level.
+                const innerfaceUpdates: { ref: DocumentReference, newScore: number }[] = [];
+                if (record.changes) {
+                    for (const [innerfaceId, weight] of Object.entries(record.changes)) {
+                        const innerfaceRef = doc(db, 'users', uid, 'personalities', pid, 'innerfaces', innerfaceId);
+                        const innerfaceDoc = await transaction.get(innerfaceRef);
+
+                        if (innerfaceDoc.exists()) {
+                            const data = innerfaceDoc.data();
+                            // Calculate new total: (Current OR Initial OR 0) + Weight
+                            // Use || to treat 0 as "fallback to initial", matching UI component behavior
+                            // This ensures that if a score was accidentally reset to 0, it recovers to initialScore.
+                            const currentTotal = data.currentScore || data.initialScore || 0;
+                            const newScore = Math.max(0, Number((currentTotal + Number(weight)).toFixed(4)));
+
+                            innerfaceUpdates.push({ ref: innerfaceRef, newScore });
+                        }
+                    }
+                }
 
                 // 2. Writes (Must happen AFTER all reads)
 
@@ -80,14 +98,10 @@ export const useHistoryStore = create<HistoryState>((set) => ({
 
                 if (applyToScore) {
                     // WRITE: Innerface Updates
-                    if (record.changes) {
-                        for (const [innerfaceId, weight] of Object.entries(record.changes)) {
-                            const innerfaceRef = doc(db, 'users', uid, 'personalities', pid, 'innerfaces', innerfaceId);
-                            // Blind update with atomic increment
-                            transaction.update(innerfaceRef, {
-                                currentScore: increment(Number(weight))
-                            });
-                        }
+                    for (const update of innerfaceUpdates) {
+                        transaction.update(update.ref, {
+                            currentScore: update.newScore
+                        });
                     }
 
                     // WRITE: Personality Stats

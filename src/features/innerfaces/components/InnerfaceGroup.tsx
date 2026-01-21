@@ -72,6 +72,10 @@ export const InnerfaceGroup = React.memo(({
     // Monitor drag events to trigger expand animation when hovering over the group header
     const [isDragOver, setIsDragOver] = React.useState(false);
 
+    // Height stabilization: capture height before drag to prevent cursor jump
+    const groupRef = React.useRef<HTMLDivElement>(null);
+    const [dragHeight, setDragHeight] = React.useState<number | null>(null);
+
     // --- PREMIUM EMPTY DROP LOGIC ---
     // Problem: Empty groups have 0 height (no items), making them impossible to drop into using standard collision.
     // Solution: We "monitor" the drag operation globally.
@@ -81,6 +85,16 @@ export const InnerfaceGroup = React.memo(({
     // 4. This triggers the `EmptyGroupDropZone` to expand (animate height from 0 to 100px).
     // Result: The user feels like the group "opens up" to accept the item.
     useDndMonitor({
+        onDragStart(event) {
+            const { active } = event;
+            const activeId = String(active.id);
+
+            // If THIS group is being dragged, capture its height before collapse
+            if (activeId === `group-${category}-${groupName}` && groupRef.current) {
+                const height = groupRef.current.offsetHeight;
+                setDragHeight(height);
+            }
+        },
         onDragOver(event: DragOverEvent) {
             const { active, over } = event;
             if (!over) {
@@ -100,6 +114,7 @@ export const InnerfaceGroup = React.memo(({
         },
         onDragEnd() {
             setIsDragOver(false);
+            setDragHeight(null);
         }
     });
 
@@ -136,12 +151,17 @@ export const InnerfaceGroup = React.memo(({
         <SortableItem key={`group-${category}-${groupName}`} id={`group-${category}-${groupName}`}>
             {({ setNodeRef, setActivatorNodeRef, listeners, attributes, style, isDragging }) => (
                 <div
-                    ref={setNodeRef}
+                    ref={(node) => {
+                        setNodeRef(node);
+                        groupRef.current = node;
+                    }}
                     style={{
                         ...style,
                         opacity: isDragging ? 0 : 1,
                         transition: isDragging ? 'none' : style.transition,
-                        willChange: 'transform'
+                        willChange: 'transform',
+                        // CRITICAL: Fix height during drag to prevent cursor jump
+                        minHeight: dragHeight ? `${dragHeight}px` : undefined
                     }}
                     className={`mb-8 ${isDragging ? 'dragging-item-placeholder' : ''}`}
                 >
