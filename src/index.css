@@ -53,6 +53,13 @@ html {
   padding: 0;
 }
 
+/* Mobile-only background to fix iOS overscroll white bars without affecting Desktop tint */
+@media (hover: none) and (pointer: coarse) {
+  html {
+    background-color: var(--bg-primary);
+  }
+}
+
 body,
 #root {
   width: 100%;
