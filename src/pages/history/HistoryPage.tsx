@@ -262,9 +262,14 @@ export default function HistoryPage() {
         setTimeFilter('All time');
         setTypeFilter('All types');
         setEffectFilter('All effects');
-        setSelectedProtocolIds([]);
-        setSelectedInnerfaceIds([]);
-        setSelectedStateIds([]);
+
+        setSearchParams(prev => {
+            const newParams = new URLSearchParams(prev);
+            newParams.delete('protocolId');
+            newParams.delete('innerfaceId');
+            newParams.delete('stateId');
+            return newParams;
+        });
     };
 
     return (
