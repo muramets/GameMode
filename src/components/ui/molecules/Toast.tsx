@@ -27,6 +27,22 @@ export function Toast({
     const [shouldRender, setShouldRender] = useState(false);
     const [animationClass, setAnimationClass] = useState('');
 
+    // Handle global Enter key for action
+    useEffect(() => {
+        if (!isVisible || !onAction || !actionLabel) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                onAction();
+                onClose();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isVisible, onAction, actionLabel, onClose]);
+
     useEffect(() => {
         if (isVisible) {
             setTimeout(() => {

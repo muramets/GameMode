@@ -14,4 +14,5 @@ export interface HistoryRecord {
         [key: string]: unknown;
     };
     deletedAt?: string; // ISO string - marks check-in as deleted when protocol is deleted
+    comment?: string; // User comment for the check-in
 }

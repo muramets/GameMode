@@ -405,6 +405,11 @@ export default function HistoryPage() {
                                                     protocolColor={protocol?.color}
                                                     onDelete={deleteEvent}
                                                     onFilterInnerface={(id) => setSelectedInnerfaceIds([...selectedInnerfaceIds, id])}
+                                                    onFilterProtocol={(id) => {
+                                                        if (!selectedProtocolIds.includes(id)) {
+                                                            setSelectedProtocolIds([...selectedProtocolIds, id]);
+                                                        }
+                                                    }}
                                                 />
                                             </motion.div>
                                         );

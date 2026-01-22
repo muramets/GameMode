@@ -6,14 +6,15 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     icon?: IconDefinition;
     leftIcon?: React.ReactNode;
     fullWidth?: boolean;
+    noIconHighlight?: boolean;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-    ({ className = '', icon, leftIcon, fullWidth = true, ...props }, ref) => {
+    ({ className = '', icon, leftIcon, fullWidth = true, noIconHighlight = false, ...props }, ref) => {
         return (
             <div className={`relative group ${fullWidth ? 'w-full' : ''}`}>
                 {(icon || leftIcon) && (
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-sub pointer-events-none group-focus-within:text-main transition-colors duration-200">
+                    <div className={`absolute left-3 top-1/2 -translate-y-1/2 text-sub pointer-events-none ${!noIconHighlight ? 'group-focus-within:text-main' : ''} transition-colors duration-200`}>
                         {leftIcon ? leftIcon : (icon && <FontAwesomeIcon icon={icon} className="text-sm" />)}
                     </div>
                 )}

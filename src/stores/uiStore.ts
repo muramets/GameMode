@@ -12,6 +12,13 @@ interface UIState {
     toast: ToastState;
     showToast: (message: string, type?: 'success' | 'error', actionLabel?: string, onAction?: () => void) => void;
     hideToast: () => void;
+    commentOverlay: {
+        isOpen: boolean;
+        checkinId: string | null;
+        initialComment?: string;
+    };
+    openCommentOverlay: (checkinId: string, initialComment?: string) => void;
+    closeCommentOverlay: () => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -22,6 +29,10 @@ export const useUIStore = create<UIState>((set) => ({
         actionLabel: undefined,
         onAction: undefined,
     },
+    commentOverlay: {
+        isOpen: false,
+        checkinId: null,
+    },
 
     showToast: (message, type = 'success', actionLabel, onAction) => set({
         toast: { message, type, isVisible: true, actionLabel, onAction }
@@ -30,4 +41,12 @@ export const useUIStore = create<UIState>((set) => ({
     hideToast: () => set((state) => ({
         toast: { ...state.toast, isVisible: false, actionLabel: undefined, onAction: undefined }
     })),
+
+    openCommentOverlay: (checkinId, initialComment) => set({
+        commentOverlay: { isOpen: true, checkinId, initialComment }
+    }),
+
+    closeCommentOverlay: () => set({
+        commentOverlay: { isOpen: false, checkinId: null, initialComment: undefined }
+    }),
 }));

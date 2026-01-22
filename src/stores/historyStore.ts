@@ -11,7 +11,8 @@ import {
     runTransaction,
     where,
     DocumentReference,
-    increment
+    increment,
+    updateDoc
 } from 'firebase/firestore';
 import { format } from 'date-fns';
 import type { HistoryRecord } from '../types/history';
@@ -33,9 +34,11 @@ interface HistoryState {
     history: HistoryRecord[];
     isLoading: boolean;
     error: string | null;
+    pendingCheckins: Set<string>; // Track check-ins being saved
 
     // Actions
-    addCheckin: (uid: string, pid: string, record: Omit<HistoryRecord, 'id'>, applyToScore?: boolean) => Promise<void>;
+    addCheckin: (uid: string, pid: string, record: Omit<HistoryRecord, 'id'>, applyToScore?: boolean, customId?: string) => Promise<string>;
+    updateCheckin: (uid: string, pid: string, id: string, data: Partial<HistoryRecord>) => Promise<void>;
     addSystemEvent: (uid: string, pid: string, message: string, details?: Record<string, unknown>) => Promise<void>;
     deleteCheckin: (uid: string, pid: string, id: string) => Promise<void>;
     subscribeToHistory: (uid: string, pid: string) => () => void;
@@ -46,15 +49,29 @@ export const useHistoryStore = create<HistoryState>((set) => ({
     history: [],
     isLoading: true,
     error: null,
+    pendingCheckins: new Set<string>(),
 
     clearHistory: () => set({ history: [], isLoading: false, error: null }),
 
-    addCheckin: async (uid, pid, record, applyToScore = true) => {
+    addCheckin: async (uid, pid, record, applyToScore = true, customId) => {
+        // Use custom ID if provided (for Optimistic UI), otherwise generate one
+        const historyRef = customId
+            ? doc(db, 'users', uid, 'personalities', pid, 'history', customId)
+            : doc(collection(db, 'users', uid, 'personalities', pid, 'history'));
+
+        const historyId = historyRef.id;
+
+        // Track pending operation
+        set(state => ({
+            pendingCheckins: new Set([...state.pendingCheckins, historyId])
+        }));
+
         try {
-            console.log("Adding check-in", { uid, pid, protocol: record.protocolName, applyToScore });
+            console.log("Adding check-in", { uid, pid, protocol: record.protocolName, applyToScore, customId });
+
             await runTransaction(db, async (transaction) => {
                 // 1. Prepare Reads (Refs & Data)
-                const historyRef = doc(collection(db, 'users', uid, 'personalities', pid, 'history'));
+                // historyRef is already created above
                 const personalityRef = doc(db, 'users', uid, 'personalities', pid);
 
                 // READ: Personality
@@ -170,10 +187,60 @@ export const useHistoryStore = create<HistoryState>((set) => ({
                     }
                 }
             });
+
+            return historyId;
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
             console.error('Error adding checkin (Transaction):', err);
             set({ error: message });
+            throw err; // Re-throw so caller knows it failed
+        } finally {
+            // Always cleanup pending state
+            set(state => {
+                const updated = new Set(state.pendingCheckins);
+                updated.delete(historyId);
+                return { pendingCheckins: updated };
+            });
+        }
+    },
+
+    updateCheckin: async (uid, pid, id, data) => {
+        const historyRef = doc(db, 'users', uid, 'personalities', pid, 'history', id);
+        const maxRetries = 3;
+        const baseDelay = 100; // ms
+
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                console.debug("Updating check-in", { uid, pid, id, data, attempt });
+
+                // Simple updateDoc is sufficient for non-critical fields like comments
+                // No need for transaction since we're not modifying scores/stats
+                await updateDoc(historyRef, data);
+
+                return; // Success
+            } catch (err: unknown) {
+                const isLastAttempt = attempt === maxRetries - 1;
+
+                // Check if document doesn't exist (race condition with addCheckin)
+                if (err instanceof Error && err.message.includes('No document to update')) {
+                    if (!isLastAttempt) {
+                        // Exponential backoff: 100ms, 200ms, 400ms
+                        const delay = baseDelay * Math.pow(2, attempt);
+                        console.debug(`Document not found, retrying in ${delay}ms...`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue; // Retry
+                    }
+                }
+
+                // On last attempt or other errors, log and set error state
+                const message = err instanceof Error ? err.message : 'Unknown error';
+                console.error('Error updating checkin:', err);
+                set({ error: message });
+
+                if (isLastAttempt) {
+                    throw err; // Re-throw on final failure
+                }
+            }
         }
     },
 

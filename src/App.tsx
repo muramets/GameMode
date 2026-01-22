@@ -12,6 +12,7 @@ import { ThemeController } from './components/logic/ThemeController';
 import { useUIStore } from './stores/uiStore';
 import { initTheme } from './utils/themeManager';
 import { AnimatedRoutes } from './components/layout/AnimatedRoutes';
+import { CommentInputOverlay } from './components/ui/molecules/CommentInputOverlay';
 
 function AppContent() {
   const { loading: authLoading } = useAuth();
@@ -41,6 +42,7 @@ function AppContent() {
           actionLabel={toast.actionLabel}
           onAction={toast.onAction}
         />
+        <CommentInputOverlay />
         <AnimatedRoutes />
       </Router>
     </TooltipProvider>

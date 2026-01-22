@@ -1,8 +1,11 @@
 import { useCallback, useMemo } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
+import { db } from '../../../config/firebase';
+import { collection, doc } from 'firebase/firestore';
 import { useHistoryStore } from '../../../stores/historyStore';
 import { useMetadataStore } from '../../../stores/metadataStore';
 import { usePersonalityStore } from '../../../stores/personalityStore';
+import { useUIStore } from '../../../stores/uiStore';
 import type { HistoryRecord } from '../../../types/history';
 
 export type { HistoryRecord as Checkin };
@@ -49,7 +52,32 @@ export function useScores() {
             changes
         };
 
-        await addCheckin(user.uid, activePersonalityId, newRecord);
+        // --- Optimistic UI Start ---
+        // 1. Generate ID synchronously
+        const collectionRef = collection(db, 'users', user.uid, 'personalities', activePersonalityId, 'history');
+        const optimisticId = doc(collectionRef).id;
+
+        // 2. Show Toast IMMEDIATELY (before network request)
+        const { showToast, openCommentOverlay } = useUIStore.getState();
+        showToast(
+            'Check-in Successful',
+            'success',
+            'Add Comment [Enter]',
+            () => openCommentOverlay(optimisticId)
+        );
+
+        // 3. Perform network request in background
+        try {
+            await addCheckin(user.uid, activePersonalityId, newRecord, true, optimisticId);
+        } catch (error) {
+            console.error("Optimistic check-in failed:", error);
+
+            // Rollback UI state
+            const { closeCommentOverlay } = useUIStore.getState();
+            closeCommentOverlay(); // Close overlay if it's open
+
+            showToast('Check-in failed to save', 'error');
+        }
     }, [user, activePersonalityId, protocols, addCheckin]);
 
     const calculateInnerfaceScore = useCallback((innerfaceId: number | string) => {

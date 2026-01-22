@@ -1,7 +1,7 @@
 
 import { format, parseISO } from 'date-fns';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faClock, faTrash, faGear } from '@fortawesome/free-solid-svg-icons';
+import { faClock, faTrash, faGear, faComment } from '@fortawesome/free-solid-svg-icons';
 import { AppIcon } from '../../../components/ui/atoms/AppIcon';
 import { PowerIcon } from '../../../features/innerfaces/components/PowerIcon';
 import type { HistoryRecord } from '../../../types/history';
@@ -15,9 +15,10 @@ interface HistoryEventProps {
     protocolColor?: string;
     onDelete: (id: string) => void;
     onFilterInnerface: (id: string) => void;
+    onFilterProtocol: (id: string) => void;
 }
 
-export function HistoryEvent({ event, innerfaces, protocolColor, onDelete, onFilterInnerface }: HistoryEventProps) {
+export function HistoryEvent({ event, innerfaces, protocolColor, onDelete, onFilterInnerface, onFilterProtocol }: HistoryEventProps) {
     const isPositive = event.weight > 0;
     const isSystem = event.type === 'system';
 
@@ -153,20 +154,33 @@ export function HistoryEvent({ event, innerfaces, protocolColor, onDelete, onFil
                         );
                     })()
                 ) : (
-                    <div
-                        className="relative w-14 h-14 flex items-center justify-center rounded-2xl text-2xl shrink-0 transition-all duration-500 z-10 group-hover:scale-105"
-                        style={{
-                            backgroundColor: `color-mix(in srgb, ${effectiveColor} 20%, transparent)`,
-                            color: effectiveColor,
-                            boxShadow: `0 0 20px color-mix(in srgb, ${effectiveColor} 8%, transparent)`
-                        }}
-                    >
-                        <div
-                            className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"
-                            style={{ backgroundColor: effectiveColor }}
-                        />
-                        {isSystem ? <FontAwesomeIcon icon={faGear} /> : <AppIcon id={event.protocolIcon} />}
-                    </div>
+                    <TooltipProvider delayDuration={300}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onFilterProtocol(String(event.protocolId));
+                                    }}
+                                    className="relative w-14 h-14 flex items-center justify-center rounded-2xl text-2xl shrink-0 transition-all duration-500 z-10 group-hover:scale-105 cursor-pointer hover:shadow-lg"
+                                    style={{
+                                        backgroundColor: `color-mix(in srgb, ${effectiveColor} 20%, transparent)`,
+                                        color: effectiveColor,
+                                        boxShadow: `0 0 20px color-mix(in srgb, ${effectiveColor} 8%, transparent)`
+                                    }}
+                                >
+                                    <div
+                                        className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"
+                                        style={{ backgroundColor: effectiveColor }}
+                                    />
+                                    {isSystem ? <FontAwesomeIcon icon={faGear} /> : <AppIcon id={event.protocolIcon} />}
+                                </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <span className="font-mono text-xs">Filter by {event.protocolName}</span>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 )}
 
                 {/* Main Content Area */}
@@ -242,6 +256,29 @@ export function HistoryEvent({ event, innerfaces, protocolColor, onDelete, onFil
                                 </TooltipProvider>
                             );
                         })}
+                        {event.comment && (
+                            <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div className="group/comment relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-main/20 to-main/10 hover:from-main/30 hover:to-main/20 transition-all duration-300 cursor-pointer hover:scale-110 hover:shadow-lg hover:shadow-main/20">
+                                            <FontAwesomeIcon
+                                                icon={faComment}
+                                                className="text-main text-base group-hover/comment:scale-110 transition-transform duration-300"
+                                            />
+                                            <div className="absolute inset-0 rounded-xl bg-main/0 group-hover/comment:bg-main/5 transition-colors duration-300" />
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="max-w-xs">
+                                        <div className="space-y-1">
+                                            <div className="text-[10px] uppercase tracking-wider text-sub font-bold">Comment</div>
+                                            <div className="font-mono text-xs text-text-primary whitespace-pre-wrap break-words">
+                                                {event.comment}
+                                            </div>
+                                        </div>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        )}
                     </div>
                 </div>
             </motion.div>
