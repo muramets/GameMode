@@ -101,6 +101,9 @@ export function getWeeklyProgress(
             let completed = 0;
             history.forEach(r => {
                 if ((r.type === 'protocol' || r.type === 'manual_adjustment') && String(r.protocolId) === protocolId) {
+                    // Skip negative impact check-ins
+                    if (r.weight && r.weight < 0) return;
+
                     try {
                         if (isWithinInterval(parseISO(r.timestamp), weekRange)) {
                             completed++;
@@ -130,6 +133,9 @@ export function getWeeklyProgress(
             let completed = 0;
             history.forEach(r => {
                 if ((r.type === 'protocol' || r.type === 'manual_adjustment') && String(r.protocolId) === protocolId) {
+                    // Skip negative impact check-ins
+                    if (r.weight && r.weight < 0) return;
+
                     try {
                         if (isWithinInterval(parseISO(r.timestamp), weekRange)) {
                             completed++;
@@ -243,6 +249,9 @@ export function getDailyCheckIns(
     history.forEach(record => {
         if ((record.type === 'protocol' || record.type === 'manual_adjustment') &&
             String(record.protocolId) === protocolId) {
+            // Skip negative impact check-ins
+            if (record.weight && record.weight < 0) return;
+
             try {
                 const recordDate = parseISO(record.timestamp);
                 const weekRange = {
