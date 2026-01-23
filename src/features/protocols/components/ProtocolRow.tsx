@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import type { Protocol } from '../types';
 import type { Innerface } from '../../innerfaces/types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faMinus, faCog, faHistory } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faMinus, faCog, faHistory, faChevronUp, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 
 import { AppIcon } from '../../../components/ui/atoms/AppIcon';
 import { motion } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../../components/ui/atoms/Tooltip';
 import { useTouchDevice } from '../../../hooks/useTouchDevice';
 import { useTruncation } from '../../../hooks/useTruncation';
+import { ProtocolInstructionViewer } from './ProtocolInstructionViewer';
 
 // Set to true to visualize layout containers during development/debugging
 const DEBUG_LAYOUT = false;
@@ -37,6 +38,7 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
     const [shake, setShake] = useState<'left' | 'right' | null>(null);
     const rowRef = useRef<HTMLDivElement>(null);
     const [isHovered, setIsHovered] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
 
     // Truncation detection
     const { ref: titleRef, isTruncated: isTitleTruncated } = useTruncation();
@@ -235,10 +237,19 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
             </motion.div>
 
             {/* Weight Indicator */}
-            <motion.div layout className={`flex items-center justify-center pointer-events-none ${DEBUG_LAYOUT ? 'border border-yellow-500' : ''}`}>
+            <motion.div layout className={`flex flex-col items-center justify-center pointer-events-none gap-1 ${DEBUG_LAYOUT ? 'border border-yellow-500' : ''}`}>
                 <span className={`font-lexend text-xs font-bold tracking-wider transition-all duration-300 ${effectiveFeedbackType === 'plus' ? 'text-[#98c379] opacity-100 scale-125' : effectiveFeedbackType === 'minus' ? 'text-[#ca4754] opacity-100 scale-125' : effectiveHoverSide === 'right' ? 'text-[#98c379] opacity-100 scale-110' : effectiveHoverSide === 'left' ? 'text-[#ca4754] opacity-100 scale-110' : 'text-sub opacity-30 [@media(hover:hover)]:group-hover:text-text-primary [@media(hover:hover)]:group-hover:opacity-100'}`}>
                     {Math.round(protocol.weight * 100)} XP
                 </span>
+                {protocol.instruction && (
+                    <button
+                        onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
+                        className={`w-5 h-5 flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer pointer-events-auto ${isExpanded ? 'text-main bg-main/10 ring-1 ring-main/50' : 'text-sub/50 hover:text-main hover:bg-sub-alt shadow-sm'}`}
+                        title={isExpanded ? "Collapse Instructions" : "Expand Instructions"}
+                    >
+                        <FontAwesomeIcon icon={isExpanded ? faChevronUp : faInfoCircle} className="text-[10px]" />
+                    </button>
+                )}
             </motion.div>
 
             {/* Targets & Actions Group */}
@@ -319,7 +330,7 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             onClick={handleClick}
-            className={`group relative min-h-[72px] bg-sub-alt border border-transparent rounded-xl overflow-hidden select-none 
+            className={`group relative bg-sub-alt border border-transparent rounded-xl overflow-hidden select-none 
                 ${isDisabled ? 'cursor-grabbing opacity-90' : isReadOnly ? 'cursor-default' : 'cursor-pointer'} 
                 ${!isDisabled ? 'transition-all duration-200 [@media(hover:hover)]:hover:scale-[1.002] [@media(hover:hover)]:hover:bg-[var(--sub-alt-color)]' : ''}
                 ${effectiveShake === 'left' ? 'animate-tilt-left' : effectiveShake === 'right' ? 'animate-tilt-right' : ''}
@@ -344,6 +355,12 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
 
             {renderBackgroundLayers()}
             {renderMainContent()}
+
+            <ProtocolInstructionViewer
+                instruction={protocol.instruction}
+                isExpanded={isExpanded}
+            />
+
             {renderActionIndicators()}
         </motion.div>
     );

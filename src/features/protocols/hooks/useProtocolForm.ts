@@ -37,6 +37,8 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
     const [xp, setXp] = useState('1');
     const [targets, setTargets] = useState<(string | number)[]>([]);
     const [color, setColor] = useState('#e2b714');
+    const [instruction, setInstruction] = useState('');
+    const [hasInstruction, setHasInstruction] = useState(false);
 
     // UI State
     // const [isSubmitting, setIsSubmitting] = useState(false); // Removed for Optimistic Close pattern (modal closes instantly)
@@ -55,6 +57,8 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
                 setXp(derivedXp.toString());
                 setTargets(protocol.targets);
                 setColor(protocol.color || '#e2b714');
+                setInstruction(protocol.instruction || '');
+                setHasInstruction(!!protocol.instruction);
             }
         } else if (isOpen) {
             // Reset for new
@@ -63,11 +67,11 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
             setHover('');
             setGroup('');
             setIcon('check');
-            setIcon('check');
             setXp('1');
             setTargets([]);
             setColor('#e2b714');
-            setColor('#e2b714');
+            setInstruction('');
+            setHasInstruction(false);
         }
     }, [isOpen, protocolId, protocols]);
 
@@ -87,7 +91,8 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
                 icon,
                 weight: Number(xp) / 100,
                 targets,
-                color
+                color,
+                instruction: hasInstruction ? instruction : undefined,
             };
 
             if (protocolId) {
@@ -149,7 +154,9 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
             icon, setIcon,
             xp, setXp,
             targets, setTargets,
-            color, setColor
+            color, setColor,
+            instruction, setInstruction,
+            hasInstruction, setHasInstruction,
         },
         uiState: {
             // isSubmitting: false // Pattern: Optimistic Close (handled in handleSubmit)

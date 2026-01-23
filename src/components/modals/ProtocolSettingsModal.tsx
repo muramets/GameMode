@@ -4,13 +4,13 @@ import { Button } from '../ui/atoms/Button';
 import { ConfirmButton } from '../ui/molecules/ConfirmButton';
 import { AppIcon } from '../ui/atoms/AppIcon';
 
-
 import { useProtocolForm } from '../../features/protocols/hooks/useProtocolForm';
 import { ColorPicker } from '../ui/molecules/ColorPicker';
 import { IconPicker } from '../ui/molecules/IconPicker';
 import { EntitySelector } from '../ui/organisms/EntitySelector';
 import { ProtocolGroupSelector } from '../../features/protocols/components/ProtocolGroupSelector';
 import { ProtocolXpSelector } from '../../features/protocols/components/ProtocolXpSelector';
+import { ProtocolInstructionInput } from '../../features/protocols/components/ProtocolInstructionInput';
 
 interface ProtocolSettingsModalProps {
     isOpen: boolean;
@@ -44,12 +44,10 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
         icon, setIcon,
         xp, setXp,
         targets, setTargets,
-        color, setColor
+        color, setColor,
+        instruction, setInstruction,
+        hasInstruction, setHasInstruction
     } = formState;
-
-    // const { isSubmitting } = uiState;
-
-
 
     const onToggleTarget = (id: string) => {
         // Simple toggle logic matching the original:
@@ -165,6 +163,13 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                         placeholder="Short note shown on tap/hover..."
                     />
                 </div>
+
+                <ProtocolInstructionInput
+                    instruction={instruction}
+                    setInstruction={setInstruction}
+                    hasInstruction={hasInstruction}
+                    setHasInstruction={setHasInstruction}
+                />
 
                 {/* Group Selector */}
                 <ProtocolGroupSelector

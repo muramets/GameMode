@@ -10,5 +10,6 @@ export interface Protocol {
     weight: number; // Fundamental score delta (e.g. 0.05, 0.1 etc). XP is derived as weight * 100.
     targets: (number | string)[]; // IDs of Innerfaces affected
     hover?: string; // Tooltip text
+    instruction?: string; // Specific instructions for the protocol
     order?: number; // For manual sorting
 }
