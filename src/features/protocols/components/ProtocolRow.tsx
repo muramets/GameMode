@@ -111,6 +111,7 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
     /**
      * MOUSE MOVE LOGIC
      * Handles hover zone calculations for desktop users.
+     * Uses edge detection to only show gradients when near the +/- buttons.
      */
     const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
         if (isDisabled || isReadOnly || feedbackType || !rowRef.current) return;
@@ -118,11 +119,11 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
 
         const rect = rowRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
-        const center = rect.width / 2;
-        const deadZone = 10;
+        const width = rect.width;
+        const activeZoneWidth = 120; // Trigger gradient when within this distance of edge
 
-        if (x < center - deadZone) setHoverSide('left');
-        else if (x > center + deadZone) setHoverSide('right');
+        if (x < activeZoneWidth) setHoverSide('left');
+        else if (x > width - activeZoneWidth) setHoverSide('right');
         else setHoverSide(null);
     };
 
