@@ -193,6 +193,7 @@ export default function HistoryPage() {
                 if (typeFilter === 'Actions' && event.type !== 'protocol') return false;
                 if (typeFilter === 'Manual' && event.type !== 'manual_adjustment') return false;
                 if (typeFilter === 'System' && event.type !== 'system') return false;
+                if (typeFilter === 'Decay' && event.type !== 'decay') return false;
             }
 
             // Effect filter (Client Side Only)
@@ -342,7 +343,10 @@ export default function HistoryPage() {
                     }] : []),
                     ...(typeFilter !== 'All types' ? [{
                         id: 'type',
-                        label: typeFilter === 'Actions' ? 'Check-ins' : typeFilter === 'Manual' ? 'Manual Changes' : typeFilter,
+                        label: typeFilter === 'Actions' ? 'Check-ins' :
+                            typeFilter === 'Manual' ? 'Manual Changes' :
+                                typeFilter === 'Decay' ? 'Inactivity Decay' :
+                                    typeFilter,
                         icon: undefined,
                         onRemove: () => setTypeFilter('All types')
                     }] : []),
@@ -354,7 +358,7 @@ export default function HistoryPage() {
                     }] : []),
                     ...selectedProtocolIds.map(id => ({
                         id: `protocol-${id}`,
-                        label: protocols.find(p => p.id.toString() === id)?.title || id,
+                        label: id === 'system-decay' ? 'Inactivity Decay' : (protocols.find(p => p.id.toString() === id)?.title || id),
                         icon: undefined,
                         onRemove: () => setSelectedProtocolIds(selectedProtocolIds.filter((pid: string) => pid !== id))
                     })),

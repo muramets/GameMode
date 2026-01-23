@@ -55,6 +55,12 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
     const [protocolIds, setProtocolIds] = useState<string[]>([]);
     const [category, setCategory] = useState<PowerCategory>(null);
 
+    // Decay Settings
+    const [decayEnabled, setDecayEnabled] = useState(false);
+    const [decayAmount, setDecayAmount] = useState('1');
+    const [decayFrequency, setDecayFrequency] = useState<'day' | 'week' | 'month'>('day');
+    const [decayInterval, setDecayInterval] = useState('1'); // String for better input control
+
     // UI/Flow State
     // UI/Flow State
     // const [isSubmitting, setIsSubmitting] = useState(false); // Optimistic close removes need for loading state
@@ -85,6 +91,19 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
                 setHover(currentInnerface.hover || '');
                 setProtocolIds(initialProtocolIds);
                 setCategory(currentInnerface.category || null);
+
+                if (currentInnerface.decaySettings) {
+                    setDecayEnabled(currentInnerface.decaySettings.enabled);
+                    // Convert DB weight (e.g. 0.01) to UI XP (e.g. 1)
+                    setDecayAmount((currentInnerface.decaySettings.amount * 100).toString());
+                    setDecayFrequency(currentInnerface.decaySettings.frequency);
+                    setDecayInterval((currentInnerface.decaySettings.interval || 1).toString());
+                } else {
+                    setDecayEnabled(false);
+                    setDecayAmount('1');
+                    setDecayFrequency('day');
+                    setDecayInterval('1');
+                }
             } else {
                 // Reset
                 setName('');
@@ -130,8 +149,15 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
                 color,
                 icon,
                 hover,
-                // protocolIds REMOVED - we don't save this to innerface anymore
-                category
+
+                category,
+                decaySettings: {
+                    enabled: decayEnabled,
+                    // Convert UI XP (e.g. 1) to DB weight (e.g. 0.01)
+                    amount: (parseFloat(decayAmount) || 0) / 100,
+                    frequency: decayFrequency,
+                    interval: parseInt(decayInterval) || 1 // Parse string to number, default to 1
+                }
             };
 
             let targetId: string | number = innerfaceId || '';
@@ -260,7 +286,11 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
             icon, setIcon,
             hover, setHover,
             protocolIds, setProtocolIds,
-            category, setCategory
+            category, setCategory,
+            decayEnabled, setDecayEnabled,
+            decayAmount, setDecayAmount,
+            decayFrequency, setDecayFrequency,
+            decayInterval, setDecayInterval // NEW: expose interval state
         },
         uiState: {
             // isSubmitting,

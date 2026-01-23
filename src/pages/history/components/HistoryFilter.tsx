@@ -19,7 +19,7 @@ import { FilterDropdown } from '../../../components/shared/FilterDropdown';
 import { faMap } from '@fortawesome/free-solid-svg-icons';
 
 export type TimeFilter = 'All time' | 'Today' | 'This week' | 'This month';
-export type TypeFilter = 'All types' | 'Actions' | 'Manual' | 'System';
+export type TypeFilter = 'All types' | 'Actions' | 'Manual' | 'System' | 'Decay';
 export type EffectFilter = 'All effects' | 'Positive' | 'Negative';
 
 type FilterView = 'root' | 'protocol_groups' | 'protocols_list' | 'innerface_groups' | 'innerfaces' | 'states';
@@ -215,7 +215,8 @@ export function HistoryFilter({
                             { id: 'All types', label: 'All types' },
                             { id: 'Actions', label: 'Check-ins' },
                             { id: 'Manual', label: 'Manual Score Adjustments' },
-                            { id: 'System', label: 'System Events' }
+                            { id: 'System', label: 'System Events' },
+                            { id: 'Decay', label: 'Inactivity Decay' }
                         ].map(opt => (
                             <FilterDropdown.Item
                                 key={opt.id}

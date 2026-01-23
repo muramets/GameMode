@@ -14,4 +14,12 @@ export interface Innerface {
     group?: string;
     deletedAt?: string;
     category?: PowerCategory; // NEW: Skills, Foundations, or uncategorized
+    lastCheckInDate?: string; // ISO Date of last activity
+    decaySettings?: {
+        enabled: boolean;
+        amount: number;
+        frequency: 'day' | 'week' | 'month';
+        interval?: number; // NEW: multiplier for frequency (defaults to 1)
+        lastDecayDate?: string; // ISO Date of last applied decay
+    };
 }

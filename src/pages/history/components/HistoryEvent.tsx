@@ -1,7 +1,7 @@
 
 import { format, parseISO } from 'date-fns';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faClock, faTrash, faGear, faComment } from '@fortawesome/free-solid-svg-icons';
+import { faClock, faTrash, faGear, faComment, faHourglassHalf } from '@fortawesome/free-solid-svg-icons';
 import { AppIcon } from '../../../components/ui/atoms/AppIcon';
 import { PowerIcon } from '../../../features/innerfaces/components/PowerIcon';
 import type { HistoryRecord } from '../../../types/history';
@@ -21,6 +21,7 @@ interface HistoryEventProps {
 export function HistoryEvent({ event, innerfaces, protocolColor, onDelete, onFilterInnerface, onFilterProtocol }: HistoryEventProps) {
     const isPositive = event.weight > 0;
     const isSystem = event.type === 'system';
+    const isDecay = event.type === 'decay';
 
     // Swipe Logic
     const controls = useAnimation();
@@ -28,15 +29,16 @@ export function HistoryEvent({ event, innerfaces, protocolColor, onDelete, onFil
 
     // Constants
     const DELETE_THRESHOLD = -50;
-    const DEEP_DELETE_THRESHOLD = -225; // Much harder to reach (prev: -150)
-    const OPEN_X = -70;
+    const DEEP_DELETE_THRESHOLD = -225; // Requires significant swipe to delete
+    const OPEN_X = -70; // Position when swiped open
+    const WARNING_COLOR_THRESHOLD = -180; // Point where color changes to warning red
 
     // Dynamic styles based on swipe distance
     const iconScale = useTransform(x, [OPEN_X, DEEP_DELETE_THRESHOLD], [1, 1.5]);
-    // Sync color change to roughly 80% of the way to the delete threshold so it serves as a "final warning"
-    const iconColor = useTransform(x, [OPEN_X, -180], ['rgb(107, 114, 128)', 'rgb(239, 68, 68)']);
+    // Sync color change to roughly 80% of the way to the delete threshold
+    const iconColor = useTransform(x, [OPEN_X, WARNING_COLOR_THRESHOLD], ['rgb(107, 114, 128)', 'rgb(239, 68, 68)']);
     const iconRotate = useTransform(x, [OPEN_X, DEEP_DELETE_THRESHOLD], [0, 15]);
-    const backgroundColor = useTransform(x, [OPEN_X, DEEP_DELETE_THRESHOLD], ['rgb(44, 46, 49)', 'rgba(239, 68, 68, 0.2)']); // sub-alt to error/20
+    const backgroundColor = useTransform(x, [OPEN_X, DEEP_DELETE_THRESHOLD], ['rgb(44, 46, 49)', 'rgba(239, 68, 68, 0.2)']);
 
     const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
         const currentX = x.get();
@@ -173,7 +175,7 @@ export function HistoryEvent({ event, innerfaces, protocolColor, onDelete, onFil
                                         className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"
                                         style={{ backgroundColor: effectiveColor }}
                                     />
-                                    {isSystem ? <FontAwesomeIcon icon={faGear} /> : <AppIcon id={event.protocolIcon} />}
+                                    {isSystem ? <FontAwesomeIcon icon={faGear} /> : isDecay ? <FontAwesomeIcon icon={faHourglassHalf} /> : <AppIcon id={event.protocolIcon} />}
                                 </div>
                             </TooltipTrigger>
                             <TooltipContent>

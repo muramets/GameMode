@@ -40,7 +40,12 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
         icon, setIcon,
         hover, setHover,
         protocolIds,
-        category, setCategory
+
+        category, setCategory,
+        decayEnabled, setDecayEnabled,
+        decayAmount, setDecayAmount,
+        decayFrequency, setDecayFrequency,
+        decayInterval, setDecayInterval // NEW: interval state
     } = formState;
 
     const {
@@ -122,6 +127,16 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                         value={description}
                         onChange={e => setDescription(e.target.value)}
                         placeholder="e.g. Attentional control"
+                    />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                    <InputLabel label="Quick Note" />
+                    <Input
+                        type="text"
+                        value={hover}
+                        onChange={e => setHover(e.target.value)}
+                        placeholder="Short note shown on tap/hover..."
                     />
                 </div>
 
@@ -226,14 +241,114 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
 
                 </div>
 
+                {/* Sensitive to Inactivity */}
                 <div className="flex flex-col gap-1.5">
-                    <InputLabel label="Quick Note" />
-                    <Input
-                        type="text"
-                        value={hover}
-                        onChange={e => setHover(e.target.value)}
-                        placeholder="Short note shown on tap/hover..."
-                    />
+                    <InputLabel label="Sensitive to Inactivity" />
+                    <div className="flex items-center gap-3">
+                        {/* Toggle Buttons */}
+                        <div className="flex-1 bg-sub-alt rounded-lg p-1 flex gap-1">
+                            <button
+                                type="button"
+                                onClick={() => setDecayEnabled(false)}
+                                className={`flex-1 px-3 py-2 rounded-md text-xs font-mono uppercase font-bold transition-all ${!decayEnabled
+                                    ? 'bg-sub text-text-primary shadow-sm'
+                                    : 'text-sub hover:text-text-primary'
+                                    }`}
+                            >
+                                Off
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setDecayEnabled(true)}
+                                className={`flex-1 px-3 py-2 rounded-md text-xs font-mono uppercase font-bold transition-all ${decayEnabled
+                                    ? 'bg-sub text-text-primary shadow-sm'
+                                    : 'text-sub hover:text-text-primary'
+                                    }`}
+                            >
+                                On
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Decay Configuration (shown when enabled) */}
+                    {decayEnabled && (
+                        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,4fr)] gap-3 mt-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="flex flex-col gap-1.5">
+                                <InputLabel label="XP Decay" />
+                                <Input
+                                    type="number"
+                                    value={decayAmount}
+                                    onChange={e => setDecayAmount(e.target.value)}
+                                    step="1"
+                                    min="0"
+                                    placeholder="1"
+                                    className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <InputLabel label="Frequency" />
+                                <div className="flex gap-2">
+                                    {/* Number Input */}
+                                    <div className="flex items-center gap-2 bg-sub-alt rounded-lg px-3 py-2 shrink-0">
+                                        <span className="text-xs font-mono text-sub uppercase font-bold whitespace-nowrap">Every</span>
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={decayInterval}
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                if (val === '' || (/^\d{0,2}$/.test(val) && parseInt(val) <= 99)) {
+                                                    setDecayInterval(val);
+                                                }
+                                            }}
+                                            onBlur={e => {
+                                                const val = parseInt(e.target.value);
+                                                if (isNaN(val) || val < 1) {
+                                                    setDecayInterval('1');
+                                                } else {
+                                                    setDecayInterval(val.toString());
+                                                }
+                                            }}
+                                            className="w-8 bg-sub rounded-md px-2 py-1 text-center font-mono text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-main/50"
+                                        />
+                                    </div>
+                                    {/* Frequency Selector */}
+                                    <div className="flex-1 min-w-0 bg-sub-alt rounded-lg p-1 grid grid-cols-3 gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => setDecayFrequency('day')}
+                                            className={`px-2 py-1.5 rounded-md text-[10px] font-mono uppercase font-bold transition-all truncate ${decayFrequency === 'day'
+                                                ? 'bg-sub text-text-primary shadow-sm'
+                                                : 'text-sub hover:text-text-primary'
+                                                }`}
+                                        >
+                                            Day{parseInt(decayInterval) > 1 ? 's' : ''}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setDecayFrequency('week')}
+                                            className={`px-2 py-1.5 rounded-md text-[10px] font-mono uppercase font-bold transition-all truncate ${decayFrequency === 'week'
+                                                ? 'bg-sub text-text-primary shadow-sm'
+                                                : 'text-sub hover:text-text-primary'
+                                                }`}
+                                        >
+                                            Week{parseInt(decayInterval) > 1 ? 's' : ''}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setDecayFrequency('month')}
+                                            className={`px-2 py-1.5 rounded-md text-[10px] font-mono uppercase font-bold transition-all truncate ${decayFrequency === 'month'
+                                                ? 'bg-sub text-text-primary shadow-sm'
+                                                : 'text-sub hover:text-text-primary'
+                                                }`}
+                                        >
+                                            Month{parseInt(decayInterval) > 1 ? 's' : ''}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex flex-col gap-2">

@@ -22,7 +22,7 @@ const PAGE_SIZE = 50;
 export interface HistoryFilters {
     protocolIds?: string[];
     innerfaceIds?: string[];
-    type?: 'All types' | 'Actions' | 'Manual' | 'System';
+    type?: 'All types' | 'Actions' | 'Manual' | 'System' | 'Decay';
     timeRange?: { start: Date; end: Date } | null; // Derived from timeFilter
 }
 
@@ -70,6 +70,7 @@ export function useHistoryFeed(filters: HistoryFilters = {}) {
                     if (filters.type === 'Actions') dbType = 'protocol';
                     if (filters.type === 'Manual') dbType = 'manual_adjustment';
                     if (filters.type === 'System') dbType = 'system';
+                    if (filters.type === 'Decay') dbType = 'decay';
                     if (dbType) constraints.push(where('type', '==', dbType));
                 }
 
@@ -141,6 +142,7 @@ export function useHistoryFeed(filters: HistoryFilters = {}) {
                 if (filters.type === 'Actions') dbType = 'protocol';
                 if (filters.type === 'Manual') dbType = 'manual_adjustment';
                 if (filters.type === 'System') dbType = 'system';
+                if (filters.type === 'Decay') dbType = 'decay';
                 if (dbType) constraints.push(where('type', '==', dbType));
             }
 

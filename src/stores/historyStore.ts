@@ -117,7 +117,8 @@ export const useHistoryStore = create<HistoryState>((set) => ({
                     // WRITE: Innerface Updates
                     for (const update of innerfaceUpdates) {
                         transaction.update(update.ref, {
-                            currentScore: update.newScore
+                            currentScore: update.newScore,
+                            lastCheckInDate: record.timestamp
                         });
                     }
 
