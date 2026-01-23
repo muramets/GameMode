@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck } from '@fortawesome/free-solid-svg-icons';
 import { PACE_CONFIGS, getWeeklySchedule, calculateWeeksToGoal, formatWeeksToGoal } from '../utils/paceCalculator';
 import { getInterpolatedColor } from '../../../utils/colorUtils';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../../components/ui/atoms/Tooltip';
 
 interface PlanningActionListProps {
     linkedProtocols: Protocol[];
@@ -60,31 +61,49 @@ function PlanningActionItem({
         >
             {/* Header: Icon, Title, XP */}
             <div className="flex items-center gap-3">
-                <button
-                    type="button"
-                    onClick={() => handleProtocolToggle(protocolId)}
-                    className={`relative w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center cursor-pointer hover:scale-105 transition-all duration-300 ${isDeactivated ? 'grayscale hover:grayscale-0' : ''}`}
-                    style={{
-                        backgroundColor: `color-mix(in srgb, ${iconColor} 20%, transparent)`,
-                        color: iconColor,
-                        boxShadow: `0 0 15px color-mix(in srgb, ${iconColor} 8%, transparent)`
-                    }}
-                >
-                    <AppIcon id={protocol.icon} />
-                </button>
+                <Tooltip delayDuration={300}>
+                    <TooltipTrigger asChild>
+                        <button
+                            type="button"
+                            onClick={() => handleProtocolToggle(protocolId)}
+                            className={`relative w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center cursor-pointer hover:scale-105 transition-all duration-300 ${isDeactivated ? 'grayscale hover:grayscale-0' : ''}`}
+                            style={{
+                                backgroundColor: `color-mix(in srgb, ${iconColor} 20%, transparent)`,
+                                color: iconColor,
+                                boxShadow: `0 0 15px color-mix(in srgb, ${iconColor} 8%, transparent)`
+                            }}
+                        >
+                            <AppIcon id={protocol.icon} />
+                        </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" align="center" className="max-w-[300px] break-words z-[100]">
+                        <div className={`flex flex-col ${protocol.hover ? 'border-b border-sub/50 pb-1 mb-1' : ''}`}>
+                            <div className="font-bold text-center">{protocol.title}</div>
+                            {protocol.description && <div className="text-center text-xs">{protocol.description}</div>}
+                        </div>
+
+                        {/* Quick Note */}
+                        {protocol.hover && (
+                            <div className="text-center text-xs">
+                                {protocol.hover}
+                            </div>
+                        )}
+                    </TooltipContent>
+                </Tooltip>
+
                 <div className={`flex flex-col flex-1 min-w-0 transition-all duration-300 ${isDeactivated ? 'grayscale opacity-50' : ''}`}>
-                    <span className="text-xs font-medium truncate text-text-primary">
+                    <span className="text-xs font-medium truncate text-text-primary cursor-default">
                         {protocol.title}
                     </span>
-                    <span className="text-[9px] text-sub">
+                    <span className="text-[9px] text-sub cursor-default">
                         +{xp} XP each
                     </span>
                 </div>
                 <div className={`text-right transition-all duration-300 ${isDeactivated ? 'grayscale opacity-50' : ''}`}>
-                    <div className="text-xs font-mono font-bold text-main">
+                    <div className="text-xs font-mono font-bold text-main cursor-default">
                         +{weeklyXP}
                     </div>
-                    <div className="text-[9px] text-sub">
+                    <div className="text-[9px] text-sub cursor-default">
                         XP/week
                     </div>
                 </div>
@@ -282,7 +301,7 @@ export function PlanningActionList({
 
 
     return (
-        <>
+        <TooltipProvider>
             {/* Summary Header */}
             {/* Protocol List */}
             <div className="flex flex-col gap-3 max-h-[400px] overflow-y-auto custom-scrollbar p-1 mb-4">
@@ -335,6 +354,6 @@ export function PlanningActionList({
                     </span>
                 </div>
             </div>
-        </>
+        </TooltipProvider>
     );
 }
