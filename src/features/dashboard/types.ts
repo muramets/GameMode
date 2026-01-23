@@ -4,6 +4,7 @@ export interface StateData {
     icon?: string;
     subtext?: string;
     description?: string;
+    hover?: string; // Tooltip text
     score?: number; // 0-10 or similar
     yesterdayScore?: number;
     color?: string;

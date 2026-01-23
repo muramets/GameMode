@@ -125,6 +125,16 @@ export function StateSettingsModal({ isOpen, onClose, stateId }: StateSettingsMo
                     />
                 </div>
 
+                <div className="flex flex-col gap-1.5">
+                    <InputLabel label="Quick Note" />
+                    <Input
+                        type="text"
+                        value={formState.hover}
+                        onChange={e => formState.setHover(e.target.value)}
+                        placeholder="e.g. Focus on mindfulness"
+                    />
+                </div>
+
                 <div className="flex gap-4">
                     <div className="flex-1 flex flex-col gap-1.5 relative">
                         <InputLabel label="Color" />

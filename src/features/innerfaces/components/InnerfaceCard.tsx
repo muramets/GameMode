@@ -7,8 +7,9 @@ import { faCog, faHistory, faArrowUp, faArrowDown, faBullseye } from '@fortaweso
 import { getTierColor } from '../../../utils/colorUtils';
 import { calculateLevel, scoreToXP } from '../../../utils/xpUtils';
 import { PowerIcon } from './PowerIcon';
-import { TruncatedTooltip } from '../../../components/ui/molecules/TruncatedTooltip';
 import { useTouchDevice } from '../../../hooks/useTouchDevice';
+import { useTruncation } from '../../../hooks/useTruncation';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../../components/ui/atoms/Tooltip';
 
 interface InnerfaceCardProps {
     innerface: Innerface;
@@ -23,6 +24,10 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
 
     const [isTapped, setIsTapped] = React.useState(false);
     const isTouchDevice = useTouchDevice();
+
+    // Truncation detection
+    const { ref: titleRef, isTruncated: isTitleTruncated } = useTruncation();
+    const { ref: descRef, isTruncated: isDescTruncated } = useTruncation();
 
     // Show hover state if forceHover is true or tapped on mobile
     const shouldShowHover = forceHover || isTapped;
@@ -102,20 +107,45 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
                     />
 
                     {/* Title */}
-                    <div className="flex flex-col min-w-0 pt-0.5 flex-1 pr-2">
-                        <TruncatedTooltip
-                            as="h3"
-                            text={innerface.name}
-                            className="font-lexend font-medium text-sm leading-tight text-text-primary truncate w-full"
-                        />
-                        {innerface.description && (
-                            <TruncatedTooltip
-                                as="p"
-                                text={innerface.description}
-                                className={`text-[10px] text-sub font-mono uppercase tracking-wider opacity-60 truncate mt-0.5 transition-all duration-300 w-full ${shouldShowHover ? 'opacity-100 text-text-primary' : '[@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-hover:text-text-primary'}`}
-                            />
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div className="flex flex-col min-w-0 pt-0.5 flex-1 pr-2 pointer-events-auto">
+                                <h3
+                                    ref={titleRef}
+                                    className="font-lexend font-medium text-sm leading-tight text-text-primary truncate w-full"
+                                >
+                                    {innerface.name}
+                                </h3>
+                                {innerface.description && (
+                                    <p
+                                        ref={descRef}
+                                        className={`text-[10px] text-sub font-mono uppercase tracking-wider opacity-60 truncate mt-0.5 transition-all duration-300 w-full ${shouldShowHover ? 'opacity-100 text-text-primary' : '[@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-hover:text-text-primary'}`}
+                                    >
+                                        {innerface.description}
+                                    </p>
+                                )}
+                            </div>
+                        </TooltipTrigger>
+                        {/* Tooltip Content Logic */}
+                        {(isTitleTruncated || isDescTruncated || innerface.hover) && (
+                            <TooltipContent side="top" align="center" className="max-w-[300px] break-words z-[100]">
+                                {/* Truncated Content */}
+                                {(isTitleTruncated || isDescTruncated) && (
+                                    <div className={`flex flex-col ${innerface.hover ? 'border-b border-sub/50 pb-1 mb-1' : ''}`}>
+                                        {isTitleTruncated && <div className="font-bold text-center">{innerface.name}</div>}
+                                        {isDescTruncated && <div className="text-center text-xs">{innerface.description}</div>}
+                                    </div>
+                                )}
+
+                                {/* Quick Note */}
+                                {innerface.hover && (
+                                    <div className="text-center text-xs">
+                                        {innerface.hover}
+                                    </div>
+                                )}
+                            </TooltipContent>
                         )}
-                    </div>
+                    </Tooltip>
                 </div>
             </div>
 

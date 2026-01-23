@@ -4,11 +4,12 @@ import type { Protocol } from '../types';
 import type { Innerface } from '../../innerfaces/types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faMinus, faCog, faHistory } from '@fortawesome/free-solid-svg-icons';
-import { TruncatedTooltip } from '../../../components/ui/molecules/TruncatedTooltip';
+
 import { AppIcon } from '../../../components/ui/atoms/AppIcon';
 import { motion } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../../components/ui/atoms/Tooltip';
 import { useTouchDevice } from '../../../hooks/useTouchDevice';
+import { useTruncation } from '../../../hooks/useTruncation';
 
 // Set to true to visualize layout containers during development/debugging
 const DEBUG_LAYOUT = false;
@@ -36,6 +37,10 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
     const [shake, setShake] = useState<'left' | 'right' | null>(null);
     const rowRef = useRef<HTMLDivElement>(null);
     const [isHovered, setIsHovered] = useState(false);
+
+    // Truncation detection
+    const { ref: titleRef, isTruncated: isTitleTruncated } = useTruncation();
+    const { ref: descRef, isTruncated: isDescTruncated } = useTruncation();
 
     // Derived states to avoid double-renders on drag start
     const effectiveHoverSide = (isDisabled || isReadOnly) ? null : hoverSide;
@@ -186,22 +191,47 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
                 >
                     <AppIcon id={protocol.icon} />
                 </motion.div>
-                <div className="flex flex-col min-w-0 flex-grow mr-2 overflow-hidden">
-                    <div className="flex items-center gap-2 max-w-full">
-                        <TruncatedTooltip
-                            as="h3"
-                            text={protocol.title}
-                            className={`font-lexend text-base font-medium truncate transition-colors duration-300 ${effectiveFeedbackType === 'plus' ? 'text-[#98c379]' : effectiveFeedbackType === 'minus' ? 'text-[#ca4754]' : effectiveHoverSide === 'right' ? 'text-[#98c379]' : effectiveHoverSide === 'left' ? 'text-[#ca4754]' : 'text-text-primary'}`}
-                        />
-                    </div>
-                    {protocol.description && (
-                        <TruncatedTooltip
-                            as="p"
-                            text={protocol.description}
-                            className="text-[10px] text-sub font-mono opacity-60 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-hover:text-text-primary transition-all duration-300 truncate block"
-                        />
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <div className="flex flex-col min-w-0 flex-grow mr-2 overflow-hidden pointer-events-auto">
+                            <div className="flex items-center gap-2 max-w-full">
+                                <h3
+                                    ref={titleRef}
+                                    className={`font-lexend text-base font-medium truncate transition-colors duration-300 ${effectiveFeedbackType === 'plus' ? 'text-[#98c379]' : effectiveFeedbackType === 'minus' ? 'text-[#ca4754]' : effectiveHoverSide === 'right' ? 'text-[#98c379]' : effectiveHoverSide === 'left' ? 'text-[#ca4754]' : 'text-text-primary'}`}
+                                >
+                                    {protocol.title}
+                                </h3>
+                            </div>
+                            {protocol.description && (
+                                <p
+                                    ref={descRef}
+                                    className="text-[10px] text-sub font-mono opacity-60 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-hover:text-text-primary transition-all duration-300 truncate block"
+                                >
+                                    {protocol.description}
+                                </p>
+                            )}
+                        </div>
+                    </TooltipTrigger>
+                    {/* Tooltip Content Logic */}
+                    {(isTitleTruncated || isDescTruncated || protocol.hover) && (
+                        <TooltipContent side="top" align="center" className="max-w-[300px] break-words z-[100]">
+                            {/* Truncated Content */}
+                            {(isTitleTruncated || isDescTruncated) && (
+                                <div className={`flex flex-col ${protocol.hover ? 'border-b border-sub/50 pb-1 mb-1' : ''}`}>
+                                    {isTitleTruncated && <div className="font-bold text-center">{protocol.title}</div>}
+                                    {isDescTruncated && <div className="text-center text-xs">{protocol.description}</div>}
+                                </div>
+                            )}
+
+                            {/* Quick Note */}
+                            {protocol.hover && (
+                                <div className="text-center text-xs">
+                                    {protocol.hover}
+                                </div>
+                            )}
+                        </TooltipContent>
                     )}
-                </div>
+                </Tooltip>
             </motion.div>
 
             {/* Weight Indicator */}

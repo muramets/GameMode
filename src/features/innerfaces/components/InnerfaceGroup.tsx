@@ -238,7 +238,11 @@ export const InnerfaceGroup = React.memo(({
         // Entity changed or moved
         if (p.id !== n.id) return false;
         if (p.name !== n.name) return false;
+        if (p.description !== n.description) return false;
+        if (p.hover !== n.hover) return false;
+        if (p.color !== n.color) return false;
         if (p.icon !== n.icon) return false;
+        if (p.category !== n.category) return false;
         if (p.currentScore !== n.currentScore) return false;
 
         // Goal status changed for this item

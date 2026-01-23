@@ -1,7 +1,8 @@
 import { useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog, faHistory, faArrowUp, faArrowDown } from '@fortawesome/free-solid-svg-icons';
-import { OverflowTooltip } from '../../../components/ui/atoms/OverflowTooltip';
+import { useTruncation } from '../../../hooks/useTruncation';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../../components/ui/atoms/Tooltip';
 import type { StateData } from '../types';
 import { AppIcon } from '../../../components/ui/atoms/AppIcon';
 import { getTierColor } from '../../../utils/colorUtils';
@@ -27,6 +28,7 @@ export function StateCard({
     onHistory
 }: StateCardProps) {
     const cardRef = useRef<HTMLDivElement>(null);
+    const { ref: titleRef, isTruncated: isTitleTruncated } = useTruncation();
 
     // XP / Level Calculation
     const totalXP = scoreToXP(score);
@@ -91,15 +93,37 @@ export function StateCard({
 
                     {/* Name & Subtext Container */}
                     <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                        <OverflowTooltip
-                            text={displayName}
-                            className="text-[17px] font-bold tracking-[0.01em] leading-tight font-mono whitespace-nowrap overflow-hidden text-ellipsis w-full block truncate text-text-primary"
-                        />
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div className="w-full pointer-events-auto">
+                                    <div
+                                        ref={titleRef}
+                                        className="text-[17px] font-bold tracking-[0.01em] leading-tight font-mono whitespace-nowrap overflow-hidden text-ellipsis w-full block truncate text-text-primary"
+                                    >
+                                        {displayName}
+                                    </div>
+                                </div>
+                            </TooltipTrigger>
+                            {(isTitleTruncated || state.hover) && (
+                                <TooltipContent side="top" align="center" className="max-w-[300px] break-words z-[100]">
+                                    {isTitleTruncated && (
+                                        <div className={`font-bold text-center ${state.hover ? 'border-b border-sub/50 pb-1 mb-1' : ''}`}>
+                                            {displayName}
+                                        </div>
+                                    )}
+                                    {state.hover && (
+                                        <div className="text-center text-xs">
+                                            {state.hover}
+                                        </div>
+                                    )}
+                                </TooltipContent>
+                            )}
+                        </Tooltip>
+
                         {displaySubtext && (
-                            <OverflowTooltip
-                                text={displaySubtext}
-                                className="text-[11px] text-sub font-medium uppercase tracking-wider opacity-60 group-hover:opacity-100 group-hover:text-text-primary transition-all duration-300 leading-tight font-mono truncate"
-                            />
+                            <div className="text-[11px] text-sub font-medium uppercase tracking-wider opacity-60 group-hover:opacity-100 group-hover:text-text-primary transition-all duration-300 leading-tight font-mono truncate">
+                                {displaySubtext}
+                            </div>
                         )}
                     </div>
                 </div>

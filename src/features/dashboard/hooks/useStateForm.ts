@@ -20,6 +20,7 @@ export function useStateForm({ stateId, onClose, isOpen }: UseStateFormProps) {
     // Form State
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
+    const [hover, setHover] = useState('');
     const [icon, setIcon] = useState('scale-balanced');
     const [color, setColor] = useState(DEFAULT_STATE_COLOR);
     const [innerfaceIds, setInnerfaceIds] = useState<(string | number)[]>([]);
@@ -35,6 +36,7 @@ export function useStateForm({ stateId, onClose, isOpen }: UseStateFormProps) {
             if (state) {
                 setName(state.name);
                 setDescription(state.description || '');
+                setHover(state.hover || '');
                 setIcon(state.icon || 'scale-balanced');
                 setColor(state.color || DEFAULT_STATE_COLOR);
                 setInnerfaceIds(state.innerfaceIds || []);
@@ -43,6 +45,7 @@ export function useStateForm({ stateId, onClose, isOpen }: UseStateFormProps) {
             // Reset for new
             setName('');
             setDescription('');
+            setHover('');
             setIcon('scale-balanced');
             setColor(DEFAULT_STATE_COLOR);
             setInnerfaceIds([]);
@@ -62,6 +65,7 @@ export function useStateForm({ stateId, onClose, isOpen }: UseStateFormProps) {
             const data = {
                 name,
                 description,
+                hover,
                 icon,
                 color,
                 innerfaceIds
@@ -131,6 +135,7 @@ export function useStateForm({ stateId, onClose, isOpen }: UseStateFormProps) {
         formState: {
             name, setName,
             description, setDescription,
+            hover, setHover,
             icon, setIcon,
             color, setColor,
             innerfaceIds
