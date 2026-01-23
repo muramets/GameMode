@@ -3,13 +3,13 @@ import {
     // Common
     faStar, faHeart, faFlag, faCheck, faBell, faUser, faHome, faCog,
     faTrash, faPen, faSearch, faPlus, faMinus, faEye, faEyeSlash,
-    faLink, faCopy, faBookmark,
+    faLink, faCopy, faBookmark, faCircle, faBan, faScaleBalanced, faGavel, faQuestion,
 
     // Productivity
     faCalendar, faClock, faFire, faTrophy, faListCheck, faChartLine,
     faRocket, faBolt, faBatteryFull, faLightbulb, faBrain, faBullseye,
     faChartBar, faClipboard, faFolder, faFile, faEnvelope, faInbox,
-    faGraduationCap, faBook, faBookOpen, faPenToSquare,
+    faBook, faBookOpen, faPenToSquare, faAward, faCrown, faMedal,
 
     // Finance
     faCreditCard, faWallet, faCoins, faChartPie, faTag, faStore,
@@ -19,27 +19,51 @@ import {
     faHeartPulse, faDumbbell, faAppleWhole, faBed, faPersonRunning,
     faDroplet, faSpa, faPersonWalking, faPersonSwimming, faLungs,
     faBowlFood, faPills, faBandage, faWeight, faMoon, faBath,
-    faHotTubPerson, faYinYang,
+    faHotTubPerson, faYinYang, faShoePrints,
 
     // Nature
     faTree, faLeaf, faSun, faCloud, faSnowflake, faWind, faMountain,
     faWater, faSeedling, faEarth,
 
     // Lifestyle
-    faMusic, faGamepad, faPlane, faCar, faCamera, faUtensils, faMugHot,
-    faWineGlass, faMartiniGlass, faBeerMugEmpty, faFilm, faHeadphones,
-    faPalette, faPuzzlePiece, faGuitar, faDice, faBaseball, faFootball,
-    faBicycle, faCampground, faUmbrellaBeach, faGift, faCake,
-    faComments, faUsers, faUserGroup, faHandshake, faPhone,
+    faGamepad, faPalette, faPuzzlePiece, faDice, faBaseball, faFootball,
+    faGift, faCake, faSmoking, faHandRock, faMasksTheater,
 
-    // Tech
-    faLaptop, faDesktop, faMobile, faWifi, faCode, faTerminal,
-    faDatabase, faServer, faRobot, faGlobe, faLock, faUnlock, faKey,
-    faShield, faBug,
+    // Social
+    faComments, faUsers, faUserGroup, faShareNodes, faThumbsUp, faThumbsDown,
+    faMessage, faHandshake, faPhone,
 
-    // Misc
-    faQuestion, faBan, faSmoking, faHandRock, faShoePrints, faMasksTheater,
-    faScaleBalanced, faGavel, faAward, faCrown, faMedal, faCircle
+    // Tech (Gadgets & Security)
+    faMobile, faWifi, faRobot, faGlobe, faLock, faUnlock, faKey,
+    faShield, faMagnet,
+
+    // Categories Imports
+    // Travel
+    faPlane, faMap, faLocationDot, faSuitcase, faPassport, faHotel, faTrain,
+    faBus, faShip, faAnchor, faCar, faBicycle, faCampground, faUmbrellaBeach,
+
+    // Food
+    faUtensils, faMugHot, faWineGlass, faMartiniGlass, faBeerMugEmpty,
+    faBurger, faPizzaSlice, faIceCream, faCookie, faBacon, faFish, faWheatAwn,
+
+    // Education
+    faGraduationCap, faSchool, faChalkboardUser,
+
+    // Tools
+    faWrench, faHammer, faScrewdriverWrench, faPaintRoller, faBrush, faCameraRetro,
+    faBox, faTruck,
+
+    // Media (YouTube / Music Producer)
+    faClapperboard, faFilm, faVideo, faSliders, faMicrophone, faBroadcastTower,
+    faRecordVinyl, faMusic, faHeadphones, faDrum, faGuitar, faVolumeHigh, faCamera,
+
+    // Development (Coder)
+    faCode, faCodeFork, faTerminal, faKeyboard, faMicrochip, faNetworkWired,
+    faDiagramProject, faBug, faLaptop, faDesktop, faDatabase, faServer,
+
+    // Arrows
+    faArrowRight, faArrowLeft, faArrowUp, faArrowDown, faRotate, faShuffle,
+    faRepeat, faAnglesRight, faAnglesLeft
 } from '@fortawesome/free-solid-svg-icons';
 
 // ─────────────────────────────────────────────────────────────
@@ -53,7 +77,15 @@ export type IconCategory =
     | 'health'
     | 'nature'
     | 'lifestyle'
-    | 'tech';
+    | 'social'
+    | 'tech'
+    | 'travel'
+    | 'food'
+    | 'education'
+    | 'media'
+    | 'development'
+    | 'tools'
+    | 'arrows';
 
 export interface IconEntry {
     id: string;
@@ -74,11 +106,19 @@ export interface CategoryMeta {
 export const ICON_CATEGORIES: CategoryMeta[] = [
     { id: 'common', label: 'Common' },
     { id: 'productivity', label: 'Productivity' },
+    { id: 'media', label: 'Media' },
+    { id: 'development', label: 'Dev' },
     { id: 'finance', label: 'Finance' },
     { id: 'health', label: 'Health' },
     { id: 'nature', label: 'Nature' },
     { id: 'lifestyle', label: 'Lifestyle' },
+    { id: 'social', label: 'Social' },
+    { id: 'travel', label: 'Travel' },
+    { id: 'food', label: 'Food' },
+    { id: 'education', label: 'Education' },
     { id: 'tech', label: 'Tech' },
+    { id: 'tools', label: 'Tools' },
+    { id: 'arrows', label: 'Arrows' },
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -107,6 +147,9 @@ export const ICON_REGISTRY: IconEntry[] = [
     { id: 'bookmark', icon: faBookmark, category: 'common', keywords: ['save', 'mark'] },
     { id: 'circle', icon: faCircle, category: 'common', keywords: ['dot', 'bullet'] },
     { id: 'ban', icon: faBan, category: 'common', keywords: ['prohibit', 'stop', 'no'] },
+    { id: 'question', icon: faQuestion, category: 'common', keywords: ['help', 'unknown'] },
+    { id: 'scale-balanced', icon: faScaleBalanced, category: 'common', keywords: ['justice', 'balance', 'law'] },
+    { id: 'gavel', icon: faGavel, category: 'common', keywords: ['law', 'judge', 'court'] },
 
     // ── Productivity ──
     { id: 'calendar', icon: faCalendar, category: 'productivity', keywords: ['date', 'schedule'] },
@@ -127,10 +170,41 @@ export const ICON_REGISTRY: IconEntry[] = [
     { id: 'file', icon: faFile, category: 'productivity', keywords: ['document', 'page'] },
     { id: 'envelope', icon: faEnvelope, category: 'productivity', keywords: ['email', 'mail', 'message'] },
     { id: 'inbox', icon: faInbox, category: 'productivity', keywords: ['messages', 'queue'] },
-    { id: 'graduation-cap', icon: faGraduationCap, category: 'productivity', keywords: ['education', 'learn', 'school'] },
     { id: 'book', icon: faBook, category: 'productivity', keywords: ['read', 'learning'] },
     { id: 'book-open', icon: faBookOpen, category: 'productivity', keywords: ['reading', 'study'] },
     { id: 'pen-to-square', icon: faPenToSquare, category: 'productivity', keywords: ['edit', 'write', 'compose'] },
+    { id: 'award', icon: faAward, category: 'productivity', keywords: ['achievement', 'prize'] },
+    { id: 'crown', icon: faCrown, category: 'productivity', keywords: ['king', 'leader', 'best'] },
+    { id: 'medal', icon: faMedal, category: 'productivity', keywords: ['achievement', 'award'] },
+
+    // ── Media (New) ──
+    { id: 'clapperboard', icon: faClapperboard, category: 'media', keywords: ['movie', 'film', 'video', 'youtube'] },
+    { id: 'film', icon: faFilm, category: 'media', keywords: ['movie', 'video', 'cinema'] },
+    { id: 'video', icon: faVideo, category: 'media', keywords: ['record', 'camera', 'youtube'] },
+    { id: 'sliders', icon: faSliders, category: 'media', keywords: ['settings', 'mix', 'audio', 'music'] },
+    { id: 'microphone', icon: faMicrophone, category: 'media', keywords: ['audio', 'record', 'voice'] },
+    { id: 'broadcast-tower', icon: faBroadcastTower, category: 'media', keywords: ['radio', 'signal', 'stream'] },
+    { id: 'record-vinyl', icon: faRecordVinyl, category: 'media', keywords: ['music', 'dj', 'album'] },
+    { id: 'music', icon: faMusic, category: 'media', keywords: ['audio', 'song'] },
+    { id: 'headphones', icon: faHeadphones, category: 'media', keywords: ['audio', 'listen', 'music'] },
+    { id: 'drum', icon: faDrum, category: 'media', keywords: ['music', 'instrument', 'beat'] },
+    { id: 'guitar', icon: faGuitar, category: 'media', keywords: ['music', 'instrument', 'string'] },
+    { id: 'volume-high', icon: faVolumeHigh, category: 'media', keywords: ['sound', 'audio', 'loud'] },
+    { id: 'camera', icon: faCamera, category: 'media', keywords: ['photo', 'picture', 'video'] },
+
+    // ── Development (New) ──
+    { id: 'code', icon: faCode, category: 'development', keywords: ['programming', 'dev', 'html'] },
+    { id: 'code-fork', icon: faCodeFork, category: 'development', keywords: ['git', 'branch', 'version'] },
+    { id: 'terminal', icon: faTerminal, category: 'development', keywords: ['console', 'cli', 'command'] },
+    { id: 'keyboard', icon: faKeyboard, category: 'development', keywords: ['type', 'input', 'computer'] },
+    { id: 'microchip', icon: faMicrochip, category: 'development', keywords: ['cpu', 'processor', 'hardware'] },
+    { id: 'network-wired', icon: faNetworkWired, category: 'development', keywords: ['ethernet', 'connection', 'internet'] },
+    { id: 'diagram-project', icon: faDiagramProject, category: 'development', keywords: ['chart', 'graph', 'plan'] },
+    { id: 'bug', icon: faBug, category: 'development', keywords: ['error', 'issue', 'debug'] },
+    { id: 'laptop', icon: faLaptop, category: 'development', keywords: ['computer', 'work'] },
+    { id: 'desktop', icon: faDesktop, category: 'development', keywords: ['computer', 'monitor'] },
+    { id: 'database', icon: faDatabase, category: 'development', keywords: ['data', 'storage', 'sql'] },
+    { id: 'server', icon: faServer, category: 'development', keywords: ['host', 'backend'] },
 
     // ── Finance ──
     { id: 'credit-card', icon: faCreditCard, category: 'finance', keywords: ['payment', 'card'] },
@@ -164,6 +238,7 @@ export const ICON_REGISTRY: IconEntry[] = [
     { id: 'bath', icon: faBath, category: 'health', keywords: ['shower', 'clean', 'relax'] },
     { id: 'hot-tub', icon: faHotTubPerson, category: 'health', keywords: ['sauna', 'relax', 'spa'] },
     { id: 'yin-yang', icon: faYinYang, category: 'health', keywords: ['balance', 'harmony', 'meditation'] },
+    { id: 'shoe-prints', icon: faShoePrints, category: 'health', keywords: ['steps', 'walk', 'footprints'] },
 
     // ── Nature ──
     { id: 'tree', icon: faTree, category: 'nature', keywords: ['forest', 'plant'] },
@@ -177,64 +252,96 @@ export const ICON_REGISTRY: IconEntry[] = [
     { id: 'seedling', icon: faSeedling, category: 'nature', keywords: ['grow', 'plant', 'eco'] },
     { id: 'earth', icon: faEarth, category: 'nature', keywords: ['globe', 'world', 'planet'] },
 
+    // ── Travel ──
+    { id: 'plane', icon: faPlane, category: 'travel', keywords: ['fly', 'flight', 'airport'] },
+    { id: 'map', icon: faMap, category: 'travel', keywords: ['location', 'directions'] },
+    { id: 'location-dot', icon: faLocationDot, category: 'travel', keywords: ['pin', 'place', 'marker'] },
+    { id: 'suitcase', icon: faSuitcase, category: 'travel', keywords: ['baggage', 'luggage', 'trip'] },
+    { id: 'passport', icon: faPassport, category: 'travel', keywords: ['id', 'border', 'document'] },
+    { id: 'hotel', icon: faHotel, category: 'travel', keywords: ['stay', 'room', 'bed'] },
+    { id: 'train', icon: faTrain, category: 'travel', keywords: ['rail', 'transport'] },
+    { id: 'bus', icon: faBus, category: 'travel', keywords: ['public', 'transport'] },
+    { id: 'ship', icon: faShip, category: 'travel', keywords: ['boat', 'sea', 'cruise'] },
+    { id: 'anchor', icon: faAnchor, category: 'travel', keywords: ['port', 'nautical'] },
+    { id: 'car', icon: faCar, category: 'travel', keywords: ['drive', 'vehicle'] },
+    { id: 'bicycle', icon: faBicycle, category: 'travel', keywords: ['bike', 'cycling'] },
+    { id: 'campground', icon: faCampground, category: 'travel', keywords: ['camping', 'outdoor', 'tent'] },
+    { id: 'umbrella-beach', icon: faUmbrellaBeach, category: 'travel', keywords: ['beach', 'vacation'] },
+
+    // ── Food ──
+    { id: 'utensils', icon: faUtensils, category: 'food', keywords: ['restaurant', 'eat', 'dinner'] },
+    { id: 'mug-hot', icon: faMugHot, category: 'food', keywords: ['coffee', 'tea', 'drink'] },
+    { id: 'wine-glass', icon: faWineGlass, category: 'food', keywords: ['wine', 'alcohol', 'drink'] },
+    { id: 'martini-glass', icon: faMartiniGlass, category: 'food', keywords: ['cocktail', 'alcohol', 'drink'] },
+    { id: 'beer-mug', icon: faBeerMugEmpty, category: 'food', keywords: ['beer', 'alcohol', 'drink'] },
+    { id: 'burger', icon: faBurger, category: 'food', keywords: ['fastfood', 'sandwich'] },
+    { id: 'pizza', icon: faPizzaSlice, category: 'food', keywords: ['fastfood', 'italian'] },
+    { id: 'ice-cream', icon: faIceCream, category: 'food', keywords: ['dessert', 'sweet'] },
+    { id: 'cookie', icon: faCookie, category: 'food', keywords: ['dessert', 'sweet', 'biscuit'] },
+    { id: 'bacon', icon: faBacon, category: 'food', keywords: ['breakfast', 'meat'] },
+    { id: 'fish', icon: faFish, category: 'food', keywords: ['seafood', 'meat'] },
+    { id: 'wheat', icon: faWheatAwn, category: 'food', keywords: ['grain', 'bread', 'farm'] },
+
+    // ── Education ──
+    { id: 'graduation-cap', icon: faGraduationCap, category: 'education', keywords: ['education', 'learn', 'degree'] },
+    { id: 'school', icon: faSchool, category: 'education', keywords: ['building', 'students'] },
+    { id: 'chalkboard-user', icon: faChalkboardUser, category: 'education', keywords: ['teacher', 'class', 'present'] },
+
     // ── Lifestyle ──
-    { id: 'music', icon: faMusic, category: 'lifestyle', keywords: ['audio', 'song'] },
     { id: 'gamepad', icon: faGamepad, category: 'lifestyle', keywords: ['game', 'play', 'console'] },
-    { id: 'plane', icon: faPlane, category: 'lifestyle', keywords: ['travel', 'flight'] },
-    { id: 'car', icon: faCar, category: 'lifestyle', keywords: ['drive', 'vehicle'] },
-    { id: 'camera', icon: faCamera, category: 'lifestyle', keywords: ['photo', 'picture'] },
-    { id: 'utensils', icon: faUtensils, category: 'lifestyle', keywords: ['food', 'restaurant', 'eat'] },
-    { id: 'mug-hot', icon: faMugHot, category: 'lifestyle', keywords: ['coffee', 'tea', 'drink'] },
-    { id: 'wine-glass', icon: faWineGlass, category: 'lifestyle', keywords: ['wine', 'alcohol', 'drink'] },
-    { id: 'martini-glass', icon: faMartiniGlass, category: 'lifestyle', keywords: ['cocktail', 'alcohol', 'drink'] },
-    { id: 'beer-mug', icon: faBeerMugEmpty, category: 'lifestyle', keywords: ['beer', 'alcohol', 'drink'] },
-    { id: 'film', icon: faFilm, category: 'lifestyle', keywords: ['movie', 'video', 'cinema'] },
-    { id: 'headphones', icon: faHeadphones, category: 'lifestyle', keywords: ['audio', 'listen', 'music'] },
     { id: 'palette', icon: faPalette, category: 'lifestyle', keywords: ['art', 'paint', 'design'] },
     { id: 'puzzle-piece', icon: faPuzzlePiece, category: 'lifestyle', keywords: ['game', 'solve'] },
-    { id: 'guitar', icon: faGuitar, category: 'lifestyle', keywords: ['music', 'instrument'] },
     { id: 'dice', icon: faDice, category: 'lifestyle', keywords: ['game', 'random', 'luck'] },
     { id: 'baseball', icon: faBaseball, category: 'lifestyle', keywords: ['sport', 'ball'] },
     { id: 'football', icon: faFootball, category: 'lifestyle', keywords: ['sport', 'ball'] },
-    { id: 'bicycle', icon: faBicycle, category: 'lifestyle', keywords: ['bike', 'cycling'] },
-    { id: 'campground', icon: faCampground, category: 'lifestyle', keywords: ['camping', 'outdoor', 'tent'] },
-    { id: 'umbrella-beach', icon: faUmbrellaBeach, category: 'lifestyle', keywords: ['beach', 'vacation'] },
     { id: 'gift', icon: faGift, category: 'lifestyle', keywords: ['present', 'surprise'] },
     { id: 'cake', icon: faCake, category: 'lifestyle', keywords: ['birthday', 'celebration'] },
-    { id: 'comments', icon: faComments, category: 'lifestyle', keywords: ['chat', 'talk', 'conversation'] },
-    { id: 'users', icon: faUsers, category: 'lifestyle', keywords: ['people', 'group', 'team'] },
-    { id: 'user-group', icon: faUserGroup, category: 'lifestyle', keywords: ['team', 'community'] },
-    { id: 'handshake', icon: faHandshake, category: 'lifestyle', keywords: ['deal', 'agreement'] },
-    { id: 'phone', icon: faPhone, category: 'lifestyle', keywords: ['call', 'contact'] },
+    { id: 'smoking', icon: faSmoking, category: 'lifestyle', keywords: ['cigarette', 'tobacco'] },
+    { id: 'hand-rock', icon: faHandRock, category: 'lifestyle', keywords: ['rock', 'gesture'] },
+    { id: 'masks-theater', icon: faMasksTheater, category: 'lifestyle', keywords: ['drama', 'acting', 'theater'] },
+
+    // ── Social ──
+    { id: 'comments', icon: faComments, category: 'social', keywords: ['chat', 'talk', 'conversation'] },
+    { id: 'users', icon: faUsers, category: 'social', keywords: ['people', 'group', 'team'] },
+    { id: 'user-group', icon: faUserGroup, category: 'social', keywords: ['team', 'community'] },
+    { id: 'share', icon: faShareNodes, category: 'social', keywords: ['network', 'connect'] },
+    { id: 'thumbs-up', icon: faThumbsUp, category: 'social', keywords: ['like', 'approve', 'yes'] },
+    { id: 'thumbs-down', icon: faThumbsDown, category: 'social', keywords: ['dislike', 'disapprove', 'no'] },
+    { id: 'message', icon: faMessage, category: 'social', keywords: ['sms', 'chat', 'text'] },
+    { id: 'handshake', icon: faHandshake, category: 'social', keywords: ['deal', 'agreement'] },
+    { id: 'phone', icon: faPhone, category: 'social', keywords: ['call', 'contact'] },
 
     // ── Tech ──
-    { id: 'laptop', icon: faLaptop, category: 'tech', keywords: ['computer', 'work'] },
-    { id: 'desktop', icon: faDesktop, category: 'tech', keywords: ['computer', 'monitor'] },
     { id: 'mobile', icon: faMobile, category: 'tech', keywords: ['phone', 'smartphone'] },
     { id: 'wifi', icon: faWifi, category: 'tech', keywords: ['internet', 'network'] },
-    { id: 'code', icon: faCode, category: 'tech', keywords: ['programming', 'dev'] },
-    { id: 'terminal', icon: faTerminal, category: 'tech', keywords: ['console', 'cli', 'command'] },
-    { id: 'database', icon: faDatabase, category: 'tech', keywords: ['data', 'storage'] },
-    { id: 'server', icon: faServer, category: 'tech', keywords: ['host', 'backend'] },
     { id: 'robot', icon: faRobot, category: 'tech', keywords: ['ai', 'automation', 'bot'] },
     { id: 'globe', icon: faGlobe, category: 'tech', keywords: ['web', 'internet', 'world'] },
     { id: 'lock', icon: faLock, category: 'tech', keywords: ['security', 'private'] },
     { id: 'unlock', icon: faUnlock, category: 'tech', keywords: ['open', 'access'] },
     { id: 'key', icon: faKey, category: 'tech', keywords: ['password', 'access'] },
     { id: 'shield', icon: faShield, category: 'tech', keywords: ['security', 'protect'] },
-    { id: 'bug', icon: faBug, category: 'tech', keywords: ['error', 'issue', 'debug'] },
+    { id: 'magnet', icon: faMagnet, category: 'tech', keywords: ['attract', 'physics'] },
 
-    // ── Misc (previously scattered) ──
-    { id: 'question', icon: faQuestion, category: 'common', keywords: ['help', 'unknown'] },
-    { id: 'smoking', icon: faSmoking, category: 'lifestyle', keywords: ['cigarette', 'tobacco'] },
-    { id: 'hand-rock', icon: faHandRock, category: 'lifestyle', keywords: ['rock', 'gesture'] },
-    { id: 'shoe-prints', icon: faShoePrints, category: 'health', keywords: ['steps', 'walk', 'footprints'] },
-    { id: 'masks-theater', icon: faMasksTheater, category: 'lifestyle', keywords: ['drama', 'acting', 'theater'] },
-    { id: 'scale-balanced', icon: faScaleBalanced, category: 'common', keywords: ['justice', 'balance', 'law'] },
-    { id: 'gavel', icon: faGavel, category: 'common', keywords: ['law', 'judge', 'court'] },
-    { id: 'award', icon: faAward, category: 'productivity', keywords: ['achievement', 'prize'] },
-    { id: 'crown', icon: faCrown, category: 'productivity', keywords: ['king', 'leader', 'best'] },
-    { id: 'medal', icon: faMedal, category: 'productivity', keywords: ['achievement', 'award'] },
+    // ── Tools ──
+    { id: 'wrench', icon: faWrench, category: 'tools', keywords: ['fix', 'repair', 'settings'] },
+    { id: 'hammer', icon: faHammer, category: 'tools', keywords: ['build', 'construct'] },
+    { id: 'screwdriver', icon: faScrewdriverWrench, category: 'tools', keywords: ['fix', 'repair'] },
+    { id: 'paint-roller', icon: faPaintRoller, category: 'tools', keywords: ['paint', 'color'] },
+    { id: 'brush', icon: faBrush, category: 'tools', keywords: ['paint', 'art'] },
+    { id: 'camera-retro', icon: faCameraRetro, category: 'tools', keywords: ['photo', 'pic'] },
+    { id: 'box', icon: faBox, category: 'tools', keywords: ['package', 'ship'] },
+    { id: 'truck', icon: faTruck, category: 'tools', keywords: ['deliver', 'ship'] },
+
+    // ── Arrows ──
+    { id: 'arrow-right', icon: faArrowRight, category: 'arrows', keywords: ['next', 'direction'] },
+    { id: 'arrow-left', icon: faArrowLeft, category: 'arrows', keywords: ['back', 'direction'] },
+    { id: 'arrow-up', icon: faArrowUp, category: 'arrows', keywords: ['top', 'direction'] },
+    { id: 'arrow-down', icon: faArrowDown, category: 'arrows', keywords: ['bottom', 'direction'] },
+    { id: 'rotate', icon: faRotate, category: 'arrows', keywords: ['spin', 'turn'] },
+    { id: 'shuffle', icon: faShuffle, category: 'arrows', keywords: ['random', 'mix'] },
+    { id: 'repeat', icon: faRepeat, category: 'arrows', keywords: ['loop', 'cycle'] },
+    { id: 'double-right', icon: faAnglesRight, category: 'arrows', keywords: ['fast', 'forward'] },
+    { id: 'double-left', icon: faAnglesLeft, category: 'arrows', keywords: ['fast', 'backward'] },
 ];
 
 // ─────────────────────────────────────────────────────────────
