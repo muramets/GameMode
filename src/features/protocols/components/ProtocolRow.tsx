@@ -160,14 +160,14 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
      */
     const renderBackgroundLayers = () => (
         <>
-            <motion.div className={`absolute inset-0 bg-[radial-gradient(circle_at_100%_50%,_rgba(152,195,121,0.15),_transparent_60%)] transition-opacity duration-300 pointer-events-none z-0 ${effectiveHoverSide === 'right' || effectiveFeedbackType === 'plus' ? 'opacity-100' : 'opacity-0'}`} />
-            <motion.div className={`absolute inset-0 bg-[radial-gradient(circle_at_0%_50%,_rgba(202,71,84,0.15),_transparent_60%)] transition-opacity duration-300 pointer-events-none z-0 ${effectiveHoverSide === 'left' || effectiveFeedbackType === 'minus' ? 'opacity-100' : 'opacity-0'}`} />
+            <motion.div layout className={`absolute inset-0 bg-[radial-gradient(circle_at_100%_50%,_rgba(152,195,121,0.15),_transparent_60%)] transition-opacity duration-300 pointer-events-none z-0 ${effectiveHoverSide === 'right' || effectiveFeedbackType === 'plus' ? 'opacity-100' : 'opacity-0'}`} />
+            <motion.div layout className={`absolute inset-0 bg-[radial-gradient(circle_at_0%_50%,_rgba(202,71,84,0.15),_transparent_60%)] transition-opacity duration-300 pointer-events-none z-0 ${effectiveHoverSide === 'left' || effectiveFeedbackType === 'minus' ? 'opacity-100' : 'opacity-0'}`} />
 
             {!isDisabled && (
                 <>
-                    <motion.div className={`absolute inset-0 pointer-events-none transition-all duration-500 ease-out z-0 ${effectiveFeedbackType === 'plus' ? 'opacity-100' : 'opacity-0'}`}
+                    <motion.div layout className={`absolute inset-0 pointer-events-none transition-all duration-500 ease-out z-0 ${effectiveFeedbackType === 'plus' ? 'opacity-100' : 'opacity-0'}`}
                         style={{ background: `radial-gradient(circle at 100% 50%, rgba(152, 195, 121, 0.3) 0%, transparent 70%)` }} />
-                    <motion.div className={`absolute inset-0 pointer-events-none transition-all duration-500 ease-out z-0 ${effectiveFeedbackType === 'minus' ? 'opacity-100' : 'opacity-0'}`}
+                    <motion.div layout className={`absolute inset-0 pointer-events-none transition-all duration-500 ease-out z-0 ${effectiveFeedbackType === 'minus' ? 'opacity-100' : 'opacity-0'}`}
                         style={{ background: `radial-gradient(circle at 0% 50%, rgba(202, 71, 84, 0.3) 0%, transparent 70%)` }} />
                 </>
             )}
@@ -178,9 +178,9 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
      * RENDER HELPER: MAIN CONTENT
      */
     const renderMainContent = () => (
-        <motion.div className="relative z-10 grid grid-cols-[1.2fr_auto_1fr] items-center gap-4 px-4 h-full py-2">
+        <motion.div layout className="relative z-10 grid grid-cols-[1.2fr_auto_1fr] items-center gap-4 px-4 h-full py-2">
             {/* Identity Group */}
-            <motion.div className={`flex items-center gap-3 min-w-0 pointer-events-none ${DEBUG_LAYOUT ? 'border border-blue-500' : ''}`}>
+            <motion.div layout className={`flex items-center gap-3 min-w-0 pointer-events-none ${DEBUG_LAYOUT ? 'border border-blue-500' : ''}`}>
                 <motion.div layout
                     className="flex items-center justify-center w-10 h-10 rounded-lg text-xl shrink-0"
                     animate={{ marginLeft: (isHovered || (isTouchDevice && !isDisabled && !isReadOnly)) ? 16 : 0 }}
@@ -237,7 +237,7 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
             </motion.div>
 
             {/* Weight Indicator */}
-            <motion.div className={`flex flex-col items-center justify-center pointer-events-none gap-1 ${DEBUG_LAYOUT ? 'border border-yellow-500' : ''}`}>
+            <motion.div layout className={`flex flex-col items-center justify-center pointer-events-none gap-1 ${DEBUG_LAYOUT ? 'border border-yellow-500' : ''}`}>
                 <span className={`font-lexend text-xs font-bold tracking-wider transition-all duration-300 ${effectiveFeedbackType === 'plus' ? 'text-[#98c379] opacity-100 scale-125' : effectiveFeedbackType === 'minus' ? 'text-[#ca4754] opacity-100 scale-125' : effectiveHoverSide === 'right' ? 'text-[#98c379] opacity-100 scale-110' : effectiveHoverSide === 'left' ? 'text-[#ca4754] opacity-100 scale-110' : 'text-sub opacity-30 [@media(hover:hover)]:group-hover:text-text-primary [@media(hover:hover)]:group-hover:opacity-100'}`}>
                     {Math.round(protocol.weight * 100)} XP
                 </span>
@@ -259,8 +259,8 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
             </motion.div>
 
             {/* Targets & Actions Group */}
-            <motion.div className={`flex items-center justify-end gap-3 pointer-events-none w-full ${DEBUG_LAYOUT ? 'border border-green-500' : ''}`}>
-                <motion.div className="flex flex-wrap justify-end gap-1.5 content-center pointer-events-auto min-w-0">
+            <motion.div layout className={`flex items-center justify-end gap-3 pointer-events-none w-full ${DEBUG_LAYOUT ? 'border border-green-500' : ''}`}>
+                <motion.div layout className="flex flex-wrap justify-end gap-1.5 content-center pointer-events-auto min-w-0">
                     {targetInnerfaces.map((innerface: Innerface) => {
                         const InnerfaceIcon = (
                             <div
@@ -330,7 +330,7 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
 
     return (
         <motion.div
-            layout="position"
+            layout
             ref={rowRef}
             onMouseMove={handleMouseMove}
             onMouseEnter={handleMouseEnter}
