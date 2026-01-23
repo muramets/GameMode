@@ -228,7 +228,13 @@ export function InnerfaceGroupSelector({
                                     setIsGroupDropdownOpen(false);
                                 }}
                                 icon={
-                                    <div onClick={(e) => e.stopPropagation()}>
+                                    <div onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                    }} onMouseDown={(e) => {
+                                        // Prevent acquiring focus from the input if clicked outside
+                                        e.stopPropagation();
+                                    }}>
                                         <IconPicker
                                             icon={tempGroupIcon}
                                             color={tempGroupColor}
