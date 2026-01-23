@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useDndMonitor } from '@dnd-kit/core';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGripVertical, faBan } from '@fortawesome/free-solid-svg-icons';
@@ -11,48 +11,16 @@ const noOp = () => { };
 export const ProtocolsDragOverlay = React.memo(({
     activeProtocol,
     activeGroup,
-    innerfaces,
-    groupedProtocols
+    innerfaces
 }: {
     activeProtocol: Protocol | null,
     activeGroup: string | null,
-    innerfaces: Innerface[],
-    groupedProtocols: [string, Protocol[]][]
+    innerfaces: Innerface[]
 }) => {
     const [isInvalid, setIsInvalid] = useState(false);
 
-    // Memoize the source group to avoid repeating this lookup 60 times/sec
-    const sourceGroup = useMemo(() => {
-        if (!activeProtocol) return null;
-        return groupedProtocols.find(([, ps]) => ps.find(p => p.id === activeProtocol.id))?.[0];
-    }, [activeProtocol, groupedProtocols]);
-
     useDndMonitor({
-        onDragOver: ({ over }) => {
-            if (!over || !sourceGroup) {
-                if (isInvalid) setIsInvalid(false);
-                return;
-            }
-            const overId = String(over.id);
-            // Ignore hovering over the active item itself, but ensure we reset invalid state
-            if (overId === String(activeProtocol?.id)) {
-                if (isInvalid) setIsInvalid(false);
-                return;
-            }
-
-            let targetGroup: string | undefined;
-            if (overId.startsWith('group-')) {
-                targetGroup = overId.replace('group-', '');
-            } else {
-                targetGroup = groupedProtocols.find(([, ps]) => ps.find(p => String(p.id) === overId))?.[0];
-            }
-
-            // Boolean flip optimization: Only re-render if validity changes
-            const newInvalid = targetGroup !== sourceGroup;
-            if (newInvalid !== isInvalid) {
-                setIsInvalid(newInvalid);
-            }
-        },
+        onDragStart: () => setIsInvalid(false),
         onDragEnd: () => setIsInvalid(false),
         onDragCancel: () => setIsInvalid(false),
     });

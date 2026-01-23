@@ -199,6 +199,64 @@ export const createProtocolSlice = (
         }
     },
 
+    moveProtocol: async (id: string, newGroup: string, orderedIds: string[]) => {
+        try {
+            const context = get().context;
+            guardAgainstViewerMode(context);
+            const currentProtocols = get().protocols;
+            const protocolsMap = new Map(currentProtocols.map(p => [String(p.id), p]));
+
+            // 1. Optimistic Update
+            // Update the moved protocol's group
+            // Update orders for all affected protocols (in the target group)
+            const movedProtocol = protocolsMap.get(id);
+            if (!movedProtocol) throw new Error('Protocol not found');
+
+            const otherProtocols = currentProtocols.filter(p => !orderedIds.includes(String(p.id)) && String(p.id) !== id);
+
+            const reorderedProtocols = orderedIds
+                .map((pid, index) => {
+                    const p = protocolsMap.get(pid);
+                    // If it's the moved protocol, update its group. Otherwise keep group as is.
+                    if (String(p?.id) === id) {
+                        return p ? { ...p, group: newGroup, order: index } : null;
+                    }
+                    return p ? { ...p, order: index } : null;
+                })
+                .filter(Boolean) as Protocol[];
+
+            set({ protocols: [...otherProtocols, ...reorderedProtocols] });
+
+            // 2. Firestore Writes
+            const batch = writeBatch(db);
+
+            // Update the moved protocol's group and order
+            const movedRef = doc(db, `${getPathRoot(context)}/protocols/${id}`);
+            // Note: If newGroup is empty ('ungrouped'), we typically store it as null or empty string depending on app convention.
+            // Based on innerface implementation, we'll store empty string or whatever is passed.
+            // But let's check how 'ungrouped' is handled. usually it's just falsy.
+            // If the UI passes 'ungrouped' string, we might want to convert to empty string if that's the convention.
+            // Looking at innerfaceSlice it seems to assume `group` property exists.
+            // Let's assume validation happens upstream or empty string is valid.
+            const groupValue = newGroup === 'ungrouped' ? '' : newGroup;
+            const movedOrder = orderedIds.indexOf(id);
+            batch.update(movedRef, { group: groupValue, order: movedOrder });
+
+            // Update order for other protocols in the target group
+            orderedIds.forEach((pid, index) => {
+                if (pid !== id) {
+                    const docRef = doc(db, `${getPathRoot(context)}/protocols/${pid}`);
+                    batch.update(docRef, { order: index });
+                }
+            });
+
+            await batch.commit();
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            showErrorToast(message);
+        }
+    },
+
     reorderGroups: async (orderedGroups: string[]) => {
         try {
             const context = get().context;

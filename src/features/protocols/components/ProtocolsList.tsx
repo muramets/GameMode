@@ -24,7 +24,7 @@ import { ProtocolsContent } from './ProtocolsContent';
 export function ProtocolsList() {
     const { applyProtocol, innerfaces, protocols } = useScoreContext();
     const { activeContext } = usePersonalityStore();
-    const { reorderProtocols, reorderGroups, groupOrder, groupsMetadata, isLoading } = useMetadataStore();
+    const { reorderProtocols, moveProtocol, reorderGroups, groupOrder, groupsMetadata, isLoading } = useMetadataStore();
 
     // Simplified loading logic: Minimum 500ms display time
     // Simplified loading logic: Minimum 500ms display time ONLY if loading is actually needed
@@ -119,6 +119,10 @@ export function ProtocolsList() {
         reorderProtocols(newItemIds);
     }, [reorderProtocols]);
 
+    const onMoveProtocol = useCallback((id: string, newGroup: string, orderedIds: string[]) => {
+        moveProtocol(id, newGroup, orderedIds);
+    }, [moveProtocol]);
+
     // Note: protocolGroups now comes from useProtocolsGrouping hook
     // Note: toggleFilter and removeFilter now come from useProtocolsFiltering hook
 
@@ -128,11 +132,14 @@ export function ProtocolsList() {
         justDroppedId,
         clearJustDropped,
         handleDragStart,
-        handleDragEnd
+        handleDragOver,
+        handleDragEnd,
+        optimisticGroupedProtocols
     } = useProtocolDnD({
         groupedProtocols,
         onReorderGroups,
-        onReorderProtocols
+        onReorderProtocols,
+        onMoveProtocol
     });
 
     const interactionValue = useMemo(() => ({
@@ -213,7 +220,7 @@ export function ProtocolsList() {
                     {/* Protocols content with DnD */}
                     <ProtocolsContent
                         ref={contentRef}
-                        groupedProtocols={groupedProtocols}
+                        groupedProtocols={optimisticGroupedProtocols}
                         innerfaces={innerfaces}
                         isDragEnabled={isDragEnabled}
                         isReadOnly={isReadOnly}
@@ -227,6 +234,7 @@ export function ProtocolsList() {
                         sensors={sensors}
                         active={active}
                         handleDragStart={handleDragStart}
+                        handleDragOver={handleDragOver}
                         handleDragEnd={handleDragEnd}
                         interactionValue={interactionValue}
                     />

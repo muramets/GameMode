@@ -58,6 +58,7 @@ export interface MetadataState {
 
     // Protocol Ordering
     reorderProtocols: (orderedIds: string[]) => Promise<void>;
+    moveProtocol: (id: string, newGroup: string, orderedIds: string[]) => Promise<void>;
     reorderGroups: (orderedGroups: string[]) => Promise<void>;
 
     // State Ordering

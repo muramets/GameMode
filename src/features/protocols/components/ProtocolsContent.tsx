@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import { DndContext, closestCenter, DragOverlay, type SensorDescriptor, type DragStartEvent, type DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter, DragOverlay, type SensorDescriptor, type DragStartEvent, type DragEndEvent, type DragOverEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { ProtocolGroup } from './ProtocolGroup';
 import { ProtocolsDragOverlay } from './ProtocolsDragOverlay';
@@ -23,6 +23,7 @@ interface ProtocolsContentProps {
     sensors: SensorDescriptor<object>[];
     active: { id: string | null; protocol: Protocol | null; group: string | null };
     handleDragStart: (event: DragStartEvent) => void;
+    handleDragOver: (event: DragOverEvent) => void;
     handleDragEnd: (event: DragEndEvent) => void;
     interactionValue: {
         justDroppedId: string | null;
@@ -61,6 +62,7 @@ export const ProtocolsContent = forwardRef<HTMLDivElement, ProtocolsContentProps
     sensors,
     active,
     handleDragStart,
+    handleDragOver,
     handleDragEnd,
     interactionValue,
 }, ref) {
@@ -70,6 +72,7 @@ export const ProtocolsContent = forwardRef<HTMLDivElement, ProtocolsContentProps
                 sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
                 onDragEnd={handleDragEnd}
             >
                 {/* Встроенные стили для отключения transitions во время drag */}
@@ -126,7 +129,6 @@ export const ProtocolsContent = forwardRef<HTMLDivElement, ProtocolsContentProps
                                 activeProtocol={active.protocol}
                                 activeGroup={active.group}
                                 innerfaces={innerfaces}
-                                groupedProtocols={groupedProtocols}
                             />
                         </div>
                     ) : null}
