@@ -57,7 +57,14 @@ export function useScores() {
         const collectionRef = collection(db, 'users', user.uid, 'personalities', activePersonalityId, 'history');
         const optimisticId = doc(collectionRef).id;
 
-        // 2. Show Toast IMMEDIATELY (before network request)
+        // 2. Optimistic Stats Update
+        const { optimisticUpdateStats } = usePersonalityStore.getState();
+        // Calculate XP exactly as the server/store does (weight * 100)
+        const recordXp = Math.round(weight * 100);
+        // +1 checkin, +recordXp
+        optimisticUpdateStats(activePersonalityId, 1, recordXp);
+
+        // 3. Show Toast IMMEDIATELY (before network request)
         const { showToast, openCommentOverlay } = useUIStore.getState();
         showToast(
             'Check-in Successful',
@@ -66,13 +73,16 @@ export function useScores() {
             () => openCommentOverlay(optimisticId)
         );
 
-        // 3. Perform network request in background
+        // 4. Perform network request in background
         try {
             await addCheckin(user.uid, activePersonalityId, newRecord, true, optimisticId);
         } catch (error) {
             console.error("Optimistic check-in failed:", error);
 
-            // Rollback UI state
+            // Rollback UI state (Stats)
+            optimisticUpdateStats(activePersonalityId, -1, -recordXp);
+
+            // Rollback UI state (Toast/Overlay)
             const { closeCommentOverlay } = useUIStore.getState();
             closeCommentOverlay(); // Close overlay if it's open
 

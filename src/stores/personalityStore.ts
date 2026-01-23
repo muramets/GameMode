@@ -44,6 +44,9 @@ interface PersonalityState {
     // Migration helper
     ensureDefaultPersonality: (uid: string, forceReset?: boolean) => Promise<string>; // Returns ID of active personality
     reset: () => void;
+
+    // Optimistic UI
+    optimisticUpdateStats: (personalityId: string, checkinsDelta: number, xpDelta: number) => void;
 }
 
 export const usePersonalityStore = create<PersonalityState>((set, get) => ({
@@ -383,5 +386,56 @@ export const usePersonalityStore = create<PersonalityState>((set, get) => ({
             await switchPersonality(uid, mostRecent.id);
             return mostRecent.id;
         }
+    },
+
+    optimisticUpdateStats: (personalityId, checkinsDelta, xpDelta) => {
+        set(state => ({
+            personalities: state.personalities.map(p => {
+                if (p.id !== personalityId) return p;
+
+                const todayStr = new Date().toISOString().split('T')[0]; // simple yyyy-MM-dd
+                const monthStr = todayStr.substring(0, 7); // yyyy-MM
+
+                const currentStats = p.stats || {
+                    totalCheckins: 0,
+                    totalXp: 0,
+                    lastDailyUpdate: todayStr,
+                    dailyCheckins: 0,
+                    dailyXp: 0,
+                    lastMonthlyUpdate: monthStr,
+                    monthlyCheckins: 0,
+                    monthlyXp: 0
+                };
+
+                // Logic matches Firestore atomic increment logic
+                const newStats = { ...currentStats };
+
+                // Always update totals
+                newStats.totalCheckins = (newStats.totalCheckins || 0) + checkinsDelta;
+                newStats.totalXp = (newStats.totalXp || 0) + xpDelta;
+
+                // Daily
+                if (newStats.lastDailyUpdate === todayStr) {
+                    newStats.dailyCheckins = (newStats.dailyCheckins || 0) + checkinsDelta;
+                    newStats.dailyXp = (newStats.dailyXp || 0) + xpDelta;
+                } else {
+                    newStats.lastDailyUpdate = todayStr;
+                    newStats.dailyCheckins = checkinsDelta;
+                    newStats.dailyXp = xpDelta;
+                }
+
+                // Monthly
+                if (newStats.lastMonthlyUpdate === monthStr) {
+                    newStats.monthlyCheckins = (newStats.monthlyCheckins || 0) + checkinsDelta;
+                    newStats.monthlyXp = (newStats.monthlyXp || 0) + xpDelta;
+                } else {
+                    newStats.lastMonthlyUpdate = monthStr;
+                    newStats.monthlyCheckins = checkinsDelta;
+                    newStats.monthlyXp = xpDelta;
+                }
+
+                return { ...p, stats: newStats };
+            })
+        }));
     },
 }));
