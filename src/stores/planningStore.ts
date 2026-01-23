@@ -9,6 +9,18 @@ import {
     onSnapshot
 } from 'firebase/firestore';
 import type { PlanningGoal } from '../features/planning/types';
+import type { PathContext } from './metadata/types';
+
+const getGoalsCollectionPath = (context: PathContext) => {
+    if (context.type === 'role') {
+        return `teams/${context.teamId}/roles/${context.roleId}/goals`;
+    }
+    if (context.type === 'viewer') {
+        return `users/${context.targetUid}/personalities/${context.personalityId}/goals`;
+    }
+    // Default to personality (user)
+    return `users/${context.uid}/personalities/${context.pid}/goals`;
+};
 
 interface PlanningState {
     goals: Record<string, PlanningGoal>; // Keyed by innerfaceId
@@ -16,9 +28,9 @@ interface PlanningState {
     error: string | null;
 
     // Actions
-    setGoal: (uid: string, pid: string, goal: Omit<PlanningGoal, 'createdAt' | 'updatedAt'>) => Promise<void>;
-    deleteGoal: (uid: string, pid: string, innerfaceId: string | number) => Promise<void>;
-    subscribeToGoals: (uid: string, pid: string) => () => void;
+    setGoal: (context: PathContext, goal: Omit<PlanningGoal, 'createdAt' | 'updatedAt'>) => Promise<void>;
+    deleteGoal: (context: PathContext, innerfaceId: string | number) => Promise<void>;
+    subscribeToGoals: (context: PathContext) => () => void;
     clearGoals: () => void;
 }
 
@@ -29,31 +41,21 @@ export const usePlanningStore = create<PlanningState>((set) => ({
 
     clearGoals: () => set({ goals: {}, isLoading: false, error: null }),
 
-    setGoal: async (uid, pid, goalData) => {
+    setGoal: async (context, goalData) => {
         try {
-            // goalData contains innerfaceId, targetScore, period, balance
             const goalId = String(goalData.innerfaceId);
-            const docRef = doc(db, 'users', uid, 'personalities', pid, 'goals', goalId);
+            const collectionPath = getGoalsCollectionPath(context);
+            const docRef = doc(db, collectionPath, goalId);
 
             const now = Date.now();
             const payload = {
                 ...goalData,
                 updatedAt: now,
-                // We use merge: true, so if it didn't exist, we might want createdAt. 
-                // But setDoc without merge overwrites. Ideally we read first or use set with merge.
-                // Let's just include createdAt if we want, but since we are overwriting the specific goal for this innerface, 
-                // we might as well just set it fresh or update. 
-                // Let's treat it as an upsert.
             };
-
-            // To preserve createdAt if it exists, we could use set with merge, but Typescript might be tricky.
-            // Simpler: Just always write updatedAt. If we want true creation time, we'd need to check existence.
-            // For now, let's just write both, and maybe creation time is effectively "when this goal plan was made"
-            // If the user modifies the plan, it's basically a new plan version.
 
             await setDoc(docRef, {
                 ...payload,
-                createdAt: now // Simplification: any save is a "new" plan timestamp for now, or we can improve later.
+                createdAt: now
             }, { merge: true });
 
         } catch (err: unknown) {
@@ -63,10 +65,11 @@ export const usePlanningStore = create<PlanningState>((set) => ({
         }
     },
 
-    deleteGoal: async (uid, pid, innerfaceId) => {
+    deleteGoal: async (context, innerfaceId) => {
         try {
             const goalId = String(innerfaceId);
-            const docRef = doc(db, 'users', uid, 'personalities', pid, 'goals', goalId);
+            const collectionPath = getGoalsCollectionPath(context);
+            const docRef = doc(db, collectionPath, goalId);
             await deleteDoc(docRef);
 
             set(state => {
@@ -81,14 +84,14 @@ export const usePlanningStore = create<PlanningState>((set) => ({
         }
     },
 
-    subscribeToGoals: (uid, pid) => {
+    subscribeToGoals: (context) => {
         set({ isLoading: true });
-        const goalsRef = collection(db, 'users', uid, 'personalities', pid, 'goals');
+        const collectionPath = getGoalsCollectionPath(context);
+        const goalsRef = collection(db, collectionPath);
 
         const unsubscribe = onSnapshot(query(goalsRef), (snapshot) => {
             const goalsMap: Record<string, PlanningGoal> = {};
             snapshot.forEach((doc) => {
-                // We assume doc.id is the innerfaceId
                 goalsMap[doc.id] = doc.data() as PlanningGoal;
             });
             set({ goals: goalsMap, isLoading: false });

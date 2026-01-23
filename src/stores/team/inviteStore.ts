@@ -252,6 +252,36 @@ export const useInviteStore = create<InviteState>((set) => ({
                 batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'groups', d.id), d.data());
             });
 
+            // --- Copy Goals ---
+            // Fetch goals from the role template
+            const roleGoals = await getDocs(collection(db, 'teams', invite.teamId, 'roles', invite.roleId, 'goals'));
+            roleGoals.docs.forEach(d => {
+                const data = d.data();
+                // We must map the goal's innerfaceId to the NEW innerface ID
+                const oldInnerfaceId = d.id; // Goal ID is assumed to be the innerface ID
+                const newInnerfaceId = innerfaceIdMap.get(oldInnerfaceId) || oldInnerfaceId;
+
+                // CRITICAL: Remap protocol IDs in actionCounts and balance
+                const remapProtocolIds = (obj: Record<string, number> | undefined): Record<string, number> => {
+                    if (!obj) return {};
+                    const remapped: Record<string, number> = {};
+                    Object.entries(obj).forEach(([oldProtocolId, value]) => {
+                        const newProtocolId = protocolIdMap.get(oldProtocolId) || oldProtocolId;
+                        remapped[newProtocolId] = value;
+                    });
+                    return remapped;
+                };
+
+                batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'goals', newInnerfaceId), {
+                    ...data,
+                    innerfaceId: newInnerfaceId, // Ensure internal ID matches
+                    actionCounts: remapProtocolIds(data.actionCounts),
+                    balance: remapProtocolIds(data.balance),
+                    updatedAt: Date.now(),
+                    createdAt: Date.now()
+                });
+            });
+
             // --- Copy Settings ---
             if (roleGroupSettings.exists()) {
                 batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'settings', 'groups'), roleGroupSettings.data());

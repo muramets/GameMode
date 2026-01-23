@@ -84,7 +84,7 @@ export function StoreSync() {
                 // Ensure UID is present (fallback for migration)
                 const uid = activeContext.uid || user.uid;
                 unsubHistory = subscribeToHistory(uid, activeContext.pid);
-                const unsubGoals = subscribeToGoals(uid, activeContext.pid);
+                const unsubGoals = subscribeToGoals({ type: 'personality', uid, pid: activeContext.pid });
 
                 // Chain unsubs
                 const oldUnsub = unsubHistory;
@@ -93,20 +93,21 @@ export function StoreSync() {
                 // In viewer mode, subscribe to target user's history
                 unsubHistory = subscribeToHistory(activeContext.targetUid, activeContext.personalityId);
                 // Also view their goals
-                const unsubGoals = subscribeToGoals(activeContext.targetUid, activeContext.personalityId);
+                const unsubGoals = subscribeToGoals({ type: 'viewer', targetUid: activeContext.targetUid, personalityId: activeContext.personalityId });
                 const oldUnsub = unsubHistory;
                 unsubHistory = () => { oldUnsub(); unsubGoals(); };
             } else {
-                // Role context - NO HISTORY, NO GOALS (for now, unless roles get goals)
-                // Explicitly clear history and goals to prevent leakage from previous state
+                // Role context - NO HISTORY (for now)
                 clearHistory();
-                clearGoals();
 
                 // Subscribe to Role Metadata (for name, icon, etc in UI)
                 const unsubRoles = subscribeToRoles(activeContext.teamId);
+                // Subscribe to Role Goals
+                const unsubGoals = subscribeToGoals({ type: 'role', teamId: activeContext.teamId, roleId: activeContext.roleId });
+
                 // Chain unsubs
                 const oldUnsub = unsubHistory;
-                unsubHistory = () => { oldUnsub(); unsubRoles(); };
+                unsubHistory = () => { oldUnsub(); unsubRoles(); unsubGoals(); };
             }
 
             // Build PathContext for metadataStore

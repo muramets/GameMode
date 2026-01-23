@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { Innerface } from '../../innerfaces/types';
-import { useAuth } from '../../../contexts/AuthContext';
 import { usePersonalityStore } from '../../../stores/personalityStore';
 import { usePlanningStore } from '../../../stores/planningStore';
 import { useScoreContext } from '../../../contexts/ScoreContext';
 import { calculateLevel, scoreToXP } from '../../../utils/xpUtils';
 import { getInterpolatedColor, getLevelGradient } from '../../../utils/colorUtils';
+import type { PathContext } from '../../../stores/metadata/types';
 
 
 interface UsePlanningLogicProps {
@@ -15,8 +15,7 @@ interface UsePlanningLogicProps {
 }
 
 export function usePlanningLogic({ innerface, isOpen, onClose }: UsePlanningLogicProps) {
-    const { user } = useAuth();
-    const { activePersonalityId, activeContext } = usePersonalityStore();
+    const { activeContext } = usePersonalityStore();
     const { goals, setGoal, deleteGoal } = usePlanningStore();
     const { protocols } = useScoreContext();
 
@@ -82,18 +81,28 @@ export function usePlanningLogic({ innerface, isOpen, onClose }: UsePlanningLogi
     const pointsNeeded = Math.max(0, targetScore - currentScore);
 
     const handleSave = async () => {
-        if (!user || !activePersonalityId) return;
+        if (!activeContext) return;
         setIsSubmitting(true);
         try {
-            const uid = activeContext?.type === 'personality' && activeContext.uid ? activeContext.uid : user.uid;
+            // Construct PathContext
+            let context: PathContext | null = null;
+            if (activeContext.type === 'role') {
+                context = { type: 'role', teamId: activeContext.teamId, roleId: activeContext.roleId };
+            } else if (activeContext.type === 'viewer') {
+                context = { type: 'viewer', targetUid: activeContext.targetUid, personalityId: activeContext.personalityId };
+            } else if (activeContext.type === 'personality') {
+                context = { type: 'personality', uid: activeContext.uid, pid: activeContext.pid };
+            }
 
-            await setGoal(uid, activePersonalityId, {
-                innerfaceId: innerface.id,
-                targetScore,
-                balance,
-                actionCounts // Always save what is in state
-            });
-            onClose();
+            if (context) {
+                await setGoal(context, {
+                    innerfaceId: innerface.id,
+                    targetScore,
+                    balance,
+                    actionCounts // Always save what is in state
+                });
+                onClose();
+            }
         } catch (error) {
             console.error(error);
         } finally {
@@ -105,13 +114,22 @@ export function usePlanningLogic({ innerface, isOpen, onClose }: UsePlanningLogi
     const hasExistingPlan = !!goals[innerface.id];
 
     const handleDelete = async () => {
-        if (!user || !activePersonalityId) return;
+        if (!activeContext) return;
         setIsSubmitting(true);
         try {
-            const uid = activeContext?.type === 'personality' && activeContext.uid ? activeContext.uid : user.uid;
+            let context: PathContext | null = null;
+            if (activeContext.type === 'role') {
+                context = { type: 'role', teamId: activeContext.teamId, roleId: activeContext.roleId };
+            } else if (activeContext.type === 'viewer') {
+                context = { type: 'viewer', targetUid: activeContext.targetUid, personalityId: activeContext.personalityId };
+            } else if (activeContext.type === 'personality') {
+                context = { type: 'personality', uid: activeContext.uid, pid: activeContext.pid };
+            }
 
-            await deleteGoal(uid, activePersonalityId, innerface.id);
-            onClose();
+            if (context) {
+                await deleteGoal(context, innerface.id);
+                onClose();
+            }
         } catch (error) {
             console.error(error);
         } finally {
