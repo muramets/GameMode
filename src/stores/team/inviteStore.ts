@@ -208,8 +208,9 @@ export const useInviteStore = create<InviteState>((set) => ({
                 batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'states', newId), {
                     ...data,
                     id: newId,
-                    score: 0,
-                    yesterdayScore: 0,
+                    // Preserve base scores from role template
+                    score: data.score || 0,
+                    yesterdayScore: data.yesterdayScore || 0,
                     protocolIds: newProtocolIds,
                     innerfaceIds: newInnerfaceIds,
                     stateIds: newStateIds
@@ -226,8 +227,9 @@ export const useInviteStore = create<InviteState>((set) => ({
                 batch.set(doc(db, 'users', uid, 'personalities', personalityId, 'innerfaces', newId), {
                     ...data,
                     id: newId,
-                    initialScore: 0,
-                    currentScore: 0,
+                    // Preserve base levels from role template
+                    initialScore: data.initialScore || 0,
+                    currentScore: data.currentScore || data.initialScore || 0,
                     versionTimestamp: new Date().toISOString(),
                     protocolIds: newProtocolIds
                 });
