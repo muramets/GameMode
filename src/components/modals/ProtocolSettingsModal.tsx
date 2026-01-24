@@ -11,6 +11,7 @@ import { EntitySelector } from '../ui/organisms/EntitySelector';
 import { ProtocolGroupSelector } from '../../features/protocols/components/ProtocolGroupSelector';
 import { ProtocolXpSelector } from '../../features/protocols/components/ProtocolXpSelector';
 import { ProtocolInstructionInput } from '../../features/protocols/components/ProtocolInstructionInput';
+import { RichTextEditor } from '../ui/RichTextEditor';
 
 interface ProtocolSettingsModalProps {
     isOpen: boolean;
@@ -156,11 +157,11 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
 
                 <div className="flex flex-col gap-1.5">
                     <InputLabel label="Quick Note" />
-                    <Input
-                        type="text"
+                    <RichTextEditor
                         value={hover}
-                        onChange={e => setHover(e.target.value)}
+                        onChange={setHover}
                         placeholder="Short note shown on tap/hover..."
+                        className="min-h-[100px]"
                     />
                 </div>
 
@@ -198,6 +199,6 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                     />
                 </div>
             </div>
-        </Modal>
+        </Modal >
     );
 }
