@@ -167,9 +167,9 @@ const MenuBar = ({ editor, isExpanded, toggleExpand }: { editor: Editor | null, 
                 </MenuButton>
 
                 <MenuButton
-                    onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-                    isActive={editor.isActive('codeBlock')}
-                    title="Code Block"
+                    onClick={() => editor.chain().focus().toggleCode().run()}
+                    isActive={editor.isActive('code')}
+                    title="Code"
                 >
                     <Code size={16} />
                 </MenuButton>
@@ -326,7 +326,7 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
                         '[&_ul]:list-disc [&_ul]:pl-8 [&_ul]:list-outside [&_ol]:list-decimal [&_ol]:pl-8 [&_ol]:list-outside',
                         '[&_strong]:font-bold',
                         '[&_pre]:bg-sub/20 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:font-mono [&_pre]:my-2 [&_pre]:text-xs [&_pre]:overflow-x-auto',
-                        '[&_code]:bg-transparent [&_code]:p-0 [&_code]:text-inherit', // Reset inline code styles if any, or rely on pre styles
+                        '[&_code]:bg-sub/20 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded-md [&_code]:font-mono [&_code]:text-[0.9em] [&_code]:text-text-primary', // Inline code styles
                         '[&_hr]:my-4 [&_hr]:border-t [&_hr]:border-sub/10 [&_hr]:mx-2', // Custom HR styling
                         'text-sm text-text-primary',
                         isExpanded && 'h-full' // Full height for content div in expanded mode
