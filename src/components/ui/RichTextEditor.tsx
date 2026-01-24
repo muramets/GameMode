@@ -22,101 +22,101 @@ const turndownService = new TurndownService({
     codeBlockStyle: 'fenced'
 })
 
+const MenuButton = ({
+    onClick,
+    isActive,
+    children,
+    title
+}: {
+    onClick: () => void,
+    isActive?: boolean,
+    children: React.ReactNode,
+    title: string
+}) => (
+    <Tooltip>
+        <TooltipTrigger asChild>
+            <button
+                type="button"
+                onClick={onClick}
+                aria-label={title}
+                aria-pressed={isActive}
+                className={clsx(
+                    "p-1.5 rounded-md transition-colors text-sub hover:text-text-primary hover:bg-sub/10",
+                    isActive && "bg-sub/20 text-text-primary"
+                )}
+            >
+                {children}
+            </button>
+        </TooltipTrigger>
+        <TooltipContent>
+            {title}
+        </TooltipContent>
+    </Tooltip>
+)
+
 const MenuBar = ({ editor }: { editor: Editor | null }) => {
     if (!editor) {
         return null
     }
 
-    const Button = ({
-        onClick,
-        isActive,
-        children,
-        title
-    }: {
-        onClick: () => void,
-        isActive?: boolean,
-        children: React.ReactNode,
-        title: string
-    }) => (
-        <Tooltip>
-            <TooltipTrigger asChild>
-                <button
-                    type="button"
-                    onClick={onClick}
-                    aria-label={title}
-                    aria-pressed={isActive}
-                    className={clsx(
-                        "p-1.5 rounded-md transition-colors text-sub hover:text-text-primary hover:bg-sub/10",
-                        isActive && "bg-sub/20 text-text-primary"
-                    )}
-                >
-                    {children}
-                </button>
-            </TooltipTrigger>
-            <TooltipContent>
-                {title}
-            </TooltipContent>
-        </Tooltip>
-    )
-
     return (
         <TooltipProvider>
             <div className="flex items-center gap-1 border-b border-main/10 pb-2 mb-2">
-                <Button
+                <MenuButton
                     onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
                     isActive={editor.isActive('heading', { level: 1 })}
                     title="Heading 1"
                 >
                     <Heading1 size={16} />
-                </Button>
-                <Button
+                </MenuButton>
+                <MenuButton
                     onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
                     isActive={editor.isActive('heading', { level: 2 })}
                     title="Heading 2"
                 >
                     <Heading2 size={16} />
-                </Button>
-                <Button
+                </MenuButton>
+                <MenuButton
                     onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
                     isActive={editor.isActive('heading', { level: 3 })}
                     title="Heading 3"
                 >
                     <Heading3 size={16} />
-                </Button>
+                </MenuButton>
 
                 <div className="w-px h-4 bg-main/10 mx-1" />
 
-                <Button
+                <MenuButton
                     onClick={() => editor.chain().focus().toggleBold().run()}
                     isActive={editor.isActive('bold')}
                     title="Bold"
                 >
                     <Bold size={16} />
-                </Button>
-                <Button
+                </MenuButton>
+                <MenuButton
                     onClick={() => editor.chain().focus().toggleItalic().run()}
                     isActive={editor.isActive('italic')}
                     title="Italic"
                 >
                     <Italic size={16} />
-                </Button>
+                </MenuButton>
 
                 <div className="w-px h-4 bg-main/10 mx-1" />
 
-                <Button
+                <MenuButton
                     onClick={() => editor.chain().focus().toggleBulletList().run()}
                     isActive={editor.isActive('bulletList')}
                     title="Bullet List"
                 >
                     <List size={16} />
-                </Button>
-                <Button
+                </MenuButton>
+                <MenuButton
                     onClick={() => editor.chain().focus().toggleOrderedList().run()}
                     isActive={editor.isActive('orderedList')}
                     title="Ordered List"
                 >
                     <ListOrdered size={16} />
-                </Button>
+                </MenuButton>
             </div>
         </TooltipProvider>
     )

@@ -117,6 +117,9 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
         if (isDisabled || isReadOnly || feedbackType || !rowRef.current) return;
         if (!window.matchMedia('(hover: hover)').matches) return;
 
+        // Restore hover state if coming back from instruction
+        if (!isHovered) setIsHovered(true);
+
         const rect = rowRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const width = rect.width;
@@ -178,10 +181,27 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
     );
 
     /**
+     * RENDER HELPER: ACTION INDICATORS (+/- icons)
+     */
+    const renderActionIndicators = () => (
+        <>
+            <div className="absolute inset-y-0 left-0 w-8 flex items-center justify-center pointer-events-none z-20">
+                <FontAwesomeIcon icon={faMinus} className={`transition-all duration-300 ${isTouchDevice && !isDisabled && !isReadOnly ? 'animate-pulse-soft' : ''} ${effectiveFeedbackType === 'minus' ? 'opacity-100 text-[#ca4754] scale-150' : (effectiveHoverSide === 'left' || (isTouchDevice && !isDisabled && !isReadOnly)) ? 'opacity-100 -translate-x-0 text-[#ca4754]' : 'opacity-0 -translate-x-4'}`} />
+            </div>
+            <div className="absolute inset-y-0 right-0 w-8 flex items-center justify-center pointer-events-none z-20">
+                <FontAwesomeIcon icon={faPlus} className={`transition-all duration-300 ${isTouchDevice && !isDisabled && !isReadOnly ? 'animate-pulse-soft' : ''} ${effectiveFeedbackType === 'plus' ? 'opacity-100 text-[#98c379] scale-150' : (effectiveHoverSide === 'right' || (isTouchDevice && !isDisabled && !isReadOnly)) ? 'opacity-100 translate-x-0 text-[#98c379]' : 'opacity-0 translate-x-4'}`} />
+            </div>
+        </>
+    );
+
+    /**
      * RENDER HELPER: MAIN CONTENT
      */
     const renderMainContent = () => (
         <motion.div layout className="relative z-10 grid grid-cols-[1.2fr_auto_1fr] items-center gap-4 px-4 h-full py-2">
+            {renderBackgroundLayers()}
+            {renderActionIndicators()}
+
             {/* Identity Group */}
             <motion.div layout className={`flex items-center gap-3 min-w-0 pointer-events-none ${DEBUG_LAYOUT ? 'border border-blue-500' : ''}`}>
                 <motion.div layout
@@ -317,19 +337,10 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
         </motion.div>
     );
 
-    /**
-     * RENDER HELPER: ACTION INDICATORS (+/- icons)
-     */
-    const renderActionIndicators = () => (
-        <>
-            <div className="absolute inset-y-0 left-0 w-8 flex items-center justify-center pointer-events-none z-20">
-                <FontAwesomeIcon icon={faMinus} className={`transition-all duration-300 ${isTouchDevice && !isDisabled && !isReadOnly ? 'animate-pulse-soft' : ''} ${effectiveFeedbackType === 'minus' ? 'opacity-100 text-[#ca4754] scale-150' : (effectiveHoverSide === 'left' || (isTouchDevice && !isDisabled && !isReadOnly)) ? 'opacity-100 -translate-x-0 text-[#ca4754]' : 'opacity-0 -translate-x-4'}`} />
-            </div>
-            <div className="absolute inset-y-0 right-0 w-8 flex items-center justify-center pointer-events-none z-20">
-                <FontAwesomeIcon icon={faPlus} className={`transition-all duration-300 ${isTouchDevice && !isDisabled && !isReadOnly ? 'animate-pulse-soft' : ''} ${effectiveFeedbackType === 'plus' ? 'opacity-100 text-[#98c379] scale-150' : (effectiveHoverSide === 'right' || (isTouchDevice && !isDisabled && !isReadOnly)) ? 'opacity-100 translate-x-0 text-[#98c379]' : 'opacity-0 translate-x-4'}`} />
-            </div>
-        </>
-    );
+    const handleInstructionEnter = React.useCallback(() => {
+        setHoverSide(null);
+        setIsHovered(false);
+    }, []);
 
     return (
         <motion.div
@@ -348,29 +359,13 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
                 layout: { duration: 0.3, type: "spring", stiffness: 400, damping: 40 }
             }}
         >
-            <style>{`
-                @keyframes tilt-left { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-1deg); } 75% { transform: rotate(0.5deg); } }
-                @keyframes tilt-right { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(1deg); } 75% { transform: rotate(-0.5deg); } }
-                .animate-tilt-left { animation: tilt-left 0.3s ease-in-out; }
-                .animate-tilt-right { animation: tilt-right 0.3s ease-in-out; }
-                
-                 /* Pulse Animation for Touch Devices */
-                @keyframes pulse-soft {
-                    0%, 100% { opacity: 0.8; transform: scale(1); }
-                    50% { opacity: 1; transform: scale(1.1); }
-                }
-                .animate-pulse-soft { animation: pulse-soft 2s infinite ease-in-out; }
-            `}</style>
-
-            {renderBackgroundLayers()}
             {renderMainContent()}
 
             <ProtocolInstructionViewer
                 instruction={protocol.instruction}
                 isExpanded={isExpanded}
+                onInteractionEnter={handleInstructionEnter}
             />
-
-            {renderActionIndicators()}
         </motion.div>
     );
 });
