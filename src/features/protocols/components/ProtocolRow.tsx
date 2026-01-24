@@ -280,7 +280,7 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
                         <TooltipTrigger asChild>
                             <button
                                 onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
-                                className={`w-5 h-5 flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer pointer-events-auto ${isExpanded ? 'text-main bg-main/10 ring-1 ring-main/50' : 'text-sub/50 hover:text-main hover:bg-sub-alt shadow-sm'}`}
+                                className={`w-5 h-5 flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer pointer-events-auto ${isExpanded ? 'text-main bg-main/10' : 'text-sub/50 hover:text-main hover:bg-sub-alt shadow-sm'}`}
                             >
                                 <FontAwesomeIcon icon={isExpanded ? faChevronUp : faInfoCircle} className="text-[10px]" />
                             </button>
