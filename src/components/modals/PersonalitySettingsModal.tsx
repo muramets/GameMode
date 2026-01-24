@@ -33,7 +33,7 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
         name, setName,
         description, setDescription,
         color, setColor,
-        avatar, setAvatar
+        avatar, setAvatar,
     } = formState;
 
     const {
@@ -143,7 +143,7 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
                 </>
             }
         >
-            <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto custom-scrollbar px-1">
+            <div className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto custom-scrollbar px-1">
                 {/* Avatar Section - Centered and Large */}
                 <div className="flex flex-col items-center gap-2">
                     <InputLabel label="Profile Picture" />
@@ -218,6 +218,109 @@ export function PersonalitySettingsModal({ isOpen, onClose, personalityId }: Per
                         className="w-full h-14 bg-sub-alt border border-transparent rounded-lg px-3 py-4 text-sm text-text-primary placeholder:text-sub font-mono focus:outline-none focus:border-white/10 focus:bg-sub transition-colors resize-none"
                     />
                 </div>
+
+                <div className="flex flex-col gap-3 w-full">
+                    <div className="flex items-center justify-between">
+                        <InputLabel label="Mottos" />
+                        <button
+                            type="button"
+                            onClick={handlers.addMotto}
+                            className="text-[10px] uppercase font-bold text-main hover:text-white transition-colors flex items-center gap-1"
+                        >
+                            <span>+ Add Motto</span>
+                        </button>
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                        {formState.mottos.map((mottoItem) => (
+                            <div key={mottoItem.id} className="flex gap-4 items-start w-full group/motto animate-in fade-in slide-in-from-top-2 duration-300">
+                                {/* Motto Textarea (Larger width) */}
+                                <div className="flex-1 flex flex-col gap-1.5">
+                                    <textarea
+                                        value={mottoItem.text}
+                                        onChange={e => {
+                                            handlers.updateMotto(mottoItem.id, e.target.value);
+                                            // Auto-resize
+                                            e.target.style.height = 'auto'; // Reset to calculate height
+                                            e.target.style.height = `${Math.max(80, e.target.scrollHeight)}px`;
+                                        }}
+                                        ref={(el) => {
+                                            if (el) {
+                                                // Initial resize on mount
+                                                el.style.height = 'auto';
+                                                el.style.height = `${Math.max(80, el.scrollHeight)}px`;
+                                            }
+                                        }}
+                                        placeholder="e.g. Focus on the process..."
+                                        className="w-full min-h-[80px] bg-sub-alt border border-transparent rounded-lg px-3 py-2.5 text-sm text-text-primary placeholder:text-sub font-mono focus:outline-none focus:border-white/10 focus:bg-sub transition-colors resize-none overflow-hidden"
+                                    />
+                                </div>
+
+                                {/* Controls Container */}
+                                <div className="flex flex-col gap-2 items-center w-[120px]">
+                                    {/* Show Toggle */}
+                                    <div className="w-full bg-sub-alt rounded-lg p-1 flex gap-1 h-[32px]">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (mottoItem.isActive) {
+                                                    handlers.handleMottoToggle(mottoItem.id);
+                                                }
+                                            }}
+                                            className={`flex-1 rounded-md text-[10px] font-mono uppercase font-bold transition-all ${!mottoItem.isActive
+                                                ? 'bg-sub text-text-primary shadow-sm'
+                                                : 'text-sub hover:text-text-primary'}`}
+                                        >
+                                            Off
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={!mottoItem.text.trim()}
+                                            onClick={() => {
+                                                if (!mottoItem.isActive && mottoItem.text.trim()) {
+                                                    handlers.handleMottoToggle(mottoItem.id);
+                                                    // Reset "Close for today" state so banner reappears
+                                                    if (personalityId) {
+                                                        localStorage.removeItem(`motto_closed_${personalityId}`);
+                                                        window.dispatchEvent(new CustomEvent('personality-motto-reset', {
+                                                            detail: { personalityId }
+                                                        }));
+                                                    }
+                                                }
+                                            }}
+                                            className={`flex-1 rounded-md text-[10px] font-mono uppercase font-bold transition-all ${mottoItem.isActive
+                                                ? 'bg-main text-black shadow-sm'
+                                                : 'text-sub'
+                                                } ${!mottoItem.text.trim()
+                                                    ? 'opacity-50 cursor-not-allowed'
+                                                    : mottoItem.isActive ? '' : 'hover:text-text-primary'
+                                                }`}
+                                        >
+                                            On
+                                        </button>
+                                    </div>
+
+                                    {/* Delete Button (only if more than 1?) Or always allowed? Plan says "Delete Button". */}
+                                    <button
+                                        type="button"
+                                        onClick={() => handlers.deleteMotto(mottoItem.id)}
+                                        className="text-[10px] uppercase font-bold text-sub hover:text-error transition-colors opacity-0 group-hover/motto:opacity-100"
+                                    >
+                                        <FontAwesomeIcon icon={faTrash} className="mr-1" />
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+
+                        {formState.mottos.length === 0 && (
+                            <div className="text-center py-4 border-2 border-dashed border-sub-alt rounded-lg">
+                                <span className="text-xs text-sub font-mono">No mottos added.</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
             </div>
 
         </Modal >

@@ -2,6 +2,7 @@ import { useLocation } from 'react-router-dom';
 import { Header } from './Header';
 import { Navigation } from './Navigation';
 import { ViewerBanner } from './ViewerBanner';
+import { PersonalityMottoBanner } from './PersonalityMottoBanner';
 import { useSwipeNavigation } from '../../hooks/useSwipeNavigation';
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -13,6 +14,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     return (
         <>
             <ViewerBanner />
+            <PersonalityMottoBanner />
             <div id="app" className="content-grid transition-colors duration-300 font-mono">
                 <Header />
                 <main className="w-full h-full flex flex-col gap-4">

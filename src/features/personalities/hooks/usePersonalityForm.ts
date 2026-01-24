@@ -4,6 +4,8 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { usePersonalityStore } from '../../../stores/personalityStore';
 import { uploadAvatar } from '../../../utils/storageUtils';
 import { resizeImage } from '../../../utils/imageUtils';
+import type { Motto } from '../../../types/personality';
+
 
 interface UsePersonalityFormProps {
     personalityId: string | null;
@@ -21,6 +23,7 @@ export function usePersonalityForm({ personalityId, onClose, isOpen }: UsePerson
     const [icon, setIcon] = useState('user');
     const [color, setColor] = useState('#e2b714');
     const [avatar, setAvatar] = useState('');
+    const [mottos, setMottos] = useState<Motto[]>([]);
 
     // UI State
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
@@ -49,6 +52,20 @@ export function usePersonalityForm({ personalityId, onClose, isOpen }: UsePerson
                     setIcon(p.icon || 'user');
                     setColor(p.iconColor || '#e2b714');
                     setAvatar(p.avatar || '');
+
+                    // Migration Logic: String -> Array
+                    if (p.mottos && p.mottos.length > 0) {
+                        setMottos(p.mottos);
+                    } else if (p.motto) {
+                        // Migrate legacy motto to first item
+                        setMottos([{
+                            id: Date.now().toString(),
+                            text: p.motto,
+                            isActive: p.showMotto || false
+                        }]);
+                    } else {
+                        setMottos([]);
+                    }
                 }
             } else {
                 // New Mode
@@ -57,6 +74,7 @@ export function usePersonalityForm({ personalityId, onClose, isOpen }: UsePerson
                 setIcon('user');
                 setColor('#e2b714');
                 setAvatar('');
+                setMottos([]);
             }
             setIsConfirmingDelete(false);
             setTempImage(null);
@@ -67,6 +85,46 @@ export function usePersonalityForm({ personalityId, onClose, isOpen }: UsePerson
         prevIsOpen.current = isOpen;
         prevId.current = personalityId;
     }, [isOpen, personalityId, personalities]);
+
+    // Motto Handlers
+    const addMotto = () => {
+        setMottos([...mottos, {
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+            text: '',
+            isActive: false
+        }]);
+    };
+
+    const updateMotto = (id: string, text: string) => {
+        setMottos(mottos.map(m => m.id === id ? { ...m, text } : m));
+    };
+
+    const deleteMotto = (id: string) => {
+        setMottos(mottos.filter(m => m.id !== id));
+    };
+
+    // Simplified Toggle Logic
+    const handleMottoToggle = (id: string) => {
+        setMottos(prev => {
+            const target = prev.find(m => m.id === id);
+            if (!target) return prev;
+
+            const willBeActive = !target.isActive;
+
+            return prev.map(m => {
+                if (m.id === id) {
+                    return { ...m, isActive: willBeActive };
+                }
+                // If we are activating a new one, all others must be false
+                if (willBeActive) {
+                    return { ...m, isActive: false };
+                }
+                // If we differ deactivating, others remain as they were (which should be false anyway if only 1 allowed)
+                return m;
+            });
+        });
+    };
+
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
@@ -82,12 +140,19 @@ export function usePersonalityForm({ personalityId, onClose, isOpen }: UsePerson
                 finalAvatarUrl = await uploadAvatar(user.uid, avatarFile);
             }
 
+            // Determine legacy fields for backward compatibility (optional, but good for safety)
+            const activeMotto = mottos.find(m => m.isActive);
+
             const data = {
                 name,
                 description,
                 icon,
                 iconColor: color,
-                avatar: finalAvatarUrl
+                avatar: finalAvatarUrl,
+                mottos,
+                // Legacy sync
+                motto: activeMotto ? activeMotto.text : (mottos.length > 0 ? mottos[0].text : ''),
+                showMotto: !!activeMotto
             };
 
             if (personalityId) {
@@ -164,7 +229,8 @@ export function usePersonalityForm({ personalityId, onClose, isOpen }: UsePerson
             description, setDescription,
             icon, setIcon,
             color, setColor,
-            avatar, setAvatar
+            avatar, setAvatar,
+            mottos, setMottos
         },
         uiState: {
             isConfirmingDelete,
@@ -180,7 +246,11 @@ export function usePersonalityForm({ personalityId, onClose, isOpen }: UsePerson
             handleDelete,
             handleFileSelect,
             handleCropComplete,
-            handleCancelCrop
+            handleCancelCrop,
+            addMotto,
+            updateMotto,
+            deleteMotto,
+            handleMottoToggle
         }
     };
 }

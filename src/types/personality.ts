@@ -1,8 +1,17 @@
 
+export interface Motto {
+    id: string;
+    text: string;
+    isActive: boolean;
+}
+
 export interface Personality {
     id: string;
     name: string;
     description?: string;
+    motto?: string;
+    showMotto?: boolean;
+    mottos?: Motto[];
     avatar?: string; // Emoji or URL
     icon?: string; // FontAwesome icon code (e.g. 'fa-user', 'user')
     iconColor?: string; // Hex code for accent
