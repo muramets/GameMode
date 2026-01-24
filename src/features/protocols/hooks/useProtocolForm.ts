@@ -92,7 +92,7 @@ export function useProtocolForm({ protocolId, onClose, isOpen }: UseProtocolForm
                 weight: Number(xp) / 100,
                 targets,
                 color,
-                instruction: hasInstruction ? instruction : undefined,
+                instruction: hasInstruction ? instruction : '',
             };
 
             if (protocolId) {
