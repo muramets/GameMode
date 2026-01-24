@@ -40,7 +40,6 @@ export const PRESET_COLORS = [
     '#61afef', // Sky Blue
     '#b4babe', // Gray Blue
     '#81bf91', // Pale Green
-    '#656669', // Dark Gray (text-sub)
 ];
 
 export const DEFAULT_STATE_COLOR = '#7fb3d3'; // Blue 
