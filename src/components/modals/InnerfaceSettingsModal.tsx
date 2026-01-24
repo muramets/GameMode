@@ -10,6 +10,7 @@ import { EntitySelector } from '../ui/organisms/EntitySelector';
 import { AppIcon } from '../ui/atoms/AppIcon';
 import { InnerfaceGroupSelector } from '../../features/innerfaces/components/InnerfaceGroupSelector';
 import { PowerIcon } from '../../features/innerfaces/components/PowerIcon';
+import { RichTextEditor } from '../ui/RichTextEditor';
 
 interface InnerfaceSettingsModalProps {
     isOpen: boolean;
@@ -132,11 +133,11 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
 
                 <div className="flex flex-col gap-1.5">
                     <InputLabel label="Quick Note" />
-                    <Input
-                        type="text"
+                    <RichTextEditor
                         value={hover}
-                        onChange={e => setHover(e.target.value)}
+                        onChange={setHover}
                         placeholder="Short note shown on tap/hover..."
+                        className="min-h-[100px]"
                     />
                 </div>
 
