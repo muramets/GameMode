@@ -2,11 +2,15 @@ import { useEditor, EditorContent, Editor } from '@tiptap/react'
 import { createPortal } from 'react-dom'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
+import { Color } from '@tiptap/extension-color'
+import { TextStyle } from '@tiptap/extension-text-style'
 import { marked } from 'marked'
 import TurndownService from 'turndown'
-import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Maximize, Minimize } from 'lucide-react'
+import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Maximize, Minimize, Droplet } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
+import * as Popover from '@radix-ui/react-popover'
+import { PRESET_COLORS } from '../../constants/common'
 
 interface RichTextEditorProps {
     value: string
@@ -22,6 +26,11 @@ const turndownService = new TurndownService({
     headingStyle: 'atx',
     codeBlockStyle: 'fenced'
 })
+
+// preserve color styles (spans with style attribute)
+turndownService.keep(['span'])
+
+
 
 const MenuButton = ({
     onClick,
@@ -54,6 +63,71 @@ const MenuButton = ({
         </TooltipContent>
     </Tooltip>
 )
+
+const EditorColorPicker = ({ editor }: { editor: Editor }) => {
+    const currentColor = editor.getAttributes('textStyle').color
+
+    return (
+        <Popover.Root>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Popover.Trigger asChild>
+                        <button
+                            type="button"
+                            aria-label="Text Color"
+                            className={clsx(
+                                "p-1.5 rounded-md transition-colors text-sub hover:text-text-primary hover:bg-sub/10",
+                                currentColor && "text-text-primary bg-sub/10"
+                            )}
+                        >
+                            <div className="relative">
+                                <Droplet size={16} />
+                                {currentColor && (
+                                    <div
+                                        className="absolute -bottom-1 left-0 right-0 h-0.5 rounded-full"
+                                        style={{ backgroundColor: currentColor }}
+                                    />
+                                )}
+                            </div>
+                        </button>
+                    </Popover.Trigger>
+                </TooltipTrigger>
+                <TooltipContent>Text Color</TooltipContent>
+            </Tooltip>
+
+            <Popover.Portal>
+                <Popover.Content
+                    className="z-[10000] p-2 bg-sub-alt border border-white/10 rounded-xl shadow-2xl flex flex-col gap-2 min-w-[140px] animate-in fade-in zoom-in-95 duration-200"
+                    sideOffset={5}
+                >
+                    <div className="grid grid-cols-5 gap-1.5">
+                        <button
+                            type="button"
+                            onClick={() => editor.chain().focus().unsetColor().run()}
+                            className="w-5 h-5 rounded-full flex items-center justify-center border border-sub/20 transition-transform hover:scale-125 hover:border-white/50 cursor-pointer relative"
+                            title="Reset color"
+                        >
+                            <div className="w-full h-px bg-sub/50 rotate-45 absolute" />
+                        </button>
+                        {PRESET_COLORS.map(c => (
+                            <button
+                                key={c}
+                                type="button"
+                                onClick={() => editor.chain().focus().setColor(c).run()}
+                                className={clsx(
+                                    "w-5 h-5 rounded-full transition-transform hover:scale-125 hover:ring-2 hover:ring-white/30 cursor-pointer",
+                                    currentColor === c && "ring-2 ring-white/50"
+                                )}
+                                style={{ backgroundColor: c }}
+                            />
+                        ))}
+                    </div>
+                    <Popover.Arrow className="fill-sub-alt" />
+                </Popover.Content>
+            </Popover.Portal>
+        </Popover.Root>
+    )
+}
 
 const MenuBar = ({ editor, isExpanded, toggleExpand }: { editor: Editor | null, isExpanded: boolean, toggleExpand: () => void }) => {
     if (!editor) {
@@ -102,6 +176,8 @@ const MenuBar = ({ editor, isExpanded, toggleExpand }: { editor: Editor | null, 
                     <Italic size={16} />
                 </MenuButton>
 
+                <EditorColorPicker editor={editor} />
+
                 <div className="w-px h-4 bg-sub/10 mx-1" />
 
                 <MenuButton
@@ -144,6 +220,8 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
         return marked.parse(value, { async: false }) as string
     })
 
+    const [, forceUpdate] = useState(0)
+
     const editor = useEditor({
         extensions: [
             StarterKit.configure({
@@ -154,12 +232,17 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
             Placeholder.configure({
                 placeholder: placeholder || 'Write something...',
             }),
+            TextStyle,
+            Color,
         ],
         content: initialContent,
         onUpdate: ({ editor }) => {
             const html = editor.getHTML()
             const markdown = turndownService.turndown(html)
             onChange(markdown)
+        },
+        onTransaction: () => {
+            forceUpdate(n => n + 1)
         },
     })
 
@@ -183,14 +266,31 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
         })
     }, [isExpanded, editor])
 
-    // If value changes externally (and differs significantly), we might want to update editor.
-    // However, handling controlled updates in Tiptap with markdown conversion is tricky.
-    // For now, we assume this is a simple input where typed changes flow up.
-    // If we need to support resetting the form, we'll need a useEffect to watch `value`.
+    // Sync editor content when value changes externally (e.g. loaded from DB)
     useEffect(() => {
-        if (editor && value === '') {
-            if (editor.getText() !== '') {
-                editor.commands.setContent('')
+        if (!editor) return
+
+        const currentHTML = editor.getHTML()
+        const currentMarkdown = turndownService.turndown(currentHTML)
+
+        // Only update if the value is significantly different to avoid cursor jumps / loops
+        if (value !== currentMarkdown) {
+            // Check if they are effectively the same (parsing markdown to HTML and back can cause subtle diffs)
+            // A simple check is: if value is empty and editor is not, clear it.
+            // If value is present, and editor is empty, set it.
+            // For partial updates, it's riskier, but let's try setting content if they differ.
+
+            // Normalize current editor content to check against value
+            const valueHTML = marked.parse(value, { async: false }) as string
+
+            // Compare HTML content roughly or just trust the markdown diff?
+            // Since we use markdown as the source of truth for the form, comparing markdown is best.
+            // However, markdown generators vary. 
+            // Let's rely on: if the editor is empty and value provides something, set it.
+            // If editor has content and value changes (e.g. reset), set it.
+
+            if (!editor.isFocused) {
+                editor.commands.setContent(valueHTML)
             }
         }
     }, [value, editor])

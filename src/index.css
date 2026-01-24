@@ -10,6 +10,15 @@
   }
 }
 
+/* Rich Text Color Inheritance Override 
+   Ensures that if value comes from RichTextEditor (via span with style),
+   nested strong/em tags respect that color instead of forcing text-primary.
+*/
+.rich-text-viewer span[style*="color"] strong,
+.rich-text-viewer span[style*="color"] em {
+  color: inherit !important;
+}
+
 html {
   font-size: 16px !important;
 }

@@ -1,5 +1,7 @@
 import React, { useState, useRef, useMemo, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
 import type { Protocol } from '../types';
 import type { Innerface } from '../../innerfaces/types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -250,8 +252,16 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
 
                             {/* Quick Note */}
                             {protocol.hover && (
-                                <div className="text-center text-xs">
-                                    {protocol.hover}
+                                <div className="rich-text-viewer text-center text-xs">
+                                    <ReactMarkdown
+                                        rehypePlugins={[rehypeRaw]}
+                                        components={{
+                                            p: ({ ...props }) => <span {...props} />, // Render paragraphs as spans
+                                            strong: ({ ...props }) => <strong className="font-bold text-text-primary" {...props} />,
+                                            em: ({ ...props }) => <em className="italic text-text-primary/80" {...props} />,
+                                        }}>
+                                        {protocol.hover}
+                                    </ReactMarkdown>
                                 </div>
                             )}
                         </TooltipContent>
