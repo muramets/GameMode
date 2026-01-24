@@ -4,7 +4,7 @@ import { usePersonalityStore } from '../../../stores/personalityStore';
 import { useRoleStore } from '../../../stores/team';
 import { useScoreContext } from '../../../contexts/ScoreContext';
 import { getTierColor } from '../../../utils/colorUtils';
-import { calculateLevel, scoreToXP } from '../../../utils/xpUtils';
+import { calculateWeightedLevel } from '../../../utils/xpUtils';
 import { WeeklyFocus } from './WeeklyFocus';
 import { Avatar } from '../../../components/ui/atoms/Avatar';
 import { UserStats } from './UserStats';
@@ -36,18 +36,9 @@ export function UserProfile() {
         displayIcon = activePersonality?.icon || 'user';
     }
 
-    // 1. Level calculation: Average of Innerfaces only (States are derivative, so excluding them avoids double counting)
+    // 1. Level calculation: Weighted Average based on Priority
     const activeInnerfaces = innerfaces.filter(i => !i.deletedAt);
-    const allScores = [
-        ...activeInnerfaces.map(i => i.currentScore || 0)
-    ];
-
-    const averageScore = allScores.length > 0
-        ? allScores.reduce((a, b) => a + b, 0) / allScores.length
-        : 0;
-
-    const totalXP = scoreToXP(averageScore);
-    const { level, currentLevelXP, progress } = calculateLevel(totalXP);
+    const { level, currentLevelXP, progress, totalXP } = calculateWeightedLevel(activeInnerfaces);
     const tierColor = getTierColor(level);
 
     // Calculate next TIER color (not just next level) for a visible motivational gradient

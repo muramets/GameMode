@@ -43,6 +43,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
         protocolIds,
 
         category, setCategory,
+        priority, setPriority, // NEW: Priority State
         decayEnabled, setDecayEnabled,
         decayAmount, setDecayAmount,
         decayFrequency, setDecayFrequency,
@@ -160,6 +161,48 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                             color={color}
                             width="w-full"
                         />
+                    </div>
+                </div>
+
+                {/* Priority Selector */}
+                <div className="flex flex-col gap-1.5">
+                    <InputLabel label="Impact on your personality level" />
+
+                    <div className="bg-sub-alt rounded-lg p-1 flex gap-1">
+                        <button
+                            type="button"
+                            onClick={() => setPriority('low')}
+                            className={`flex-1 flex flex-col items-center justify-center gap-0.5 px-2 py-3 rounded-md transition-all ${priority === 'low'
+                                ? 'bg-sub/50 text-text-primary shadow-sm ring-1 ring-white/10'
+                                : 'text-sub hover:bg-sub/20 hover:text-text-primary'
+                                }`}
+                        >
+                            <span className="text-[10px] font-mono uppercase font-bold">Nice to have</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setPriority('medium')}
+                            className={`flex-1 flex flex-col items-center justify-center gap-0.5 px-2 py-3 rounded-md transition-all ${priority === 'medium'
+                                ? 'bg-sub text-text-primary shadow-sm ring-1 ring-white/20'
+                                : 'text-sub hover:bg-sub/20 hover:text-text-primary'
+                                }`}
+                        >
+                            <span className="text-[10px] font-mono uppercase font-bold">Standard</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setPriority('high')}
+                            className={`flex-1 flex flex-col items-center justify-center gap-0.5 px-2 py-3 rounded-md transition-all ${priority === 'high'
+                                ? 'bg-main text-black shadow-sm shadow-main/20'
+                                : 'text-sub hover:bg-sub/20 hover:text-text-primary'
+                                }`}
+                        >
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] font-mono uppercase font-bold">Must Have</span>
+                            </div>
+                        </button>
                     </div>
                 </div>
 

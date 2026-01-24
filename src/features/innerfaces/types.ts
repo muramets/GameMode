@@ -22,4 +22,5 @@ export interface Innerface {
         interval?: number; // NEW: multiplier for frequency (defaults to 1)
         lastDecayDate?: string; // ISO Date of last applied decay
     };
+    priority?: 'low' | 'medium' | 'high'; // NEW: Impact on overall level (Nice to have | Standard | Must Have)
 }

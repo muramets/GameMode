@@ -7,6 +7,53 @@ export interface LevelInfo {
     totalXP: number;
 }
 
+
+export const PRIORITY_WEIGHTS = {
+    low: 1,      // Nice to have
+    medium: 3,   // Standard
+    high: 10     // Must have
+};
+
+/**
+ * Calculates weighted user level based on innerface priorities.
+ * 
+ * Business Logic: "Weighted Mastery"
+ * Instead of a simple average (where adding a Level 0 hobby drags down a Level 10 master),
+ * we use a Weighted Average based on impact priority:
+ * - High Priority (Must Have): Weight x10 (Forms the core of personality)
+ * - Medium Priority (Standard): Weight x3
+ * - Low Priority (Nice to have): Weight x1 (Bonus skills, minimal impact on drop)
+ * 
+ * Formula: (Sum of (Level * Weight)) / (Sum of Weights)
+ */
+export function calculateWeightedLevel(innerfaces: { currentScore?: number, priority?: 'low' | 'medium' | 'high', deletedAt?: string }[]): LevelInfo {
+    const activeInnerfaces = innerfaces.filter(i => !i.deletedAt);
+
+    if (activeInnerfaces.length === 0) {
+        return { level: 0, currentLevelXP: 0, progress: 0, totalXP: 0 };
+    }
+
+    let totalWeightedScore = 0;
+    let totalWeight = 0;
+
+    activeInnerfaces.forEach(iface => {
+        const score = iface.currentScore || 0;
+        const priority = iface.priority || 'medium'; // Default to medium
+        const weight = PRIORITY_WEIGHTS[priority];
+
+        totalWeightedScore += score * weight;
+        totalWeight += weight;
+    });
+
+    const weightedAverageScore = totalWeight > 0 ? totalWeightedScore / totalWeight : 0;
+
+    // Convert this average score (e.g. 9.09) back to Total XP (909) and Level (9)
+    const totalXP = scoreToXP(weightedAverageScore);
+
+    // Reuse existing level calc logic which handles the "XP -> Level + Progress" breakdown
+    return calculateLevel(totalXP);
+}
+
 /**
  * Calculates level from total XP (Infinite Levels, 100 XP per level).
  * @param totalXP Total accumulated XP

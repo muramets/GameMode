@@ -54,6 +54,7 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
     const [hover, setHover] = useState('');
     const [protocolIds, setProtocolIds] = useState<string[]>([]);
     const [category, setCategory] = useState<PowerCategory>(null);
+    const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
 
     // Decay Settings
     const [decayEnabled, setDecayEnabled] = useState(false);
@@ -91,6 +92,7 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
                 setHover(currentInnerface.hover || '');
                 setProtocolIds(initialProtocolIds);
                 setCategory(currentInnerface.category || null);
+                setPriority(currentInnerface.priority || 'medium');
 
                 if (currentInnerface.decaySettings) {
                     setDecayEnabled(currentInnerface.decaySettings.enabled);
@@ -115,6 +117,7 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
                 setHover('');
                 setProtocolIds([]);
                 setCategory(null);
+                setPriority('medium');
             }
 
             setIsGroupDropdownOpen(false);
@@ -151,6 +154,7 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
                 hover,
 
                 category,
+                priority,
                 decaySettings: {
                     enabled: decayEnabled,
                     // Convert UI XP (e.g. 1) to DB weight (e.g. 0.01)
@@ -287,6 +291,7 @@ export function useInnerfaceForm({ innerfaceId, onClose, isOpen }: UseInnerfaceF
             hover, setHover,
             protocolIds, setProtocolIds,
             category, setCategory,
+            priority, setPriority,
             decayEnabled, setDecayEnabled,
             decayAmount, setDecayAmount,
             decayFrequency, setDecayFrequency,

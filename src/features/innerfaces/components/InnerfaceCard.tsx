@@ -184,7 +184,7 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
                 </div>
 
                 {/* Right: Big Level Number */}
-                <div className="flex flex-col items-end">
+                <div className="flex flex-col items-end h-[42px] justify-end">
                     <div className="flex items-baseline gap-1">
                         <div className="flex flex-col items-center justify-end relative">
                             {currentScore !== innerface.initialScore && (
@@ -197,8 +197,12 @@ export function InnerfaceCard({ innerface, onEdit, onPlanning, forceHover, hasGo
                             </span>
                         </div>
                         <div
-                            className="text-[2.2rem] font-medium font-mono leading-none tracking-tight transition-colors duration-300"
-                            style={{ color: tierColor }}
+                            className="font-medium font-mono leading-none tracking-tight transition-all duration-300"
+                            style={{
+                                color: tierColor,
+                                fontSize: innerface.priority === 'low' ? '1.5rem' : (innerface.priority === 'high' ? '3.4rem' : '2.2rem'),
+                                lineHeight: '0.8'
+                            }}
                         >
                             {level}
                         </div>
