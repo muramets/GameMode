@@ -259,6 +259,7 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
                                             p: ({ ...props }) => <span {...props} />, // Render paragraphs as spans
                                             strong: ({ ...props }) => <strong className="font-bold text-text-primary" {...props} />,
                                             em: ({ ...props }) => <em className="italic text-text-primary/80" {...props} />,
+                                            hr: ({ ...props }) => <hr className="my-2 border-t border-sub/10 w-full block" {...props} />,
                                         }}>
                                         {protocol.hover}
                                     </ReactMarkdown>

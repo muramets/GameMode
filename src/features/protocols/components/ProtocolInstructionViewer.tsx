@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
-import ReactMarkdown, { type Components } from 'react-markdown';
+import React from 'react';
+import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import { motion, AnimatePresence } from 'framer-motion';
+import clsx from 'clsx';
 
 interface ProtocolInstructionViewerProps {
     instruction?: string;
@@ -10,19 +11,6 @@ interface ProtocolInstructionViewerProps {
 }
 
 export const ProtocolInstructionViewer = React.memo(({ instruction, isExpanded, onInteractionEnter }: ProtocolInstructionViewerProps) => {
-    const markdownComponents: Components = useMemo(() => ({
-        h1: ({ ...props }) => <h1 className="text-base font-bold text-text-primary mb-2 mt-4 first:mt-0" {...props} />,
-        h2: ({ ...props }) => <h2 className="text-sm font-bold text-text-primary mb-2 mt-4" {...props} />,
-        h3: ({ ...props }) => <h3 className="text-xs font-bold text-text-primary mb-1 mt-3" {...props} />,
-        p: ({ ...props }) => <p className="mb-2 last:mb-0" {...props} />,
-        ul: ({ ...props }) => <ul className="list-disc pl-4 mb-2 space-y-1" {...props} />,
-        ol: ({ ...props }) => <ol className="list-decimal pl-4 mb-2 space-y-1" {...props} />,
-        li: ({ ...props }) => <li className="pl-1" {...props} />,
-        strong: ({ ...props }) => <strong className="font-bold" {...props} />,
-        em: ({ ...props }) => <em className="italic" {...props} />,
-        code: ({ ...props }) => <code className="bg-sub/20 rounded px-1 py-0.5 text-[10px] font-mono text-text-primary" {...props} />,
-        blockquote: ({ ...props }) => <blockquote className="border-l-2 border-main/50 pl-3 italic text-sub my-2" {...props} />,
-    }), []);
     return (
         <AnimatePresence>
             {isExpanded && instruction && (
@@ -43,9 +31,19 @@ export const ProtocolInstructionViewer = React.memo(({ instruction, isExpanded, 
                         onTouchStart={(e) => e.stopPropagation()}
                     >
                         <ReactMarkdown rehypePlugins={[rehypeRaw]} components={{
-                            ...markdownComponents,
-                            strong: ({ ...props }) => <strong className="font-bold text-text-primary" {...props} />,
-                            em: ({ ...props }) => <em className="italic text-text-primary/80" {...props} />,
+                            h1: ({ className, style, ...props }) => <h1 className={clsx("text-base font-bold text-text-primary mb-2 mt-4 first:mt-0", className)} style={style} {...props} />,
+                            h2: ({ className, style, ...props }) => <h2 className={clsx("text-sm font-bold text-text-primary mb-2 mt-4", className)} style={style} {...props} />,
+                            h3: ({ className, style, ...props }) => <h3 className={clsx("text-xs font-bold text-text-primary mb-1 mt-3", className)} style={style} {...props} />,
+                            p: ({ className, style, ...props }) => <p className={clsx("mb-2 last:mb-0", className)} style={style} {...props} />,
+                            div: ({ className, style, ...props }) => <div className={className} style={style} {...props} />,
+                            ul: ({ className, style, ...props }) => <ul className={clsx("list-disc pl-4 mb-2 space-y-1", className)} style={style} {...props} />,
+                            ol: ({ className, style, ...props }) => <ol className={clsx("list-decimal pl-4 mb-2 space-y-1", className)} style={style} {...props} />,
+                            li: ({ className, style, ...props }) => <li className={clsx("pl-1", className)} style={style} {...props} />,
+                            strong: ({ className, style, ...props }) => <strong className={clsx("font-bold text-text-primary", className)} style={style} {...props} />,
+                            em: ({ className, style, ...props }) => <em className={clsx("italic text-text-primary/80", className)} style={style} {...props} />,
+                            code: ({ className, style, ...props }) => <code className={clsx("bg-sub/20 rounded px-1 py-0.5 text-[10px] font-mono text-text-primary", className)} style={style} {...props} />,
+                            blockquote: ({ className, style, ...props }) => <blockquote className={clsx("border-l-2 border-main/50 pl-3 italic text-sub my-2", className)} style={style} {...props} />,
+                            hr: ({ className, style, ...props }) => <hr className={clsx("my-4 border-t border-sub/10 w-full", className)} style={style} {...props} />,
                         }}>
                             {instruction}
                         </ReactMarkdown>

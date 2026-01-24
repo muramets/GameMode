@@ -4,10 +4,11 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import { Color } from '@tiptap/extension-color'
 import { TextStyle } from '@tiptap/extension-text-style'
+import TextAlign from '@tiptap/extension-text-align'
 import { marked } from 'marked'
 import TurndownService from 'turndown'
-import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Maximize, Minimize, Droplet, Code } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Maximize, Minimize, Droplet, Code, AlignLeft, AlignCenter, AlignRight, Minus } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import * as Popover from '@radix-ui/react-popover'
 import { PRESET_COLORS } from '../../constants/common'
@@ -20,17 +21,6 @@ interface RichTextEditorProps {
 }
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './atoms/Tooltip'
-
-// Initialize Turndown service outside component to avoid recreation on every render
-const turndownService = new TurndownService({
-    headingStyle: 'atx',
-    codeBlockStyle: 'fenced'
-})
-
-// preserve color styles (spans with style attribute)
-turndownService.keep(['span'])
-
-
 
 const MenuButton = ({
     onClick,
@@ -136,7 +126,7 @@ const MenuBar = ({ editor, isExpanded, toggleExpand }: { editor: Editor | null, 
 
     return (
         <TooltipProvider>
-            <div className="flex items-center gap-1 border-b border-sub/10 pb-2 mb-2">
+            <div className="flex items-center gap-1 border-b border-sub/10 pb-2 mb-2 flex-wrap">
                 <MenuButton
                     onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
                     isActive={editor.isActive('heading', { level: 1 })}
@@ -189,6 +179,39 @@ const MenuBar = ({ editor, isExpanded, toggleExpand }: { editor: Editor | null, 
                 <div className="w-px h-4 bg-sub/10 mx-1" />
 
                 <MenuButton
+                    onClick={() => editor.chain().focus().setTextAlign('left').run()}
+                    isActive={editor.isActive({ textAlign: 'left' })}
+                    title="Align Left"
+                >
+                    <AlignLeft size={16} />
+                </MenuButton>
+                <MenuButton
+                    onClick={() => editor.chain().focus().setTextAlign('center').run()}
+                    isActive={editor.isActive({ textAlign: 'center' })}
+                    title="Align Center"
+                >
+                    <AlignCenter size={16} />
+                </MenuButton>
+                <MenuButton
+                    onClick={() => editor.chain().focus().setTextAlign('right').run()}
+                    isActive={editor.isActive({ textAlign: 'right' })}
+                    title="Align Right"
+                >
+                    <AlignRight size={16} />
+                </MenuButton>
+
+                <div className="w-px h-4 bg-sub/10 mx-1" />
+
+                <MenuButton
+                    onClick={() => editor.chain().focus().setHorizontalRule().run()}
+                    title="Divider"
+                >
+                    <Minus size={16} />
+                </MenuButton>
+
+                <div className="w-px h-4 bg-sub/10 mx-1" />
+
+                <MenuButton
                     onClick={() => editor.chain().focus().toggleBulletList().run()}
                     isActive={editor.isActive('bulletList')}
                     title="Bullet List"
@@ -228,6 +251,38 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
         return marked.parse(value, { async: false }) as string
     })
 
+    // Initialize Turndown service - memoized to avoid recreation
+    const turndownService = React.useMemo(() => {
+        const service = new TurndownService({
+            headingStyle: 'atx',
+            codeBlockStyle: 'fenced'
+        })
+
+        // preserve color styles
+        service.keep(['span'])
+
+        // preserve text-align styles using a custom rule to force HTML output
+        service.addRule('aligned-paragraph', {
+            filter: function (node) {
+                return (
+                    node.nodeName === 'P' &&
+                    (node.style.textAlign === 'center' || node.style.textAlign === 'right' || node.style.textAlign === 'justify')
+                )
+            },
+            replacement: function (content, node) {
+                const element = node as HTMLElement
+                // Ensure we keep the exact style attribute which might contain other things, 
+                // but Tiptap usually isolates alignment or we just want the alignment.
+                // Let's grab the textAlign and reconstruct valid HTML.
+                // Or just use the getAttribute('style') if we trust it.
+                const style = element.getAttribute('style')
+                return `<p style="${style}">${content}</p>`
+            }
+        })
+
+        return service
+    }, [])
+
     const [, forceUpdate] = useState(0)
 
     const editor = useEditor({
@@ -242,6 +297,9 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
             }),
             TextStyle,
             Color,
+            TextAlign.configure({
+                types: ['heading', 'paragraph'],
+            }),
         ],
         content: initialContent,
         onUpdate: ({ editor }) => {
@@ -269,6 +327,7 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
                         '[&_strong]:font-bold',
                         '[&_pre]:bg-sub/20 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:font-mono [&_pre]:my-2 [&_pre]:text-xs [&_pre]:overflow-x-auto',
                         '[&_code]:bg-transparent [&_code]:p-0 [&_code]:text-inherit', // Reset inline code styles if any, or rely on pre styles
+                        '[&_hr]:my-4 [&_hr]:border-t [&_hr]:border-sub/10 [&_hr]:mx-2', // Custom HR styling
                         'text-sm text-text-primary',
                         isExpanded && 'h-full' // Full height for content div in expanded mode
                     ),
@@ -304,7 +363,7 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
                 editor.commands.setContent(valueHTML)
             }
         }
-    }, [value, editor])
+    }, [value, editor, turndownService])
 
     const NormalView = (
         <div className={clsx("flex flex-col bg-sub-alt rounded-lg p-3 transition-all duration-300", className)}>
