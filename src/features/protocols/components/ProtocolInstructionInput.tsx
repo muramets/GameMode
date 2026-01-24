@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import TurndownService from 'turndown';
+import React from 'react';
+import { RichTextEditor } from '../../../components/ui/RichTextEditor';
 
 interface ProtocolInstructionInputProps {
     instruction: string;
@@ -15,40 +15,6 @@ const InputLabel = ({ label }: { label: string }) => (
 );
 
 export const ProtocolInstructionInput = React.memo(({ instruction, setInstruction, hasInstruction, setHasInstruction }: ProtocolInstructionInputProps) => {
-    // Initialize Turndown service
-    const turndownService = useMemo(() => {
-        const service = new TurndownService({
-            headingStyle: 'atx',
-            codeBlockStyle: 'fenced'
-        });
-        return service;
-    }, []);
-
-    const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-        const html = e.clipboardData.getData('text/html');
-        if (html) {
-            e.preventDefault();
-            // Convert HTML to Markdown
-            const markdown = turndownService.turndown(html);
-
-            // Insert at cursor position
-            const textarea = e.currentTarget;
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-            const text = textarea.value;
-            const newText = text.substring(0, start) + markdown + text.substring(end);
-
-            setInstruction(newText);
-
-            // Restore cursor position (approximate, at end of inserted text)
-            // We need to defer this slightly to let React update state
-            setTimeout(() => {
-                if (textarea) {
-                    textarea.selectionStart = textarea.selectionEnd = start + markdown.length;
-                }
-            }, 0);
-        }
-    };
 
     return (
         <div className="flex flex-col gap-1.5">
@@ -80,12 +46,11 @@ export const ProtocolInstructionInput = React.memo(({ instruction, setInstructio
 
             {hasInstruction && (
                 <div className="flex flex-col gap-1.5 mt-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <textarea
-                        className="w-full bg-sub-alt rounded-lg px-3 py-2 text-sm font-mono text-text-primary placeholder:text-sub focus:outline-none focus:ring-2 focus:ring-main/50 min-h-[120px] resize-y custom-scrollbar"
+                    <RichTextEditor
                         value={instruction}
-                        onChange={e => setInstruction(e.target.value)}
-                        onPaste={handlePaste}
+                        onChange={setInstruction}
                         placeholder="Enter specific instructions..."
+                        className="min-h-[120px]"
                     />
                 </div>
             )}
