@@ -6,7 +6,7 @@ import { Color } from '@tiptap/extension-color'
 import { TextStyle } from '@tiptap/extension-text-style'
 import { marked } from 'marked'
 import TurndownService from 'turndown'
-import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Maximize, Minimize, Droplet } from 'lucide-react'
+import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Maximize, Minimize, Droplet, Code } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import * as Popover from '@radix-ui/react-popover'
@@ -176,6 +176,14 @@ const MenuBar = ({ editor, isExpanded, toggleExpand }: { editor: Editor | null, 
                     <Italic size={16} />
                 </MenuButton>
 
+                <MenuButton
+                    onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+                    isActive={editor.isActive('codeBlock')}
+                    title="Code Block"
+                >
+                    <Code size={16} />
+                </MenuButton>
+
                 <EditorColorPicker editor={editor} />
 
                 <div className="w-px h-4 bg-sub/10 mx-1" />
@@ -258,6 +266,9 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
                         'prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-nav:hidden',
                         '[&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-semibold',
                         '[&_ul]:list-disc [&_ul]:pl-8 [&_ul]:list-outside [&_ol]:list-decimal [&_ol]:pl-8 [&_ol]:list-outside',
+                        '[&_strong]:font-bold',
+                        '[&_pre]:bg-sub/20 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:font-mono [&_pre]:my-2 [&_pre]:text-xs [&_pre]:overflow-x-auto',
+                        '[&_code]:bg-transparent [&_code]:p-0 [&_code]:text-inherit', // Reset inline code styles if any, or rely on pre styles
                         'text-sm text-text-primary',
                         isExpanded && 'h-full' // Full height for content div in expanded mode
                     ),
