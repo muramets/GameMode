@@ -94,3 +94,44 @@ export function scoreToXP(score: number): number {
 export function xpToScore(xp: number): number {
     return xp / 100;
 }
+export interface PriorityBreakdown {
+    priority: 'high' | 'medium' | 'low';
+    count: number;
+    avgScore: number; // 0-10 scale
+    totalScore: number;
+    weight: number;
+    items: { name: string; score: number }[];
+}
+
+/**
+ * Returns breakdown of how innerfaces contribute to the weighted level.
+ */
+export function getPriorityBreakdown(innerfaces: { name: string, currentScore?: number, priority?: 'low' | 'medium' | 'high', deletedAt?: string }[]): PriorityBreakdown[] {
+    const activeInnerfaces = innerfaces.filter(i => !i.deletedAt);
+
+    const breakdown: Record<'high' | 'medium' | 'low', PriorityBreakdown> = {
+        high: { priority: 'high', count: 0, avgScore: 0, totalScore: 0, weight: PRIORITY_WEIGHTS.high, items: [] },
+        medium: { priority: 'medium', count: 0, avgScore: 0, totalScore: 0, weight: PRIORITY_WEIGHTS.medium, items: [] },
+        low: { priority: 'low', count: 0, avgScore: 0, totalScore: 0, weight: PRIORITY_WEIGHTS.low, items: [] }
+    };
+
+    activeInnerfaces.forEach(iface => {
+        const score = iface.currentScore || 0;
+        const priority = iface.priority || 'medium';
+        const group = breakdown[priority];
+
+        group.count += 1;
+        group.totalScore += score;
+        group.items.push({ name: iface.name, score });
+    });
+
+    // Sort items by score descending
+    Object.values(breakdown).forEach(group => {
+        group.items.sort((a, b) => b.score - a.score);
+    });
+
+    return Object.values(breakdown).map(group => ({
+        ...group,
+        avgScore: group.count > 0 ? group.totalScore / group.count : 0
+    }));
+}

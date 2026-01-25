@@ -4,7 +4,9 @@ import { usePersonalityStore } from '../../../stores/personalityStore';
 import { useRoleStore } from '../../../stores/team';
 import { useScoreContext } from '../../../contexts/ScoreContext';
 import { getTierColor } from '../../../utils/colorUtils';
-import { calculateWeightedLevel } from '../../../utils/xpUtils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../../components/ui/atoms/Tooltip';
+import { LevelTooltipContent } from './LevelTooltipContent';
+import { calculateWeightedLevel, getPriorityBreakdown } from '../../../utils/xpUtils';
 import { WeeklyFocus } from './WeeklyFocus';
 import { Avatar } from '../../../components/ui/atoms/Avatar';
 import { UserStats } from './UserStats';
@@ -39,6 +41,7 @@ export function UserProfile() {
     // 1. Level calculation: Weighted Average based on Priority
     const activeInnerfaces = innerfaces.filter(i => !i.deletedAt);
     const { level, currentLevelXP, progress, totalXP } = calculateWeightedLevel(activeInnerfaces);
+    const priorityBreakdown = getPriorityBreakdown(activeInnerfaces);
     const tierColor = getTierColor(level);
 
     // Calculate next TIER color (not just next level) for a visible motivational gradient
@@ -126,40 +129,52 @@ export function UserProfile() {
                         </h2>
 
                         {/* Level + Progress Row */}
-                        <div className="flex items-center gap-3 mt-4">
-                            {/* Level Number */}
-                            <div className="flex flex-col items-center leading-none">
-                                <span
-                                    className="text-[2rem] font-medium font-mono"
-                                    style={{ color: tierColor }}
-                                >
-                                    {level}
-                                </span>
-                                <span className="text-[9px] font-mono text-sub uppercase tracking-wider opacity-60 transition-all duration-300 group-hover:text-text-primary group-hover:opacity-100">Level</span>
-                            </div>
+                        <Tooltip delayDuration={100}>
+                            <TooltipTrigger asChild>
+                                <div className="flex items-center gap-3 mt-4 cursor-default select-none group/level transition-all duration-300">
+                                    {/* Level Number */}
+                                    <div className="flex flex-col items-center leading-none">
+                                        <div className="flex flex-col items-center">
+                                            <span
+                                                className="text-[2rem] font-medium font-mono"
+                                                style={{ color: tierColor }}
+                                            >
+                                                {level}
+                                            </span>
+                                            <span className="text-[9px] font-mono text-sub uppercase tracking-wider opacity-60 transition-all duration-300 group-hover/level:text-text-primary group-hover/level:opacity-100">Level</span>
+                                        </div>
+                                    </div>
 
-                            {/* Progress Bar Container */}
-                            <div className="flex flex-col gap-1.5 w-full max-w-[300px] min-w-[200px]">
-                                <div className="w-full h-[6px] bg-bg-primary rounded-[3px] overflow-hidden">
-                                    <div
-                                        className="h-full transition-all duration-300 ease-out rounded-[3px]"
-                                        style={{
-                                            width: `${progress}%`,
-                                            backgroundColor: tierColor
-                                        }}
-                                    />
+                                    {/* Progress Bar Container */}
+                                    <div className="flex flex-col gap-1.5 w-full max-w-[300px] min-w-[200px]">
+                                        <div className="w-full h-[6px] bg-bg-primary rounded-[3px] overflow-hidden">
+                                            <div
+                                                className="h-full transition-all duration-300 ease-out rounded-[3px]"
+                                                style={{
+                                                    width: `${progress}%`,
+                                                    backgroundColor: tierColor
+                                                }}
+                                            />
+                                        </div>
+                                        {/* XP Progress Value */}
+                                        <div className="flex justify-between items-center text-[10px] font-mono text-sub leading-none w-full">
+                                            <span className="opacity-70 transition-all duration-300 group-hover/level:text-text-primary group-hover/level:opacity-100">
+                                                {currentLevelXP} / 100 XP
+                                            </span>
+                                            <span className="opacity-50 tracking-wide transition-all duration-300 group-hover/level:text-text-primary group-hover/level:opacity-100">
+                                                {totalXP} Total
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
-                                {/* XP Progress Value */}
-                                <div className="flex justify-between items-center text-[10px] font-mono text-sub leading-none w-full">
-                                    <span className="opacity-70 transition-all duration-300 group-hover:text-text-primary group-hover:opacity-100">
-                                        {currentLevelXP} / 100 XP
-                                    </span>
-                                    <span className="opacity-50 transition-all duration-300 tracking-wide group-hover:text-text-primary group-hover:opacity-100">
-                                        {totalXP} Total
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" align="start" className="p-0 border border-white/10 bg-[#151515]/95 backdrop-blur-md">
+                                <LevelTooltipContent
+                                    breakdown={priorityBreakdown}
+                                    tierColor={tierColor}
+                                />
+                            </TooltipContent>
+                        </Tooltip>
                     </div>
                 </div>
 
