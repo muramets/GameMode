@@ -1,4 +1,6 @@
 import { useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog, faHistory, faArrowUp, faArrowDown } from '@fortawesome/free-solid-svg-icons';
 import { useTruncation } from '../../../hooks/useTruncation';
@@ -112,8 +114,20 @@ export function StateCard({
                                         </div>
                                     )}
                                     {state.hover && (
-                                        <div className="text-center text-xs">
-                                            {state.hover}
+                                        <div className="rich-text-viewer text-left text-xs">
+                                            <ReactMarkdown
+                                                rehypePlugins={[rehypeRaw]}
+                                                components={{
+                                                    p: ({ ...props }) => <p className="mb-1 last:mb-0" {...props} />,
+                                                    strong: ({ ...props }) => <strong className="font-bold text-text-primary" {...props} />,
+                                                    em: ({ ...props }) => <em className="italic text-text-primary/80" {...props} />,
+                                                    hr: ({ ...props }) => <hr className="my-2 border-t border-sub/10 w-full block" {...props} />,
+                                                    ul: ({ ...props }) => <ul className="list-disc pl-4 mb-1 space-y-0.5" {...props} />,
+                                                    ol: ({ ...props }) => <ol className="list-decimal pl-4 mb-1 space-y-0.5" {...props} />,
+                                                    li: ({ ...props }) => <li className="pl-0.5" {...props} />,
+                                                }}>
+                                                {state.hover}
+                                            </ReactMarkdown>
                                         </div>
                                     )}
                                 </TooltipContent>

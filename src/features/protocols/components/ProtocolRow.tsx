@@ -261,14 +261,17 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
 
                             {/* Quick Note */}
                             {protocol.hover && (
-                                <div className="rich-text-viewer text-center text-xs">
+                                <div className="rich-text-viewer text-left text-xs">
                                     <ReactMarkdown
                                         rehypePlugins={[rehypeRaw]}
                                         components={{
-                                            p: ({ ...props }) => <span {...props} />, // Render paragraphs as spans
+                                            p: ({ ...props }) => <p className="mb-1 last:mb-0" {...props} />,
                                             strong: ({ ...props }) => <strong className="font-bold text-text-primary" {...props} />,
                                             em: ({ ...props }) => <em className="italic text-text-primary/80" {...props} />,
                                             hr: ({ ...props }) => <hr className="my-2 border-t border-sub/10 w-full block" {...props} />,
+                                            ul: ({ ...props }) => <ul className="list-disc pl-4 mb-1 space-y-0.5" {...props} />,
+                                            ol: ({ ...props }) => <ol className="list-decimal pl-4 mb-1 space-y-0.5" {...props} />,
+                                            li: ({ ...props }) => <li className="pl-0.5" {...props} />,
                                         }}>
                                         {protocol.hover}
                                     </ReactMarkdown>

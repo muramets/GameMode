@@ -1,4 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -293,11 +295,29 @@ export function QuickActionCard({ action, onAction, onDelete, isDisabled, isDrag
                         {/* ... tooltip content */}
                         {(action.hover || action.description || isTruncated) && !isDragging && (
                             <TooltipPortal>
-                                <TooltipContent sideOffset={5} className="z-[100] max-w-[200px] break-words">
+                                <TooltipContent sideOffset={5} className="z-[100] max-w-[300px] break-words">
                                     <div className="font-bold border-b border-sub/50 pb-1 mb-1 text-center">
                                         {action.title}
                                     </div>
-                                    <div className="text-center text-xs">{action.hover || action.description}</div>
+                                    {action.hover ? (
+                                        <div className="rich-text-viewer text-left text-xs">
+                                            <ReactMarkdown
+                                                rehypePlugins={[rehypeRaw]}
+                                                components={{
+                                                    p: ({ ...props }) => <p className="mb-1 last:mb-0" {...props} />,
+                                                    strong: ({ ...props }) => <strong className="font-bold text-text-primary" {...props} />,
+                                                    em: ({ ...props }) => <em className="italic text-text-primary/80" {...props} />,
+                                                    hr: ({ ...props }) => <hr className="my-2 border-t border-sub/10 w-full block" {...props} />,
+                                                    ul: ({ ...props }) => <ul className="list-disc pl-4 mb-1 space-y-0.5" {...props} />,
+                                                    ol: ({ ...props }) => <ol className="list-decimal pl-4 mb-1 space-y-0.5" {...props} />,
+                                                    li: ({ ...props }) => <li className="pl-0.5" {...props} />,
+                                                }}>
+                                                {action.hover}
+                                            </ReactMarkdown>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center text-xs">{action.description}</div>
+                                    )}
                                 </TooltipContent>
                             </TooltipPortal>
                         )}
