@@ -8,7 +8,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faMinus, faCog, faHistory, faChevronUp, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 
 import { AppIcon } from '../../../components/ui/atoms/AppIcon';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../../components/ui/atoms/Tooltip';
 import { useTouchDevice } from '../../../hooks/useTouchDevice';
 import { useTruncation } from '../../../hooks/useTruncation';
@@ -45,6 +45,8 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
     // Truncation detection
     const { ref: titleRef, isTruncated: isTitleTruncated } = useTruncation();
     const { ref: descRef, isTruncated: isDescTruncated } = useTruncation();
+
+    const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Derived states to avoid double-renders on drag start
     const effectiveHoverSide = (isDisabled || isReadOnly) ? null : hoverSide;
@@ -120,7 +122,10 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
         if (!window.matchMedia('(hover: hover)').matches) return;
 
         // Restore hover state if coming back from instruction
-        if (!isHovered) setIsHovered(true);
+        if (!isHovered) {
+            if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+            setIsHovered(true);
+        }
 
         const rect = rowRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -135,11 +140,15 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
     };
 
     const handleMouseLeave = () => {
-        setHoverSide(null);
-        setIsHovered(false);
+        // Debounce leave to prevent flickering when interacting with tooltips/portals
+        hoverTimeoutRef.current = setTimeout(() => {
+            setHoverSide(null);
+            setIsHovered(false);
+        }, 150);
     };
 
     const handleMouseEnter = () => {
+        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
         if (!isDisabled && window.matchMedia('(hover: hover)').matches) {
             setIsHovered(true);
         }
@@ -232,7 +241,7 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
                             {protocol.description && (
                                 <p
                                     ref={descRef}
-                                    className="text-[10px] text-sub font-mono opacity-60 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-hover:text-text-primary transition-all duration-300 truncate block"
+                                    className={`text-[10px] text-sub font-mono transition-all duration-300 truncate block ${isHovered ? 'opacity-100 text-text-primary' : 'opacity-60'}`}
                                 >
                                     {protocol.description}
                                 </p>
@@ -272,7 +281,7 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
 
             {/* Weight Indicator */}
             <motion.div layout className={`flex flex-col items-center justify-center pointer-events-none gap-1 ${DEBUG_LAYOUT ? 'border border-yellow-500' : ''}`}>
-                <span className={`font-lexend text-xs font-bold tracking-wider transition-all duration-300 ${effectiveFeedbackType === 'plus' ? 'text-[#98c379] opacity-100 scale-125' : effectiveFeedbackType === 'minus' ? 'text-[#ca4754] opacity-100 scale-125' : effectiveHoverSide === 'right' ? 'text-[#98c379] opacity-100 scale-110' : effectiveHoverSide === 'left' ? 'text-[#ca4754] opacity-100 scale-110' : 'text-sub opacity-30 [@media(hover:hover)]:group-hover:text-text-primary [@media(hover:hover)]:group-hover:opacity-100'}`}>
+                <span className={`font-lexend text-xs font-bold tracking-wider transition-all duration-300 ${effectiveFeedbackType === 'plus' ? 'text-[#98c379] opacity-100 scale-125' : effectiveFeedbackType === 'minus' ? 'text-[#ca4754] opacity-100 scale-125' : effectiveHoverSide === 'right' ? 'text-[#98c379] opacity-100 scale-110' : effectiveHoverSide === 'left' ? 'text-[#ca4754] opacity-100 scale-110' : isHovered ? 'text-text-primary opacity-100' : 'text-sub opacity-30'}`}>
                     {Math.round(protocol.weight * 100)} XP
                 </span>
                 {protocol.instruction && (
@@ -293,35 +302,55 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
             </motion.div>
 
             {/* Targets & Actions Group */}
-            <motion.div layout className={`flex items-center justify-end gap-3 pointer-events-none w-full ${DEBUG_LAYOUT ? 'border border-green-500' : ''}`}>
-                <motion.div layout className="flex flex-wrap justify-end gap-1.5 content-center pointer-events-auto min-w-0">
-                    {targetInnerfaces.map((innerface: Innerface) => {
-                        const InnerfaceIcon = (
-                            <div
-                                className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-transform hover:scale-110 duration-200 pointer-events-auto"
-                                style={{
-                                    backgroundColor: `color-mix(in srgb, ${innerface.color || '#ffffff'} 10%, transparent)`,
-                                    color: innerface.color || '#ffffff',
-                                    boxShadow: `0 0 10px color-mix(in srgb, ${innerface.color || '#ffffff'} 5%, transparent)`
-                                }}
-                            >
-                                <div className="text-[0.7rem]"> <AppIcon id={innerface.icon} /> </div>
-                            </div>
-                        );
+            <motion.div layout className={`flex items-center justify-end gap-3 pointer-events-none w-full h-full text-right ${DEBUG_LAYOUT ? 'border border-green-500' : ''}`}>
+                <motion.div
+                    layout
+                    className={`flex flex-wrap justify-end content-center pointer-events-auto min-w-0 max-h-[40px] overflow-hidden ${(isHovered && targetInnerfaces.length >= 3) ? 'gap-1' : 'gap-1.5'
+                        }`}
+                >
+                    <AnimatePresence mode='popLayout'>
+                        {targetInnerfaces
+                            .sort((a, b) => (a.currentScore || 0) - (b.currentScore || 0)) // Sort by score (weakest first)
+                            .slice(0, (isHovered && targetInnerfaces.length > 8) ? 8 : (targetInnerfaces.length > 4 && isHovered) ? 10 : 12) // Smart truncation
+                            .map((innerface: Innerface) => {
+                                // Determine compact mode based on hover & count
+                                // FIX: >= 3 items must be compact so 2 rows fit in 40px (18+18+4 = 40)
+                                const isCompact = isHovered && targetInnerfaces.length >= 3;
 
-                        return (
-                            <motion.div layout key={innerface.id} className="pointer-events-none">
-                                {isDisabled ? (
-                                    <div>{InnerfaceIcon}</div>
-                                ) : (
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>{InnerfaceIcon}</TooltipTrigger>
-                                        <TooltipContent side="top"> <span className="font-lexend text-xs">{innerface.name}</span> </TooltipContent>
-                                    </Tooltip>
-                                )}
-                            </motion.div>
-                        );
-                    })}
+                                const InnerfaceIcon = (
+                                    <motion.div
+                                        layout
+                                        initial={{ scale: 0.8, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        exit={{ scale: 0.5, opacity: 0 }}
+                                        className={`rounded-md flex items-center justify-center shrink-0 transition-transform hover:scale-110 duration-200 pointer-events-auto
+                                            ${isCompact ? 'w-[18px] h-[18px]' : 'w-6 h-6'}`}
+                                        style={{
+                                            backgroundColor: `color-mix(in srgb, ${innerface.color || '#ffffff'} 10%, transparent)`,
+                                            color: innerface.color || '#ffffff',
+                                            boxShadow: `0 0 10px color-mix(in srgb, ${innerface.color || '#ffffff'} 5%, transparent)`
+                                        }}
+                                    >
+                                        <div className={isCompact ? "text-[0.55rem]" : "text-[0.7rem]"}> <AppIcon id={innerface.icon} /> </div>
+                                    </motion.div>
+                                );
+
+                                return (
+                                    <motion.div layout key={innerface.id} className="pointer-events-none">
+                                        {isDisabled ? (
+                                            <div>{InnerfaceIcon}</div>
+                                        ) : (
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>{InnerfaceIcon}</TooltipTrigger>
+                                                <TooltipContent side="top">
+                                                    <span className="font-lexend text-xs">{innerface.name} · {innerface.currentScore ?? 0}</span>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        )}
+                                    </motion.div>
+                                );
+                            })}
+                    </AnimatePresence>
                 </motion.div>
 
                 {/* Edit/History buttons revealed on hover/tap */}
