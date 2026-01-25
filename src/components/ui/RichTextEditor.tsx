@@ -37,6 +37,7 @@ const MenuButton = ({
         <TooltipTrigger asChild>
             <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()} // Prevent focus loss
                 onClick={onClick}
                 aria-label={title}
                 aria-pressed={isActive}
@@ -57,6 +58,13 @@ const MenuButton = ({
 const EditorColorPicker = ({ editor }: { editor: Editor }) => {
     const currentColor = editor.getAttributes('textStyle').color
 
+    const isColorActive = (c: string) => {
+        if (!currentColor) return false
+        // Normalize for comparison
+        const norm = (val: string) => val.toLowerCase().trim()
+        return norm(currentColor) === norm(c)
+    }
+
     return (
         <Popover.Root>
             <Tooltip>
@@ -64,6 +72,7 @@ const EditorColorPicker = ({ editor }: { editor: Editor }) => {
                     <Popover.Trigger asChild>
                         <button
                             type="button"
+                            onMouseDown={(e) => e.preventDefault()} // Prevent focus loss
                             aria-label="Text Color"
                             className={clsx(
                                 "p-1.5 rounded-md transition-colors text-sub hover:text-text-primary hover:bg-sub/10",
@@ -89,10 +98,12 @@ const EditorColorPicker = ({ editor }: { editor: Editor }) => {
                 <Popover.Content
                     className="z-[10000] p-2 bg-sub-alt border border-white/10 rounded-xl shadow-2xl flex flex-col gap-2 min-w-[140px] animate-in fade-in zoom-in-95 duration-200"
                     sideOffset={5}
+                    onOpenAutoFocus={(e) => e.preventDefault()} // Don't steal focus from editor
                 >
                     <div className="grid grid-cols-5 gap-1.5">
                         <button
                             type="button"
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => editor.chain().focus().unsetColor().run()}
                             className="w-5 h-5 rounded-full flex items-center justify-center border border-sub/20 transition-transform hover:scale-125 hover:border-white/50 cursor-pointer relative"
                             title="Reset color"
@@ -103,10 +114,11 @@ const EditorColorPicker = ({ editor }: { editor: Editor }) => {
                             <button
                                 key={c}
                                 type="button"
+                                onMouseDown={(e) => e.preventDefault()}
                                 onClick={() => editor.chain().focus().setColor(c).run()}
                                 className={clsx(
                                     "w-5 h-5 rounded-full transition-transform hover:scale-125 hover:ring-2 hover:ring-white/30 cursor-pointer",
-                                    currentColor === c && "ring-2 ring-white/50"
+                                    isColorActive(c) && "ring-2 ring-white/50 scale-110"
                                 )}
                                 style={{ backgroundColor: c }}
                             />
@@ -242,6 +254,11 @@ const MenuBar = ({ editor, isExpanded, toggleExpand }: { editor: Editor | null, 
 
 export const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEditorProps) => {
     const [isExpanded, setIsExpanded] = useState(false)
+    const lastValueRef = React.useRef(value)
+
+    useEffect(() => {
+        lastValueRef.current = value
+    }, [value])
 
     // Only parse initial value once to avoid cursor jumps on every keystroke
     // when the parent updates via valid markdown roundtrip.
@@ -305,7 +322,10 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
         onUpdate: ({ editor }) => {
             const html = editor.getHTML()
             const markdown = turndownService.turndown(html)
-            onChange(markdown)
+            if (markdown !== lastValueRef.current) {
+                lastValueRef.current = markdown
+                onChange(markdown)
+            }
         },
         onTransaction: () => {
             forceUpdate(n => n + 1)
@@ -340,24 +360,17 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
     useEffect(() => {
         if (!editor) return
 
+        // Check if internal markdown representation changed vs external
         const currentHTML = editor.getHTML()
         const currentMarkdown = turndownService.turndown(currentHTML)
 
-        // Only update if the value is significantly different to avoid cursor jumps / loops
-        if (value !== currentMarkdown) {
-            // Check if they are effectively the same (parsing markdown to HTML and back can cause subtle diffs)
-            // A simple check is: if value is empty and editor is not, clear it.
-            // If value is present, and editor is empty, set it.
-            // For partial updates, it's riskier, but let's try setting content if they differ.
-
-            // Normalize current editor content to check against value
-            const valueHTML = marked.parse(value, { async: false }) as string
-
-            // Compare HTML content roughly or just trust the markdown diff?
-            // Since we use markdown as the source of truth for the form, comparing markdown is best.
-            // However, markdown generators vary. 
-            // Let's rely on: if the editor is empty and value provides something, set it.
-            // If editor has content and value changes (e.g. reset), set it.
+        if (value !== currentMarkdown && value !== lastValueRef.current) {
+            // Normalize incoming value to HTML
+            const valueHTML = marked.parse(value, {
+                async: false,
+                gfm: true,
+                breaks: true
+            }) as string
 
             if (!editor.isFocused) {
                 editor.commands.setContent(valueHTML)
