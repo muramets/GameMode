@@ -148,20 +148,21 @@ export function StateCard({
             {/* Middle: Actions & Level Display */}
             <div className="relative z-10 my-2 flex items-end justify-between w-full">
                 {/* Left: Level Display */}
-                <div className="flex items-baseline gap-2">
-                    <span className="text-[9px] font-mono text-sub uppercase tracking-widest opacity-40 mb-1 transition-all duration-300 group-hover:text-text-primary group-hover:opacity-100">
+                <div className="flex items-end gap-2">
+                    <span className="text-[9px] font-mono text-sub uppercase tracking-widest opacity-40 mb-1.5 transition-all duration-300 group-hover:text-text-primary group-hover:opacity-100">
                         Lvl
                     </span>
                     <span
-                        className="text-[3.5rem] font-light leading-none font-mono tracking-tight transition-colors duration-300"
+                        className="text-[3.5rem] font-light leading-none font-mono tracking-tight transition-colors duration-300 -mb-1"
                         style={{ color: displayColor }}
                     >
                         {level}
                     </span>
 
                     {Math.abs(change) > 0.001 && (
-                        <span className={`text-lg font-medium flex items-center gap-1 opacity-90 ${change > 0 ? 'text-correct' : 'text-error'}`}>
+                        <span className={`text-lg font-medium flex items-end gap-1 opacity-90 mb-1 ${change > 0 ? 'text-correct' : 'text-error'}`}>
                             <FontAwesomeIcon icon={change > 0 ? faArrowUp : faArrowDown} className="text-[0.8em]" />
+                            <span className="text-[8px] font-mono uppercase tracking-wide opacity-0 group-hover:opacity-80 transition-opacity duration-300 leading-none mb-[1px]">today</span>
                         </span>
                     )}
                 </div>
