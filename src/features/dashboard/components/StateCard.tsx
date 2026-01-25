@@ -160,7 +160,7 @@ export function StateCard({
                     </span>
 
                     {Math.abs(change) > 0.001 && (
-                        <span className={`text-lg font-medium flex items-end gap-1 opacity-90 mb-1 ${change > 0 ? 'text-correct' : 'text-error'}`}>
+                        <span className={`text-lg font-medium flex items-end gap-1 opacity-90 mb-[7px] ${change > 0 ? 'text-correct' : 'text-error'}`}>
                             <FontAwesomeIcon icon={change > 0 ? faArrowUp : faArrowDown} className="text-[0.8em]" />
                             <span className="text-[8px] font-mono uppercase tracking-wide opacity-0 group-hover:opacity-80 transition-opacity duration-300 leading-none mb-[1px]">today</span>
                         </span>
