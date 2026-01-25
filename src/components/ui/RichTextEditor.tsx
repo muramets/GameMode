@@ -256,9 +256,7 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
     const [isExpanded, setIsExpanded] = useState(false)
     const lastValueRef = React.useRef(value)
 
-    useEffect(() => {
-        lastValueRef.current = value
-    }, [value])
+
 
     // Only parse initial value once to avoid cursor jumps on every keystroke
     // when the parent updates via valid markdown roundtrip.
