@@ -24,7 +24,7 @@ import { ProtocolsContent } from './ProtocolsContent';
 export function ProtocolsList() {
     const { applyProtocol, innerfaces, protocols } = useScoreContext();
     const { activeContext } = usePersonalityStore();
-    const { reorderProtocols, moveProtocol, reorderGroups, groupOrder, groupsMetadata, isLoading } = useMetadataStore();
+    const { reorderProtocols, moveProtocol, reorderGroups, protocolGroupOrder, groupsMetadata, isLoading } = useMetadataStore();
 
     // Simplified loading logic: Minimum 500ms display time
     // Simplified loading logic: Minimum 500ms display time ONLY if loading is actually needed
@@ -76,7 +76,7 @@ export function ProtocolsList() {
     // 3. Use grouping hook (handles grouping + sorting)
     const { groupedProtocols, protocolGroups } = useProtocolsGrouping(
         filteredProtocols,
-        groupOrder
+        protocolGroupOrder
     );
 
     const isDragEnabled = !searchQuery.trim() && (activeFilters.length === 0 || activeFilters.length === 1 && activeFilters[0] === 'ungrouped');

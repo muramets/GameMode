@@ -203,7 +203,7 @@ export const createInnerfaceSlice = (
      * reorderInnerfaceGroups:
      * Persists the custom order of groups within a category or globally.
      */
-    reorderInnerfaceGroups: async (orderedGroups: string[]) => {
+    reorderInnerfaceGroups: async (orderedGroups: Record<string, string[]>) => {
         try {
             const context = get().context;
             console.debug('[MetadataStore] reorderInnerfaceGroups', { orderedGroups });

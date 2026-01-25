@@ -56,8 +56,8 @@ export interface RoleTemplate {
     protocols: Protocol[];
     states: StateData[];
     groups: Record<string, { icon: string; color?: string }>;
-    groupOrder: string[];
-    innerfaceGroupOrder: string[];
+    protocolGroupOrder: string[];
+    innerfaceGroupOrder: Record<string, string[]>;
     pinnedProtocolIds: string[];
 }
 

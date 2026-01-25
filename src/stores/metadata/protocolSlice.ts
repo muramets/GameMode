@@ -261,9 +261,9 @@ export const createProtocolSlice = (
         try {
             const context = get().context;
             guardAgainstViewerMode(context);
-            set({ groupOrder: orderedGroups });
-            const docRef = doc(db, `${getPathRoot(context)}/settings/groups`);
-            await setDoc(docRef, { order: orderedGroups }, { merge: true });
+            set({ protocolGroupOrder: orderedGroups });
+            const docRef = doc(db, `${getPathRoot(context)}/settings/app`);
+            await setDoc(docRef, { protocolGroupOrder: orderedGroups }, { merge: true });
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';
             showErrorToast(message);

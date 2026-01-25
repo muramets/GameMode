@@ -9,8 +9,8 @@ export interface MetadataState {
     states: StateData[];
     pinnedProtocolIds: string[];
     groupsMetadata: Record<string, { icon: string; color?: string }>;
-    groupOrder: string[]; // List of protocol group names
-    innerfaceGroupOrder: string[]; // List of innerface group names
+    protocolGroupOrder: string[]; // List of protocol group names
+    innerfaceGroupOrder: Record<string, string[]>; // Category -> List of group names
     isDimensionsCollapsed: boolean;
     categoryOrder: string[]; // List of category names ('skill', 'foundation', 'uncategorized')
     isLoading: boolean;
@@ -68,7 +68,7 @@ export interface MetadataState {
     // Innerface Ordering
     reorderInnerfaces: (orderedIds: string[]) => Promise<void>;
     moveInnerface: (id: string, newGroup: string, orderedIds: string[]) => Promise<void>;
-    reorderInnerfaceGroups: (orderedGroups: string[]) => Promise<void>;
+    reorderInnerfaceGroups: (orderedGroups: Record<string, string[]>) => Promise<void>;
     reorderCategories: (orderedCategories: string[]) => Promise<void>;
 
     // --- Subscriptions ---

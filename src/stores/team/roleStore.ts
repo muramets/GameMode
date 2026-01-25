@@ -72,21 +72,18 @@ export const useRoleStore = create<RoleState>((set) => ({
                     batch.set(doc(roleRef, 'states', s.id), s);
                 });
 
-                // Groups
-                Object.entries(templateData.groups || {}).forEach(([name, meta]) => {
-                    batch.set(doc(roleRef, 'groups', name), meta);
-                });
+                // Groups, Settings -> settings/app
+                // Consolidate all metadata into settings/app
+                const settingsAppData = {
+                    groupsMetadata: templateData.groups || {},
+                    protocolGroupOrder: templateData.protocolGroupOrder || [],
+                    innerfaceGroupOrder: templateData.innerfaceGroupOrder || {},
+                    pinnedProtocolIds: templateData.pinnedProtocolIds || [],
+                    categoryOrder: [], // meaningful default if needed
+                    isDimensionsCollapsed: false
+                };
 
-                // Settings
-                if (templateData.groupOrder?.length) {
-                    batch.set(doc(roleRef, 'settings', 'groups'), { order: templateData.groupOrder });
-                }
-                if (templateData.innerfaceGroupOrder?.length) {
-                    batch.set(doc(roleRef, 'settings', 'innerface_groups'), { order: templateData.innerfaceGroupOrder });
-                }
-                if (templateData.pinnedProtocolIds?.length) {
-                    batch.set(doc(roleRef, 'settings', 'quickActions'), { ids: templateData.pinnedProtocolIds });
-                }
+                batch.set(doc(roleRef, 'settings', 'app'), settingsAppData);
             }
 
             await batch.commit();
@@ -136,7 +133,7 @@ export const useRoleStore = create<RoleState>((set) => ({
                 ifaceSnap.docs.forEach(d => batch.delete(d.ref));
                 protoSnap.docs.forEach(d => batch.delete(d.ref));
                 stateSnap.docs.forEach(d => batch.delete(d.ref));
-                groupSnap.docs.forEach(d => batch.delete(d.ref));
+                groupSnap.docs.forEach(d => batch.delete(d.ref)); // Clean legacy groups
 
                 // Add new data
                 templateData.innerfaces?.forEach(i => {
@@ -148,14 +145,18 @@ export const useRoleStore = create<RoleState>((set) => ({
                 templateData.states?.forEach(s => {
                     batch.set(doc(roleRef, 'states', s.id), s);
                 });
-                Object.entries(templateData.groups || {}).forEach(([name, meta]) => {
-                    batch.set(doc(roleRef, 'groups', name), meta);
-                });
 
-                // Settings
-                batch.set(doc(roleRef, 'settings', 'groups'), { order: templateData.groupOrder || [] });
-                batch.set(doc(roleRef, 'settings', 'innerface_groups'), { order: templateData.innerfaceGroupOrder || [] });
-                batch.set(doc(roleRef, 'settings', 'quickActions'), { ids: templateData.pinnedProtocolIds || [] });
+                // Groups & Settings -> settings/app
+                const settingsAppData = {
+                    groupsMetadata: templateData.groups || {},
+                    protocolGroupOrder: templateData.protocolGroupOrder || [],
+                    innerfaceGroupOrder: templateData.innerfaceGroupOrder || {},
+                    pinnedProtocolIds: templateData.pinnedProtocolIds || [],
+                    categoryOrder: [],
+                    isDimensionsCollapsed: false
+                };
+
+                batch.set(doc(roleRef, 'settings', 'app'), settingsAppData);
             }
 
             await batch.commit();

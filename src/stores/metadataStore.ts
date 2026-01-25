@@ -33,8 +33,8 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
     states: [],
     pinnedProtocolIds: [],
     groupsMetadata: {},
-    groupOrder: [],
-    innerfaceGroupOrder: [],
+    protocolGroupOrder: [],
+    innerfaceGroupOrder: {},
     isDimensionsCollapsed: false,
     categoryOrder: [],
     isLoading: true,
@@ -60,8 +60,8 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             protocols: [],
             states: [],
             groupsMetadata: {},
-            groupOrder: [],
-            innerfaceGroupOrder: [],
+            protocolGroupOrder: [],
+            innerfaceGroupOrder: {},
             categoryOrder: [],
             isDimensionsCollapsed: false,
             pinnedProtocolIds: [],
@@ -69,11 +69,12 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             loadedCount: 0
         });
 
-        let loadedSections = 0;
-        const markLoaded = () => {
-            loadedSections++;
-            set(state => ({ loadedCount: state.loadedCount + 1 }));
-            if (loadedSections >= 8) {
+        const loadedSources = new Set<string>();
+        const markLoaded = (source: string) => {
+            loadedSources.add(source);
+            set({ loadedCount: loadedSources.size });
+            // We expect 4 sources: innerfaces, protocols, states, settings/app
+            if (loadedSources.size >= 4) {
                 set({ isLoading: false });
             }
         };
@@ -81,15 +82,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
         const handleSnapshotError = (err: Error, source: string) => {
             console.error(`[MetadataStore] Error loading ${source}:`, err);
             set({ error: err.message });
-
-            // Critical fix: Ensure we mark as many sections as this listener was responsible for
-            if (source === 'settings/app') {
-                markLoaded();
-                markLoaded();
-                markLoaded();
-            } else {
-                markLoaded();
-            }
+            markLoaded(source);
         };
 
         const unsubIfaces = onSnapshot(
@@ -102,7 +95,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
                 const innerfaces = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Innerface));
                 innerfaces.sort((a, b) => (a.order || 0) - (b.order || 0));
                 set({ innerfaces });
-                markLoaded();
+                markLoaded('innerfaces');
             },
             (err) => handleSnapshotError(err, 'innerfaces')
         );
@@ -116,7 +109,7 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
                 }
                 const protocols = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Protocol));
                 set({ protocols });
-                markLoaded();
+                markLoaded('protocols');
             },
             (err) => handleSnapshotError(err, 'protocols')
         );
@@ -135,72 +128,42 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
                     return orderA - orderB;
                 });
                 set({ states });
-                markLoaded();
+                markLoaded('states');
             },
             (err) => handleSnapshotError(err, 'states')
         );
 
-        const unsubGroups = onSnapshot(
-            collection(db, `${pathRoot}/groups`),
-            (snap) => {
-                if (get().hasPendingWrites) {
-                    console.debug('[MetadataStore] Skipping groups snapshot due to pending writes');
-                    return;
-                }
-                const groupsMetadata: Record<string, { icon: string; color?: string }> = {};
-                snap.docs.forEach(doc => {
-                    groupsMetadata[doc.id] = doc.data() as { icon: string; color?: string };
-                });
-                set({ groupsMetadata });
-                markLoaded();
-            },
-            (err) => handleSnapshotError(err, 'groups')
-        );
-
-        const unsubGroupSettings = onSnapshot(
-            doc(db, `${pathRoot}/settings/groups`),
-            (snap) => {
-                if (get().hasPendingWrites) {
-                    console.debug('[MetadataStore] Skipping group settings snapshot due to pending writes');
-                    return;
-                }
-                if (snap.exists()) {
-                    const data = snap.data();
-                    set({ groupOrder: data.order || [] });
-                } else {
-                    set({ groupOrder: [] });
-                }
-                markLoaded();
-            },
-            (err) => handleSnapshotError(err, 'settings/groups')
-        );
-
+        // Consolidated Settings Listener & Automatic Migration
         const unsubAppSettings = onSnapshot(
             doc(db, `${pathRoot}/settings/app`),
-            (snap) => {
+            async (snap) => {
                 if (get().hasPendingWrites) {
                     console.debug('[MetadataStore] Skipping app settings snapshot due to pending writes');
                     return;
                 }
+
                 if (snap.exists()) {
                     const data = snap.data();
                     set({
-                        innerfaceGroupOrder: data.innerfaceGroupOrder || [],
+                        groupsMetadata: data.groupsMetadata || {},
+                        protocolGroupOrder: data.protocolGroupOrder || [],
+                        innerfaceGroupOrder: data.innerfaceGroupOrder || {},
                         categoryOrder: data.categoryOrder || [],
                         isDimensionsCollapsed: data.isDimensionsCollapsed ?? false,
                         pinnedProtocolIds: data.pinnedProtocolIds || []
                     });
                 } else {
+                    // Default state for new personalities
                     set({
-                        innerfaceGroupOrder: [],
+                        groupsMetadata: {},
+                        protocolGroupOrder: [],
+                        innerfaceGroupOrder: {},
                         categoryOrder: [],
                         isDimensionsCollapsed: false,
                         pinnedProtocolIds: []
                     });
                 }
-                markLoaded();
-                markLoaded();
-                markLoaded();
+                markLoaded('settings/app');
             },
             (err) => handleSnapshotError(err, 'settings/app')
         );
@@ -209,8 +172,6 @@ export const useMetadataStore = create<MetadataState>((set, get) => ({
             unsubIfaces();
             unsubProtocols();
             unsubStates();
-            unsubGroups();
-            unsubGroupSettings();
             unsubAppSettings();
         };
     }

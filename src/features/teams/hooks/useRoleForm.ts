@@ -27,7 +27,8 @@ export function useRoleForm({ teamId, roleId, onClose, isOpen }: UseRoleFormProp
         protocols,
         states,
         groupsMetadata,
-        groupOrder,
+        protocolGroupOrder,
+        innerfaceGroupOrder,
         pinnedProtocolIds
     } = useMetadataStore();
     const { activeContext, ensureDefaultPersonality, personalities, activePersonalityId } = usePersonalityStore();
@@ -101,13 +102,10 @@ export function useRoleForm({ teamId, roleId, onClose, isOpen }: UseRoleFormProp
                 try {
                     const inviteDoc = await getDoc(doc(db, 'team_invites', role.activeInviteCode!));
                     if (!inviteDoc.exists()) {
-                        // Only clear if confirmed invalid
                         setInviteLink(null);
                     }
                 } catch (e) {
                     console.error("Failed to verify invite", e);
-                    // Don't clear on error, assume valid to prevent flickering "Generate" button
-                    // Network errors shouldn't hide an existing link
                 }
             };
             checkInvite();
@@ -201,20 +199,31 @@ export function useRoleForm({ teamId, roleId, onClose, isOpen }: UseRoleFormProp
             })();
 
             const selectedProtocolObjs = mergedProtocols.filter(p => selectedProtocols.has(p.id.toString()));
-            const usedGroupNames = new Set(selectedProtocolObjs.map(p => p.group).filter(Boolean) as string[]);
+            const selectedInnerfaceObjs = mergedInnerfaces.filter(i => selectedInnerfaces.has(i.id.toString()));
+
+            const usedGroupNames = new Set([
+                ...selectedProtocolObjs.map(p => p.group).filter(Boolean),
+                ...selectedInnerfaceObjs.map(i => i.group).filter(Boolean)
+            ] as string[]);
 
             const filteredGroupsMetadata = Object.fromEntries(
                 Object.entries(groupsMetadata).filter(([name]) => usedGroupNames.has(name))
             );
-            const filteredGroupOrder = groupOrder.filter(name => usedGroupNames.has(name));
+
+            const filteredProtocolGroupOrder = protocolGroupOrder.filter(name => usedGroupNames.has(name));
+
+            const filteredInnerfaceGroupOrder: Record<string, string[]> = {};
+            Object.entries(innerfaceGroupOrder).forEach(([cat, order]) => {
+                filteredInnerfaceGroupOrder[cat] = order.filter(group => usedGroupNames.has(group));
+            });
 
             const template: RoleTemplate = {
-                innerfaces: mergedInnerfaces.filter(i => selectedInnerfaces.has(i.id.toString())),
+                innerfaces: selectedInnerfaceObjs,
                 protocols: selectedProtocolObjs,
                 states: mergedStates.filter(s => selectedStates.has(s.id)),
                 groups: filteredGroupsMetadata,
-                groupOrder: filteredGroupOrder,
-                innerfaceGroupOrder: [],
+                protocolGroupOrder: filteredProtocolGroupOrder,
+                innerfaceGroupOrder: filteredInnerfaceGroupOrder,
                 pinnedProtocolIds: pinnedProtocolIds.filter(id => selectedProtocols.has(id))
             };
 
