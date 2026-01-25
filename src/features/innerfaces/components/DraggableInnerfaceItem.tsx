@@ -39,6 +39,4 @@ export const DraggableInnerfaceItem = React.memo(({
             )}
         </SortableItem>
     );
-}, (prev, next) => {
-    return prev.innerface === next.innerface && prev.hasGoal === next.hasGoal;
 });

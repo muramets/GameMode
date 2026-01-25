@@ -222,32 +222,28 @@ export const InnerfaceGroup = React.memo(({
     if (prev.isCollapsed !== next.isCollapsed) return false;
     if (prev.hideHeader !== next.hideHeader) return false;
 
-    // 2. Metadata check
-    const prevMeta = prev.groupsMetadata[prev.groupName];
-    const nextMeta = next.groupsMetadata[next.groupName];
-    if (prevMeta?.icon !== nextMeta?.icon) return false;
-    if (prevMeta?.color !== nextMeta?.color) return false;
+    // 2. Metadata check (Reference equality is enough here usually, but keeping shallow check of object is safe)
+    if (prev.groupsMetadata !== next.groupsMetadata) {
+        // Falling back to deep check only if references differ to avoid unnecessary re-renders
+        // on harmless metadata object recreation
+        const prevMeta = prev.groupsMetadata[prev.groupName];
+        const nextMeta = next.groupsMetadata[next.groupName];
+        if (prevMeta?.icon !== nextMeta?.icon) return false;
+        if (prevMeta?.color !== nextMeta?.color) return false;
+    }
 
-    // 3. Innerfaces & Goals Deep Check
+    // 3. Innerfaces & Goals Deep Check (INDUSTRY STANDARD: Reference Equality)
     if (prev.innerfaces.length !== next.innerfaces.length) return false;
 
     for (let i = 0; i < prev.innerfaces.length; i++) {
-        const p = prev.innerfaces[i];
-        const n = next.innerfaces[i];
+        // Checking REFERENCE equality.
+        // If the object reference is different, it means the store updated it (immutable update).
+        // This automatically covers ALL properties: name, desc, priority, decay, scores, etc.
+        if (prev.innerfaces[i] !== next.innerfaces[i]) return false;
 
-        // Entity changed or moved
-        if (p.id !== n.id) return false;
-        if (p.name !== n.name) return false;
-        if (p.description !== n.description) return false;
-        if (p.hover !== n.hover) return false;
-        if (p.color !== n.color) return false;
-        if (p.icon !== n.icon) return false;
-        if (p.category !== n.category) return false;
-        if (p.currentScore !== n.currentScore) return false;
-
-        // Goal status changed for this item
-        const pHasGoal = Boolean(prev.goals[p.id]);
-        const nHasGoal = Boolean(next.goals[n.id]);
+        // Sync Goals status
+        const pHasGoal = Boolean(prev.goals[prev.innerfaces[i].id]);
+        const nHasGoal = Boolean(next.goals[next.innerfaces[i].id]);
         if (pHasGoal !== nHasGoal) return false;
     }
 
