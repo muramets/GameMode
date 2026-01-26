@@ -354,16 +354,22 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
             filter: function (node) {
                 // Tiptap represents empty paragraphs as <p><br></p> or just <p></p>
                 // Sometimes the BR has a class (ProseMirror-trailingBreak)
-                return node.nodeName === 'P' && (
-                    node.innerHTML.trim() === '' ||
-                    node.innerHTML === '<br>' ||
-                    (node.childNodes.length === 1 && node.firstChild?.nodeName === 'BR')
+                // We also check for ZWSP (\u200B) which we inject in onUpdate to bypass the 'blank' rule
+                return (
+                    node.nodeName === 'P' &&
+                    (
+                        node.innerHTML.trim() === '' ||
+                        node.innerHTML === '<br>' ||
+                        node.textContent?.trim() === '' ||
+                        node.textContent === '\u200B' || // Zero Width Space
+                        (node.childNodes.length === 1 && node.firstChild?.nodeName === 'BR')
+                    )
                 )
             },
             replacement: function () {
-                // Return explicit BR to ensure it survives markdown roundtrip
-                // &nbsp; was unreliable as it could be stripped as whitespace
-                return '<br>\n\n'
+                // Return &nbsp; to create a paragraph with content in Markdown.
+                // This ensures 'marked' produces <p>&nbsp;</p> on load, which Tiptap accepts as a valid paragraph.
+                return '&nbsp;\n\n'
             }
         })
 
@@ -391,8 +397,20 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
         ],
         content: initialContent,
         onUpdate: ({ editor }) => {
-            const html = editor.getHTML()
+            let html = editor.getHTML()
+
+            // Pre-process HTML to ensure empty paragraphs are preserved as &nbsp;
+            // This bypasses Turndown's "blank" rule which might strip <p></p> by adding a visible-to-parser character (ZWSP)
+            // We use ZWSP (&#8203;) because normal &nbsp; is treated as whitespace by the 'blank' rule
+            // and stripped. ZWSP counts as content.
+            html = html.replace(/<p><\/p>/g, '<p>&#8203;</p>')
+            html = html.replace(/<p><br\s*\/?><\/p>/g, '<p>&#8203;</p>')
+            // Also handle class-based breaks if any
+            html = html.replace(/<p><br\s+class="[^"]*"\s*\/?><\/p>/g, '<p>&#8203;</p>')
+            html = html.replace(/<p>&nbsp;<\/p>/g, '<p>&#8203;</p>') // Also catch our previous attempt if Tiptap normalized it
+
             const markdown = turndownService.turndown(html)
+
             if (markdown !== lastValueRef.current) {
                 lastValueRef.current = markdown
                 onChange(markdown)
