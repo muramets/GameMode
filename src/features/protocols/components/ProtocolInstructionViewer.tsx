@@ -70,7 +70,7 @@ export const ProtocolInstructionViewer = React.memo(({ instruction, isExpanded, 
                     >
                         {sections.preamble && (
                             <div className="mb-4">
-                                <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+                                <ReactMarkdown rehypePlugins={[rehypeRaw]} components={markdownComponents}>
                                     {sections.preamble}
                                 </ReactMarkdown>
                             </div>
@@ -101,21 +101,7 @@ export const ProtocolInstructionViewer = React.memo(({ instruction, isExpanded, 
                                             "px-10 [&_button]:text-[10px]"
                                 )}
                             >
-                                <ReactMarkdown rehypePlugins={[rehypeRaw]} components={{
-                                    h1: ({ className, style, ...props }) => <h1 className={clsx("text-base font-bold text-text-primary mb-2 mt-4 first:mt-0", className)} style={style} {...props} />,
-                                    h2: ({ className, style, ...props }) => <h2 className={clsx("text-sm font-bold text-text-primary mb-2 mt-4", className)} style={style} {...props} />,
-                                    h3: ({ className, style, ...props }) => <h3 className={clsx("text-xs font-bold text-text-primary mb-1 mt-3", className)} style={style} {...props} />,
-                                    p: ({ className, style, ...props }) => <p className={clsx("mb-1 last:mb-0 text-left", className)} style={style} {...props} />,
-                                    div: ({ className, style, ...props }) => <div className={className} style={style} {...props} />,
-                                    ul: ({ className, style, ...props }) => <ul className={clsx("list-disc pl-4 mb-1 space-y-0.5", className)} style={style} {...props} />,
-                                    ol: ({ className, style, ...props }) => <ol className={clsx("list-decimal pl-4 mb-1 space-y-0.5", className)} style={style} {...props} />,
-                                    li: ({ className, style, ...props }) => <li className={clsx("pl-1", className)} style={style} {...props} />,
-                                    strong: ({ className, style, ...props }) => <strong className={clsx("font-bold text-text-primary", className)} style={style} {...props} />,
-                                    em: ({ className, style, ...props }) => <em className={clsx("italic text-text-primary/80", className)} style={style} {...props} />,
-                                    code: ({ className, style, ...props }) => <code className={clsx("bg-sub/20 rounded px-1 py-0.5 text-[10px] font-mono text-text-primary", className)} style={style} {...props} />,
-                                    blockquote: ({ className, style, ...props }) => <blockquote className={clsx("border-l-2 border-main/50 pl-3 italic text-sub my-2", className)} style={style} {...props} />,
-                                    hr: ({ className, style, ...props }) => <hr className={clsx("my-4 border-t border-sub/10 w-full", className)} style={style} {...props} />,
-                                }}>
+                                <ReactMarkdown rehypePlugins={[rehypeRaw]} components={markdownComponents}>
                                     {section.content.join('\n')}
                                 </ReactMarkdown>
                             </CollapsibleSection>
