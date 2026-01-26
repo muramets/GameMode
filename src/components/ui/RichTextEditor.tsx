@@ -349,6 +349,17 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
             }
         })
 
+        // Preserve empty lines (paragraphs with simple break or empty)
+        service.addRule('empty-paragraph', {
+            filter: function (node) {
+                return node.nodeName === 'P' && (node.innerHTML.trim() === '<br>' || node.innerHTML.trim() === '')
+            },
+            replacement: function () {
+                // Return non-breaking space to ensure it survives markdown parsing as a line
+                return '&nbsp;\n\n'
+            }
+        })
+
         return service
     }, [])
 
