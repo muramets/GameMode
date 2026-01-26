@@ -1,4 +1,4 @@
-import { useEditor, EditorContent, Editor, Extension } from '@tiptap/react'
+import { useEditor, EditorContent, Editor } from '@tiptap/react'
 import { createPortal } from 'react-dom'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -7,112 +7,44 @@ import { TextStyle } from '@tiptap/extension-text-style'
 import TextAlign from '@tiptap/extension-text-align'
 import { marked } from 'marked'
 import TurndownService from 'turndown'
-import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Maximize, Minimize, Droplet, Code, AlignLeft, AlignCenter, AlignRight, Minus } from 'lucide-react'
+import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Heading4, Heading5, Heading6, Maximize, Minimize, Droplet, Code, AlignLeft, AlignCenter, AlignRight, Minus } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import * as Popover from '@radix-ui/react-popover'
 import { PRESET_COLORS } from '../../constants/common'
-import { Decoration, DecorationSet } from '@tiptap/pm/view'
-import { Plugin, PluginKey } from '@tiptap/pm/state'
 
-// Custom extension for collapsable headers
-const CollapsableHeadings = Extension.create({
-    name: 'collapsableHeadings',
+import { CollapsableHeadings } from './extensions/CollapsableHeading'
 
-    addOptions() {
-        return {
-            levels: [1, 2, 3],
-        }
-    },
+const EDITOR_PROSE_CLASSES = clsx(
+    'prose prose-invert max-w-none focus:outline-none min-h-[100px]',
+    'prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-nav:hidden',
+    // Styles to ensure arrows are leftmost and text is indented
+    '[&_h1]:text-2xl [&_h1]:font-bold [&_h1]:pl-6 [&_h1]:relative',
+    '[&_h2]:text-xl [&_h2]:font-bold [&_h2]:pl-6 [&_h2]:relative',
+    '[&_h3]:text-lg [&_h3]:font-semibold [&_h3]:pl-6 [&_h3]:relative',
+    '[&_h4]:text-base [&_h4]:font-semibold [&_h4]:pl-6 [&_h4]:relative',
+    '[&_h5]:text-sm [&_h5]:font-semibold [&_h5]:pl-6 [&_h5]:relative',
+    '[&_h6]:text-xs [&_h6]:font-bold [&_h6]:pl-6 [&_h6]:relative',
+    // Indent all other content to align with header text, NOT the arrow
+    '[&_p]:pl-0',
+    // Reset padding for paragraphs inside lists to prevent double indentation
+    '[&_li_p]:pl-0',
+    // Increase list indent to account for their bullets + our layout
+    // pl-10 (40px) puts text at 40px. Marker is 'outside'.
+    '[&_ul]:pl-10 [&_ol]:pl-10',
+    '[&_blockquote]:pl-6',
+    '[&_pre]:pl-6',
 
-    addGlobalAttributes() {
-        return [
-            {
-                types: ['heading'],
-                attributes: {
-                    collapsed: {
-                        default: false,
-                        parseHTML: element => element.getAttribute('data-collapsed') === 'true',
-                        renderHTML: attributes => {
-                            if (!attributes.collapsed) return {}
-                            return { 'data-collapsed': 'true' }
-                        },
-                    },
-                },
-            },
-        ]
-    },
+    '[&_ul]:list-disc [&_ul]:list-outside [&_ul]:marker:text-text-primary',
+    '[&_ol]:list-decimal [&_ol]:list-outside [&_ol]:marker:text-text-primary',
 
-    addProseMirrorPlugins() {
-        return [
-            new Plugin({
-                key: new PluginKey('collapsableHeadings'),
-                props: {
-                    decorations: (state) => {
-                        const decorations: Decoration[] = []
-                        const { doc } = state
-                        let isCollapsed = false
-                        let collapsedLevel = 0
-
-                        doc.descendants((node, pos) => {
-                            if (node.type.name === 'heading') {
-                                const level = node.attrs.level
-                                if (isCollapsed && level <= collapsedLevel) {
-                                    isCollapsed = false
-                                }
-
-                                if (!isCollapsed && node.attrs.collapsed) {
-                                    isCollapsed = true
-                                    collapsedLevel = level
-                                }
-
-                                // Add toggle decoration to headers
-                                decorations.push(
-                                    Decoration.widget(pos + 1, (view) => {
-                                        const icon = document.createElement('span')
-                                        icon.className = clsx(
-                                            "inline-flex items-center justify-center w-5 h-5 mr-1 cursor-pointer transition-all duration-200 align-middle text-sub hover:text-text-primary z-50",
-                                            node.attrs.collapsed ? "-rotate-90" : "rotate-0"
-                                        )
-                                        // Match FontAwesome faChevronDown look
-                                        icon.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>`
-
-                                        icon.onmousedown = (e) => {
-                                            e.preventDefault()
-                                            e.stopPropagation()
-                                        }
-
-                                        icon.onclick = (e) => {
-                                            e.preventDefault()
-                                            e.stopPropagation()
-                                            const { tr } = view.state
-                                            const isCollapsed = !!node.attrs.collapsed
-                                            tr.setNodeMarkup(pos, undefined, {
-                                                ...node.attrs,
-                                                collapsed: !isCollapsed
-                                            })
-                                            view.dispatch(tr)
-                                        }
-                                        return icon
-                                    }, { side: -1 })
-                                )
-                            } else if (isCollapsed) {
-                                decorations.push(
-                                    Decoration.node(pos, pos + node.nodeSize, {
-                                        class: 'collapsed-content',
-                                        style: 'display: none !important'
-                                    })
-                                )
-                            }
-                        })
-
-                        return DecorationSet.create(doc, decorations)
-                    },
-                },
-            }),
-        ]
-    },
-})
+    '[&_strong]:font-bold',
+    '[&_pre]:bg-sub/20 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:font-mono [&_pre]:my-2 [&_pre]:text-xs [&_pre]:overflow-x-auto',
+    '[&_code]:bg-sub/20 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded-md [&_code]:font-mono [&_code]:text-[0.9em] [&_code]:text-text-primary', // Inline code styles
+    '[&_hr]:my-4 [&_hr]:border-t [&_hr]:border-sub/10 [&_hr]:mx-2', // Custom HR styling
+    'text-sm text-text-primary',
+    '[&_.collapsed-content]:hidden' // Ensure collapsed content is hidden
+)
 
 interface RichTextEditorProps {
     value: string
@@ -261,6 +193,27 @@ const MenuBar = ({ editor, isExpanded, toggleExpand }: { editor: Editor | null, 
                 >
                     <Heading3 size={16} />
                 </MenuButton>
+                <MenuButton
+                    onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
+                    isActive={editor.isActive('heading', { level: 4 })}
+                    title="Heading 4"
+                >
+                    <Heading4 size={16} />
+                </MenuButton>
+                <MenuButton
+                    onClick={() => editor.chain().focus().toggleHeading({ level: 5 }).run()}
+                    isActive={editor.isActive('heading', { level: 5 })}
+                    title="Heading 5"
+                >
+                    <Heading5 size={16} />
+                </MenuButton>
+                <MenuButton
+                    onClick={() => editor.chain().focus().toggleHeading({ level: 6 }).run()}
+                    isActive={editor.isActive('heading', { level: 6 })}
+                    title="Heading 6"
+                >
+                    <Heading6 size={16} />
+                </MenuButton>
 
                 <div className="w-px h-4 bg-sub/10 mx-1" />
 
@@ -405,7 +358,7 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
         extensions: [
             StarterKit.configure({
                 heading: {
-                    levels: [1, 2, 3],
+                    levels: [1, 2, 3, 4, 5, 6],
                 },
             }),
             Placeholder.configure({
@@ -440,16 +393,7 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
             editorProps: {
                 attributes: {
                     class: clsx(
-                        'prose prose-invert max-w-none focus:outline-none min-h-[100px]',
-                        'prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-nav:hidden',
-                        '[&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-semibold',
-                        '[&_ul]:list-disc [&_ul]:pl-8 [&_ul]:list-outside [&_ol]:list-decimal [&_ol]:pl-8 [&_ol]:list-outside',
-                        '[&_strong]:font-bold',
-                        '[&_pre]:bg-sub/20 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:font-mono [&_pre]:my-2 [&_pre]:text-xs [&_pre]:overflow-x-auto',
-                        '[&_code]:bg-sub/20 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded-md [&_code]:font-mono [&_code]:text-[0.9em] [&_code]:text-text-primary', // Inline code styles
-                        '[&_hr]:my-4 [&_hr]:border-t [&_hr]:border-sub/10 [&_hr]:mx-2', // Custom HR styling
-                        'text-sm text-text-primary',
-                        '[&_.collapsed-content]:hidden', // Ensure collapsed content is hidden
+                        EDITOR_PROSE_CLASSES,
                         isExpanded && 'h-full' // Full height for content div in expanded mode
                     ),
                 },

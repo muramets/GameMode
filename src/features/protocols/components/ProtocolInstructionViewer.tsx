@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { type Components } from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
@@ -10,57 +10,55 @@ interface ProtocolInstructionViewerProps {
     onInteractionEnter?: () => void;
 }
 
+import { parseMarkdownSections, type MarkdownSection } from '../../../utils/markdownUtils';
 import { CollapsibleSection } from '../../../components/ui/molecules/CollapsibleSection';
 
+// Helper for dynamic indentation based on header level
+const getIndentationClass = (level: number) => {
+    switch (level) {
+        case 1: return "pl-0";
+        case 2: return "pl-4";
+        case 3: return "pl-8";
+        case 4: return "pl-12";
+        case 5: return "pl-16";
+        case 6: return "pl-20";
+        default: return "pl-0";
+    }
+}
+
+// Helper for dynamic header font size in the collapse button
+const getHeaderSizeClass = (level: number) => {
+    switch (level) {
+        case 1: return "[&_button]:text-sm";
+        case 2: return "[&_button]:text-xs";
+        case 3: return "[&_button]:text-[10px]";
+        case 4: return "[&_button]:text-[10px]";
+        case 5: return "[&_button]:text-[9px]";
+        case 6: return "[&_button]:text-[9px]";
+        default: return "[&_button]:text-sm";
+    }
+}
+
 export const ProtocolInstructionViewer = React.memo(({ instruction, isExpanded, onInteractionEnter }: ProtocolInstructionViewerProps) => {
-    const sections = React.useMemo(() => {
-        if (!instruction) return { preamble: '', sections: [] };
+    const sections = React.useMemo(() => parseMarkdownSections(instruction || ''), [instruction]);
 
-        // Split by headers (h1, h2, h3)
-        const lines = instruction.split(/\r?\n/);
-        const result: { title: string; level: number; content: string[] }[] = [];
-        let currentSection: { title: string; level: number; content: string[] } | null = null;
-        const preamble: string[] = [];
-
-        lines.forEach(line => {
-            const headerMatch = line.match(/^\s*(#{1,3})\s+(.+?)\s*$/);
-            if (headerMatch) {
-                if (currentSection) {
-                    result.push(currentSection);
-                }
-                currentSection = {
-                    title: headerMatch[2],
-                    level: headerMatch[1].length,
-                    content: []
-                };
-            } else if (currentSection) {
-                currentSection.content.push(line);
-            } else {
-                preamble.push(line);
-            }
-        });
-
-        if (currentSection) {
-            result.push(currentSection);
-        }
-
-        return { preamble: preamble.join('\n'), sections: result };
-    }, [instruction]);
-
-    const markdownComponents = {
-        h1: ({ className, style, ...props }: any) => <h1 className={clsx("text-base font-bold text-text-primary mb-2 mt-4 first:mt-0", className)} style={style} {...props} />,
-        h2: ({ className, style, ...props }: any) => <h2 className={clsx("text-sm font-bold text-text-primary mb-2 mt-4", className)} style={style} {...props} />,
-        h3: ({ className, style, ...props }: any) => <h3 className={clsx("text-xs font-bold text-text-primary mb-1 mt-3", className)} style={style} {...props} />,
-        p: ({ className, style, ...props }: any) => <p className={clsx("mb-1 last:mb-0 text-left", className)} style={style} {...props} />,
-        div: ({ className, style, ...props }: any) => <div className={className} style={style} {...props} />,
-        ul: ({ className, style, ...props }: any) => <ul className={clsx("list-disc pl-4 mb-1 space-y-0.5", className)} style={style} {...props} />,
-        ol: ({ className, style, ...props }: any) => <ol className={clsx("list-decimal pl-4 mb-1 space-y-0.5", className)} style={style} {...props} />,
-        li: ({ className, style, ...props }: any) => <li className={clsx("pl-1", className)} style={style} {...props} />,
-        strong: ({ className, style, ...props }: any) => <strong className={clsx("font-bold text-text-primary", className)} style={style} {...props} />,
-        em: ({ className, style, ...props }: any) => <em className={clsx("italic text-text-primary/80", className)} style={style} {...props} />,
-        code: ({ className, style, ...props }: any) => <code className={clsx("bg-sub/20 rounded px-1 py-0.5 text-[10px] font-mono text-text-primary", className)} style={style} {...props} />,
-        blockquote: ({ className, style, ...props }: any) => <blockquote className={clsx("border-l-2 border-main/50 pl-3 italic text-sub my-2", className)} style={style} {...props} />,
-        hr: ({ className, style, ...props }: any) => <hr className={clsx("my-4 border-t border-sub/10 w-full", className)} style={style} {...props} />,
+    const markdownComponents: Components = {
+        h1: ({ className, style, children }) => <h1 className={clsx("text-base font-bold text-text-primary mb-2 mt-4 first:mt-0", className)} style={style}>{children}</h1>,
+        h2: ({ className, style, children }) => <h2 className={clsx("text-sm font-bold text-text-primary mb-2 mt-4", className)} style={style}>{children}</h2>,
+        h3: ({ className, style, children }) => <h3 className={clsx("text-xs font-bold text-text-primary mb-1 mt-3", className)} style={style}>{children}</h3>,
+        h4: ({ className, style, children }) => <h4 className={clsx("text-[11px] font-bold text-text-primary mb-1 mt-2", className)} style={style}>{children}</h4>,
+        h5: ({ className, style, children }) => <h5 className={clsx("text-[10px] font-bold text-text-primary mb-1 mt-2", className)} style={style}>{children}</h5>,
+        h6: ({ className, style, children }) => <h6 className={clsx("text-[9px] font-bold text-text-primary mb-1 mt-2", className)} style={style}>{children}</h6>,
+        p: ({ className, style, children }) => <p className={clsx("mb-1 last:mb-0 text-left", className)} style={style}>{children}</p>,
+        div: ({ className, style, children }) => <div className={className} style={style}>{children}</div>,
+        ul: ({ className, style, children }) => <ul className={clsx("list-disc list-outside pl-10 mb-1 space-y-0.5 marker:text-text-primary", className)} style={style}>{children}</ul>,
+        ol: ({ className, style, children }) => <ol className={clsx("list-decimal list-outside pl-10 mb-1 space-y-0.5 marker:text-text-primary", className)} style={style}>{children}</ol>,
+        li: ({ className, style, children }) => <li className={clsx("pl-1", className)} style={style}>{children}</li>,
+        strong: ({ className, style, children }) => <strong className={clsx("font-bold text-text-primary", className)} style={style}>{children}</strong>,
+        em: ({ className, style, children }) => <em className={clsx("italic text-text-primary/80", className)} style={style}>{children}</em>,
+        code: ({ className, style, children }) => <code className={clsx("bg-sub/20 rounded px-1 py-0.5 text-[10px] font-mono text-text-primary", className)} style={style}>{children}</code>,
+        blockquote: ({ className, style, children }) => <blockquote className={clsx("border-l-2 border-main/50 pl-3 italic text-sub my-2", className)} style={style}>{children}</blockquote>,
+        hr: ({ className, style }) => <hr className={clsx("my-4 border-t border-sub/10 w-full", className)} style={style} />,
     };
 
     return (
@@ -90,7 +88,7 @@ export const ProtocolInstructionViewer = React.memo(({ instruction, isExpanded, 
                             </div>
                         )}
 
-                        {sections.sections.map((section, idx) => (
+                        {sections.sections.map((section: MarkdownSection, idx: number) => (
                             <CollapsibleSection
                                 key={idx}
                                 defaultOpen={false}
@@ -110,9 +108,8 @@ export const ProtocolInstructionViewer = React.memo(({ instruction, isExpanded, 
                                 className={clsx(
                                     "mb-4",
                                     "[&_button]:items-start [&_button]:text-left [&_button_div:first-child]:mt-[5px]", // Align chevron to top and text to left
-                                    section.level === 1 ? "[&_button]:text-sm px-0" :
-                                        section.level === 2 ? "px-5 [&_button]:text-xs" :
-                                            "px-10 [&_button]:text-[10px]"
+                                    getIndentationClass(section.level),
+                                    getHeaderSizeClass(section.level)
                                 )}
                             >
                                 <ReactMarkdown rehypePlugins={[rehypeRaw]} components={markdownComponents}>
