@@ -327,8 +327,8 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
             codeBlockStyle: 'fenced'
         })
 
-        // preserve color styles
-        service.keep(['span'])
+        // preserve color styles and explicit breaks
+        service.keep(['span', 'br'])
 
         // preserve text-align styles using a custom rule to force HTML output
         service.addRule('aligned-paragraph', {
@@ -352,11 +352,18 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
         // Preserve empty lines (paragraphs with simple break or empty)
         service.addRule('empty-paragraph', {
             filter: function (node) {
-                return node.nodeName === 'P' && (node.innerHTML.trim() === '<br>' || node.innerHTML.trim() === '')
+                // Tiptap represents empty paragraphs as <p><br></p> or just <p></p>
+                // Sometimes the BR has a class (ProseMirror-trailingBreak)
+                return node.nodeName === 'P' && (
+                    node.innerHTML.trim() === '' ||
+                    node.innerHTML === '<br>' ||
+                    (node.childNodes.length === 1 && node.firstChild?.nodeName === 'BR')
+                )
             },
             replacement: function () {
-                // Return non-breaking space to ensure it survives markdown parsing as a line
-                return '&nbsp;\n\n'
+                // Return explicit BR to ensure it survives markdown roundtrip
+                // &nbsp; was unreliable as it could be stripped as whitespace
+                return '<br>\n\n'
             }
         })
 
