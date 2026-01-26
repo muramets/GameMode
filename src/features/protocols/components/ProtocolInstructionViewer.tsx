@@ -17,14 +17,12 @@ export const ProtocolInstructionViewer = React.memo(({ instruction, isExpanded, 
         if (!instruction) return { preamble: '', sections: [] };
 
         // Split by headers (h1, h2, h3)
-        // Use more robust line splitting to handle different line endings
         const lines = instruction.split(/\r?\n/);
         const result: { title: string; level: number; content: string[] }[] = [];
         let currentSection: { title: string; level: number; content: string[] } | null = null;
         const preamble: string[] = [];
 
         lines.forEach(line => {
-            // More lenient regex for standard markdown headers
             const headerMatch = line.match(/^\s*(#{1,3})\s+(.+?)\s*$/);
             if (headerMatch) {
                 if (currentSection) {
@@ -48,6 +46,22 @@ export const ProtocolInstructionViewer = React.memo(({ instruction, isExpanded, 
 
         return { preamble: preamble.join('\n'), sections: result };
     }, [instruction]);
+
+    const markdownComponents = {
+        h1: ({ className, style, ...props }: any) => <h1 className={clsx("text-base font-bold text-text-primary mb-2 mt-4 first:mt-0", className)} style={style} {...props} />,
+        h2: ({ className, style, ...props }: any) => <h2 className={clsx("text-sm font-bold text-text-primary mb-2 mt-4", className)} style={style} {...props} />,
+        h3: ({ className, style, ...props }: any) => <h3 className={clsx("text-xs font-bold text-text-primary mb-1 mt-3", className)} style={style} {...props} />,
+        p: ({ className, style, ...props }: any) => <p className={clsx("mb-1 last:mb-0 text-left", className)} style={style} {...props} />,
+        div: ({ className, style, ...props }: any) => <div className={className} style={style} {...props} />,
+        ul: ({ className, style, ...props }: any) => <ul className={clsx("list-disc pl-4 mb-1 space-y-0.5", className)} style={style} {...props} />,
+        ol: ({ className, style, ...props }: any) => <ol className={clsx("list-decimal pl-4 mb-1 space-y-0.5", className)} style={style} {...props} />,
+        li: ({ className, style, ...props }: any) => <li className={clsx("pl-1", className)} style={style} {...props} />,
+        strong: ({ className, style, ...props }: any) => <strong className={clsx("font-bold text-text-primary", className)} style={style} {...props} />,
+        em: ({ className, style, ...props }: any) => <em className={clsx("italic text-text-primary/80", className)} style={style} {...props} />,
+        code: ({ className, style, ...props }: any) => <code className={clsx("bg-sub/20 rounded px-1 py-0.5 text-[10px] font-mono text-text-primary", className)} style={style} {...props} />,
+        blockquote: ({ className, style, ...props }: any) => <blockquote className={clsx("border-l-2 border-main/50 pl-3 italic text-sub my-2", className)} style={style} {...props} />,
+        hr: ({ className, style, ...props }: any) => <hr className={clsx("my-4 border-t border-sub/10 w-full", className)} style={style} {...props} />,
+    };
 
     return (
         <AnimatePresence>
