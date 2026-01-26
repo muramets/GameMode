@@ -93,7 +93,13 @@ export const ProtocolInstructionViewer = React.memo(({ instruction, isExpanded, 
                                         </ReactMarkdown>
                                     </div>
                                 }
-                                className="mb-4"
+                                className={clsx(
+                                    "mb-4",
+                                    "[&_button]:items-start [&_button]:text-left [&_button_div:first-child]:mt-[5px]", // Align chevron to top and text to left
+                                    section.level === 1 ? "[&_button]:text-sm px-0" :
+                                        section.level === 2 ? "px-5 [&_button]:text-xs" :
+                                            "px-10 [&_button]:text-[10px]"
+                                )}
                             >
                                 <ReactMarkdown rehypePlugins={[rehypeRaw]} components={{
                                     h1: ({ className, style, ...props }) => <h1 className={clsx("text-base font-bold text-text-primary mb-2 mt-4 first:mt-0", className)} style={style} {...props} />,
