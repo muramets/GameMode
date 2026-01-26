@@ -14,16 +14,10 @@ import { parseMarkdownSections, nestMarkdownSections, type HierarchicalSection }
 import { CollapsibleSection } from '../../../components/ui/molecules/CollapsibleSection';
 
 // Helper for dynamic indentation based on header level
+// Since we are using recursive nesting, each level naturally adds to the indentation of the parent.
+// We just need a constant indentation step for levels > 1 relative to their parent.
 const getIndentationClass = (level: number) => {
-    switch (level) {
-        case 1: return "pl-0";
-        case 2: return "pl-4";
-        case 3: return "pl-8";
-        case 4: return "pl-12";
-        case 5: return "pl-16";
-        case 6: return "pl-20";
-        default: return "pl-0";
-    }
+    return level === 1 ? "pl-0" : "pl-5"; // Increased to pl-5 (20px) to match the previous look ~roughly (it was pl-4, pl-8...)
 }
 
 // Helper for dynamic header font size in the collapse button
@@ -55,9 +49,16 @@ export const ProtocolInstructionViewer = React.memo(({ instruction, isExpanded, 
         h6: ({ className, style, children }) => <h6 className={clsx("text-[9px] font-bold text-text-primary mb-1 mt-2", className)} style={style}>{children}</h6>,
         p: ({ className, style, children }) => <p className={clsx("mb-1 last:mb-0 text-left", className)} style={style}>{children}</p>,
         div: ({ className, style, children }) => <div className={className} style={style}>{children}</div>,
-        ul: ({ className, style, children }) => <ul className={clsx("list-disc list-outside pl-10 mb-1 space-y-0.5 marker:text-text-primary", className)} style={style}>{children}</ul>,
-        ol: ({ className, style, children }) => <ol className={clsx("list-decimal list-outside pl-10 mb-1 space-y-0.5 marker:text-text-primary", className)} style={style}>{children}</ol>,
-        li: ({ className, style, children }) => <li className={clsx("pl-1", className)} style={style}>{children}</li>,
+        ul: ({ className, style, children }) => <ul className={clsx("list-disc list-outside pl-5 mb-1 space-y-0.5", className)} style={style}>{children}</ul>,
+        ol: ({ className, style, children }) => <ol className={clsx("list-decimal list-outside pl-5 mb-1 space-y-0.5", className)} style={style}>{children}</ol>,
+        li: ({ className, style, children }) => (
+            <li
+                className={clsx("pl-1 marker:text-sub", className)}
+                style={style}
+            >
+                {children}
+            </li>
+        ),
         strong: ({ className, style, children }) => <strong className={clsx("font-bold text-text-primary", className)} style={style}>{children}</strong>,
         em: ({ className, style, children }) => <em className={clsx("italic text-text-primary/80", className)} style={style}>{children}</em>,
         code: ({ className, style, children }) => <code className={clsx("bg-sub/20 rounded px-1 py-0.5 text-[10px] font-mono text-text-primary", className)} style={style}>{children}</code>,
