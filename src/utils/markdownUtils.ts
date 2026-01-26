@@ -57,3 +57,39 @@ export const parseMarkdownSections = (markdown: string): MarkdownParseResult => 
 
     return { preamble: preamble.join('\n'), sections: result };
 };
+
+export interface HierarchicalSection extends MarkdownSection {
+    children: HierarchicalSection[];
+}
+
+/**
+ * Converts a flat list of markdown sections into a hierarchy based on header levels.
+ * An H2 following an H1 becomes a child of that H1.
+ * 
+ * @param sections - Flat list of sections
+ * @returns Array of root sections with populated children
+ */
+export const nestMarkdownSections = (sections: MarkdownSection[]): HierarchicalSection[] => {
+    const root: HierarchicalSection[] = [];
+    const stack: HierarchicalSection[] = [];
+
+    sections.forEach(section => {
+        const node: HierarchicalSection = { ...section, children: [] };
+
+        // Pop stack until we find a parent with strictly lower level (e.g. H1 is parent of H2)
+        // If current is H2 (level 2), we pop H2, H3, H4... until we find H1 (level 1) or stack empty.
+        while (stack.length > 0 && stack[stack.length - 1].level >= node.level) {
+            stack.pop();
+        }
+
+        if (stack.length === 0) {
+            root.push(node);
+        } else {
+            stack[stack.length - 1].children.push(node);
+        }
+
+        stack.push(node);
+    });
+
+    return root;
+};

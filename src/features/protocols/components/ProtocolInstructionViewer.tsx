@@ -10,7 +10,7 @@ interface ProtocolInstructionViewerProps {
     onInteractionEnter?: () => void;
 }
 
-import { parseMarkdownSections, type MarkdownSection } from '../../../utils/markdownUtils';
+import { parseMarkdownSections, nestMarkdownSections, type HierarchicalSection } from '../../../utils/markdownUtils';
 import { CollapsibleSection } from '../../../components/ui/molecules/CollapsibleSection';
 
 // Helper for dynamic indentation based on header level
@@ -40,7 +40,11 @@ const getHeaderSizeClass = (level: number) => {
 }
 
 export const ProtocolInstructionViewer = React.memo(({ instruction, isExpanded, onInteractionEnter }: ProtocolInstructionViewerProps) => {
-    const sections = React.useMemo(() => parseMarkdownSections(instruction || ''), [instruction]);
+    const sections = React.useMemo(() => {
+        const parsed = parseMarkdownSections(instruction || '');
+        const hierarchical = nestMarkdownSections(parsed.sections);
+        return { preamble: parsed.preamble, sections: hierarchical };
+    }, [instruction]);
 
     const markdownComponents: Components = {
         h1: ({ className, style, children }) => <h1 className={clsx("text-base font-bold text-text-primary mb-2 mt-4 first:mt-0", className)} style={style}>{children}</h1>,
@@ -60,6 +64,42 @@ export const ProtocolInstructionViewer = React.memo(({ instruction, isExpanded, 
         blockquote: ({ className, style, children }) => <blockquote className={clsx("border-l-2 border-main/50 pl-3 italic text-sub my-2", className)} style={style}>{children}</blockquote>,
         hr: ({ className, style }) => <hr className={clsx("my-4 border-t border-sub/10 w-full", className)} style={style} />,
     };
+
+    const renderSection = (section: HierarchicalSection, idx: number) => (
+        <CollapsibleSection
+            key={idx}
+            defaultOpen={false}
+            variant="mini"
+            title={
+                <div className="inline-block pointer-events-none rich-text-viewer-header">
+                    <ReactMarkdown
+                        rehypePlugins={[rehypeRaw]}
+                        components={{
+                            p: ({ children }) => <span className="inline">{children}</span>,
+                        }}
+                    >
+                        {section.title}
+                    </ReactMarkdown>
+                </div>
+            }
+            className={clsx(
+                "mb-4",
+                "[&_button]:items-start [&_button]:text-left [&_button_div:first-child]:mt-[5px]", // Align chevron to top and text to left
+                getIndentationClass(section.level),
+                getHeaderSizeClass(section.level)
+            )}
+        >
+            <ReactMarkdown rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+                {section.content.join('\n')}
+            </ReactMarkdown>
+            {/* Recursively render children sections inside the content area */}
+            {section.children.length > 0 && (
+                <div className="mt-2 text-left">
+                    {section.children.map((child, i) => renderSection(child, i))}
+                </div>
+            )}
+        </CollapsibleSection>
+    );
 
     return (
         <AnimatePresence>
@@ -88,35 +128,7 @@ export const ProtocolInstructionViewer = React.memo(({ instruction, isExpanded, 
                             </div>
                         )}
 
-                        {sections.sections.map((section: MarkdownSection, idx: number) => (
-                            <CollapsibleSection
-                                key={idx}
-                                defaultOpen={false}
-                                variant="mini"
-                                title={
-                                    <div className="inline-block pointer-events-none rich-text-viewer-header">
-                                        <ReactMarkdown
-                                            rehypePlugins={[rehypeRaw]}
-                                            components={{
-                                                p: ({ children }) => <span className="inline">{children}</span>,
-                                            }}
-                                        >
-                                            {section.title}
-                                        </ReactMarkdown>
-                                    </div>
-                                }
-                                className={clsx(
-                                    "mb-4",
-                                    "[&_button]:items-start [&_button]:text-left [&_button_div:first-child]:mt-[5px]", // Align chevron to top and text to left
-                                    getIndentationClass(section.level),
-                                    getHeaderSizeClass(section.level)
-                                )}
-                            >
-                                <ReactMarkdown rehypePlugins={[rehypeRaw]} components={markdownComponents}>
-                                    {section.content.join('\n')}
-                                </ReactMarkdown>
-                            </CollapsibleSection>
-                        ))}
+                        {sections.sections.map((section, idx) => renderSection(section, idx))}
                     </div>
                 </motion.div>
             )}
