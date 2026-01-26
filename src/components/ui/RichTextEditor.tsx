@@ -1,4 +1,4 @@
-import { useEditor, EditorContent, Editor } from '@tiptap/react'
+import { useEditor, EditorContent, Editor, Extension } from '@tiptap/react'
 import { createPortal } from 'react-dom'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -12,6 +12,107 @@ import React, { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import * as Popover from '@radix-ui/react-popover'
 import { PRESET_COLORS } from '../../constants/common'
+import { Decoration, DecorationSet } from '@tiptap/pm/view'
+import { Plugin, PluginKey } from '@tiptap/pm/state'
+
+// Custom extension for collapsable headers
+const CollapsableHeadings = Extension.create({
+    name: 'collapsableHeadings',
+
+    addOptions() {
+        return {
+            levels: [1, 2, 3],
+        }
+    },
+
+    addGlobalAttributes() {
+        return [
+            {
+                types: ['heading'],
+                attributes: {
+                    collapsed: {
+                        default: false,
+                        parseHTML: element => element.getAttribute('data-collapsed') === 'true',
+                        renderHTML: attributes => {
+                            if (!attributes.collapsed) return {}
+                            return { 'data-collapsed': 'true' }
+                        },
+                    },
+                },
+            },
+        ]
+    },
+
+    addProseMirrorPlugins() {
+        return [
+            new Plugin({
+                key: new PluginKey('collapsableHeadings'),
+                props: {
+                    decorations: (state) => {
+                        const decorations: Decoration[] = []
+                        const { doc } = state
+                        let isCollapsed = false
+                        let collapsedLevel = 0
+
+                        doc.descendants((node, pos) => {
+                            if (node.type.name === 'heading') {
+                                const level = node.attrs.level
+                                if (isCollapsed && level <= collapsedLevel) {
+                                    isCollapsed = false
+                                }
+
+                                if (!isCollapsed && node.attrs.collapsed) {
+                                    isCollapsed = true
+                                    collapsedLevel = level
+                                }
+
+                                // Add toggle decoration to headers
+                                decorations.push(
+                                    Decoration.widget(pos + 1, (view) => {
+                                        const icon = document.createElement('span')
+                                        icon.className = clsx(
+                                            "inline-flex items-center justify-center w-5 h-5 mr-1 cursor-pointer transition-all duration-200 align-middle text-sub hover:text-text-primary z-50",
+                                            node.attrs.collapsed ? "-rotate-90" : "rotate-0"
+                                        )
+                                        // Match FontAwesome faChevronDown look
+                                        icon.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>`
+
+                                        icon.onmousedown = (e) => {
+                                            e.preventDefault()
+                                            e.stopPropagation()
+                                        }
+
+                                        icon.onclick = (e) => {
+                                            e.preventDefault()
+                                            e.stopPropagation()
+                                            const { tr } = view.state
+                                            const isCollapsed = !!node.attrs.collapsed
+                                            tr.setNodeMarkup(pos, undefined, {
+                                                ...node.attrs,
+                                                collapsed: !isCollapsed
+                                            })
+                                            view.dispatch(tr)
+                                        }
+                                        return icon
+                                    }, { side: -1 })
+                                )
+                            } else if (isCollapsed) {
+                                decorations.push(
+                                    Decoration.node(pos, pos + node.nodeSize, {
+                                        class: 'collapsed-content',
+                                        style: 'display: none !important'
+                                    })
+                                )
+                            }
+                        })
+
+                        return DecorationSet.create(doc, decorations)
+                    },
+                },
+            }),
+        ]
+    },
+})
 
 interface RichTextEditorProps {
     value: string
@@ -315,6 +416,7 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
             TextAlign.configure({
                 types: ['heading', 'paragraph'],
             }),
+            CollapsableHeadings,
         ],
         content: initialContent,
         onUpdate: ({ editor }) => {
@@ -347,6 +449,7 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
                         '[&_code]:bg-sub/20 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded-md [&_code]:font-mono [&_code]:text-[0.9em] [&_code]:text-text-primary', // Inline code styles
                         '[&_hr]:my-4 [&_hr]:border-t [&_hr]:border-sub/10 [&_hr]:mx-2', // Custom HR styling
                         'text-sm text-text-primary',
+                        '[&_.collapsed-content]:hidden', // Ensure collapsed content is hidden
                         isExpanded && 'h-full' // Full height for content div in expanded mode
                     ),
                 },
