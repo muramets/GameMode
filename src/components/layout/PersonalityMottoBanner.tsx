@@ -223,8 +223,10 @@ function ScrollableMotto({ text, backgroundColor }: { text: string, backgroundCo
 
                 {shouldScroll && (
                     <>
-                        {/* First gap */}
-                        <span style={{ width: gap, display: 'inline-block' }}></span>
+                        {/* First gap with separator */}
+                        <div style={{ width: gap, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div className="w-1.5 h-4 bg-current opacity-20 rounded-full" />
+                        </div>
 
                         {/* Duplicate content for loop */}
                         <span aria-hidden="true" className="font-bold tracking-wider uppercase opacity-90">
@@ -232,7 +234,9 @@ function ScrollableMotto({ text, backgroundColor }: { text: string, backgroundCo
                         </span>
 
                         {/* Trailing gap allows perfect 50% shift if we treat (Text + Gap) as the unit */}
-                        <span style={{ width: gap, display: 'inline-block' }}></span>
+                        <div style={{ width: gap, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div className="w-1.5 h-4 bg-current opacity-20 rounded-full" />
+                        </div>
                     </>
                 )}
             </div>
