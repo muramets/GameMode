@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
 import { usePersonalityStore } from '../../stores/personalityStore';
@@ -113,7 +113,7 @@ function PersonalityMottoBannerContent() {
 }
 
 function ScrollableMotto({ text, backgroundColor }: { text: string, backgroundColor: string }) {
-    const [isHovered, setIsHovered] = useState(false);
+
     const containerRef = useRef<HTMLDivElement>(null);
     const textRef = useRef<HTMLSpanElement>(null);
     const [shouldScroll, setShouldScroll] = useState(false);
@@ -125,7 +125,7 @@ function ScrollableMotto({ text, backgroundColor }: { text: string, backgroundCo
         const checkScroll = () => {
             if (containerRef.current && textRef.current) {
                 const containerWidth = containerRef.current.offsetWidth;
-                const textMeasuredWidth = textRef.current.offsetWidth;
+                const textMeasuredWidth = textRef.current.scrollWidth;
 
                 // If text is wider than container
                 const isOverflowing = textMeasuredWidth > containerWidth;
@@ -146,64 +146,106 @@ function ScrollableMotto({ text, backgroundColor }: { text: string, backgroundCo
         return () => resizeObserver.disconnect();
     }, [text]);
 
+    // Restart animation when re-entering viewport
+    const [isInView, setIsInView] = useState(false);
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                setIsInView(entry.isIntersecting);
+            },
+            { threshold: 0 }
+        );
+
+        if (containerRef.current) {
+            observer.observe(containerRef.current);
+        }
+
+        return () => observer.disconnect();
+    }, []);
 
     const gap = 32; // Gap between duplicates
-    const prefersReducedMotion = useReducedMotion();
-    const animateScroll = shouldScroll && isHovered && !prefersReducedMotion;
+
+
+    // CSS Styles for marquee animation
+    const marqueeStyle = `
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+            animation: marquee ${shouldScroll ? Math.max(10, contentWidth / 30) + 's' : '0s'} linear infinite;
+            animation-delay: 3s;
+        }
+        .animate-marquee:hover {
+            animation-play-state: paused;
+        }
+        .left-mask-fade {
+            animation: fadeIn 0.5s ease-in forwards;
+            animation-delay: 3s;
+            opacity: 0; /* Start hidden */
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .animate-marquee, .left-mask-fade {
+                animation: none;
+                transform: none; 
+                opacity: 0;
+            }
+        }
+    `;
+
+    // Only animate if scrolling is needed AND we are in view (resets animation on re-entry)
+    const isAnimating = shouldScroll && isInView;
 
     return (
         <div
             ref={containerRef}
             className={`flex items-center overflow-hidden max-w-[80%] relative cursor-default select-none h-full ${shouldScroll ? 'justify-start' : 'justify-center'}`}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            aria-label={shouldScroll ? text : undefined} // Provide accessible label if using marquees
-            role={shouldScroll ? "marquee" : undefined} // Optional, but semantic
+            aria-label={shouldScroll ? text : undefined}
+            role={shouldScroll ? "marquee" : undefined}
         >
-            <motion.div
-                className={`flex items-center whitespace-nowrap will-change-transform ${shouldScroll && !isHovered ? 'w-full' : ''}`}
-                animate={animateScroll ? {
-                    x: [0, -(contentWidth + gap)],
-                    transition: {
-                        x: {
-                            repeat: Infinity,
-                            repeatType: "loop",
-                            duration: Math.max(5, contentWidth / 30), // Adjust speed here
-                            ease: "linear",
-                        },
-                    },
-                } : {
-                    x: 0,
-                    transition: { duration: 0.3 }
-                }}
+            {/* Inject dynamic styles */}
+            <style>{marqueeStyle}</style>
+
+            <div
+                // Key forces remount if we really wanted hard reset, but class toggle is usually enough for CSS anims
+                className={`flex items-center whitespace-nowrap will-change-transform ${isAnimating ? 'animate-marquee w-fit' : 'w-full min-w-0 overflow-hidden'}`}
             >
                 <span
                     ref={textRef}
-                    className={`font-bold tracking-wider uppercase opacity-90 ${shouldScroll && !isHovered ? 'w-full truncate block text-left' : ''}`}
+                    className={`font-bold tracking-wider uppercase opacity-90 ${shouldScroll ? 'block' : 'w-full truncate block text-left'}`}
                 >
                     {text}
                 </span>
 
                 {shouldScroll && (
                     <>
+                        {/* First gap */}
                         <span style={{ width: gap, display: 'inline-block' }}></span>
-                        {/* Hide duplicate content from screen readers to prevent double reading */}
+
+                        {/* Duplicate content for loop */}
                         <span aria-hidden="true" className="font-bold tracking-wider uppercase opacity-90">
                             {text}
                         </span>
+
+                        {/* Trailing gap allows perfect 50% shift if we treat (Text + Gap) as the unit */}
+                        <span style={{ width: gap, display: 'inline-block' }}></span>
                     </>
                 )}
-            </motion.div>
+            </div>
 
-            {/* Gradient masks for smooth fade when scrolling - only visible when needed */}
+            {/* Gradient masks - Always visible if scrolling (to show it's a window) */}
             {shouldScroll && (
                 <>
                     <div
-                        className={`absolute left-0 top-0 bottom-0 w-8 pointer-events-none transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+                        className={`absolute left-0 top-0 bottom-0 w-8 pointer-events-none z-10 ${isAnimating ? 'left-mask-fade' : 'opacity-0'}`}
                         style={{ background: `linear-gradient(to right, ${backgroundColor}, transparent)` }}
                     />
                     <div
-                        className={`absolute right-0 top-0 bottom-0 w-8 pointer-events-none transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+                        className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none z-10"
                         style={{ background: `linear-gradient(to left, ${backgroundColor}, transparent)` }}
                     />
                 </>
