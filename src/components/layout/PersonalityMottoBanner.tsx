@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
 import { usePersonalityStore } from '../../stores/personalityStore';
@@ -70,7 +70,7 @@ function PersonalityMottoBannerContent() {
         <AnimatePresence>
             <motion.div
                 initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: '32px' }} // Slightly smaller than ViewerBanner (47px) to be less intrusive? Or same? Request says "Reuse same element". ViewerBanner is 47px.
+                animate={{ opacity: 1, height: '32px' }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
                 className="w-full font-mono text-xs leading-none flex items-center justify-center relative shadow-sm z-50 group/banner"
@@ -82,13 +82,10 @@ function PersonalityMottoBannerContent() {
             >
                 {/* Centered Content Container */}
                 <div
-                    className="flex items-center justify-center w-full h-full px-8"
+                    className="flex items-center justify-center w-full h-full px-8 overflow-hidden relative"
                     style={{ maxWidth: '1200px', margin: '0 auto' }}
                 >
-                    {/* Centered Motto */}
-                    <span className="font-bold tracking-wider uppercase opacity-90 truncate max-w-[80%]">
-                        {activeMotto.text}
-                    </span>
+                    <ScrollableMotto text={activeMotto.text} backgroundColor={backgroundColor} />
                 </div>
 
                 {/* Exit Button - Absolute Right of the BANNER (viewport), not the inner container */}
@@ -112,6 +109,106 @@ function PersonalityMottoBannerContent() {
                 </button>
             </motion.div>
         </AnimatePresence >
+    );
+}
+
+function ScrollableMotto({ text, backgroundColor }: { text: string, backgroundColor: string }) {
+    const [isHovered, setIsHovered] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const textRef = useRef<HTMLSpanElement>(null);
+    const [shouldScroll, setShouldScroll] = useState(false);
+
+    // Measure carefully on mount, text change, and resize
+    const [contentWidth, setContentWidth] = useState(0);
+
+    useEffect(() => {
+        const checkScroll = () => {
+            if (containerRef.current && textRef.current) {
+                const containerWidth = containerRef.current.offsetWidth;
+                const textMeasuredWidth = textRef.current.offsetWidth;
+
+                // If text is wider than container
+                const isOverflowing = textMeasuredWidth > containerWidth;
+                setShouldScroll(isOverflowing);
+                setContentWidth(textMeasuredWidth);
+            }
+        };
+
+        // Initial check
+        checkScroll();
+
+        // Check on resize
+        const resizeObserver = new ResizeObserver(checkScroll);
+        if (containerRef.current) {
+            resizeObserver.observe(containerRef.current);
+        }
+
+        return () => resizeObserver.disconnect();
+    }, [text]);
+
+
+    const gap = 32; // Gap between duplicates
+    const prefersReducedMotion = useReducedMotion();
+    const animateScroll = shouldScroll && isHovered && !prefersReducedMotion;
+
+    return (
+        <div
+            ref={containerRef}
+            className={`flex items-center overflow-hidden max-w-[80%] relative cursor-default select-none h-full ${shouldScroll ? 'justify-start' : 'justify-center'}`}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            aria-label={shouldScroll ? text : undefined} // Provide accessible label if using marquees
+            role={shouldScroll ? "marquee" : undefined} // Optional, but semantic
+        >
+            <motion.div
+                className={`flex items-center whitespace-nowrap will-change-transform ${shouldScroll && !isHovered ? 'w-full' : ''}`}
+                animate={animateScroll ? {
+                    x: [0, -(contentWidth + gap)],
+                    transition: {
+                        x: {
+                            repeat: Infinity,
+                            repeatType: "loop",
+                            duration: Math.max(5, contentWidth / 30), // Adjust speed here
+                            ease: "linear",
+                        },
+                    },
+                } : {
+                    x: 0,
+                    transition: { duration: 0.3 }
+                }}
+            >
+                <span
+                    ref={textRef}
+                    className={`font-bold tracking-wider uppercase opacity-90 ${shouldScroll && !isHovered ? 'w-full truncate block text-left' : ''}`}
+                >
+                    {text}
+                </span>
+
+                {shouldScroll && (
+                    <>
+                        <span style={{ width: gap, display: 'inline-block' }}></span>
+                        {/* Hide duplicate content from screen readers to prevent double reading */}
+                        <span aria-hidden="true" className="font-bold tracking-wider uppercase opacity-90">
+                            {text}
+                        </span>
+                    </>
+                )}
+            </motion.div>
+
+            {/* Gradient masks for smooth fade when scrolling - only visible when needed */}
+            {shouldScroll && (
+                <>
+                    <div
+                        className={`absolute left-0 top-0 bottom-0 w-8 pointer-events-none transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+                        style={{ background: `linear-gradient(to right, ${backgroundColor}, transparent)` }}
+                    />
+                    <div
+                        className={`absolute right-0 top-0 bottom-0 w-8 pointer-events-none transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+                        style={{ background: `linear-gradient(to left, ${backgroundColor}, transparent)` }}
+                    />
+                </>
+            )}
+        </div>
     );
 }
 
