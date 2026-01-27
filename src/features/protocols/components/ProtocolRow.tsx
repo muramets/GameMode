@@ -340,16 +340,18 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
 
                                 return (
                                     <motion.div layout key={innerface.id} className="pointer-events-none">
-                                        {isDisabled ? (
-                                            <div>{InnerfaceIcon}</div>
-                                        ) : (
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>{InnerfaceIcon}</TooltipTrigger>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <div className={isDisabled ? 'pointer-events-none' : 'pointer-events-auto'}>
+                                                    {InnerfaceIcon}
+                                                </div>
+                                            </TooltipTrigger>
+                                            {!isDisabled && (
                                                 <TooltipContent side="top">
                                                     <span className="font-lexend text-xs">{innerface.name} · {innerface.currentScore ?? 0}</span>
                                                 </TooltipContent>
-                                            </Tooltip>
-                                        )}
+                                            )}
+                                        </Tooltip>
                                     </motion.div>
                                 );
                             })}
