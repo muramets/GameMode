@@ -15,6 +15,9 @@ interface PlanningActionListProps {
     setActionCounts: React.Dispatch<React.SetStateAction<Record<string, number>>>;
     setIsCustomizing: (value: boolean) => void;
     pointsNeeded: number;
+    // New Props for State Management Lift
+    deactivatedProtocols: Set<string>;
+    handleProtocolToggle: (protocolId: string) => void;
 }
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -197,7 +200,10 @@ export function PlanningActionList({
     actionCounts,
     setActionCounts,
     setIsCustomizing,
-    pointsNeeded
+    pointsNeeded,
+    // Received from parent
+    deactivatedProtocols,
+    handleProtocolToggle
 }: PlanningActionListProps) {
 
     // Track pace for each protocol (default: medium)
@@ -212,8 +218,8 @@ export function PlanningActionList({
     // Track custom schedules (when user manually clicks days)
     const [customSchedules, setCustomSchedules] = useState<Record<string, boolean[]>>({});
 
-    // Track deactivated protocols (excluded from goal)
-    const [deactivatedProtocols, setDeactivatedProtocols] = useState<Set<string>>(new Set());
+    // REMOVED: Local deactivatedProtocols state and handleProtocolToggle
+    // Now using props passed from usePlanningLogic
 
     // Calculate total weekly XP from all protocols
     const totalWeeklyXP = useMemo(() => {
@@ -237,19 +243,6 @@ export function PlanningActionList({
         return calculateWeeksToGoal(xpNeeded, totalWeeklyXP);
     }, [pointsNeeded, totalWeeklyXP]);
 
-    // Handle protocol deactivation toggle
-    const handleProtocolToggle = (protocolId: string) => {
-        setDeactivatedProtocols(prev => {
-            const next = new Set(prev);
-            if (next.has(protocolId)) {
-                next.delete(protocolId);
-            } else {
-                next.add(protocolId);
-            }
-            return next;
-        });
-        setIsCustomizing(true);
-    };
 
     // Handle pace change for a protocol
     const handlePaceChange = (protocolId: string, pace: SmartPlannerPace) => {

@@ -32,6 +32,9 @@ export function usePlanningLogic({ innerface, isOpen, onClose }: UsePlanningLogi
     const [isCustomizing, setIsCustomizing] = useState(false);
     const [actionCounts, setActionCounts] = useState<Record<string, number>>({});
 
+    // Track deactivated protocols (lifted from PlanningActionList)
+    const [deactivatedProtocols, setDeactivatedProtocols] = useState<Set<string>>(new Set());
+
     // Interactive Progress Bar State
     const progressBarRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -59,10 +62,23 @@ export function usePlanningLogic({ innerface, isOpen, onClose }: UsePlanningLogi
                 if (existing.actionCounts && Object.keys(existing.actionCounts).length > 0) {
                     setIsCustomizing(true);
                     setActionCounts(existing.actionCounts);
+
+                    // Initialize deactivated protocols based on saved counts
+                    // If a linked protocol is NOT in actionCounts (or has 0), it's deactivated
+                    const deactivated = new Set<string>();
+                    linkedProtocols.forEach(p => {
+                        const count = existing.actionCounts?.[p.id];
+                        if (!count || count === 0) {
+                            deactivated.add(String(p.id));
+                        }
+                    });
+                    setDeactivatedProtocols(deactivated);
+
                 } else {
                     // Fallback for legacy plans without counts
                     setIsCustomizing(false);
                     setActionCounts({});
+                    setDeactivatedProtocols(new Set());
                 }
             } else {
                 // NEW: Default to Medium Pace (3/week) for linked protocols
@@ -74,11 +90,25 @@ export function usePlanningLogic({ innerface, isOpen, onClose }: UsePlanningLogi
                 setIsCustomizing(false);
                 setActionCounts(defaults);
                 setBalance({});
+                setDeactivatedProtocols(new Set());
             }
         }
-    }, [isOpen, innerface.id, goals, currentScore, linkedProtocols]); // linkedProtocols is dynamic but derived from contexts, acceptable to track or omit if stable. Ideally omit to avoid loops if protocols change often, but correct React way is include. Logic above uses it only on mount/open.
+    }, [isOpen, innerface.id, goals, currentScore, linkedProtocols]);
 
     const pointsNeeded = Math.max(0, targetScore - currentScore);
+
+    const handleProtocolToggle = (protocolId: string) => {
+        setDeactivatedProtocols(prev => {
+            const next = new Set(prev);
+            if (next.has(protocolId)) {
+                next.delete(protocolId);
+            } else {
+                next.add(protocolId);
+            }
+            return next;
+        });
+        setIsCustomizing(true);
+    };
 
     const handleSave = async () => {
         if (!activeContext) return;
@@ -94,12 +124,18 @@ export function usePlanningLogic({ innerface, isOpen, onClose }: UsePlanningLogi
                 context = { type: 'personality', uid: activeContext.uid, pid: activeContext.pid };
             }
 
+            // Filter actionCounts: set count to 0 for deactivated protocols
+            const finalActionCounts: Record<string, number> = { ...actionCounts };
+            deactivatedProtocols.forEach(id => {
+                finalActionCounts[id] = 0;
+            });
+
             if (context) {
                 await setGoal(context, {
                     innerfaceId: innerface.id,
                     targetScore,
                     balance,
-                    actionCounts // Always save what is in state
+                    actionCounts: finalActionCounts // Save sanitized counts
                 });
                 onClose();
             }
@@ -221,6 +257,10 @@ export function usePlanningLogic({ innerface, isOpen, onClose }: UsePlanningLogi
         currentColor,
         targetColor,
         scoreGradient,
-        targetPercent
+        targetPercent,
+
+        // Protocol Exclusion
+        deactivatedProtocols,
+        handleProtocolToggle
     };
 }

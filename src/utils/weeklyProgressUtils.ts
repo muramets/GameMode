@@ -15,6 +15,12 @@ export interface WeeklyActionProgress {
     isCapped: boolean;       // True if we limited the view to 7/7 but user plans more
     realTarget: number;      // The actual math.ceil target if we didn't cap
     linkedGoals: Array<{ title: string; count: number }>; // Contributing goals
+    // Internal sorting metrics
+    _sortMetrics?: {
+        goalCount: number;
+        maxGoalComplexity: number;
+        totalVolume: number;
+    };
 }
 
 export interface DailyCheckInData {
@@ -72,6 +78,15 @@ export function getWeeklyProgress(
     // 2. Build Progress Objects
     const progress: WeeklyActionProgress[] = [];
 
+    // Helper: Calculate complexity for each goal (how many active actions does a goal have?)
+    const goalComplexityMap: Record<string, number> = {};
+    Object.values(goals).forEach(goal => {
+        if (!goal.actionCounts) return;
+        // Count how many actions are > 0
+        const activeActions = Object.values(goal.actionCounts).filter(c => c > 0).length;
+        goalComplexityMap[goal.innerfaceId] = activeActions;
+    });
+
     Object.entries(planMap).forEach(([protocolId, plan]) => {
         const protocol = protocols.find(p => String(p.id) === protocolId);
         if (!protocol) return;
@@ -80,14 +95,31 @@ export function getWeeklyProgress(
         // Cutoff: If rate is < 0.9 (allow some float wiggling), treat as Low Frequency
         const isHighFreq = plan.totalWeeklyRate >= 0.8;
 
-        // Resolve Goal Names
+        // Resolve Goal Names & Calculate Max Complexity
+        let maxGoalComplexity = 0;
         const linkedGoals = plan.contributingGoals.map(cg => {
             const innerface = innerfaces.find(i => String(i.id) === cg.id);
+            const complexity = goalComplexityMap[cg.id] || 0;
+            if (complexity > maxGoalComplexity) maxGoalComplexity = complexity;
+
             return {
                 title: innerface?.name || 'Unknown Goal',
                 count: cg.count
             };
         });
+
+        const commonProps = {
+            protocolId,
+            protocol,
+            completed: 0, // Will be calculated below
+            linkedGoals,
+            // Internal sorting metrics (not necessarily part of public interface but useful if we extended it)
+            _sortMetrics: {
+                goalCount: linkedGoals.length,
+                maxGoalComplexity,
+                totalVolume: plan.totalWeeklyRate
+            }
+        };
 
         if (isHighFreq) {
             // --- WEEKLY MODE ---
@@ -113,15 +145,13 @@ export function getWeeklyProgress(
             });
 
             progress.push({
-                protocolId,
-                protocol,
+                ...commonProps,
                 planned: displayTarget,
                 completed,
                 bonus: Math.max(0, completed - displayTarget),
                 isLowFrequency: false,
                 isCapped,
-                realTarget: rawTarget,
-                linkedGoals
+                realTarget: rawTarget
             });
 
         } else {
@@ -145,31 +175,45 @@ export function getWeeklyProgress(
             });
 
             progress.push({
-                protocolId,
-                protocol,
+                ...commonProps,
                 planned: displayTarget,
                 completed,
                 bonus: Math.max(0, completed - displayTarget),
                 isLowFrequency: true,
                 periodLabel: 'week',
                 isCapped: false,
-                realTarget: displayTarget,
-                linkedGoals
+                realTarget: displayTarget
             });
         }
     });
 
     // Sort:
-    // 1. Highest Planned Count first (Prioritize high volume goals as requested)
-    // 2. Then by Remaining Count (Incomplete first)
+    // 1. Action Leverage (More goals = higher)
+    // 2. Goal Complexity (Belongs to bigger plans = higher)
+    // 3. Volume (More reps = higher)
+    // 4. Existing logic (Remaining desc) for ties
     return progress
         .filter(p => p.planned > 0)
         .sort((a, b) => {
-            // Primary: Planned count desc
+            const metricsA = a._sortMetrics || { goalCount: 0, maxGoalComplexity: 0, totalVolume: 0 };
+            const metricsB = b._sortMetrics || { goalCount: 0, maxGoalComplexity: 0, totalVolume: 0 };
+
+            // 1. Goal Count
+            if (metricsB.goalCount !== metricsA.goalCount) {
+                return metricsB.goalCount - metricsA.goalCount;
+            }
+
+            // 2. Max Goal Complexity
+            if (metricsB.maxGoalComplexity !== metricsA.maxGoalComplexity) {
+                return metricsB.maxGoalComplexity - metricsA.maxGoalComplexity;
+            }
+
+            // 3. Volume (Planned)
             if (b.planned !== a.planned) {
                 return b.planned - a.planned;
             }
-            // Secondary: Remaining desc
+
+            // 4. Remaining desc (Tie-breaker)
             const remainingA = Math.max(0, a.planned - a.completed);
             const remainingB = Math.max(0, b.planned - b.completed);
             return remainingB - remainingA;

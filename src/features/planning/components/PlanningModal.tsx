@@ -44,7 +44,9 @@ export function PlanningModal(props: PlanningModalProps) {
         scoreGradient,
         targetPercent,
         handleDelete,
-        hasExistingPlan
+        hasExistingPlan,
+        deactivatedProtocols,
+        handleProtocolToggle
     } = usePlanningLogic(props);
 
     // Prevent drag propagation on range inputs
@@ -58,7 +60,7 @@ export function PlanningModal(props: PlanningModalProps) {
         <Modal
             isOpen={props.isOpen}
             onClose={props.onClose}
-            title={`Start Planning`}
+            title={hasExistingPlan ? "Edit Planning" : "Start Planning"}
             onSubmit={handleSave}
             footer={
                 <div className="flex items-center justify-between w-full">
@@ -196,6 +198,8 @@ export function PlanningModal(props: PlanningModalProps) {
                         setActionCounts={setActionCounts}
                         setIsCustomizing={setIsCustomizing}
                         pointsNeeded={pointsNeeded}
+                        deactivatedProtocols={deactivatedProtocols}
+                        handleProtocolToggle={handleProtocolToggle}
                     />
                 </div>
 
