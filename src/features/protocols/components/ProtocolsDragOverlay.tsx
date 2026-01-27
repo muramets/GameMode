@@ -39,7 +39,10 @@ export const ProtocolsDragOverlay = React.memo(({
     if (!activeProtocol) return null;
 
     return (
-        <div className={`w-full shadow-2xl z-50 transition-transform duration-200 ${isInvalid ? 'scale-95 cursor-not-allowed' : 'opacity-90 cursor-grabbing'}`}>
+        <div
+            className={`w-full shadow-2xl z-50 transition-transform duration-200 pointer-events-none ${isInvalid ? 'scale-95' : 'opacity-90'}`}
+            style={{ cursor: 'grabbing !important' }}
+        >
             <ProtocolRow
                 protocol={activeProtocol}
                 innerfaces={innerfaces}
@@ -47,6 +50,8 @@ export const ProtocolsDragOverlay = React.memo(({
                 onLevelDown={noOp}
                 onEdit={noOp}
                 isDisabled={true}
+                isOverlay={true}
+                isGrabbing={true}
             />
             {isInvalid && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50 rounded-xl overflow-hidden">

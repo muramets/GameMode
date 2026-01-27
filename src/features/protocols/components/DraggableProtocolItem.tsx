@@ -21,7 +21,7 @@ export const DraggableProtocolItem = React.memo(({
     isDragEnabled: boolean;
     isReadOnly: boolean;
 }) => {
-    const { justDroppedId, isDragging, clearJustDropped } = useInteraction();
+    const { justDroppedId, isDragging } = useInteraction();
     const isJustDropped = String(protocol.id) === justDroppedId;
 
     // Disable heavy interactions if ANY item is dragging (global lock) or if this specific item was just dropped
@@ -41,12 +41,6 @@ export const DraggableProtocolItem = React.memo(({
                     className="touch-callout-none"
                     {...listeners}
                     {...attributes}
-                    // Handle mouse leave to clear the "just dropped" state
-                    onMouseLeave={() => {
-                        if (isJustDropped) {
-                            clearJustDropped();
-                        }
-                    }}
                 >
                     <ProtocolRow
                         protocol={protocol}
@@ -56,6 +50,7 @@ export const DraggableProtocolItem = React.memo(({
                         onEdit={handleEditProtocol}
                         isDisabled={shouldDisableInteractions}
                         isReadOnly={isReadOnly}
+                        isGrabbing={isDragging}
                     />
                 </div>
             )}

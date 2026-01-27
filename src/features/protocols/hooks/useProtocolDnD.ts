@@ -104,6 +104,16 @@ export const useProtocolDnD = ({
         setActive({ id, protocol, group });
     }, [localProtocols]);
 
+    // Global cursor lock during drag
+    useEffect(() => {
+        if (active.id) {
+            document.body.style.cursor = 'grabbing';
+        } else {
+            document.body.style.cursor = '';
+        }
+        return () => { document.body.style.cursor = ''; };
+    }, [active.id]);
+
     const handleDragOver = useCallback((event: DragOverEvent) => {
         const { active, over } = event;
         if (!over) return;
@@ -187,6 +197,9 @@ export const useProtocolDnD = ({
         isDraggingRef.current = false;
         setActive({ id: null, protocol: null, group: null });
         setJustDroppedId(activeIdStr);
+        // Auto-clear the dropped state after a minimal delay to prevent accidental clicks
+        // but return to active state "immediately" from user perspective
+        setTimeout(() => setJustDroppedId(null), 50);
 
         if (!over) return;
 
