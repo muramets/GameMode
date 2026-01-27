@@ -410,11 +410,19 @@ export const ProtocolRow = React.memo(function ProtocolRow({ protocol, innerface
         >
             {renderMainContent()}
 
-            <ProtocolInstructionViewer
-                instruction={protocol.instruction}
-                isExpanded={isExpanded}
-                onInteractionEnter={handleInstructionEnter}
-            />
+            <div
+                className="relative z-20 cursor-auto"
+                onMouseMove={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+            >
+                <ProtocolInstructionViewer
+                    instruction={protocol.instruction}
+                    isExpanded={isExpanded}
+                    onInteractionEnter={handleInstructionEnter}
+                />
+            </div>
         </motion.div>
     );
 });

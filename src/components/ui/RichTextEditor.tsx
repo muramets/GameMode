@@ -1,13 +1,23 @@
-import { useEditor, EditorContent, Editor } from '@tiptap/react'
+import { useEditor, EditorContent, Editor, Extension } from '@tiptap/react'
 import { createPortal } from 'react-dom'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import { Color } from '@tiptap/extension-color'
 import { TextStyle } from '@tiptap/extension-text-style'
 import TextAlign from '@tiptap/extension-text-align'
+import { Code as TiptapCode } from '@tiptap/extension-code'
+import { CodeBlock as TiptapCodeBlock } from '@tiptap/extension-code-block'
 import { marked } from 'marked'
 import TurndownService from 'turndown'
-import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Heading4, Heading5, Heading6, Maximize, Minimize, Droplet, Code, AlignLeft, AlignCenter, AlignRight, Minus } from 'lucide-react'
+import { Table } from '@tiptap/extension-table'
+import { TableRow } from '@tiptap/extension-table-row'
+import { TableCell } from '@tiptap/extension-table-cell'
+import { TableHeader } from '@tiptap/extension-table-header'
+import {
+    Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Heading4, Heading5, Heading6,
+    Maximize, Minimize, Droplet, Code, AlignLeft, AlignCenter, AlignRight, Minus,
+    Table as TableIcon, MoreHorizontal, Bug, Copy, Check
+} from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import * as Popover from '@radix-ui/react-popover'
@@ -15,35 +25,67 @@ import { PRESET_COLORS } from '../../constants/common'
 
 import { CollapsableHeadings } from './extensions/CollapsableHeading'
 
-const EDITOR_PROSE_CLASSES = clsx(
-    'prose prose-invert max-w-none focus:outline-none min-h-[100px]',
-    'prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-nav:hidden',
-    // Styles to ensure arrows are leftmost and text is indented
-    '[&_h1]:text-2xl [&_h1]:font-bold [&_h1]:pl-6 [&_h1]:relative',
-    '[&_h2]:text-xl [&_h2]:font-bold [&_h2]:pl-6 [&_h2]:relative',
-    '[&_h3]:text-lg [&_h3]:font-semibold [&_h3]:pl-6 [&_h3]:relative',
-    '[&_h4]:text-base [&_h4]:font-semibold [&_h4]:pl-6 [&_h4]:relative',
-    '[&_h5]:text-sm [&_h5]:font-semibold [&_h5]:pl-6 [&_h5]:relative',
-    '[&_h6]:text-xs [&_h6]:font-bold [&_h6]:pl-6 [&_h6]:relative',
-    // Indent all other content to align with header text, NOT the arrow
-    '[&_p]:pl-0',
-    // Reset padding for paragraphs inside lists to prevent double indentation
-    '[&_li_p]:pl-0',
-    // Increase list indent to account for their bullets + our layout
-    // pl-10 (40px) puts text at 40px. Marker is 'outside'.
-    '[&_ul]:pl-10 [&_ol]:pl-10',
-    '[&_blockquote]:pl-6',
-    '[&_pre]:pl-6',
+export const EDITOR_PROSE_CLASSES = clsx(
+    // Added prose-sm to fix text size issue. 
+    // Restore default text colors using variables to avoid overrides of inline styles
+    'prose prose-invert prose-sm max-w-none focus:outline-none min-h-[100px] text-text-primary',
+    '[--tw-prose-body:theme(colors.text-primary)]',
+    '[--tw-prose-headings:theme(colors.text-primary)]',
+    '[--tw-prose-links:theme(colors.main)]',
+    '[--tw-prose-bold:inherit]', // Ensure bold doesn't force a color
 
-    '[&_ul]:list-disc [&_ul]:list-outside [&_ul]:marker:text-text-primary',
-    '[&_ol]:list-decimal [&_ol]:list-outside [&_ol]:marker:text-text-primary',
+    // Base spacing for headings
+    'prose-headings:mt-6 prose-headings:mb-2 prose-headings:leading-[1.3]',
+    // List spacing
+    'prose-ul:my-1 prose-ol:my-1',
 
-    '[&_strong]:font-bold',
-    '[&_pre]:bg-sub/20 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:font-mono [&_pre]:my-2 [&_pre]:text-xs [&_pre]:overflow-x-auto',
-    '[&_code]:bg-sub/20 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded-md [&_code]:font-mono [&_code]:text-[0.9em] [&_code]:text-text-primary', // Inline code styles
-    '[&_hr]:my-4 [&_hr]:border-t [&_hr]:border-sub/10 [&_hr]:mx-2', // Custom HR styling
-    'text-sm text-text-primary',
-    '[&_.collapsed-content]:hidden' // Ensure collapsed content is hidden
+    // Divider styling (dimmed and narrower)
+    'prose-hr:border-sub/20 prose-hr:mx-auto prose-hr:w-4/5 prose-hr:my-8',
+
+    // Custom overrides for adjacent headings (keeping them tight)
+    '[&_h1+h1]:mt-4',
+    '[&_h1+h2]:mt-4',
+    '[&_h2+h2]:mt-4',
+    '[&_h2+h3]:mt-3',
+    '[&_h3+h3]:mt-3',
+    '[&_h3+h4]:mt-3',
+    '[&_h4+h4]:mt-2',
+    '[&_h4+h5]:mt-2',
+
+    // Ensure headers and content have minimal left padding for the arrow icon and hierarchy
+    'prose-headings:relative',
+
+    // Dynamic Indentation (IDE-like hierarchy)
+    '[&_.depth-1]:pl-6',
+    '[&_.depth-2]:pl-12',
+    '[&_.depth-3]:pl-[4.5rem]',
+    '[&_.depth-4]:pl-[6rem]',
+    '[&_.depth-5]:pl-[7.5rem]',
+    '[&_.depth-6]:pl-[9rem]',
+
+    // Hide nav/toc if present
+    'prose-nav:hidden',
+
+    // Fix indentation for content following headings
+    '[&_.collapsed-content]:hidden',
+
+    // Fix for color + bold: enforce color inheritance for strong tags instead of prose default
+    '[&_strong]:text-inherit',
+
+    // Table styles adjustment for prose (Premium look)
+    '[&_table]:w-full [&_table]:my-6 [&_table]:border-separate [&_table]:border-spacing-0 [&_table]:border [&_table]:border-white/10 [&_table]:rounded-xl [&_table]:overflow-hidden',
+    'prose-th:bg-sub/5 prose-th:text-text-primary prose-th:font-medium prose-th:text-[10px] prose-th:uppercase prose-th:tracking-[0.2em] prose-th:p-4 prose-th:border-b prose-th:border-white/10 prose-th:text-left prose-th:font-lexend [&_th_*]:uppercase',
+    'prose-td:p-4 prose-td:border-b prose-td:border-white/5 prose-td:text-sm prose-td:text-text-primary prose-td:[&_*]:text-inherit',
+    '[&_tr:last-child_td]:border-b-0',
+    '[&_tr:hover_td]:bg-white/[0.02] transition-colors',
+
+    // Code block styles
+    // 1. Remove backticks (apostrophes) added by typography plugin
+    'prose-code:before:content-none prose-code:after:content-none',
+    // 2. Inline code: high contrast background and inherited color
+    'prose-code:bg-black prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-text-primary prose-code:font-lexend prose-code:tracking-wide [&_code]:text-inherit',
+    // 3. Code blocks (pre): high contrast black background
+    'prose-pre:bg-black prose-pre:text-text-primary prose-pre:font-lexend prose-pre:tracking-wide [&_pre_code]:text-inherit'
 )
 
 interface RichTextEditorProps {
@@ -54,6 +96,50 @@ interface RichTextEditorProps {
 }
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './atoms/Tooltip'
+
+const TableMenu = ({ editor }: { editor: Editor }) => {
+    if (!editor.isActive('table')) return null
+
+    return (
+        <Popover.Root>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Popover.Trigger asChild>
+                        <button
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            className="p-1.5 rounded-md transition-colors text-sub hover:text-text-primary hover:bg-sub/10 bg-sub/20 text-text-primary"
+                            aria-label="Table Options"
+                        >
+                            <MoreHorizontal size={16} />
+                        </button>
+                    </Popover.Trigger>
+                </TooltipTrigger>
+                <TooltipContent>Table Options</TooltipContent>
+            </Tooltip>
+            <Popover.Portal>
+                <Popover.Content
+                    className="z-[10000] p-1 bg-sub-alt border border-white/10 rounded-xl shadow-2xl flex flex-col min-w-[140px] animate-in fade-in zoom-in-95 duration-200"
+                    sideOffset={5}
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                >
+                    <div className="flex flex-col gap-1">
+                        <button onClick={() => editor.chain().focus().addColumnBefore().run()} className="text-left px-2 py-1 hover:bg-sub/10 rounded text-xs">Add Column Before</button>
+                        <button onClick={() => editor.chain().focus().addColumnAfter().run()} className="text-left px-2 py-1 hover:bg-sub/10 rounded text-xs">Add Column After</button>
+                        <button onClick={() => editor.chain().focus().deleteColumn().run()} className="text-left px-2 py-1 hover:bg-sub/10 rounded text-xs text-error">Delete Column</button>
+                        <div className="h-px bg-sub/10 my-1" />
+                        <button onClick={() => editor.chain().focus().addRowBefore().run()} className="text-left px-2 py-1 hover:bg-sub/10 rounded text-xs">Add Row Before</button>
+                        <button onClick={() => editor.chain().focus().addRowAfter().run()} className="text-left px-2 py-1 hover:bg-sub/10 rounded text-xs">Add Row After</button>
+                        <button onClick={() => editor.chain().focus().deleteRow().run()} className="text-left px-2 py-1 hover:bg-sub/10 rounded text-xs text-error">Delete Row</button>
+                        <div className="h-px bg-sub/10 my-1" />
+                        <button onClick={() => editor.chain().focus().toggleHeaderRow().run()} className="text-left px-2 py-1 hover:bg-sub/10 rounded text-xs">Toggle Header Row</button>
+                        <button onClick={() => editor.chain().focus().deleteTable().run()} className="text-left px-2 py-1 hover:bg-sub/10 rounded text-xs text-error">Delete Table</button>
+                    </div>
+                </Popover.Content>
+            </Popover.Portal>
+        </Popover.Root>
+    )
+}
 
 const MenuButton = ({
     onClick,
@@ -136,8 +222,7 @@ const EditorColorPicker = ({ editor }: { editor: Editor }) => {
                     <div className="grid grid-cols-5 gap-1.5">
                         <button
                             type="button"
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => editor.chain().focus().unsetColor().run()}
+                            onClick={() => editor.chain().focus().unsetMark('textStyle').run()}
                             className="w-5 h-5 rounded-full flex items-center justify-center border border-sub/20 transition-transform hover:scale-125 hover:border-white/50 cursor-pointer relative"
                             title="Reset color"
                         >
@@ -147,7 +232,6 @@ const EditorColorPicker = ({ editor }: { editor: Editor }) => {
                             <button
                                 key={c}
                                 type="button"
-                                onMouseDown={(e) => e.preventDefault()}
                                 onClick={() => editor.chain().focus().setColor(c).run()}
                                 className={clsx(
                                     "w-5 h-5 rounded-full transition-transform hover:scale-125 hover:ring-2 hover:ring-white/30 cursor-pointer",
@@ -164,7 +248,19 @@ const EditorColorPicker = ({ editor }: { editor: Editor }) => {
     )
 }
 
-const MenuBar = ({ editor, isExpanded, toggleExpand }: { editor: Editor | null, isExpanded: boolean, toggleExpand: () => void }) => {
+const MenuBar = ({
+    editor,
+    isExpanded,
+    toggleExpand,
+    showDebug,
+    toggleDebug
+}: {
+    editor: Editor | null,
+    isExpanded: boolean,
+    toggleExpand: () => void,
+    showDebug: boolean,
+    toggleDebug: () => void
+}) => {
     if (!editor) {
         return null
     }
@@ -269,6 +365,18 @@ const MenuBar = ({ editor, isExpanded, toggleExpand }: { editor: Editor | null, 
                 <div className="w-px h-4 bg-sub/10 mx-1" />
 
                 <MenuButton
+                    onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+                    isActive={editor.isActive('table')}
+                    title="Insert Table"
+                >
+                    <TableIcon size={16} />
+                </MenuButton>
+
+                <TableMenu editor={editor} />
+
+                <div className="w-px h-4 bg-sub/10 mx-1" />
+
+                <MenuButton
                     onClick={() => editor.chain().focus().setHorizontalRule().run()}
                     title="Divider"
                 >
@@ -295,6 +403,14 @@ const MenuBar = ({ editor, isExpanded, toggleExpand }: { editor: Editor | null, 
                 <div className="flex-1" /> {/* Spacer */}
 
                 <MenuButton
+                    onClick={toggleDebug}
+                    isActive={showDebug}
+                    title="Toggle Debugger"
+                >
+                    <Bug size={16} />
+                </MenuButton>
+
+                <MenuButton
                     onClick={toggleExpand}
                     isActive={isExpanded}
                     title={isExpanded ? "Collapse" : "Expand"}
@@ -306,7 +422,80 @@ const MenuBar = ({ editor, isExpanded, toggleExpand }: { editor: Editor | null, 
     )
 }
 
+// Debug Panel Component
+const CopyButton = ({ text, className }: { text: string, className?: string }) => {
+    const [copied, setCopied] = useState(false)
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(text)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+    }
+
+    return (
+        <button
+            onClick={handleCopy}
+            className={clsx(
+                "p-1.5 rounded-md transition-all duration-200 border",
+                copied
+                    ? "bg-green-500/20 border-green-500/50 text-green-400"
+                    : "bg-white/5 border-white/10 text-sub hover:text-white hover:bg-white/10",
+                className
+            )}
+            title="Copy to clipboard"
+        >
+            {copied ? <Check size={14} /> : <Copy size={14} />}
+        </button>
+    )
+}
+
+const DebugPanel = ({ editor }: { editor: Editor }) => {
+    if (!editor) return null
+
+    const html = editor.getHTML()
+    const json = editor.getJSON()
+
+    return (
+        <div className="mt-8 p-4 bg-black/40 rounded-xl border border-white/10 text-xs font-mono overflow-hidden">
+            <div className="flex items-center justify-between mb-4 pb-2 border-b border-white/10">
+                <span className="text-sub font-bold uppercase tracking-wider">Editor Debugger</span>
+                <div className="flex gap-2">
+                    <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400">HTML</span>
+                    <span className="px-2 py-0.5 rounded bg-green-500/20 text-green-400">JSON</span>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 h-[400px]">
+                <div className="flex flex-col gap-2 h-full relative">
+                    <div className="flex items-center justify-between pointer-events-none">
+                        <span className="text-sub">HTML Source:</span>
+                    </div>
+                    <div className="absolute top-0 right-0 z-10">
+                        <CopyButton text={html} />
+                    </div>
+                    <pre className="flex-1 p-3 bg-black/50 rounded-lg border border-white/5 overflow-auto custom-scrollbar text-white/70 whitespace-pre-wrap break-all mt-1">
+                        {html}
+                    </pre>
+                </div>
+                <div className="flex flex-col gap-2 h-full relative">
+                    <div className="flex items-center justify-between pointer-events-none">
+                        <span className="text-sub">JSON Structure:</span>
+                    </div>
+                    <div className="absolute top-0 right-0 z-10">
+                        <CopyButton text={JSON.stringify(json, null, 2)} />
+                    </div>
+                    <pre className="flex-1 p-3 bg-black/50 rounded-lg border border-white/5 overflow-auto custom-scrollbar text-green-400/80 mt-1">
+                        {JSON.stringify(json, null, 2)}
+                    </pre>
+                </div>
+            </div>
+        </div>
+    )
+}
+
 export const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEditorProps) => {
+    // Debug state
+    const [showDebug, setShowDebug] = useState(false)
     const [isExpanded, setIsExpanded] = useState(false)
     const lastValueRef = React.useRef(value)
 
@@ -329,6 +518,9 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
 
         // preserve color styles and explicit breaks
         service.keep(['span', 'br'])
+
+        // Preserve tables in Markdown
+        service.keep(['table', 'thead', 'tbody', 'tr', 'th', 'td'])
 
         // preserve text-align styles using a custom rule to force HTML output
         service.addRule('aligned-paragraph', {
@@ -378,13 +570,36 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
 
     const [, forceUpdate] = useState(0)
 
+    const CustomCodeMark = React.useMemo(() => TiptapCode.extend({
+        excludes: '', // Allow other marks (like Color) to coexist with inline code
+    }), [])
+
+    const CustomCodeBlockNode = React.useMemo(() => TiptapCodeBlock.extend({
+        content: 'inline*', // Allow marks (like Color) inside code blocks
+    }), [])
+
+    const TabIndentation = React.useMemo(() => Extension.create({
+        name: 'tabIndentation',
+        addKeyboardShortcuts() {
+            return {
+                'Tab': () => this.editor.commands.sinkListItem('listItem'),
+                'Shift-Tab': () => this.editor.commands.liftListItem('listItem'),
+            }
+        },
+    }), [])
+
     const editor = useEditor({
         extensions: [
             StarterKit.configure({
                 heading: {
                     levels: [1, 2, 3, 4, 5, 6],
                 },
+                code: false,
+                codeBlock: false,
             }),
+            CustomCodeMark,
+            CustomCodeBlockNode,
+            TabIndentation,
             Placeholder.configure({
                 placeholder: placeholder || 'Write something...',
             }),
@@ -393,6 +608,12 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
             TextAlign.configure({
                 types: ['heading', 'paragraph'],
             }),
+            Table.configure({
+                resizable: true,
+            }),
+            TableRow,
+            TableHeader,
+            TableCell,
             CollapsableHeadings,
         ],
         content: initialContent,
@@ -433,6 +654,17 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
                         isExpanded && 'h-full' // Full height for content div in expanded mode
                     ),
                 },
+                transformPastedHTML(html) {
+                    // Check if content comes from ProseMirror/Tiptap (internal paste)
+                    // If so, preserve formatting (data-pm-slice is the signature)
+                    if (html.includes('data-pm-slice')) return html
+
+                    // Otherwise (external), strip ONLY color/background related styles.
+                    // Keep other formatting (alignment, etc.)
+                    return html
+                        .replace(/color\s*:[^;"]+;?/gi, '')
+                        .replace(/background(-color)?\s*:[^;"]+;?/gi, '')
+                },
             },
         })
     }, [isExpanded, editor])
@@ -461,9 +693,18 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
 
     const NormalView = (
         <div className={clsx("flex flex-col bg-sub-alt rounded-lg p-3 transition-all duration-300", className)}>
-            <MenuBar editor={editor} isExpanded={false} toggleExpand={() => setIsExpanded(true)} />
+            <MenuBar
+                editor={editor}
+                isExpanded={false}
+                toggleExpand={() => setIsExpanded(true)}
+                showDebug={showDebug}
+                toggleDebug={() => setShowDebug(!showDebug)}
+            />
             {!isExpanded ? (
-                <EditorContent editor={editor} className="text-text-primary" />
+                <>
+                    <EditorContent editor={editor} className="text-text-primary" />
+                    {showDebug && <DebugPanel editor={editor} />}
+                </>
             ) : (
                 <div className="h-full min-h-[100px] flex items-center justify-center text-sub/40 text-sm italic">
                     Editing in Zen Mode...
@@ -475,11 +716,20 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
     const ExpandedView = (
         <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-200">
             <div className="flex flex-col w-full bg-sub-alt max-w-4xl mx-auto rounded-xl shadow-2xl p-6 h-[85vh]">
-                <MenuBar editor={editor} isExpanded={true} toggleExpand={() => setIsExpanded(false)} />
-                <EditorContent
+                <MenuBar
                     editor={editor}
-                    className="flex-grow overflow-y-auto mt-4 text-text-primary"
+                    isExpanded={true}
+                    toggleExpand={() => setIsExpanded(false)}
+                    showDebug={showDebug}
+                    toggleDebug={() => setShowDebug(!showDebug)}
                 />
+                <div className="flex-grow overflow-y-auto mt-4 custom-scrollbar">
+                    <EditorContent
+                        editor={editor}
+                        className="text-text-primary"
+                    />
+                    {showDebug && <DebugPanel editor={editor} />}
+                </div>
             </div>
         </div>
     )

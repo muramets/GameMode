@@ -19,16 +19,107 @@ export const CollapsableHeadings = Extension.create({
                 types: ['heading'],
                 attributes: {
                     collapsed: {
-                        default: false,
-                        parseHTML: element => element.getAttribute('data-collapsed') === 'true',
+                        default: null,
+                        parseHTML: element => {
+                            const attr = element.getAttribute('data-collapsed')
+                            if (attr === 'true') return true
+                            if (attr === 'false') return false
+                            return null
+                        },
                         renderHTML: attributes => {
-                            if (!attributes.collapsed) return {}
-                            return { 'data-collapsed': 'true' }
+                            if (attributes.collapsed === true) {
+                                return { 'data-collapsed': 'true' }
+                            }
+                            if (attributes.collapsed === false) {
+                                return { 'data-collapsed': 'false' }
+                            }
+                            return {}
                         },
                     },
                 },
             },
         ]
+    },
+
+    addKeyboardShortcuts() {
+        return {
+            'Enter': ({ editor }) => {
+                const { state } = editor
+                const { selection } = state
+                const { $from, empty } = selection
+
+                if (!empty) return false
+
+                const node = $from.parent
+
+                // 1. Check for "Collapsed Header Entrapment"
+                if (node.type.name === 'heading' && node.attrs.collapsed && $from.parentOffset === node.content.size) {
+                    const currentLevel = node.attrs.level
+                    let insertPos = state.doc.content.size
+
+                    state.doc.nodesBetween($from.pos + 1, state.doc.content.size, (n, pos) => {
+                        if (insertPos < state.doc.content.size) return false
+                        if (n.type.name === 'heading' && n.attrs.level <= currentLevel) {
+                            insertPos = pos
+                            return false
+                        }
+                    })
+
+                    return editor.chain()
+                        .insertContentAt(insertPos, {
+                            type: 'heading',
+                            attrs: { level: currentLevel }
+                        })
+                        .setTextSelection(insertPos + 1)
+                        .scrollIntoView()
+                        .run()
+                }
+
+                // 2. Headings: Hierarchy Climbing on Enter
+                if (node.content.size === 0 && node.type.name === 'heading') {
+                    const level = node.attrs.level
+                    if (level > 1) {
+                        return editor.commands.setNode('heading', { level: level - 1 })
+                    } else {
+                        return editor.commands.setNode('paragraph')
+                    }
+                }
+
+                return false // Standard behavior
+            },
+
+            'Backspace': ({ editor }) => {
+                const { state } = editor
+                const { selection } = state
+                const { $from, empty } = selection
+
+                if (!empty) return false
+                const node = $from.parent
+
+                // 1. Handle Bullet Lists
+                if (node.content.size === 0 && $from.node($from.depth - 1)?.type.name === 'listItem') {
+                    return editor.commands.liftListItem('listItem')
+                }
+
+                // 2. Handle Paragraphs: Hierarchy Climbing
+                if (node.content.size === 0 && node.type.name === 'paragraph') {
+                    let prevHeadingLevel = 0
+                    let found = false
+                    state.doc.nodesBetween(0, $from.pos, (n) => {
+                        if (n.type.name === 'heading') {
+                            prevHeadingLevel = n.attrs.level
+                            found = true
+                        }
+                    })
+
+                    if (found) {
+                        return editor.commands.setNode('heading', { level: prevHeadingLevel })
+                    }
+                }
+
+                return false
+            }
+        }
     },
 
     addProseMirrorPlugins() {
@@ -40,24 +131,23 @@ export const CollapsableHeadings = Extension.create({
                         const decorations: Decoration[] = []
                         const { doc } = state
 
-                        // Track the current collapse level.
-                        // null means we are NOT currently inside a collapsed section.
-                        // number means we are inside a collapsed section started by a header of this level.
                         let collapsedLevel: number | null = null
+                        let currentDepth: number = 0
 
-                        doc.descendants((node, pos) => {
+                        doc.descendants((node, pos, parent) => {
+                            const isTopLevel = parent === doc
+
                             if (node.type.name === 'heading') {
                                 const level = node.attrs.level
+                                currentDepth = level
 
                                 // Check if this new header breaks out of the current collapsed section
-                                // A header breaks out if its level is <= the level that started the collapse.
-                                // E.g. H1 starts collapse. H2 comes (2 > 1, stays collapsed). H1 comes (1 <= 1, breaks out).
                                 if (collapsedLevel !== null && level <= collapsedLevel) {
                                     collapsedLevel = null
                                 }
 
                                 if (collapsedLevel !== null) {
-                                    // We are still inside a collapsed section, hide this header
+                                    // Hidden
                                     decorations.push(
                                         Decoration.node(pos, pos + node.nodeSize, {
                                             class: 'collapsed-content',
@@ -65,36 +155,33 @@ export const CollapsableHeadings = Extension.create({
                                         })
                                     )
                                 } else {
-                                    // Node is visible. Check if IT starts a new collapse.
-                                    if (node.attrs.collapsed) {
+                                    // Determine if this header IS collapsed
+                                    const isCollapsed = node.attrs.collapsed === true || (node.attrs.collapsed === null && level >= 4)
+
+                                    if (isCollapsed) {
                                         collapsedLevel = level
                                     }
 
-                                    // Add toggle decoration to headers
+                                    const nodeAttrs: Record<string, string> = {
+                                        'data-level': `${level}`
+                                    }
+
+                                    if (isTopLevel) {
+                                        nodeAttrs.class = `depth-${level}`
+                                    }
+
                                     decorations.push(
+                                        Decoration.node(pos, pos + node.nodeSize, nodeAttrs),
                                         Decoration.widget(pos + 1, (view) => {
                                             const icon = document.createElement('span')
-
-                                            // Calculate vertical center offset based on heading line-height
-                                            // H1 (32px): (32-20)/2 = 6px (top-1.5)
-                                            // H2 (28px): (28-20)/2 = 4px (top-1)
-                                            // H3 (28px): (28-20)/2 = 4px (top-1)
-                                            // H4 (24px): (24-20)/2 = 2px (top-0.5)
-                                            // H5 (20px): (20-20)/2 = 0px (top-0)
-                                            // H6 (16px): (16-20)/2 = -2px (-top-0.5)
-                                            const topClass =
-                                                level === 1 ? "top-1.5" :
-                                                    level === 2 || level === 3 ? "top-1" :
-                                                        level === 4 ? "top-0.5" :
-                                                            level === 5 ? "top-0" :
-                                                                "-top-0.5";
+                                            const leftOffset = (level - 1) * 1.5;
 
                                             icon.className = clsx(
-                                                "absolute left-0 flex items-center justify-start w-5 h-5 cursor-pointer transition-all duration-200 text-sub hover:text-text-primary z-50",
-                                                topClass,
-                                                node.attrs.collapsed ? "-rotate-90" : "rotate-0"
+                                                "absolute flex items-center justify-center w-5 h-[1.3em] cursor-pointer transition-all duration-200 text-sub hover:text-text-primary z-50",
+                                                "top-0",
+                                                isCollapsed ? "-rotate-90" : "rotate-0"
                                             )
-                                            // Match FontAwesome faChevronDown look
+                                            icon.style.left = `${leftOffset}rem`
                                             icon.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>`
 
                                             icon.onmousedown = (e) => {
@@ -106,10 +193,12 @@ export const CollapsableHeadings = Extension.create({
                                                 e.preventDefault()
                                                 e.stopPropagation()
                                                 const { tr } = view.state
-                                                const isCollapsed = !!node.attrs.collapsed
+                                                // Toggle logic: If currently technically collapsed (explicit or implicit), set explicit false. Else explicit true.
+                                                const currentlyCollapsed = node.attrs.collapsed === true || (node.attrs.collapsed === null && level >= 4)
+
                                                 tr.setNodeMarkup(pos, undefined, {
                                                     ...node.attrs,
-                                                    collapsed: !isCollapsed
+                                                    collapsed: !currentlyCollapsed
                                                 })
                                                 view.dispatch(tr)
                                             }
@@ -118,13 +207,18 @@ export const CollapsableHeadings = Extension.create({
                                     )
                                 }
                             } else {
-                                // Non-heading content
+                                // Content
                                 if (collapsedLevel !== null) {
-                                    // Inside collapsed section -> Hide
                                     decorations.push(
                                         Decoration.node(pos, pos + node.nodeSize, {
                                             class: 'collapsed-content',
                                             style: 'display: none !important'
+                                        })
+                                    )
+                                } else if (currentDepth > 0 && isTopLevel) {
+                                    decorations.push(
+                                        Decoration.node(pos, pos + node.nodeSize, {
+                                            class: `depth-${currentDepth}`
                                         })
                                     )
                                 }
