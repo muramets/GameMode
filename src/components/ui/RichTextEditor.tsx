@@ -24,6 +24,7 @@ import * as Popover from '@radix-ui/react-popover'
 import { PRESET_COLORS } from '../../constants/common'
 
 import { CollapsableHeadings } from './extensions/CollapsableHeading'
+import { IndentedListItem } from './extensions/IndentedListItem'
 
 export const EDITOR_PROSE_CLASSES = clsx(
     // Added prose-sm to fix text size issue. 
@@ -522,6 +523,33 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
         // Preserve tables in Markdown
         service.keep(['table', 'thead', 'tbody', 'tr', 'th', 'td'])
 
+        // Preserve indented list items as HTML to keep the style
+        service.addRule('indented-list-item', {
+            filter: function (node) {
+                return (
+                    node.nodeName === 'LI' &&
+                    !!node.style.marginLeft &&
+                    node.style.marginLeft !== '0px'
+                )
+            },
+            replacement: function (content, node) {
+                const element = node as HTMLElement
+                const style = element.getAttribute('style')
+                // We need to ensure content is treated properly. 
+                // Turndown usually converts content to markdown.
+                // If we return HTML, usage of markdown inside might be tricky?
+                // Actually, Turndown processes children. `content` is the converted markdown of children.
+                // But valid HTML <li> cannot contain raw markdown usually if we want it to be parsed back by standard parsers,
+                // UNLESS we are in a hybrid mode or using a parser that supports HTML blocks (CommonMark).
+                // Tiptap/Marked supports HTML.
+
+                // However, `content` here is Markdown. Putting Markdown inside HTML tags <li>...</li> 
+                // is valid in some specs if separated by newlines, but `marked` might handle it.
+                // Let's try wrapping standard HTML.
+                return `<li style="${style}">\n\n${content}\n\n</li>`
+            }
+        })
+
         // preserve text-align styles using a custom rule to force HTML output
         service.addRule('aligned-paragraph', {
             filter: function (node) {
@@ -582,8 +610,38 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
         name: 'tabIndentation',
         addKeyboardShortcuts() {
             return {
-                'Tab': () => this.editor.commands.sinkListItem('listItem'),
-                'Shift-Tab': () => this.editor.commands.liftListItem('listItem'),
+                'Tab': () => {
+                    // 1. Try structural indentation (nesting)
+                    if (this.editor.commands.sinkListItem('listItem')) {
+                        return true
+                    }
+
+                    // 2. Fallback: Visual Indentation (margin)
+                    const { selection } = this.editor.state
+                    const { $from } = selection
+                    // const node = $from.node($from.depth) // Get current block (paragraph usually inside li)
+                    const listItem = $from.node($from.depth - 1) // Get the list item
+
+                    if (listItem && listItem.type.name === 'listItem') {
+                        const currentIndent = listItem.attrs.indent || 0
+                        return this.editor.commands.setIndent(currentIndent + 1)
+                    }
+
+                    return true // Capture Tab anyway
+                },
+                'Shift-Tab': () => {
+                    // 1. Check for Visual Indentation first
+                    const { selection } = this.editor.state
+                    const { $from } = selection
+                    const listItem = $from.node($from.depth - 1)
+
+                    if (listItem && listItem.type.name === 'listItem' && listItem.attrs.indent > 0) {
+                        return this.editor.commands.setIndent(listItem.attrs.indent - 1)
+                    }
+
+                    // 2. Fallback: Structural Lift
+                    return this.editor.commands.liftListItem('listItem')
+                },
             }
         },
     }), [])
@@ -596,7 +654,9 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
                 },
                 code: false,
                 codeBlock: false,
+                listItem: false, // Disable default listItem to use our custom IndentedListItem
             }),
+            IndentedListItem,
             CustomCodeMark,
             CustomCodeBlockNode,
             TabIndentation,
