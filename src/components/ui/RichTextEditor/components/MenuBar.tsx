@@ -1,4 +1,5 @@
 import { Editor } from '@tiptap/react'
+import { useState, useEffect } from 'react'
 import clsx from 'clsx'
 import {
     Bold, Italic, Underline, List, ListOrdered, Heading1, Heading2, Heading3,
@@ -8,6 +9,7 @@ import {
 import { TooltipProvider } from '../../atoms/Tooltip'
 import { MenuButton } from './MenuButton'
 import { ColorPicker } from './ColorPicker'
+import { QuoteColorPicker } from './QuoteColorPicker'
 import { TableMenu } from './TableMenu'
 import { MoreMenu } from './MoreMenu'
 
@@ -39,6 +41,23 @@ export const MenuBar = ({
     showDebug,
     toggleDebug
 }: MenuBarProps) => {
+    // Force re-render on editor updates to ensure button states (active/disabled) are current
+    const [, forceUpdate] = useState({})
+
+    useEffect(() => {
+        if (!editor) return
+
+        const updateHandler = () => forceUpdate({})
+
+        editor.on('transaction', updateHandler)
+        editor.on('selectionUpdate', updateHandler)
+
+        return () => {
+            editor.off('transaction', updateHandler)
+            editor.off('selectionUpdate', updateHandler)
+        }
+    }, [editor])
+
     if (!editor) {
         return null
     }
@@ -53,6 +72,7 @@ export const MenuBar = ({
                 <MenuButton
                     onClick={() => editor.chain().focus().toggleBold().run()}
                     isActive={editor.isActive('bold')}
+                    disabled={editor.isActive('blockquote')}
                     title="Bold"
                 >
                     <Bold size={16} />
@@ -89,6 +109,11 @@ export const MenuBar = ({
                 >
                     <ListOrdered size={16} />
                 </MenuButton>
+
+                <div className="w-px h-4 bg-sub/10 mx-1 shrink-0" />
+
+                {/* 3. Quote with color picker */}
+                <QuoteColorPicker editor={editor} />
 
                 <div className="w-px h-4 bg-sub/10 mx-1 shrink-0" />
 

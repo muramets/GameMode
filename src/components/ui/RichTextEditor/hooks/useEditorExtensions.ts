@@ -13,6 +13,7 @@ import { TableHeader } from '@tiptap/extension-table-header'
 import { CollapsableHeadings } from '../../extensions/CollapsableHeading'
 import { IndentedListItem } from '../../extensions/IndentedListItem'
 import { TabIndentation } from '../../extensions/TabIndentation'
+import { CustomBlockquote } from '../../extensions/CustomBlockquote'
 
 /**
  * Custom hook for configuring Tiptap editor extensions.
@@ -23,6 +24,7 @@ import { TabIndentation } from '../../extensions/TabIndentation'
  * - Custom extensions override defaults for specific behaviors
  * - Code and CodeBlock are customized to allow color marks inside
  * - ListItem is replaced with IndentedListItem for visual indentation
+ * - Blockquote is replaced with CustomBlockquote for border color support
  * - TabIndentation enables Tab key for list indentation
  * - CollapsableHeadings adds IDE-like header collapsing
  * 
@@ -59,11 +61,15 @@ export function useEditorExtensions(placeholder?: string) {
             code: false, // Disabled in favor of CustomCodeMark
             codeBlock: false, // Disabled in favor of CustomCodeBlockNode
             listItem: false, // Disabled in favor of IndentedListItem
+            blockquote: false, // Disabled in favor of CustomBlockquote
             // underline: enabled by default
         }),
 
         // Custom list item with visual indentation support
         IndentedListItem,
+
+        // Custom blockquote with border color support
+        CustomBlockquote,
 
         // Custom code extensions with color support
         CustomCodeMark,
@@ -98,3 +104,4 @@ export function useEditorExtensions(placeholder?: string) {
         CollapsableHeadings,
     ], [placeholder, CustomCodeMark, CustomCodeBlockNode])
 }
+

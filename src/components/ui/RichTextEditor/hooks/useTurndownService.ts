@@ -104,6 +104,29 @@ export function useTurndownService(): TurndownService {
             }
         })
 
+        /**
+         * Rule: Preserve blockquote border colors
+         * 
+         * Custom border colors are stored in data-border-color attribute.
+         * We preserve this as HTML to maintain the color across save/load.
+         */
+        service.addRule('colored-blockquote', {
+            filter: function (node) {
+                return (
+                    node.nodeName === 'BLOCKQUOTE' &&
+                    node.hasAttribute('data-border-color')
+                )
+            },
+            replacement: function (content, node) {
+                const element = node as HTMLElement
+                const borderColor = element.getAttribute('data-border-color')
+                const style = element.getAttribute('style') || ''
+
+                // Preserve both data attribute and inline style
+                return `<blockquote data-border-color="${borderColor}" style="${style}">\n\n${content}\n\n</blockquote>`
+            }
+        })
+
         return service
     }, [])
 }

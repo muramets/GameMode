@@ -66,7 +66,25 @@ export const ProtocolInstructionViewer = React.memo(({ instruction, isExpanded, 
         strong: ({ className, style, children }) => <strong className={clsx("font-bold text-text-primary", className)} style={style}>{children}</strong>,
         em: ({ className, style, children }) => <em className={clsx("italic text-text-primary/80", className)} style={style}>{children}</em>,
         code: ({ className, style, children }) => <code className={clsx("bg-sub/20 rounded px-1 py-0.5 text-[10px] font-mono text-text-primary", className)} style={style}>{children}</code>,
-        blockquote: ({ className, style, children }) => <blockquote className={clsx("border-l-2 border-main/50 pl-3 italic text-sub my-2", className)} style={style}>{children}</blockquote>,
+        blockquote: ({ className, style, children, node }) => {
+            // Extract border color from data attribute if present (using safer typing than 'any')
+            // Only 'Element' nodes have properties, 'Text' nodes do not, but in blockquote context it's an Element
+            const props = (node as { properties?: Record<string, string | undefined> })?.properties
+            const borderColor = props?.['dataBorderColor'] || props?.['data-border-color']
+
+            const customStyle = borderColor
+                ? { ...style, borderLeftColor: borderColor }
+                : style
+
+            return (
+                <blockquote
+                    className={clsx("border-l-4 border-main/50 pl-3 my-2 bg-sub/5 py-1 rounded-r-md text-text-primary not-italic font-medium before:!content-none after:!content-none [&_p]:before:!content-none [&_p]:after:!content-none", className)}
+                    style={customStyle}
+                >
+                    {children}
+                </blockquote>
+            )
+        },
         hr: ({ className, style }) => <hr className={clsx("my-4 border-t border-sub/10 w-full", className)} style={style} />,
     };
 

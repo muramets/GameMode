@@ -69,5 +69,24 @@ export const EDITOR_PROSE_CLASSES = clsx(
     // 2. Inline code: high contrast background and inherited color
     'prose-code:bg-black prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-text-primary prose-code:font-lexend prose-code:tracking-wide [&_code]:text-inherit',
     // 3. Code blocks (pre): high contrast black background
-    'prose-pre:bg-black prose-pre:text-text-primary prose-pre:font-lexend prose-pre:tracking-wide [&_pre_code]:text-inherit'
+    'prose-pre:bg-black prose-pre:text-text-primary prose-pre:font-lexend prose-pre:tracking-wide [&_pre_code]:text-inherit',
+
+    // Blockquote styles
+    // Default: border-l-4, theme-border, padding, rounded, background. 
+    // Removed: italic, text-sub (text remains normal)
+    // Removed: quote marks (before/after !content-none with important)
+    'prose-blockquote:border-l-4 prose-blockquote:border-main prose-blockquote:pl-4 prose-blockquote:py-2 prose-blockquote:my-4 prose-blockquote:bg-sub/5 prose-blockquote:rounded-r-md prose-blockquote:not-italic prose-blockquote:text-text-primary prose-blockquote:font-medium prose-blockquote:before:!content-none prose-blockquote:after:!content-none [&_blockquote_p]:before:!content-none [&_blockquote_p]:after:!content-none',
+    // Support for custom border colors via inline styles
+    '[&_blockquote[data-border-color]]:border-l-4',
+
+    // Fix Quote Indentation:
+    // Convert 'depth-X' padding (standard indent) to margin so the border moves with indent
+    // Standard depth-X uses pl-6 (1.5rem steps). We use ml-X to move the border.
+    // We must also reset pl to 4 (1rem) which is the internal padding of the quote.
+    '[&_blockquote.depth-1]:pl-4 [&_blockquote.depth-1]:ml-6',
+    '[&_blockquote.depth-2]:pl-4 [&_blockquote.depth-2]:ml-12',
+    '[&_blockquote.depth-3]:pl-4 [&_blockquote.depth-3]:ml-[4.5rem]',
+    '[&_blockquote.depth-4]:pl-4 [&_blockquote.depth-4]:ml-[6rem]',
+    '[&_blockquote.depth-5]:pl-4 [&_blockquote.depth-5]:ml-[7.5rem]',
+    '[&_blockquote.depth-6]:pl-4 [&_blockquote.depth-6]:ml-[9rem]'
 )
