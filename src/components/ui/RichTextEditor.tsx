@@ -25,6 +25,7 @@ import { PRESET_COLORS } from '../../constants/common'
 
 import { CollapsableHeadings } from './extensions/CollapsableHeading'
 import { IndentedListItem } from './extensions/IndentedListItem'
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 
 export const EDITOR_PROSE_CLASSES = clsx(
     // Added prose-sm to fix text size issue. 
@@ -498,6 +499,7 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
     // Debug state
     const [showDebug, setShowDebug] = useState(false)
     const [isExpanded, setIsExpanded] = useState(false)
+    useBodyScrollLock(isExpanded)
     const lastValueRef = React.useRef(value)
 
 

@@ -14,6 +14,7 @@ interface ProtocolInstructionViewerProps {
 
 import { parseMarkdownSections, nestMarkdownSections, type HierarchicalSection } from '../../../utils/markdownUtils';
 import { CollapsibleSection } from '../../../components/ui/molecules/CollapsibleSection';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 
 // Helper for dynamic indentation based on header level
 const getIndentationClass = (level: number) => {
@@ -35,6 +36,7 @@ const getHeaderSizeClass = (level: number) => {
 
 export const ProtocolInstructionViewer = React.memo(({ instruction, isExpanded, onInteractionEnter }: ProtocolInstructionViewerProps) => {
     const [isZenMode, setIsZenMode] = useState(false);
+    useBodyScrollLock(isZenMode);
 
     const sections = React.useMemo(() => {
         const parsed = parseMarkdownSections(instruction || '');
