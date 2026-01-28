@@ -42,15 +42,15 @@ export const EDITOR_PROSE_CLASSES = clsx(
     // Divider styling (dimmed and narrower)
     'prose-hr:border-sub/20 prose-hr:mx-auto prose-hr:w-4/5 prose-hr:my-8',
 
-    // Custom overrides for adjacent headings (keeping them tight)
-    '[&_h1+h1]:mt-4',
-    '[&_h1+h2]:mt-4',
-    '[&_h2+h2]:mt-4',
-    '[&_h2+h3]:mt-3',
-    '[&_h3+h3]:mt-3',
-    '[&_h3+h4]:mt-3',
-    '[&_h4+h4]:mt-2',
-    '[&_h4+h5]:mt-2',
+    // Custom overrides for adjacent headings (keeping them tight) -- REMOVED to restore standard spacing
+    // '[&_h1+h1]:mt-4',
+    // '[&_h1+h2]:mt-4',
+    // '[&_h2+h2]:mt-4',
+    // '[&_h2+h3]:mt-3',
+    // '[&_h3+h3]:mt-3',
+    // '[&_h3+h4]:mt-3',
+    // '[&_h4+h4]:mt-2',
+    // '[&_h4+h5]:mt-2',
 
     // Ensure headers and content have minimal left padding for the arrow icon and hierarchy
     'prose-headings:relative',

@@ -53,16 +53,22 @@ export const CollapsableHeadings = Extension.create({
                 const node = $from.parent
 
                 // 1. Check for "Collapsed Header Entrapment"
-                if (node.type.name === 'heading' && node.attrs.collapsed && $from.parentOffset === node.content.size) {
-                    const currentLevel = node.attrs.level
-                    let insertPos = state.doc.content.size
+                // Determine if this header IS collapsed (explicit or implicit)
+                const isCollapsed = node.attrs.collapsed === true || (node.attrs.collapsed === null && node.attrs.level >= 4)
 
+                if (node.type.name === 'heading' && isCollapsed && $from.parentOffset === node.content.size) {
+                    const currentLevel = node.attrs.level
+                    let insertPos = state.doc.content.size // Default to end of doc
+
+                    // Search for the next heading of same or higher level to define insertion point
                     state.doc.nodesBetween($from.pos + 1, state.doc.content.size, (n, pos) => {
-                        if (insertPos < state.doc.content.size) return false
+                        if (insertPos < state.doc.content.size) return false // Already found
+
                         if (n.type.name === 'heading' && n.attrs.level <= currentLevel) {
                             insertPos = pos
                             return false
                         }
+                        return true
                     })
 
                     return editor.chain()
