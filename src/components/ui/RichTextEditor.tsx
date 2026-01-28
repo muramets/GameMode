@@ -16,7 +16,7 @@ import { TableHeader } from '@tiptap/extension-table-header'
 import {
     Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Heading4, Heading5, Heading6,
     Maximize, Minimize, Droplet, Code, AlignLeft, AlignCenter, AlignRight, Minus,
-    Table as TableIcon, MoreHorizontal, Bug, Copy, Check
+    Table as TableIcon, MoreHorizontal, Bug, Copy, Check, Pilcrow
 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import clsx from 'clsx'
@@ -250,6 +250,164 @@ const EditorColorPicker = ({ editor }: { editor: Editor }) => {
     )
 }
 
+
+
+const ToolbarMoreMenu = ({ editor, showDebug, toggleDebug }: { editor: Editor, showDebug: boolean, toggleDebug: () => void }) => {
+    return (
+        <Popover.Root>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Popover.Trigger asChild>
+                        <button
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            className="p-1.5 rounded-md transition-colors text-sub hover:text-text-primary hover:bg-sub/10"
+                        >
+                            <MoreHorizontal size={16} />
+                        </button>
+                    </Popover.Trigger>
+                </TooltipTrigger>
+                <TooltipContent>More Tools</TooltipContent>
+            </Tooltip>
+            <Popover.Portal>
+                <Popover.Content
+                    className="z-[10000] p-1.5 bg-sub-alt border border-white/10 rounded-xl shadow-2xl flex flex-col gap-1 min-w-[180px] animate-in fade-in zoom-in-95 duration-200"
+                    sideOffset={5}
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                >
+                    <div className="max-h-[300px] overflow-y-auto custom-scrollbar flex flex-col gap-1">
+                        <div className="px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-sub opacity-50">Text Style</div>
+                        <button
+                            onClick={() => editor.chain().focus().setParagraph().run()}
+                            className={clsx(
+                                "flex items-center gap-2 px-2 py-1.5 hover:bg-sub/10 rounded text-xs text-left font-mono",
+                                editor.isActive('paragraph') && "text-main bg-sub/5"
+                            )}
+                        >
+                            <Pilcrow size={14} className="opacity-50" />
+                            Normal
+                        </button>
+                        <button
+                            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                            className={clsx(
+                                "flex items-center gap-2 px-2 py-1.5 hover:bg-sub/10 rounded text-xs text-left font-bold text-lg",
+                                editor.isActive('heading', { level: 1 }) && "text-main bg-sub/5"
+                            )}
+                        >
+                            <Heading1 size={14} className="opacity-50" />
+                            Heading 1
+                        </button>
+                        <button
+                            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                            className={clsx(
+                                "flex items-center gap-2 px-2 py-1.5 hover:bg-sub/10 rounded text-xs text-left font-bold text-base",
+                                editor.isActive('heading', { level: 2 }) && "text-main bg-sub/5"
+                            )}
+                        >
+                            <Heading2 size={14} className="opacity-50" />
+                            Heading 2
+                        </button>
+                        <button
+                            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+                            className={clsx(
+                                "flex items-center gap-2 px-2 py-1.5 hover:bg-sub/10 rounded text-xs text-left font-bold text-sm",
+                                editor.isActive('heading', { level: 3 }) && "text-main bg-sub/5"
+                            )}
+                        >
+                            <Heading3 size={14} className="opacity-50" />
+                            Heading 3
+                        </button>
+                        <button
+                            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+                            className={clsx(
+                                "flex items-center gap-2 px-2 py-1.5 hover:bg-sub/10 rounded text-xs text-left font-mono",
+                                editor.isActive('codeBlock') && "text-main bg-sub/5"
+                            )}
+                        >
+                            <Code size={14} className="opacity-50" />
+                            Code Block
+                        </button>
+
+                        <div className="h-px bg-sub/10 my-1" />
+                        <div className="px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-sub opacity-50">Alignment</div>
+                        <div className="flex bg-sub/10 rounded-lg p-0.5">
+                            <button
+                                onClick={() => editor.chain().focus().setTextAlign('left').run()}
+                                className={clsx("flex-1 p-1 flex justify-center rounded transition-colors", editor.isActive({ textAlign: 'left' }) ? "bg-sub/20 text-text-primary" : "text-sub hover:text-text-primary")}
+                            >
+                                <AlignLeft size={14} />
+                            </button>
+                            <button
+                                onClick={() => editor.chain().focus().setTextAlign('center').run()}
+                                className={clsx("flex-1 p-1 flex justify-center rounded transition-colors", editor.isActive({ textAlign: 'center' }) ? "bg-sub/20 text-text-primary" : "text-sub hover:text-text-primary")}
+                            >
+                                <AlignCenter size={14} />
+                            </button>
+                            <button
+                                onClick={() => editor.chain().focus().setTextAlign('right').run()}
+                                className={clsx("flex-1 p-1 flex justify-center rounded transition-colors", editor.isActive({ textAlign: 'right' }) ? "bg-sub/20 text-text-primary" : "text-sub hover:text-text-primary")}
+                            >
+                                <AlignRight size={14} />
+                            </button>
+                        </div>
+
+                        <div className="h-px bg-sub/10 my-1" />
+
+                        <button
+                            onClick={() => editor.chain().focus().toggleCode().run()}
+                            className={clsx(
+                                "flex items-center gap-2 px-2 py-1.5 hover:bg-sub/10 rounded text-xs text-left",
+                                editor.isActive('code') && "text-main bg-sub/5"
+                            )}
+                        >
+                            <Code size={14} className="opacity-50" />
+                            Inline Code
+                        </button>
+
+                        <button
+                            onClick={() => editor.chain().focus().setHorizontalRule().run()}
+                            className="flex items-center gap-2 px-2 py-1.5 hover:bg-sub/10 rounded text-xs text-left"
+                        >
+                            <Minus size={14} className="opacity-50" />
+                            Divider
+                        </button>
+
+                        <div className="h-px bg-sub/10 my-1" />
+
+                        <div className="px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-sub opacity-50">Insert</div>
+                        <div className="flex flex-col gap-0.5">
+                            <button
+                                onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+                                className={clsx(
+                                    "flex items-center gap-2 px-2 py-1.5 hover:bg-sub/10 rounded text-xs text-left",
+                                    editor.isActive('table') && "text-main bg-sub/5"
+                                )}
+                            >
+                                <TableIcon size={14} className="opacity-50" />
+                                Table
+                            </button>
+                            {/* Table Actions Submenu could go here if table is active, currently separate button on main bar if active */}
+                        </div>
+
+                        <div className="h-px bg-sub/10 my-1" />
+
+                        <button
+                            onClick={toggleDebug}
+                            className={clsx(
+                                "flex items-center gap-2 px-2 py-1.5 hover:bg-sub/10 rounded text-xs text-left",
+                                showDebug && "text-main bg-sub/5"
+                            )}
+                        >
+                            <Bug size={14} className="opacity-50" />
+                            Debug View
+                        </button>
+                    </div>
+                </Popover.Content>
+            </Popover.Portal>
+        </Popover.Root>
+    )
+}
+
 const MenuBar = ({
     editor,
     isExpanded,
@@ -268,52 +426,62 @@ const MenuBar = ({
     }
 
     return (
-        <TooltipProvider>
-            <div className="flex items-center gap-1 border-b border-sub/10 pb-2 mb-2 flex-wrap">
-                <MenuButton
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-                    isActive={editor.isActive('heading', { level: 1 })}
-                    title="Heading 1"
-                >
-                    <Heading1 size={16} />
-                </MenuButton>
-                <MenuButton
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-                    isActive={editor.isActive('heading', { level: 2 })}
-                    title="Heading 2"
-                >
-                    <Heading2 size={16} />
-                </MenuButton>
-                <MenuButton
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-                    isActive={editor.isActive('heading', { level: 3 })}
-                    title="Heading 3"
-                >
-                    <Heading3 size={16} />
-                </MenuButton>
-                <MenuButton
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
-                    isActive={editor.isActive('heading', { level: 4 })}
-                    title="Heading 4"
-                >
-                    <Heading4 size={16} />
-                </MenuButton>
-                <MenuButton
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 5 }).run()}
-                    isActive={editor.isActive('heading', { level: 5 })}
-                    title="Heading 5"
-                >
-                    <Heading5 size={16} />
-                </MenuButton>
-                <MenuButton
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 6 }).run()}
-                    isActive={editor.isActive('heading', { level: 6 })}
-                    title="Heading 6"
-                >
-                    <Heading6 size={16} />
-                </MenuButton>
 
-                <div className="w-px h-4 bg-sub/10 mx-1" />
+        <TooltipProvider>
+            <div className={clsx(
+                "flex items-center gap-1 border-b border-sub/10 pb-2 mb-2 min-h-[42px]",
+                isExpanded ? "flex-wrap" : "flex-nowrap overflow-x-auto custom-scrollbar scrollbar-hide"
+            )}>
+                {isExpanded && (
+                    <>
+                        <MenuButton
+                            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                            isActive={editor.isActive('heading', { level: 1 })}
+                            title="Heading 1"
+                        >
+                            <Heading1 size={16} />
+                        </MenuButton>
+                        <MenuButton
+                            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                            isActive={editor.isActive('heading', { level: 2 })}
+                            title="Heading 2"
+                        >
+                            <Heading2 size={16} />
+                        </MenuButton>
+                        <MenuButton
+                            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+                            isActive={editor.isActive('heading', { level: 3 })}
+                            title="Heading 3"
+                        >
+                            <Heading3 size={16} />
+                        </MenuButton>
+                        {/* Only show H1-H3 for now as they are most common, or all? User said 'all heading icons'. Let's show all. */}
+                        <MenuButton
+                            onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
+                            isActive={editor.isActive('heading', { level: 4 })}
+                            title="Heading 4"
+                        >
+                            <Heading4 size={16} />
+                        </MenuButton>
+                        <MenuButton
+                            onClick={() => editor.chain().focus().toggleHeading({ level: 5 }).run()}
+                            isActive={editor.isActive('heading', { level: 5 })}
+                            title="Heading 5"
+                        >
+                            <Heading5 size={16} />
+                        </MenuButton>
+                        <MenuButton
+                            onClick={() => editor.chain().focus().toggleHeading({ level: 6 }).run()}
+                            isActive={editor.isActive('heading', { level: 6 })}
+                            title="Heading 6"
+                        >
+                            <Heading6 size={16} />
+                        </MenuButton>
+                        <div className="w-px h-4 bg-sub/10 mx-1 shrink-0" />
+                    </>
+                )}
+
+                <div className="w-px h-4 bg-sub/10 mx-1 shrink-0" />
 
                 <MenuButton
                     onClick={() => editor.chain().focus().toggleBold().run()}
@@ -330,62 +498,7 @@ const MenuBar = ({
                     <Italic size={16} />
                 </MenuButton>
 
-                <MenuButton
-                    onClick={() => editor.chain().focus().toggleCode().run()}
-                    isActive={editor.isActive('code')}
-                    title="Code"
-                >
-                    <Code size={16} />
-                </MenuButton>
-
-                <EditorColorPicker editor={editor} />
-
-                <div className="w-px h-4 bg-sub/10 mx-1" />
-
-                <MenuButton
-                    onClick={() => editor.chain().focus().setTextAlign('left').run()}
-                    isActive={editor.isActive({ textAlign: 'left' })}
-                    title="Align Left"
-                >
-                    <AlignLeft size={16} />
-                </MenuButton>
-                <MenuButton
-                    onClick={() => editor.chain().focus().setTextAlign('center').run()}
-                    isActive={editor.isActive({ textAlign: 'center' })}
-                    title="Align Center"
-                >
-                    <AlignCenter size={16} />
-                </MenuButton>
-                <MenuButton
-                    onClick={() => editor.chain().focus().setTextAlign('right').run()}
-                    isActive={editor.isActive({ textAlign: 'right' })}
-                    title="Align Right"
-                >
-                    <AlignRight size={16} />
-                </MenuButton>
-
-                <div className="w-px h-4 bg-sub/10 mx-1" />
-
-                <MenuButton
-                    onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
-                    isActive={editor.isActive('table')}
-                    title="Insert Table"
-                >
-                    <TableIcon size={16} />
-                </MenuButton>
-
-                <TableMenu editor={editor} />
-
-                <div className="w-px h-4 bg-sub/10 mx-1" />
-
-                <MenuButton
-                    onClick={() => editor.chain().focus().setHorizontalRule().run()}
-                    title="Divider"
-                >
-                    <Minus size={16} />
-                </MenuButton>
-
-                <div className="w-px h-4 bg-sub/10 mx-1" />
+                <div className="w-px h-4 bg-sub/10 mx-1 shrink-0" />
 
                 <MenuButton
                     onClick={() => editor.chain().focus().toggleBulletList().run()}
@@ -402,15 +515,25 @@ const MenuBar = ({
                     <ListOrdered size={16} />
                 </MenuButton>
 
-                <div className="flex-1" /> {/* Spacer */}
+                <div className="w-px h-4 bg-sub/10 mx-1 shrink-0" />
 
-                <MenuButton
-                    onClick={toggleDebug}
-                    isActive={showDebug}
-                    title="Toggle Debugger"
-                >
-                    <Bug size={16} />
-                </MenuButton>
+                <EditorColorPicker editor={editor} />
+
+                {/* Show Table Menu inline if table is active for easy access */}
+                {editor.isActive('table') && (
+                    <>
+                        <div className="w-px h-4 bg-sub/10 mx-1 shrink-0" />
+                        <TableMenu editor={editor} />
+                    </>
+                )}
+
+                <div className="flex-1 min-w-4" />
+
+                <ToolbarMoreMenu
+                    editor={editor}
+                    showDebug={showDebug}
+                    toggleDebug={toggleDebug}
+                />
 
                 <MenuButton
                     onClick={toggleExpand}
@@ -763,10 +886,10 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
                 toggleDebug={() => setShowDebug(!showDebug)}
             />
             {!isExpanded ? (
-                <>
+                <div className="overflow-y-auto custom-scrollbar flex-1 w-full">
                     <EditorContent editor={editor} className="text-text-primary" />
                     {showDebug && <DebugPanel editor={editor} />}
-                </>
+                </div>
             ) : (
                 <div className="h-full min-h-[100px] flex items-center justify-center text-sub/40 text-sm italic">
                     Editing in Zen Mode...

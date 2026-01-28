@@ -64,6 +64,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
         id: p.id,
         title: p.title,
         description: p.description,
+        quickNote: p.hover,
         group: p.group || 'ungrouped',
         icon: <AppIcon id={p.icon} />,
         color: p.color
@@ -138,7 +139,7 @@ export function InnerfaceSettingsModal({ isOpen, onClose, innerfaceId }: Innerfa
                         value={hover}
                         onChange={setHover}
                         placeholder="Short note shown on tap/hover..."
-                        className="min-h-[100px]"
+                        className="min-h-[100px] max-h-[300px] overflow-hidden"
                     />
                 </div>
 

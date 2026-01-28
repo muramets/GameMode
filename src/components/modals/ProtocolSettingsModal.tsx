@@ -67,7 +67,8 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
         .map(i => ({
             id: i.id.toString(),
             title: i.name,
-            description: i.hover || i.name,
+            description: i.description,
+            quickNote: i.hover,
             group: i.group,
             icon: <AppIcon id={i.icon} />,
             color: i.color,
@@ -161,7 +162,7 @@ export function ProtocolSettingsModal({ isOpen, onClose, protocolId }: ProtocolS
                         value={hover}
                         onChange={setHover}
                         placeholder="Short note shown on tap/hover..."
-                        className="min-h-[100px]"
+                        className="min-h-[100px] max-h-[300px] overflow-hidden"
                     />
                 </div>
 

@@ -50,7 +50,7 @@ export const ProtocolInstructionInput = React.memo(({ instruction, setInstructio
                         value={instruction}
                         onChange={setInstruction}
                         placeholder="Enter specific instructions..."
-                        className="min-h-[120px]"
+                        className="min-h-[120px] max-h-[300px] overflow-hidden"
                     />
                 </div>
             )}

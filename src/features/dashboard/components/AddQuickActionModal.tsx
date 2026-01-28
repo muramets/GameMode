@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faThumbtack, faCheck } from '@fortawesome/free-solid-svg-icons';
 import { useMetadataStore } from '../../../stores/metadataStore';
@@ -7,6 +7,7 @@ import { Input } from '../../../components/ui/molecules/Input';
 import { Button } from '../../../components/ui/atoms/Button';
 import { Modal } from '../../../components/ui/molecules/Modal';
 import { CollapsibleSection } from '../../../components/ui/molecules/CollapsibleSection';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../../components/ui/atoms/Tooltip';
 
 interface AddQuickActionModalProps {
     isOpen: boolean;
@@ -20,8 +21,9 @@ export function AddQuickActionModal({ isOpen, onClose }: AddQuickActionModalProp
     const [searchQuery, setSearchQuery] = useState('');
 
     const filteredProtocols = useMemo(() => {
-        if (!searchQuery.trim()) return protocols;
-        return protocols.filter(p =>
+        const activeDefaults = protocols.filter(p => !p.deletedAt);
+        if (!searchQuery.trim()) return activeDefaults;
+        return activeDefaults.filter(p =>
             p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             p.group?.toLowerCase().includes(searchQuery.toLowerCase())
         );
@@ -141,6 +143,46 @@ export function AddQuickActionModal({ isOpen, onClose }: AddQuickActionModalProp
     );
 }
 
+
+// Helper Component for Truncated Text
+const TruncatedText = ({ text, className }: { text: string; className?: string }) => {
+    const textRef = useRef<HTMLDivElement>(null);
+    const [isTruncated, setIsTruncated] = useState(false);
+
+    useEffect(() => {
+        const checkTruncation = () => {
+            if (textRef.current) {
+                setIsTruncated(textRef.current.scrollWidth > textRef.current.clientWidth);
+            }
+        };
+
+        checkTruncation();
+        window.addEventListener('resize', checkTruncation);
+        return () => window.removeEventListener('resize', checkTruncation);
+    }, [text]);
+
+    const content = (
+        <div ref={textRef} className={className}>
+            {text}
+        </div>
+    );
+
+    if (!isTruncated) return content;
+
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                {content}
+            </TooltipTrigger>
+            <TooltipContent side="bottom" align="start" className="pointer-events-none">
+                <span className="font-mono text-xs max-w-[200px] block">
+                    {text}
+                </span>
+            </TooltipContent>
+        </Tooltip>
+    );
+};
+
 import type { Protocol } from '../../protocols/types';
 
 // Helper Component for Item Rendering
@@ -175,11 +217,11 @@ function ProtocolItem({ protocol, isPinned, onToggle }: { protocol: Protocol, is
                         <span className={`font-bold font-mono text-sm tracking-tight ${isPinned ? 'text-main' : 'text-text-primary'}`}>
                             {protocol.title}
                         </span>
-                        {/* Removed Group Badge as requested */}
                     </div>
-                    <div className="text-[10px] text-sub truncate font-mono">
-                        {protocol.description || protocol.hover || "No description"}
-                    </div>
+                    <TruncatedText
+                        text={protocol.description || "No description"}
+                        className="text-[10px] text-sub truncate font-mono cursor-default max-w-[200px]"
+                    />
                 </div>
             </div>
 
