@@ -32,27 +32,27 @@ export const DebugPanel = ({ editor }: DebugPanelProps) => {
             {/* Content Grid */}
             <div className="grid grid-cols-2 gap-4 h-[400px]">
                 {/* HTML Output */}
-                <div className="flex flex-col gap-2 h-full relative">
+                <div className="flex flex-col gap-2 h-full relative min-h-0">
                     <div className="flex items-center justify-between pointer-events-none">
                         <span className="text-sub">HTML Source:</span>
                     </div>
                     <div className="absolute top-0 right-0 z-10">
                         <CopyButton text={html} />
                     </div>
-                    <pre className="flex-1 p-3 bg-black/50 rounded-lg border border-white/5 overflow-auto custom-scrollbar text-white/70 whitespace-pre-wrap break-all mt-1">
+                    <pre className="flex-1 p-3 bg-black/50 rounded-lg border border-white/5 overflow-auto custom-scrollbar text-white/70 whitespace-pre-wrap break-all mt-1 min-h-0">
                         {html}
                     </pre>
                 </div>
 
                 {/* JSON Output */}
-                <div className="flex flex-col gap-2 h-full relative">
+                <div className="flex flex-col gap-2 h-full relative min-h-0">
                     <div className="flex items-center justify-between pointer-events-none">
                         <span className="text-sub">JSON Structure:</span>
                     </div>
                     <div className="absolute top-0 right-0 z-10">
                         <CopyButton text={JSON.stringify(json, null, 2)} />
                     </div>
-                    <pre className="flex-1 p-3 bg-black/50 rounded-lg border border-white/5 overflow-auto custom-scrollbar text-green-400/80 mt-1">
+                    <pre className="flex-1 p-3 bg-black/50 rounded-lg border border-white/5 overflow-auto custom-scrollbar text-green-400/80 mt-1 min-h-0">
                         {JSON.stringify(json, null, 2)}
                     </pre>
                 </div>

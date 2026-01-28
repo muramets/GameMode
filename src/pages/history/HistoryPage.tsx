@@ -199,8 +199,20 @@ export default function HistoryPage() {
             // Effect filter (Client Side Only)
             if (effectFilter !== 'All effects') {
                 const isPositive = event.weight > 0;
-                if (effectFilter === 'Positive' && !isPositive) return false;
-                if (effectFilter === 'Negative' && isPositive) return false;
+
+                if (effectFilter === 'Positive') {
+                    if (!isPositive) return false;
+                }
+
+                if (effectFilter === 'Negative') {
+                    // 1. Exclude System Events from "Negative Effect"
+                    // (System events are neutral/contextual, typically not "Negative Impact")
+                    if (event.type === 'system') return false;
+
+                    // 2. Strict Negative Check (weight < 0)
+                    // If weight is positive OR zero, exclude it.
+                    if (event.weight >= 0) return false;
+                }
             }
 
             // Innerface filter (Client Side Only - too complex for standard index)
