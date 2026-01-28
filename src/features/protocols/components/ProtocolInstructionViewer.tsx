@@ -43,12 +43,12 @@ export const ProtocolInstructionViewer = React.memo(({ instruction, isExpanded, 
     }, [instruction]);
 
     const markdownComponents: Components = {
-        h1: ({ className, style, children }) => <h1 className={clsx("text-base font-bold mb-2 mt-4 first:mt-0 text-sub hover:text-text-primary transition-colors duration-200", className)} style={style}>{children}</h1>,
-        h2: ({ className, style, children }) => <h2 className={clsx("text-sm font-bold mb-2 mt-4 text-sub hover:text-text-primary transition-colors duration-200", className)} style={style}>{children}</h2>,
-        h3: ({ className, style, children }) => <h3 className={clsx("text-xs font-bold mb-1 mt-3 text-sub hover:text-text-primary transition-colors duration-200", className)} style={style}>{children}</h3>,
-        h4: ({ className, style, children }) => <h4 className={clsx("text-[11px] font-bold mb-1 mt-2 text-sub hover:text-text-primary transition-colors duration-200", className)} style={style}>{children}</h4>,
-        h5: ({ className, style, children }) => <h5 className={clsx("text-[10px] font-bold mb-1 mt-2 text-sub hover:text-text-primary transition-colors duration-200", className)} style={style}>{children}</h5>,
-        h6: ({ className, style, children }) => <h6 className={clsx("text-[9px] font-bold mb-1 mt-2 text-sub hover:text-text-primary transition-colors duration-200", className)} style={style}>{children}</h6>,
+        h1: ({ className, style, children }) => <h1 className={clsx("text-base font-bold mb-2 mt-4 first:mt-0 text-sub hover:text-text-primary transition-colors duration-200 [&_strong]:!text-inherit", className)} style={style}>{children}</h1>,
+        h2: ({ className, style, children }) => <h2 className={clsx("text-sm font-bold mb-2 mt-4 text-sub hover:text-text-primary transition-colors duration-200 [&_strong]:!text-inherit", className)} style={style}>{children}</h2>,
+        h3: ({ className, style, children }) => <h3 className={clsx("text-xs font-bold mb-1 mt-3 text-sub hover:text-text-primary transition-colors duration-200 [&_strong]:!text-inherit", className)} style={style}>{children}</h3>,
+        h4: ({ className, style, children }) => <h4 className={clsx("text-[11px] font-bold mb-1 mt-2 text-sub hover:text-text-primary transition-colors duration-200 [&_strong]:!text-inherit", className)} style={style}>{children}</h4>,
+        h5: ({ className, style, children }) => <h5 className={clsx("text-[10px] font-bold mb-1 mt-2 text-sub hover:text-text-primary transition-colors duration-200 [&_strong]:!text-inherit", className)} style={style}>{children}</h5>,
+        h6: ({ className, style, children }) => <h6 className={clsx("text-[9px] font-bold mb-1 mt-2 text-sub hover:text-text-primary transition-colors duration-200 [&_strong]:!text-inherit", className)} style={style}>{children}</h6>,
         p: ({ className, style, children }) => <p className={clsx("mb-1 last:mb-0 text-left", className)} style={style}>{children}</p>,
         div: ({ className, style, children }) => <div className={className} style={style}>{children}</div>,
         ul: ({ className, style, children }) => <ul className={clsx("list-disc list-outside pl-5 mb-1 space-y-0.5", className)} style={style}>{children}</ul>,
@@ -78,6 +78,7 @@ export const ProtocolInstructionViewer = React.memo(({ instruction, isExpanded, 
         h5: ({ className, style, children }) => <h5 className={clsx("text-[10px] font-bold text-inherit", className)} style={style}>{children}</h5>,
         h6: ({ className, style, children }) => <h6 className={clsx("text-[9px] font-bold text-inherit", className)} style={style}>{children}</h6>,
         p: ({ children }) => <span className="inline">{children}</span>,
+        strong: ({ children }) => <strong className="font-bold text-inherit">{children}</strong>,
     };
 
     const renderSection = (section: HierarchicalSection, idx: number) => (
