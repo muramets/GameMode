@@ -32,8 +32,9 @@ export const createInnerfaceSlice = (
         try {
             const context = get().context;
             guardAgainstViewerMode(context);
+            guardAgainstViewerMode(context);
             const colRef = collection(db, `${getPathRoot(context)}/innerfaces`);
-            const docRef = await addDoc(colRef, innerface);
+            const docRef = await addDoc(colRef, { ...innerface, createdAt: new Date().toISOString() });
             return docRef.id;
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown error';

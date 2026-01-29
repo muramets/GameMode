@@ -22,6 +22,7 @@ interface Innerface {
     initialScore: number;
     decaySettings?: DecaySettings;
     lastCheckInDate?: string;
+    createdAt?: string;
 }
 
 interface HistoryRecord {
@@ -60,7 +61,7 @@ export const checkInnerfaceDecay = functions.pubsub.schedule('every 24 hours').o
 
         if (!decaySettings || !decaySettings.enabled) continue;
 
-        const lastActivityDateStr = innerface.lastCheckInDate || decaySettings.lastDecayDate || null;
+        const lastActivityDateStr = innerface.lastCheckInDate || decaySettings.lastDecayDate || innerface.createdAt || null;
 
         if (!lastActivityDateStr) continue;
 

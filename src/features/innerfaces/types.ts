@@ -23,4 +23,5 @@ export interface Innerface {
         lastDecayDate?: string; // ISO Date of last applied decay
     };
     priority?: 'low' | 'medium' | 'high'; // NEW: Impact on overall level (Nice to have | Standard | Must Have)
+    createdAt?: string; // ISO string
 }
